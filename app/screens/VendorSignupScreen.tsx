@@ -16,11 +16,13 @@ import {
   FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../lib/supabase';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../navigation/types';
 
 type RegistrationStep = 'auth' | 'business' | 'documents' | 'review' | 'success';
 
@@ -67,8 +69,8 @@ const banks = [
 ];
 
 export function VendorSignupScreen() {
-  const navigation = useNavigation();
-  const [step, setStep] = useState<RegistrationStep>('auth');
+const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();  
+const [step, setStep] = useState<RegistrationStep>('auth');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -238,20 +240,37 @@ export function VendorSignupScreen() {
     }
   };
 
-  const handleOTPChange = (text: string, index: number) => {
-    const newOtp = [...otpCode];
-    newOtp[index] = text;
-    setOtpCode(newOtp);
-    setOtpError('');
+// Replace your existing handleOTPChange with this version
+const handleOTPChange = (text: string, index: number) => {
+  // Only allow single digit
+  if (text.length > 1) text = text.slice(-1);
+  if (!/^\d?$/.test(text)) return; // only digits or empty
 
-    if (text && index < 5) {
-      otpInputs.current[index + 1]?.focus();
-    }
+  const newOtp = [...otpCode];
+  newOtp[index] = text;
+  setOtpCode(newOtp);
+  setOtpError('');
 
-    if (newOtp.every(digit => digit !== '') && !isVerifyingOTP) {
-      handleVerifyOTP();
-    }
-  };
+  // Auto-focus next input
+  if (text && index < 5) {
+    otpInputs.current[index + 1]?.focus();
+  }
+
+  // Auto-focus previous on backspace
+  if (!text && index > 0) {
+    otpInputs.current[index - 1]?.focus();
+  }
+};
+
+// Add this new useEffect right after your existing useEffects
+useEffect(() => {
+  const otpString = otpCode.join('');
+  
+  // Only trigger when we have exactly 6 digits and not already verifying
+  if (otpString.length === 6 && !isVerifyingOTP) {
+    handleVerifyOTP();
+  }
+}, [otpCode, isVerifyingOTP]);
 
   const handleKeyPress = (e: any, index: number) => {
     if (e.nativeEvent.key === 'Backspace' && !otpCode[index] && index > 0) {
@@ -841,36 +860,40 @@ export function VendorSignupScreen() {
           </View>
         );
 
-      case 'success':
-        return (
-          <View style={styles.successContainer}>
-            <View style={styles.successIcon}>
-              <Feather name="check-circle" size={50} color="#f97316" />
-            </View>
-            <Text style={styles.successTitle}>Application Submitted!</Text>
-            <Text style={styles.successText}>
-              Thank you for registering. Your email has been verified and our team will review your application within 24-48 hours.
-            </Text>
-            <Text style={styles.successSubText}>
-              You can now sign in with your email and password.
-            </Text>
-            
-            <TouchableOpacity
-              onPress={() => navigation.navigate('Login' as never)}
-              style={styles.successButton}
-            >
-              <LinearGradient
-                colors={['#f97316', '#f43f5e']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.successGradient}
-              >
-                <Text style={styles.successButtonText}>Go to Login</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
-        );
-    }
+ case 'success':
+  // Auto-redirect after 3.5 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      navigation.navigate('Login');
+    }, 3500); // 3.5 seconds delay - feels natural
+
+    return () => clearTimeout(timer);
+  }, [navigation]);
+
+  return (
+    <View style={styles.successContainer}>
+      <View style={styles.successIcon}>
+        <Feather name="check-circle" size={64} color="#10b981" />
+      </View>
+      
+      <Text style={styles.successTitle}>Registration Successful!</Text>
+      
+      <Text style={styles.successText}>
+        Your vendor application has been submitted and is under review.
+      </Text>
+      
+      <Text style={styles.successSubText}>
+        Redirecting you to login page in a few seconds...
+      </Text>
+
+      {/* Optional: small loading indicator */}
+      <ActivityIndicator 
+        size="small" 
+        color="#f97316" 
+        style={{ marginTop: 24 }} 
+      />
+    </View>
+  );  }
   };
 
   return (

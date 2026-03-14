@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Vespher",
+    "name": "Vesphe",
     "slug": "Vespher",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -11,6 +11,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#0a0a0a"
     },
+    
     "ios": {
       "supportsTablet": true
     },
@@ -21,13 +22,17 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.femi_ceo.Vespher"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-web-browser"
+      "expo-web-browser",
+        ["expo-osm-sdk/plugin", {
+        "locationPermissionText": "Vesphe uses your location to track deliveries in real-time"
+      }]
     ],
     "extra": {
       "eas": {

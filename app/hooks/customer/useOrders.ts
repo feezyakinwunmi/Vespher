@@ -81,7 +81,6 @@ export function useOrders() {
 
       setOrders(transformedOrders);
     } catch (err: any) {
-      console.error('Error fetching orders:', err);
       setError(err.message);
     } finally {
       setIsLoading(false);
@@ -144,7 +143,6 @@ export function useOrders() {
       }
       return null;
     } catch (err: any) {
-      console.error('Error fetching order:', err);
       return null;
     }
   }, [user]);

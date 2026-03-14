@@ -19,6 +19,7 @@ import { useVendorMenu } from '../../hooks/vendor/useVendorMenu';
 import { useVendorStats } from '../../hooks/vendor/useVendorStats';
 import { Image } from 'react-native'; // Add this import
 import { useNavigation } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 
 const { width } = Dimensions.get('window');
@@ -94,6 +95,7 @@ const navigation = useNavigation();
   // In VendorDashboardScreen.tsx, update the renderOverview function:
 
 const renderOverview = () => (
+  <SafeAreaView style={styles.container}>
   <ScrollView
     showsVerticalScrollIndicator={false}
     refreshControl={
@@ -104,7 +106,6 @@ const renderOverview = () => (
     <View style={styles.welcomeSection}>
       <View>
         <Text style={styles.welcomeText}>Welcome back,</Text>
-        <Text style={styles.vendorName}>Vendor Name</Text>
       </View>
       <View style={styles.dateBadge}>
         <Feather name="calendar" size={14} color="#f97316" />
@@ -317,44 +318,9 @@ onPress={() => (navigation as any).navigate('VendorOrders', { orderId: order.id 
       </View>
     )}
 
-    {/* Quick Actions */}
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Quick Actions</Text>
-      <View style={styles.quickActionsGrid}>
-        <TouchableOpacity 
-          style={styles.quickActionCard}
-          onPress={() => setActiveTab('menu')}
-        >
-          <LinearGradient
-            colors={['#f97316', '#f43f5e']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.quickActionGradient}
-          >
-            <Feather name="plus-circle" size={28} color="#fff" />
-            <Text style={styles.quickActionTitle}>Add Product</Text>
-            <Text style={styles.quickActionSubtitle}>Add new item to menu</Text>
-          </LinearGradient>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.quickActionCard}
-          onPress={() => setActiveTab('orders')}
-        >
-          <LinearGradient
-            colors={['#3b82f6', '#8b5cf6']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.quickActionGradient}
-          >
-            <Feather name="package" size={28} color="#fff" />
-            <Text style={styles.quickActionTitle}>Manage Orders</Text>
-            <Text style={styles.quickActionSubtitle}>View and update orders</Text>
-          </LinearGradient>
-        </TouchableOpacity>
-      </View>
-    </View>
+ 
   </ScrollView>
+  </SafeAreaView>
 );
 
   const renderOrders = () => (
@@ -491,6 +457,12 @@ onPress={() => (navigation as any).navigate('VendorOrders', { orderId: order.id 
 }
 
 const styles = StyleSheet.create({
+  container:{
+    flex:1,
+    marginTop:40,
+        paddingBottom:60,
+
+  },
   welcomeSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',

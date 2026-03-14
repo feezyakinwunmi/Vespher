@@ -19,12 +19,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
-import MapView, { Marker, PROVIDER_DEFAULT, PROVIDER_GOOGLE, Callout } from 'react-native-maps';
 import { supabase } from '../../lib/supabase';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import Toast from 'react-native-toast-message';
-
+import { WebView } from 'react-native-webview';
 type AdminLogisticsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const { width, height } = Dimensions.get('window');
@@ -64,6 +63,7 @@ interface UserRecord {
 }
 
 interface Rider {
+  is_busy: any;
   id: string;
   name: string;
   email: string;
@@ -87,8 +87,7 @@ interface Rider {
 
 export function AdminLogisticsScreen() {
   const navigation = useNavigation<AdminLogisticsScreenNavigationProp>();
-  const mapRef = useRef<MapView>(null);
-  
+const mapRef = useRef<any>(null);  
   const [riders, setRiders] = useState<Rider[]>([]);
   const [filteredRiders, setFilteredRiders] = useState<Rider[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -299,7 +298,6 @@ export function AdminLogisticsScreen() {
   };
 
   const fitMapToRiders = (ridersToFit: Rider[]) => {
-    if (!mapRef.current || ridersToFit.length === 0) return;
 
     const coordinates = ridersToFit
       .filter(r => r.current_latitude && r.current_longitude)
@@ -308,24 +306,10 @@ export function AdminLogisticsScreen() {
         longitude: r.current_longitude!,
       }));
 
-    if (coordinates.length > 0) {
-      mapRef.current.fitToCoordinates(coordinates, {
-        edgePadding: { top: 100, right: 100, bottom: 100, left: 100 },
-        animated: true,
-      });
-    }
+    
   };
 
-  const centerMapOnRider = (rider: Rider) => {
-    if (!mapRef.current || !rider.current_latitude || !rider.current_longitude) return;
 
-    mapRef.current.animateToRegion({
-      latitude: rider.current_latitude,
-      longitude: rider.current_longitude,
-      latitudeDelta: 0.01,
-      longitudeDelta: 0.01,
-    }, 1000);
-  };
 
   const filterRiders = () => {
     let filtered = [...riders];
@@ -616,101 +600,143 @@ export function AdminLogisticsScreen() {
       {/* Map View */}
       {showMap ? (
         <View style={styles.mapContainer}>
-          <MapView
-            ref={mapRef}
-            style={styles.map}
-            provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
-            initialRegion={mapRegion}
-            showsUserLocation={false}
-            showsMyLocationButton={true}
-            showsCompass={true}
-            showsScale={true}
-            onMapReady={() => setMapReady(true)}
-          >
-            {filteredRiders
-              .filter(r => r.current_latitude && r.current_longitude && !r.is_suspended)
-              .map((rider) => (
-                <Marker
-                  key={rider.id}
-                  coordinate={{
-                    latitude: rider.current_latitude!,
-                    longitude: rider.current_longitude!,
-                  }}
-                  onPress={() => centerMapOnRider(rider)}
-                >
-                  <View style={[
-                    styles.markerContainer,
-                    { backgroundColor: getStatusColor(rider) }
-                  ]}>
-                    <Feather name={getMarkerIcon(rider.vehicle_type)} size={20} color="#fff" />
-                  </View>
-                  
-                  <Callout tooltip onPress={() => {
-                    setSelectedRider(rider);
-                    setShowActionsModal(true);
-                  }}>
-                    <View style={styles.calloutContainer}>
-                      <View style={styles.calloutHeader}>
-                        {rider.avatar_url ? (
-                          <Image source={{ uri: rider.avatar_url }} style={styles.calloutAvatar} />
-                        ) : (
-                          <LinearGradient
-                            colors={['#f97316', '#f43f5e']}
-                            style={styles.calloutAvatarPlaceholder}
-                          >
-                            <Text style={styles.calloutAvatarText}>
-                              {rider.name?.charAt(0).toUpperCase() || 'R'}
-                            </Text>
-                          </LinearGradient>
-                        )}
-                        <View style={styles.calloutInfo}>
-                          <Text style={styles.calloutName}>{rider.name}</Text>
-                          <Text style={styles.calloutVehicle}>
-                            {rider.vehicle_type} • {rider.vehicle_number}
-                          </Text>
-                        </View>
-                      </View>
-                      
-                      <View style={styles.calloutDetails}>
-                        <View style={styles.calloutRow}>
-                          <Feather name="phone" size={12} color="#666" />
-                          <Text style={styles.calloutText}>{rider.phone || 'No phone'}</Text>
-                        </View>
-                        <View style={styles.calloutRow}>
-                          <Feather name="star" size={12} color="#fbbf24" />
-                          <Text style={styles.calloutText}>{rider.rating?.toFixed(1) || '0.0'}</Text>
-                        </View>
-                        <View style={styles.calloutRow}>
-                          <Feather name="package" size={12} color="#f97316" />
-                          <Text style={styles.calloutText}>{rider.total_deliveries || 0} deliveries</Text>
-                        </View>
-                      </View>
-                      
-                      <View style={styles.calloutFooter}>
-                        <Text style={styles.calloutAction}>Tap to manage rider</Text>
-                      </View>
-                    </View>
-                  </Callout>
-                </Marker>
-              ))}
-          </MapView>
+  <WebView
+  ref={mapRef}
+  originWhitelist={['*']}
+  style={styles.map}
+  source={{
+    html: `
+<!DOCTYPE html>
+<html>
+<head>
 
-          {/* Map Controls */}
-          <View style={styles.mapControls}>
-            <TouchableOpacity 
-              style={styles.mapControlButton}
-              onPress={() => {
-                const ridersWithLocation = filteredRiders.filter(
-                  r => r.current_latitude && r.current_longitude && !r.is_suspended
-                );
-                if (ridersWithLocation.length > 0) {
-                  fitMapToRiders(ridersWithLocation);
-                }
-              }}
-            >
-              <Feather name="maximize" size={20} color="#f97316" />
-            </TouchableOpacity>
-          </View>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet"
+href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+<style>
+html,body{margin:0;padding:0}
+#map{height:100vh;width:100vw}
+</style>
+
+</head>
+
+<body>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+
+// rider icons based on status
+
+var availableIcon = new L.Icon({
+  iconUrl: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png',
+  iconSize: [40,40],
+  iconAnchor: [20,40]
+});
+
+var busyIcon = new L.Icon({
+  iconUrl: 'https://maps.google.com/mapfiles/ms/icons/orange-dot.png',
+  iconSize: [40,40],
+  iconAnchor: [20,40]
+});
+
+var suspendedIcon = new L.Icon({
+  iconUrl: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+  iconSize: [40,40],
+  iconAnchor: [20,40]
+});
+
+var map = L.map('map').setView([6.5244,3.3792],12);
+
+L.tileLayer(
+'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+{ attribution:'© OpenStreetMap' }
+).addTo(map);
+
+var riders = ${JSON.stringify(
+  filteredRiders
+    .filter(r => r.current_latitude && r.current_longitude && !r.is_suspended)
+.map(r => ({
+  id: r.id,
+  name: r.name,
+  lat: r.current_latitude,
+  lng: r.current_longitude,
+  vehicle: r.vehicle_type,
+  deliveries: r.total_deliveries,
+  rating: r.rating,
+  phone: r.phone,
+  suspended: r.is_suspended,
+  busy: r.is_busy
+}))
+)};
+
+var bounds = [];
+
+riders.forEach(function(r){
+
+var icon;
+
+if(r.suspended){
+  icon = suspendedIcon;
+}
+else if(r.busy){
+  icon = busyIcon;
+}
+else{
+  icon = availableIcon;
+}
+
+var marker = L.marker(
+  [r.lat,r.lng],
+  {icon: icon}
+).addTo(map);
+
+
+
+var status = r.suspended
+  ? "Suspended"
+  : r.busy
+  ? "Busy"
+  : "Available";
+
+marker.bindPopup(
+"<b>"+r.name+"</b><br>"+
+"Status: "+status+"<br>"+
+"Vehicle: "+(r.vehicle || "N/A")+"<br>"+
+"Deliveries: "+r.deliveries+"<br>"+
+"Rating: "+(r.rating || 0)
+);
+
+
+
+marker.bindPopup(
+"<b>"+r.name+"</b><br>"+
+"Vehicle: "+(r.vehicle || "N/A")+"<br>"+
+"Deliveries: "+r.deliveries+"<br>"+
+"Rating: "+(r.rating || 0)
+);
+
+bounds.push([r.lat,r.lng]);
+
+});
+
+if(bounds.length>0){
+map.fitBounds(bounds);
+}
+
+</script>
+
+</body>
+</html>
+`
+  }}
+/>
+
+         
 
           {/* Map Legend */}
           <View style={styles.mapLegend}>
@@ -845,7 +871,6 @@ export function AdminLogisticsScreen() {
                       style={styles.locationRow}
                       onPress={() => {
                         setShowMap(true);
-                        setTimeout(() => centerMapOnRider(rider), 500);
                       }}
                     >
                       <Feather name="map-pin" size={12} color="#10b981" />
@@ -974,6 +999,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0a0a0a',
+        paddingBottom:90,
+
   },
   loadingContainer: {
     flex: 1,

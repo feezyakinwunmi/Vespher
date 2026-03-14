@@ -148,11 +148,7 @@ export function AdminBusinessRequestsScreen() {
         .single();
 
       if (error) {
-        console.log('No platform settings found, using defaults');
-        setPlatformSettings({
-          rider_percentage: 50,
-          platform_percentage: 50,
-        });
+      
         setRiderPercentage('50');
         return;
       }
@@ -180,7 +176,6 @@ export function AdminBusinessRequestsScreen() {
 
       if (error) throw error;
       
-      console.log('Business requests:', data);
       setRequests(data || []);
       
     } catch (error) {
@@ -919,6 +914,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0a0a0a',
+        paddingBottom:25,
+
   },
   loadingContainer: {
     flex: 1,

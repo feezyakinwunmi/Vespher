@@ -296,26 +296,8 @@ const processAnalyticsData = (
   const totalRevenue = totalFoodRevenue + totalBusinessRevenue;
 
   // Debug log to see all components
-  console.log('📊 ANALYTICS BREAKDOWN:');
-  console.log('===== FOOD ORDERS =====');
-  console.log('Total Food Orders:', totalFoodOrders);
-  console.log('Total Food Revenue:', totalFoodRevenue);
-  console.log('Total Food Delivery Fees:', totalFoodDeliveryFees);
-  console.log('Total Food Service Fees:', totalFoodServiceFees);
-  console.log('Food Platform Income (50% delivery):', foodPlatformIncome);
-  console.log('Food Rider Earnings:', foodRiderEarnings);
-  
-  console.log('===== BUSINESS ORDERS =====');
-  console.log('Total Business Orders:', totalBusinessOrders);
-  console.log('Total Business Revenue:', totalBusinessRevenue);
-  console.log('Total Business Platform Share:', totalBusinessPlatformShare);
-  console.log('Total Business Rider Share:', totalBusinessRiderShare);
-  
-  console.log('===== TOTALS =====');
-  console.log('Total Revenue (Food + Business):', totalRevenue);
-  console.log('TOTAL PLATFORM INCOME:', totalPlatformIncome);
-  console.log('TOTAL RIDER EARNINGS:', totalRiderEarnings);
-  console.log('Check: Platform + Rider should = Revenue:', totalPlatformIncome + totalRiderEarnings);
+ 
+
 
   // Vendor stats
   const totalVendors = vendors.length;
@@ -453,12 +435,7 @@ const processAnalyticsData = (
 
 
 
-console.log('Analytics data:', {
-  totalRevenue: analytics.totalRevenue,
-  totalFoodRevenue: analytics.totalFoodRevenue,
-  totalBusinessRevenue: analytics.totalBusinessRevenue,
-  platformFees: analytics.platformFees
-});
+
   const generateOrdersByDay = (foodOrders: any[], businessOrders: any[]) => {
     const days = 7; // Show last 7 days
     const result = [];
@@ -957,6 +934,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0a0a0a',
+        paddingBottom:25,
+
   },
   loadingContainer: {
     flex: 1,

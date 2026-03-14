@@ -134,22 +134,37 @@ const [passwordStrength, setPasswordStrength] = useState<{
     }
   };
 
-  const handleOTPChange = (text: string, index: number) => {
-    const newOtp = [...otpCode];
-    newOtp[index] = text;
-    setOtpCode(newOtp);
-    setOtpError('');
+// Replace your existing handleOTPChange
+const handleOTPChange = (text: string, index: number) => {
+  // Only allow one digit
+  if (text.length > 1) text = text.slice(-1);
+  if (!/^\d?$/.test(text)) return; // only digits or empty
 
-    // Auto-focus next input
-    if (text && index < 5) {
-      otpInputs.current[index + 1]?.focus();
-    }
+  const newOtp = [...otpCode];
+  newOtp[index] = text;
+  setOtpCode(newOtp);
+  setOtpError('');
 
-    // Auto-submit when all fields are filled
-    if (newOtp.every(digit => digit !== '') && !isVerifyingOTP) {
-      handleVerifyOTP();
-    }
-  };
+  // Auto-focus next input
+  if (text && index < 5) {
+    otpInputs.current[index + 1]?.focus();
+  }
+
+  // Auto-focus previous on backspace (when field becomes empty)
+  if (!text && index > 0) {
+    otpInputs.current[index - 1]?.focus();
+  }
+};
+
+// ADD THIS useEffect right after your existing useEffects
+useEffect(() => {
+  const otpString = otpCode.join('');
+
+  // Auto-verify only when we have exactly 6 digits and not already verifying
+  if (otpString.length === 6 && !isVerifyingOTP) {
+    handleVerifyOTP();
+  }
+}, [otpCode, isVerifyingOTP]);
 
   const handleKeyPress = (e: any, index: number) => {
     // Handle backspace to focus previous input

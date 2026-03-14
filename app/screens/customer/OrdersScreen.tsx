@@ -46,6 +46,8 @@ const statusConfig: Record<OrderStatus, { label: string; color: string; icon: ke
   scheduled: { label: 'Scheduled', color: '#8b5cf6', icon: 'calendar' },
 };
 
+
+
 // Rating Modal Component
 function RatingModal({ 
   isOpen, 
@@ -65,6 +67,7 @@ function RatingModal({
   const [hover, setHover] = useState(0);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  
  const showToast = (message: string) => {
     Toast.show({
       type: 'success',
@@ -180,7 +183,8 @@ function RatingModal({
 }
 
 function OrderCard({ order, onPress }: { order: Order; onPress: () => void }) {
-   const showToast = (message: string) => {
+  
+  const showToast = (message: string) => {
     Toast.show({
       type: 'success',
       text1: message,
@@ -197,10 +201,55 @@ function OrderCard({ order, onPress }: { order: Order; onPress: () => void }) {
   const isActive = ['pending', 'confirmed', 'preparing', 'ready', 'picked_up', 'in_transit'].includes(order.status);
 
   const vendorName = order.vendor?.name || 'Vendor';
-  
+
+const [itemImage, setItemImage] = useState('https://via.placeholder.com/100');
+
   // Get the first item's image
-  const firstItem = order.items && order.items.length > 0 ? order.items[0] : null;
-  const itemImage = firstItem?.product?.image || firstItem?.image_url || 'https://via.placeholder.com/100';
+const parsedItems = Array.isArray(order.items)
+  ? order.items
+  : typeof order.items === 'string'
+    ? JSON.parse(order.items)
+    : [];
+const firstItem = parsedItems[0] || null;    
+    console.log("first item is", firstItem);
+
+
+
+
+React.useEffect(() => {
+  async function fetchImage() {
+    // Safely parse items
+    const parsedItems = Array.isArray(order.items)
+      ? order.items
+      : typeof order.items === 'string'
+        ? JSON.parse(order.items)
+        : [];
+
+    const firstItem = parsedItems[0];
+    if (!firstItem?.product_id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('image_url')
+        .eq('id', firstItem.product_id)
+        .single();
+
+      if (error || !data?.image_url) {
+        setItemImage('https://via.placeholder.com/100');
+        return;
+      }
+
+      setItemImage(data.image_url);
+    } catch (err) {
+      console.log('Error fetching product image:', err);
+      setItemImage('https://via.placeholder.com/100');
+    }
+  }
+
+  fetchImage();
+}, [order.items]);
+
 
   const handleReorder = async (e: any) => {
     e.stopPropagation();
@@ -227,11 +276,11 @@ function OrderCard({ order, onPress }: { order: Order; onPress: () => void }) {
         <View style={styles.orderHeader}>
           <View style={styles.vendorInfo}>
             <View style={styles.itemImageContainer}>
-              <Image 
-                source={{ uri: itemImage }} 
-                style={styles.itemImage}
-                onError={() => setImageError(true)}
-              />
+            <Image 
+  source={{ uri: itemImage }} 
+  style={styles.itemImage}
+  onError={() => setImageError(true)}
+/>
               {imageError && (
                 <View style={styles.itemImageFallback}>
                   <Feather name="image" size={20} color="#666" />

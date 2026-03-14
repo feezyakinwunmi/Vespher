@@ -18,6 +18,8 @@ import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../lib/supabase';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../navigation/types';
 
 type RegistrationStep = 'auth' | 'details' | 'success';
 
@@ -32,7 +34,7 @@ interface FormData {
 }
 
 export function CustomerSignupScreen() {
-  const navigation = useNavigation();
+const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>(); 
   const [step, setStep] = useState<RegistrationStep>('auth');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -173,22 +175,37 @@ export function CustomerSignupScreen() {
     }
   };
 
-  const handleOTPChange = (text: string, index: number) => {
-    const newOtp = [...otpCode];
-    newOtp[index] = text;
-    setOtpCode(newOtp);
-    setOtpError('');
+ // Replace your existing handleOTPChange
+const handleOTPChange = (text: string, index: number) => {
+  // Only allow one digit
+  if (text.length > 1) text = text.slice(-1);
+  if (!/^\d?$/.test(text)) return; // only digits or empty
 
-    // Auto-focus next input
-    if (text && index < 5) {
-      otpInputs.current[index + 1]?.focus();
-    }
+  const newOtp = [...otpCode];
+  newOtp[index] = text;
+  setOtpCode(newOtp);
+  setOtpError('');
 
-    // Auto-submit when all fields are filled
-    if (newOtp.every(digit => digit !== '') && !isVerifyingOTP) {
-      handleVerifyOTP();
-    }
-  };
+  // Auto-focus next
+  if (text && index < 5) {
+    otpInputs.current[index + 1]?.focus();
+  }
+
+  // Auto-focus previous on backspace (when field becomes empty)
+  if (!text && index > 0) {
+    otpInputs.current[index - 1]?.focus();
+  }
+};
+
+// ADD THIS NEW useEffect right after your existing useEffects
+useEffect(() => {
+  const otpString = otpCode.join('');
+
+  // Auto-verify only when we have exactly 6 digits and not already verifying
+  if (otpString.length === 6 && !isVerifyingOTP) {
+    handleVerifyOTP();
+  }
+}, [otpCode, isVerifyingOTP]);
 
   const handleKeyPress = (e: any, index: number) => {
     // Handle backspace to focus previous input
@@ -482,43 +499,39 @@ export function CustomerSignupScreen() {
           </View>
         );
 
-      case 'success':
-        return (
-          <View style={styles.successContainer}>
-            <View style={styles.successIcon}>
-              <Feather name="check-circle" size={50} color="#10b981" />
-            </View>
-            <Text style={styles.successTitle}>Welcome to veshpe! 🎉</Text>
-            <Text style={styles.successText}>
-              Your account has been created and verified successfully. Start exploring vendors and placing orders!
-            </Text>
-            
-            <View style={styles.successButtons}>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('CustomerTabs' as never)}
-                style={styles.primaryButton}
-              >
-                <LinearGradient
-                  colors={['#f97316', '#f43f5e']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.primaryGradient}
-                >
-                  <Text style={styles.primaryButtonText}>Browse Vendors</Text>
-                  <Feather name="chevron-right" size={20} color="#fff" />
-                </LinearGradient>
-              </TouchableOpacity>
+ case 'success':
+  // Auto-redirect to Login after 3.5 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      navigation.navigate('Login');
+    }, 3500); // 3.5 seconds - feels natural, gives time to read the message
 
-              <TouchableOpacity
-                onPress={() => navigation.navigate('CustomerTabs' as never)}
-                style={styles.secondaryButton}
-              >
-                <Text style={styles.secondaryButtonText}>Add Delivery Address</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        );
-    }
+    return () => clearTimeout(timer);
+  }, [navigation]);
+
+  return (
+    <View style={styles.successContainer}>
+      <View style={styles.successIcon}>
+        <Feather name="check-circle" size={64} color="#10b981" />
+      </View>
+
+      <Text style={styles.successTitle}>Account Created! 🎉</Text>
+
+      <Text style={styles.successText}>
+        Your account is now ready. Start exploring great food and vendors! 
+        <Text>Redirecting to Login....</Text>
+      </Text>
+
+      
+
+      {/* Small loading indicator to show something is happening */}
+      <ActivityIndicator
+        size="small"
+        color="#f97316"
+        style={{ marginTop: 32 }}
+      />
+    </View>
+  );  }
   };
 
   return (

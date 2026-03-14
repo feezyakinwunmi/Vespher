@@ -158,15 +158,7 @@ export function AdminDashboardScreen() {
         totalRiderEarnings,
       });
 
-      console.log('📊 Dashboard Financials:', {
-        totalRevenue,
-        platformFees: totalPlatformFees,
-        totalFoodRevenue,
-        totalBusinessRevenue,
-        totalFoodDeliveryFees,
-        totalBusinessPlatformShare,
-        totalRiderEarnings,
-      });
+   
 
     } catch (error) {
       console.error('Error fetching financial data:', error);
@@ -475,7 +467,6 @@ export function AdminDashboardScreen() {
                           <Image 
                             source={{ uri: firstItem.product.image }} 
                             style={styles.recentOrderImage}
-                            onError={() => console.log('Image failed to load')}
                           />
                         ) : (
                           <View style={styles.recentOrderImagePlaceholder}>
@@ -581,6 +572,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0a0a0a',
+        paddingBottom:25,
+
   },
   header: {
     paddingHorizontal: 16,
