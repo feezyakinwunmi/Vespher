@@ -81,7 +81,6 @@ export function AdminVendorsScreen() {
 
       if (error) throw error;
       
-      console.log('Fetched vendors:', data);
       setVendors(data || []);
     } catch (error) {
       console.error('Error fetching vendors:', error);
@@ -489,6 +488,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0a0a0a',
+        paddingBottom:60,
+
   },
   loadingContainer: {
     flex: 1,

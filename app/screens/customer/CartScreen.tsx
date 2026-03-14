@@ -681,8 +681,6 @@ useEffect(() => {
                 <Text style={styles.modalSectionTitle}>Payment Method</Text>
                 <View style={styles.paymentList}>
                   {[
-                    { value: 'cash', label: 'Cash on Delivery', icon: 'dollar-sign' },
-                    { value: 'transfer', label: 'Bank Transfer', icon: 'smartphone' },
                     { value: 'card', label: 'Card Payment', icon: 'credit-card' },
                   ].map((option) => (
                     <TouchableOpacity
@@ -836,7 +834,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0a0a0a',
-    paddingBottom:50,
+    paddingBottom:60,
   },
   header: {
     flexDirection: 'row',

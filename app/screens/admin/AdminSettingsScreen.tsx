@@ -189,7 +189,6 @@ export function AdminSettingsScreen() {
           onPress: async () => {
             try {
               await supabase.auth.signOut();
-              // Navigation will be handled by your auth state change
             } catch (error) {
               console.error('Error signing out:', error);
               showToast('Failed to sign out', 'error');
@@ -390,6 +389,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0a0a0a',
+    paddingBottom:60,
   },
   loadingContainer: {
     flex: 1,

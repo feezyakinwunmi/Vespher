@@ -32,7 +32,7 @@ const slides = [
     image: require('../assets/logo.png'), // replace with your image path
 
     title: 'Order Food',
-    description: 'Browse from 50+ local vendors and restaurants in Epe',
+    description: 'Browse from 50+ Shops, Local vendors and Restaurants  Around you',
     colors: ORANGE_GRADIENT,
   },
   {
@@ -47,8 +47,8 @@ const slides = [
     id: '3',
     icon: 'credit-card',
     image: require('../assets/box.png'), // replace with your image path
-    title: 'Secure Payment',
-    description: 'Pay with cash, card, or bank transfer - your choice',
+    title: 'quality Assurance ',
+    description: 'Get your orders in a very good healthy condition',
     colors: ORANGE_GRADIENT,
   },
 ];
