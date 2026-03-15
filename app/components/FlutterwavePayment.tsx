@@ -13,6 +13,8 @@ interface FlutterwavePaymentProps {
   phone?: string;
   onSuccess: (response: any) => void;
   onClose: () => void;
+  // New prop to handle fee data
+  onPaymentComplete?: (paymentData: any) => void;
 }
 
 export function FlutterwavePayment({
@@ -23,7 +25,8 @@ export function FlutterwavePayment({
   customerName,
   phone,
   onSuccess,
-  onClose
+  onClose,
+  onPaymentComplete
 }: FlutterwavePaymentProps) {
   
   const [loading, setLoading] = useState(true);
@@ -37,7 +40,7 @@ export function FlutterwavePayment({
     return null;
   }
 
-  // Simple HTML form that posts to Flutterwave
+  // Updated HTML to capture fee information
   const htmlContent = `
     <!DOCTYPE html>
     <html>
@@ -113,10 +116,11 @@ export function FlutterwavePayment({
         <input type="hidden" name="tx_ref" value="${reference}">
         <input type="hidden" name="amount" value="${amount}">
         <input type="hidden" name="currency" value="NGN">
-<input type="hidden" name="customer[email]" value="${email}">        <input type="hidden" name="customer[name]" value="${customerName || ''}">
+        <input type="hidden" name="customer[email]" value="${email}">
+        <input type="hidden" name="customer[name]" value="${customerName || ''}">
         <input type="hidden" name="customer[phonenumber]" value="${phone || ''}">
         <input type="hidden" name="payment_options" value="card,ussd,banktransfer">
-<input type="hidden" name="redirect_url" value="about:blank">
+        <input type="hidden" name="redirect_url" value="about:blank">
       </form>
 
       <script>
@@ -127,52 +131,91 @@ export function FlutterwavePayment({
           }, 1500);
         };
 
-        // Monitor for successful payment
-        if (window.location.href.includes('status=successful')) {
-          window.ReactNativeWebView.postMessage(JSON.stringify({
-            event: 'success',
-            reference: '${reference}'
-          }));
-        }
-
-          setInterval(function() {
-    if (window.location.href.includes('status=successful')) {
-      window.ReactNativeWebView.postMessage(JSON.stringify({
-        event: 'success',
-        reference: '${reference}'
-      }));
-    }
-  }, 1000);
+        // Monitor for successful payment and capture fee
+        setInterval(function() {
+          if (window.location.href.includes('status=successful')) {
+            // Try to get transaction details from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const transactionId = urlParams.get('transaction_id');
+            const txRef = urlParams.get('tx_ref');
+            
+            window.ReactNativeWebView.postMessage(JSON.stringify({
+              event: 'success',
+              reference: txRef || '${reference}',
+              transaction_id: transactionId,
+              // Note: Actual fee amount will come from webhook, but we pass what we have
+              url_data: window.location.href
+            }));
+          }
+        }, 1000);
       </script>
     </body>
     </html>
   `;
 
- const handleNavigationStateChange = (navState: any) => {
-  const { url } = navState;
-  console.log('Navigated to:', url);
+  const handleNavigationStateChange = (navState: any) => {
+    const { url } = navState;
+    console.log('Navigated to:', url);
 
-  // Check for successful payment - NOW CATCHES IT
-  if (url.includes('status=completed') || url.includes('status=successful')) {
-    console.log('✅ Payment successful detected!');
-    onSuccess({ 
-      tx_ref: reference, 
-      status: 'successful',
-      transaction_id: url.match(/transaction_id=([^&]*)/)?.[1] 
-    });
-  }
-  
-  // Check for cancelled payment
-  if (url.includes('status=cancelled')) {
-    onClose();
-  }
-};
+    // Check for successful payment
+    if (url.includes('status=completed') || url.includes('status=successful')) {
+      console.log('✅ Payment successful detected!');
+      
+      // Extract transaction details from URL
+      const transactionId = url.match(/transaction_id=([^&]*)/)?.[1];
+      const txRef = url.match(/tx_ref=([^&]*)/)?.[1] || reference;
+      
+      // Create payment data object
+      const paymentData = {
+        tx_ref: txRef,
+        transaction_id: transactionId,
+        amount: amount,
+        status: 'successful',
+        // Note: The actual fee will come from webhook, but we pass what we have
+        url: url
+      };
+      
+      // Call onPaymentComplete if provided
+      if (onPaymentComplete) {
+        onPaymentComplete(paymentData);
+      }
+      
+      onSuccess({ 
+        tx_ref: txRef, 
+        status: 'successful',
+        transaction_id: transactionId
+      });
+    }
+    
+    // Check for cancelled payment
+    if (url.includes('status=cancelled')) {
+      onClose();
+    }
+  };
 
   const handleMessage = (event: any) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
+      console.log('Message from WebView:', data);
+      
       if (data.event === 'success') {
-        onSuccess({ tx_ref: data.reference });
+        // Create payment data from message
+        const paymentData = {
+          tx_ref: data.reference,
+          transaction_id: data.transaction_id,
+          amount: amount,
+          status: 'successful'
+        };
+        
+        // Call onPaymentComplete if provided
+        if (onPaymentComplete) {
+          onPaymentComplete(paymentData);
+        }
+        
+        onSuccess({ 
+          tx_ref: data.reference,
+          transaction_id: data.transaction_id
+        });
       }
     } catch (error) {
       console.error('Error parsing message:', error);
@@ -240,6 +283,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0a0a0a',
+    paddingTop:40,
   },
   header: {
     flexDirection: 'row',

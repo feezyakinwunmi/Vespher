@@ -31,6 +31,7 @@ export function AdminOrderDetailsScreen() {
   const [vendor, setVendor] = useState<any>(null);
   const [customer, setCustomer] = useState<any>(null);
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+  const [showFinancialBreakdown, setShowFinancialBreakdown] = useState(false);
 
   useEffect(() => {
     fetchOrderDetails();
@@ -173,6 +174,12 @@ export function AdminOrderDetailsScreen() {
     );
   }
 
+  // Calculate platform share from delivery (50%)
+  const platformDeliveryShare = order.delivery_fee ? order.delivery_fee * 0.5 : 0;
+  
+  // Calculate rider share from delivery (50%)
+  const riderShare = order.delivery_fee ? order.delivery_fee * 0.5 : 0;
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -253,10 +260,152 @@ export function AdminOrderDetailsScreen() {
               </View>
             )}
             <View style={[styles.summaryRow, styles.totalRow]}>
-              <Text style={styles.totalLabel}>Total</Text>
+              <Text style={styles.totalLabel}>Customer Total</Text>
               <Text style={styles.totalValue}>₦{order.total?.toLocaleString() || 0}</Text>
             </View>
           </View>
+        </View>
+
+        {/* FINANCIAL BREAKDOWN - UPDATED SECTION */}
+        <View style={styles.section}>
+          <TouchableOpacity 
+            style={styles.accordionHeader}
+            onPress={() => setShowFinancialBreakdown(!showFinancialBreakdown)}
+          >
+            <Text style={styles.sectionTitle}>Financial Breakdown</Text>
+            <Feather 
+              name={showFinancialBreakdown ? "chevron-up" : "chevron-down"} 
+              size={20} 
+              color="#f97316" 
+            />
+          </TouchableOpacity>
+
+          {showFinancialBreakdown && (
+            <View style={styles.financialCard}>
+              {/* Platform Commission (from order) */}
+              <View style={styles.financialRow}>
+                <View style={styles.financialLabelContainer}>
+                  <Feather name="percent" size={14} color="#f97316" />
+                  <Text style={styles.financialLabel}>Platform Commission</Text>
+                </View>
+                <Text style={styles.financialValue}>
+                  ₦{order.platform_commission?.toLocaleString() || 0}
+                </Text>
+              </View>
+              <Text style={styles.financialSubtext}>
+                ({order.platform_commission_percentage || 10}% of ₦{order.subtotal?.toLocaleString()})
+              </Text>
+
+              {/* Flutterwave Fee */}
+              <View style={styles.financialRow}>
+                <View style={styles.financialLabelContainer}>
+                  <Feather name="credit-card" size={14} color="#ef4444" />
+                  <Text style={styles.financialLabel}>Flutterwave Fee</Text>
+                </View>
+                <Text style={[styles.financialValue, styles.feeText]}>
+                  -₦{order.flutterwave_fee?.toLocaleString() || 0}
+                </Text>
+              </View>
+              <Text style={styles.financialSubtext}>
+                (2% of ₦{order.subtotal?.toLocaleString()})
+              </Text>
+
+              {/* Platform Delivery Share (50% of delivery) */}
+              <View style={styles.financialRow}>
+                <View style={styles.financialLabelContainer}>
+                  <Feather name="truck" size={14} color="#f97316" />
+                  <Text style={styles.financialLabel}>Platform Delivery Share</Text>
+                </View>
+                <Text style={styles.financialValue}>
+                  ₦{platformDeliveryShare.toLocaleString()}
+                </Text>
+              </View>
+              <Text style={styles.financialSubtext}>
+                (50% of ₦{order.delivery_fee?.toLocaleString()} delivery fee)
+              </Text>
+
+              {/* Platform Net Earnings (Commission - Flutterwave) */}
+              <View style={styles.financialRow}>
+                <View style={styles.financialLabelContainer}>
+                  <Feather name="trending-up" size={14} color="#10b981" />
+                  <Text style={styles.financialLabel}>Platform Net from Order</Text>
+                </View>
+                <Text style={[styles.financialValue, { color: '#10b981' }]}>
+                  ₦{order.platform_net_earnings?.toLocaleString() || 0}
+                </Text>
+              </View>
+
+              {/* TOTAL PLATFORM INCOME (Delivery Share + Net Earnings) */}
+              <View style={[styles.financialRow, styles.financialTotalRow]}>
+                <View style={styles.financialLabelContainer}>
+                  <Feather name="briefcase" size={14} color="#f97316" />
+                  <Text style={styles.financialTotalLabel}>TOTAL PLATFORM INCOME</Text>
+                </View>
+                <Text style={styles.financialTotalValue}>
+                  ₦{(platformDeliveryShare + (order.platform_net_earnings || 0)).toLocaleString()}
+                </Text>
+              </View>
+
+              <View style={styles.financialDivider} />
+
+              {/* Vendor Payout */}
+              <View style={styles.financialRow}>
+                <View style={styles.financialLabelContainer}>
+                  <Feather name="home" size={14} color="#8b5cf6" />
+                  <Text style={styles.financialLabel}>Vendor Payout</Text>
+                </View>
+                <Text style={styles.financialValue}>
+                  ₦{(order.subtotal - (order.platform_commission || 0)).toLocaleString()}
+                </Text>
+              </View>
+
+              {/* Rider Payout (50% of delivery) */}
+              <View style={styles.financialRow}>
+                <View style={styles.financialLabelContainer}>
+                  <Feather name="user" size={14} color="#10b981" />
+                  <Text style={styles.financialLabel}>Rider Payout</Text>
+                </View>
+                <Text style={styles.financialValue}>
+                  ₦{riderShare.toLocaleString()}
+                </Text>
+              </View>
+
+              {/* Discount Info (if any) */}
+              {order.discount > 0 && (
+                <View style={styles.discountInfo}>
+                  <Text style={styles.discountInfoText}>
+                    ℹ️ Discount of ₦{order.discount.toLocaleString()} applied
+                    {order.discount_type === 'first_order' ? ' (First Order - Platform paid)' : ''}
+                    {order.discount_type === 'vendor_promo' ? ' (Vendor Promo - Vendor paid)' : ''}
+                  </Text>
+                </View>
+              )}
+
+              {/* Payment Reference if available */}
+              {order.payment_reference && (
+                <View style={styles.paymentReference}>
+                  <Text style={styles.paymentReferenceLabel}>Payment Reference:</Text>
+                  <Text style={styles.paymentReferenceValue}>{order.payment_reference}</Text>
+                </View>
+              )}
+
+              {/* Gateway Response (if available) */}
+              {order.payment_gateway_response && (
+                <TouchableOpacity 
+                  style={styles.viewResponseButton}
+                  onPress={() => {
+                    Alert.alert(
+                      'Gateway Response',
+                      JSON.stringify(order.payment_gateway_response, null, 2),
+                      [{ text: 'OK' }]
+                    );
+                  }}
+                >
+                  <Text style={styles.viewResponseText}>View Gateway Response</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
         </View>
 
         {/* Customer Info */}
@@ -444,8 +593,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0a0a0a',
-        paddingBottom:60,
-
+    paddingBottom:60,
   },
   loadingContainer: {
     flex: 1,
@@ -539,6 +687,12 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginBottom: 12,
   },
+  accordionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   itemCard: {
     flexDirection: 'row',
     backgroundColor: '#1a1a1a',
@@ -626,6 +780,101 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: '#f97316',
+  },
+  // Financial styles
+  financialCard: {
+    backgroundColor: '#1a1a1a',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(249,115,22,0.2)',
+  },
+  financialRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  financialLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  financialLabel: {
+    fontSize: 13,
+    color: '#fff',
+  },
+  financialValue: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#fff',
+  },
+  financialSubtext: {
+    fontSize: 11,
+    color: '#666',
+    marginBottom: 12,
+    marginLeft: 22,
+  },
+  feeText: {
+    color: '#ef4444',
+  },
+  financialTotalRow: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.05)',
+  },
+  financialTotalLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#f97316',
+  },
+  financialTotalValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#f97316',
+  },
+  financialDivider: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    marginVertical: 12,
+  },
+  discountInfo: {
+    marginTop: 12,
+    padding: 8,
+    backgroundColor: 'rgba(249,115,22,0.1)',
+    borderRadius: 6,
+  },
+  discountInfoText: {
+    fontSize: 11,
+    color: '#f97316',
+    textAlign: 'center',
+  },
+  paymentReference: {
+    marginTop: 12,
+    padding: 8,
+    backgroundColor: 'rgba(249,115,22,0.1)',
+    borderRadius: 6,
+  },
+  paymentReferenceLabel: {
+    fontSize: 11,
+    color: '#666',
+    marginBottom: 2,
+  },
+  paymentReferenceValue: {
+    fontSize: 12,
+    color: '#f97316',
+  },
+  viewResponseButton: {
+    marginTop: 12,
+    padding: 8,
+    backgroundColor: '#2a2a2a',
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  viewResponseText: {
+    color: '#f97316',
+    fontSize: 12,
   },
   infoCard: {
     backgroundColor: '#1a1a1a',

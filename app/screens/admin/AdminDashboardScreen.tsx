@@ -256,10 +256,9 @@ export function AdminDashboardScreen() {
             {/* Total Revenue Card - REAL DATA */}
             <LinearGradient
               colors={['#10b981', '#059669']}
-              style={[styles.statCard, { width: '47%' }]}
+              style={[styles.statCard, { width: '100%' }]}
             >
               <View style={styles.statIconContainer}>
-                <Feather name="dollar-sign" size={24} color="#fff" />
               </View>
               <Text style={styles.statNumber}>
                 {loadingFinancials ? '...' : formatCurrency(financials.totalRevenue).replace('₦', '')}
@@ -273,25 +272,7 @@ export function AdminDashboardScreen() {
               )}
             </LinearGradient>
 
-            {/* Platform Fees Card - REAL DATA */}
-            <LinearGradient
-              colors={['#8b5cf6', '#7c3aed']}
-              style={[styles.statCard, { width: '47%' }]}
-            >
-              <View style={styles.statIconContainer}>
-                <Feather name="percent" size={24} color="#fff" />
-              </View>
-              <Text style={styles.statNumber}>
-                {loadingFinancials ? '...' : formatCurrency(financials.platformFees).replace('₦', '')}
-              </Text>
-              <Text style={styles.statLabel}>Platform Income </Text>
-              {!loadingFinancials && (
-                <View style={styles.metricBreakdown}>
-                  <Text style={styles.metricBreakdownText}>🍔 {formatCurrency(financials.totalFoodDeliveryFees * 0.5).replace('₦', '')}</Text>
-                  <Text style={styles.metricBreakdownText}>📦 {formatCurrency(financials.totalBusinessPlatformShare).replace('₦', '')}</Text>
-                </View>
-              )}
-            </LinearGradient>
+        
           </View>
 
           {/* Analytics Dashboard Button */}

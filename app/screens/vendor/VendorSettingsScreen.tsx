@@ -12,6 +12,7 @@ import {
   TextInput,
   Switch,
   Modal,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -25,13 +26,15 @@ import { supabase } from '../../lib/supabase';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import Toast from 'react-native-toast-message';
+
 type VendorScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
-type SettingsTab = 'profile' | 'business' | 'bank' | 'preferences' | 'promos';
+type SettingsTab = 'profile' | 'business' | 'bank' | 'preferences' | 'promos' | 'support';
 type NotificationKey = keyof VendorProfile['notifications'];
+
 const banks = ['GTBank', 'First Bank', 'UBA', 'Zenith', 'Access', 'Kuda', 'OPay', 'PalmPay'];
 
-
 type DayKey = keyof BusinessHours;
+
 const businessCategories = [
   { value: 'restaurant', label: 'Restaurant' },
   { value: 'fastfood', label: 'Fast Food' },
@@ -51,11 +54,360 @@ const days: { key: DayKey; label: string }[] = [
   { key: 'sun', label: 'Sunday' },
 ];
 
+const notificationItems: { key: NotificationKey; label: string }[] = [
+  { key: 'newOrders', label: 'New Order Alerts' },
+  { key: 'orderUpdates', label: 'Order Status Updates' },
+  { key: 'payments', label: 'Payment Notifications' },
+];
+
+// Terms & Conditions Page
+function TermsConditionsScreen({ onClose }: { onClose: () => void }) {
+  return (
+    <Modal animationType="slide" transparent={false} onRequestClose={onClose}>
+      <SafeAreaView style={styles.modalContainer}>
+        <View style={styles.modalHeader}>
+          <TouchableOpacity onPress={onClose} style={styles.modalCloseButton}>
+            <Feather name="x" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.modalTitle}>Terms & Conditions</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        
+        <ScrollView style={styles.modalContent}>
+          <Text style={styles.modalSectionTitle}>1. Acceptance of Terms</Text>
+          <Text style={styles.modalText}>
+            By accessing and using Vesphe as a vendor, you agree to be bound by these Terms and Conditions. 
+            If you do not agree with any part of these terms, you may not use our platform.
+          </Text>
+
+          <Text style={styles.modalSectionTitle}>2. Vendor Responsibilities</Text>
+          <Text style={styles.modalText}>
+            • Maintain accurate menu items and pricing{"\n"}
+            • Process orders in a timely manner{"\n"}
+            • Ensure food quality and safety standards{"\n"}
+            • Provide accurate business information{"\n"}
+            • Respond to customer inquiries promptly
+          </Text>
+
+          <Text style={styles.modalSectionTitle}>3. Commission and Fees</Text>
+          <Text style={styles.modalText}>
+            Vesphe charges a commission on each order processed through our platform. The current commission 
+            rate is displayed in your dashboard. This rate may be subject to change with prior notice.
+          </Text>
+
+          <Text style={styles.modalSectionTitle}>4. Payment Terms</Text>
+          <Text style={styles.modalText}>
+            Vendor payouts are processed on a weekly basis. Payments are made to the bank account information 
+            provided in your settings. You are responsible for ensuring your bank details are accurate.
+          </Text>
+
+          <Text style={styles.modalSectionTitle}>5. Cancellation and Refunds</Text>
+          <Text style={styles.modalText}>
+            Vendors may cancel orders only in exceptional circumstances. Refunds are handled according to 
+            Vesphe's refund policy. Repeated cancellations may affect your vendor standing.
+          </Text>
+
+          <Text style={styles.modalSectionTitle}>6. Platform Usage</Text>
+          <Text style={styles.modalText}>
+            You agree not to misuse the platform, attempt to circumvent commission fees, or engage in any 
+            fraudulent activities. Vesphe reserves the right to suspend accounts violating these terms.
+          </Text>
+
+          <Text style={styles.modalSectionTitle}>7. Limitation of Liability</Text>
+          <Text style={styles.modalText}>
+            Vesphe is not liable for any indirect, incidental, or consequential damages arising from your 
+            use of the platform. Our total liability is limited to the commissions earned from your account.
+          </Text>
+
+          <Text style={styles.modalSectionTitle}>8. Modifications</Text>
+          <Text style={styles.modalText}>
+            Vesphe reserves the right to modify these terms at any time. Continued use of the platform 
+            constitutes acceptance of modified terms.
+          </Text>
+
+          <Text style={styles.modalLastUpdated}>Last Updated: March 15, 2026</Text>
+        </ScrollView>
+      </SafeAreaView>
+    </Modal>
+  );
+}
+
+// Privacy Policy Page
+function PrivacyPolicyScreen({ onClose }: { onClose: () => void }) {
+  return (
+    <Modal animationType="slide" transparent={false} onRequestClose={onClose}>
+      <SafeAreaView style={styles.modalContainer}>
+        <View style={styles.modalHeader}>
+          <TouchableOpacity onPress={onClose} style={styles.modalCloseButton}>
+            <Feather name="x" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.modalTitle}>Privacy Policy</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        
+        <ScrollView style={styles.modalContent}>
+          <Text style={styles.modalSectionTitle}>Information We Collect</Text>
+          <Text style={styles.modalText}>
+            • Business information (name, address, contact details){"\n"}
+            • Bank account details for payouts{"\n"}
+            • Menu and pricing information{"\n"}
+            • Order history and performance data{"\n"}
+            • Communications with customers
+          </Text>
+
+          <Text style={styles.modalSectionTitle}>How We Use Your Information</Text>
+          <Text style={styles.modalText}>
+            • Process orders and payments{"\n"}
+            • Communicate about orders and platform updates{"\n"}
+            • Improve our services and vendor experience{"\n"}
+            • Comply with legal obligations{"\n"}
+            • Prevent fraud and ensure platform security
+          </Text>
+
+          <Text style={styles.modalSectionTitle}>Data Sharing</Text>
+          <Text style={styles.modalText}>
+            We share your information with:
+            • Customers (business name, menu, contact for order purposes){"\n"}
+            • Payment processors for transaction handling{"\n"}
+            • Delivery partners for order fulfillment{"\n"}
+            • Legal authorities when required by law
+          </Text>
+
+          <Text style={styles.modalSectionTitle}>Data Security</Text>
+          <Text style={styles.modalText}>
+            We implement industry-standard security measures to protect your data. However, no method of 
+            transmission over the internet is 100% secure. You are responsible for maintaining the 
+            confidentiality of your account credentials.
+          </Text>
+
+          <Text style={styles.modalSectionTitle}>Your Rights</Text>
+          <Text style={styles.modalText}>
+            You have the right to:
+            • Access your personal data{"\n"}
+            • Correct inaccurate data{"\n"}
+            • Request data deletion{"\n"}
+            • Opt out of marketing communications
+          </Text>
+
+          <Text style={styles.modalLastUpdated}>Last Updated: March 15, 2026</Text>
+        </ScrollView>
+      </SafeAreaView>
+    </Modal>
+  );
+}
+
+// Help & Support Page
+function HelpSupportScreen({ onClose }: { onClose: () => void }) {
+  const handleCall = () => {
+    Linking.openURL('tel:09161460898');
+  };
+
+  const handleWhatsApp = () => {
+    Linking.openURL('https://wa.me/2349161460898');
+  };
+
+  const handleEmail = () => {
+    Linking.openURL('mailto:info.phantomire@gmail.com');
+  };
+
+  return (
+    <Modal animationType="slide" transparent={false} onRequestClose={onClose}>
+      <SafeAreaView style={styles.modalContainer}>
+        <View style={styles.modalHeader}>
+          <TouchableOpacity onPress={onClose} style={styles.modalCloseButton}>
+            <Feather name="x" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.modalTitle}>Help & Support</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        
+        <ScrollView style={styles.modalContent}>
+          <Text style={styles.modalSectionTitle}>Contact Us</Text>
+          
+          <TouchableOpacity style={styles.contactOption} onPress={handleCall}>
+            <View style={styles.contactIconContainer}>
+              <Feather name="phone" size={24} color="#f97316" />
+            </View>
+            <View style={styles.contactInfo}>
+              <Text style={styles.contactLabel}>Call Us</Text>
+              <Text style={styles.contactValue}>09161460898</Text>
+              <Text style={styles.contactNote}>Mon-Fri, 9am - 6pm</Text>
+            </View>
+            <Feather name="chevron-right" size={20} color="#666" />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.contactOption} onPress={handleWhatsApp}>
+            <View style={styles.contactIconContainer}>
+              <Feather name="message-circle" size={24} color="#25D366" />
+            </View>
+            <View style={styles.contactInfo}>
+              <Text style={styles.contactLabel}>WhatsApp</Text>
+              <Text style={styles.contactValue}>09161460898</Text>
+              <Text style={styles.contactNote}>Instant messaging support</Text>
+            </View>
+            <Feather name="chevron-right" size={20} color="#666" />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.contactOption} onPress={handleEmail}>
+            <View style={styles.contactIconContainer}>
+              <Feather name="mail" size={24} color="#f97316" />
+            </View>
+            <View style={styles.contactInfo}>
+              <Text style={styles.contactLabel}>Email</Text>
+              <Text style={styles.contactValue}>info.phantomire@gmail.com</Text>
+              <Text style={styles.contactNote}>24hr response time</Text>
+            </View>
+            <Feather name="chevron-right" size={20} color="#666" />
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          <Text style={styles.modalSectionTitle}>Frequently Asked Questions</Text>
+          
+          <View style={styles.faqItem}>
+            <Text style={styles.faqQuestion}>How do I update my menu?</Text>
+            <Text style={styles.faqAnswer}>
+              Go to your dashboard and click on "Menu" to add, edit, or remove items. Changes are reflected immediately.
+            </Text>
+          </View>
+
+          <View style={styles.faqItem}>
+            <Text style={styles.faqQuestion}>When do I get paid?</Text>
+            <Text style={styles.faqAnswer}>
+              Payouts 1-2 working days after request. You can track your earnings in the Analytics section.
+            </Text>
+          </View>
+
+          <View style={styles.faqItem}>
+            <Text style={styles.faqQuestion}>How do I handle customer complaints?</Text>
+            <Text style={styles.faqAnswer}>
+              You can message customers directly through the order details page. For unresolved issues, contact our support team.
+            </Text>
+          </View>
+
+          <View style={styles.faqItem}>
+            <Text style={styles.faqQuestion}>What is the commission rate?</Text>
+            <Text style={styles.faqAnswer}>
+              The current commission rate is displayed in your dashboard. This rate is applied to each order's subtotal.
+            </Text>
+          </View>
+
+          <View style={styles.faqItem}>
+            <Text style={styles.faqQuestion}>Can I temporarily close my business?</Text>
+            <Text style={styles.faqAnswer}>
+              Yes, you can update your business hours or temporarily mark your business as closed in Settings.
+            </Text>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </Modal>
+  );
+}
+
+// Q&A Page
+function QAScreen({ onClose }: { onClose: () => void }) {
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+
+  const faqs = [
+    {
+      question: "How do I start receiving orders?",
+      answer: "Once your account is approved, ensure your menu is complete, your business hours are set correctly, and you're open for business. Orders will start appearing in your dashboard automatically."
+    },
+    {
+      question: "What happens when I receive a new order?",
+      answer: "You'll receive a notification and the order will appear in your Orders tab. You have a limited time to accept the order before it's automatically cancelled."
+    },
+    {
+      question: "How do I update my menu prices?",
+      answer: "Go to the Menu section from your dashboard. Click on any item to edit its price, description, or availability. Changes take effect immediately."
+    },
+    {
+      question: "Why was my order cancelled?",
+      answer: "Orders may be cancelled if not accepted within the time limit, if payment fails, or if you're unable to fulfill the order. You'll be notified of the reason."
+    },
+    {
+      question: "How do withdrawal requests work?",
+      answer: "You can request withdrawals from your earnings once you have a minimum balance. Requests are processed within 1-3 business days to your registered bank account."
+    },
+    {
+      question: "Can I offer my own promotions?",
+      answer: "Yes! You can create promo codes in the Promos section. You can set percentage or fixed discounts, minimum order amounts, and usage limits."
+    },
+    {
+      question: "How do delivery fees work?",
+      answer: "Delivery fees are calculated based on distance and are split 50/50 between the platform and rider. You don't pay delivery fees as a vendor."
+    },
+    {
+      question: "What if a customer reports an issue with their order?",
+      answer: "Contact the customer through the app to resolve the issue. For refunds or disputes, our support team will guide you through the process."
+    },
+    {
+      question: "How do I change my bank details?",
+      answer: "Go to Settings → Bank tab to update your account information. Changes will be verified before the next payout."
+    },
+    {
+      question: "Is there a penalty for cancelling orders?",
+      answer: "Frequent order cancellations may affect your vendor rating and could lead to account suspension. Only cancel in genuine emergencies."
+    }
+  ];
+
+  return (
+    <Modal animationType="slide" transparent={false} onRequestClose={onClose}>
+      <SafeAreaView style={styles.modalContainer}>
+        <View style={styles.modalHeader}>
+          <TouchableOpacity onPress={onClose} style={styles.modalCloseButton}>
+            <Feather name="x" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.modalTitle}>Frequently Asked Questions</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        
+        <ScrollView style={styles.modalContent}>
+          {faqs.map((faq, index) => (
+            <View key={index} style={styles.faqContainer}>
+              <TouchableOpacity
+                style={styles.faqHeader}
+                onPress={() => setExpandedIndex(expandedIndex === index ? null : index)}
+              >
+                <Text style={styles.faqHeaderQuestion}>{faq.question}</Text>
+                <Feather
+                  name={expandedIndex === index ? "chevron-up" : "chevron-down"}
+                  size={20}
+                  color="#f97316"
+                />
+              </TouchableOpacity>
+              
+              {expandedIndex === index && (
+                <View style={styles.faqBody}>
+                  <Text style={styles.faqBodyAnswer}>{faq.answer}</Text>
+                </View>
+              )}
+            </View>
+          ))}
+        </ScrollView>
+      </SafeAreaView>
+    </Modal>
+  );
+}
+
 export function VendorSettingsScreen() {
-    const navigation = useNavigation<VendorScreenNavigationProp>();
+  const navigation = useNavigation<VendorScreenNavigationProp>();
   const { signOut } = useAuth();
   const { profile, isLoading, updateProfile } = useVendorProfile();
-   const showToast = (message: string) => {
+  
+  const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState<any>({});
+  const [isUploading, setIsUploading] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  
+  // Modal states
+  const [showTerms, setShowTerms] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const [showQA, setShowQA] = useState(false);
+  
+  const showToast = (message: string) => {
     Toast.show({
       type: 'success',
       text1: message,
@@ -63,16 +415,6 @@ export function VendorSettingsScreen() {
       visibilityTime: 2000,
     });
   };
-  const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
-  const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState<any>({});
-  const [isUploading, setIsUploading] = useState(false);
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
-const notificationItems: { key: NotificationKey; label: string }[] = [
-  { key: 'newOrders', label: 'New Order Alerts' },
-  { key: 'orderUpdates', label: 'Order Status Updates' },
-  { key: 'payments', label: 'Payment Notifications' },
-];
 
   const handleLogout = async () => {
     Alert.alert(
@@ -84,7 +426,7 @@ const notificationItems: { key: NotificationKey; label: string }[] = [
           text: 'Logout',
           style: 'destructive',
           onPress: async () => {
-             await signOut();
+            await signOut();
           },
         },
       ]
@@ -114,6 +456,7 @@ const notificationItems: { key: NotificationKey; label: string }[] = [
     { id: 'bank', label: 'Bank', icon: 'credit-card' },
     { id: 'preferences', label: 'Settings', icon: 'clock' },
     { id: 'promos', label: 'Promos', icon: 'tag' },
+    { id: 'support', label: 'Help', icon: 'help-circle' },
   ];
 
   const handleEdit = () => {
@@ -153,7 +496,6 @@ const notificationItems: { key: NotificationKey; label: string }[] = [
         const fileName = `${type}-${Date.now()}.jpg`;
         const filePath = `vendors/${profile.id}/${fileName}`;
 
-        // Convert uri to blob
         const response = await fetch(file.uri);
         const blob = await response.blob();
 
@@ -181,12 +523,60 @@ const notificationItems: { key: NotificationKey; label: string }[] = [
         showToast('Image uploaded successfully');
       } catch (error) {
         console.error('Error uploading image:', error);
-       showToast('Failed to upload image');
+        showToast('Failed to upload image');
       } finally {
         setIsUploading(false);
       }
     }
   };
+
+  const renderSupportTab = () => (
+    <View style={styles.tabContent}>
+      <TouchableOpacity style={styles.supportOption} onPress={() => setShowQA(true)}>
+        <View style={styles.supportIconContainer}>
+          <Feather name="help-circle" size={24} color="#f97316" />
+        </View>
+        <View style={styles.supportInfo}>
+          <Text style={styles.supportTitle}>Frequently Asked Questions</Text>
+          <Text style={styles.supportSubtitle}>Find answers to common questions</Text>
+        </View>
+        <Feather name="chevron-right" size={20} color="#666" />
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.supportOption} onPress={() => setShowHelp(true)}>
+        <View style={styles.supportIconContainer}>
+          <Feather name="headphones" size={24} color="#f97316" />
+        </View>
+        <View style={styles.supportInfo}>
+          <Text style={styles.supportTitle}>Help & Support</Text>
+          <Text style={styles.supportSubtitle}>Contact our support team</Text>
+        </View>
+        <Feather name="chevron-right" size={20} color="#666" />
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.supportOption} onPress={() => setShowTerms(true)}>
+        <View style={styles.supportIconContainer}>
+          <Feather name="file-text" size={24} color="#f97316" />
+        </View>
+        <View style={styles.supportInfo}>
+          <Text style={styles.supportTitle}>Terms & Conditions</Text>
+          <Text style={styles.supportSubtitle}>Read our terms of service</Text>
+        </View>
+        <Feather name="chevron-right" size={20} color="#666" />
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.supportOption} onPress={() => setShowPrivacy(true)}>
+        <View style={styles.supportIconContainer}>
+          <Feather name="lock" size={24} color="#f97316" />
+        </View>
+        <View style={styles.supportInfo}>
+          <Text style={styles.supportTitle}>Privacy Policy</Text>
+          <Text style={styles.supportSubtitle}>How we handle your data</Text>
+        </View>
+        <Feather name="chevron-right" size={20} color="#666" />
+      </TouchableOpacity>
+    </View>
+  );
 
   const renderProfileTab = () => (
     <View style={styles.tabContent}>
@@ -256,20 +646,20 @@ const notificationItems: { key: NotificationKey; label: string }[] = [
       </View>
 
       <View style={styles.settingsCard}>
-  <TouchableOpacity
-    onPress={() => navigation.navigate('VendorAddresses')}
-    style={styles.menuItem}
-  >
-    <View style={styles.menuItemLeft}>
-      <Feather name="map-pin" size={20} color="#f97316" />
-      <View>
-        <Text style={styles.menuItemTitle}>Business Addresses</Text>
-        <Text style={styles.menuItemSubtitle}>Manage your pickup and delivery locations</Text>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('VendorAddresses')}
+          style={styles.menuItem}
+        >
+          <View style={styles.menuItemLeft}>
+            <Feather name="map-pin" size={20} color="#f97316" />
+            <View>
+              <Text style={styles.menuItemTitle}>Business Addresses</Text>
+              <Text style={styles.menuItemSubtitle}>Manage your pickup and delivery locations</Text>
+            </View>
+          </View>
+          <Feather name="chevron-right" size={20} color="#666" />
+        </TouchableOpacity>
       </View>
-    </View>
-    <Feather name="chevron-right" size={20} color="#666" />
-  </TouchableOpacity>
-</View>
     </View>
   );
 
@@ -349,34 +739,34 @@ const notificationItems: { key: NotificationKey; label: string }[] = [
         )}
       </View>
 
-     <View style={styles.formGroup}>
-  <Text style={styles.label}>Category</Text>
-  {isEditing ? (
-    <View style={styles.pickerContainer}>
-      {businessCategories.map((cat) => (
-        <TouchableOpacity
-          key={cat.value}
-          onPress={() => setFormData({ ...formData, businessCategory: cat.value })}
-          style={[
-            styles.categoryChip,
-            formData.businessCategory === cat.value && styles.categoryChipSelected,
-          ]}
-        >
-          <Text style={[
-            styles.categoryChipText,
-            formData.businessCategory === cat.value && styles.categoryChipTextSelected,
-          ]}>
-            {cat.label}
+      <View style={styles.formGroup}>
+        <Text style={styles.label}>Category</Text>
+        {isEditing ? (
+          <View style={styles.pickerContainer}>
+            {businessCategories.map((cat) => (
+              <TouchableOpacity
+                key={cat.value}
+                onPress={() => setFormData({ ...formData, businessCategory: cat.value })}
+                style={[
+                  styles.categoryChip,
+                  formData.businessCategory === cat.value && styles.categoryChipSelected,
+                ]}
+              >
+                <Text style={[
+                  styles.categoryChipText,
+                  formData.businessCategory === cat.value && styles.categoryChipTextSelected,
+                ]}>
+                  {cat.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.value}>
+            {businessCategories.find(c => c.value === profile.businessCategory)?.label || profile.businessCategory || 'Not set'}
           </Text>
-        </TouchableOpacity>
-      ))}
-    </View>
-  ) : (
-    <Text style={styles.value}>
-      {businessCategories.find(c => c.value === profile.businessCategory)?.label || profile.businessCategory || 'Not set'}
-    </Text>
-  )}
-</View>
+        )}
+      </View>
 
       <View style={styles.formGroup}>
         <Text style={styles.label}>Business Address</Text>
@@ -420,7 +810,7 @@ const notificationItems: { key: NotificationKey; label: string }[] = [
         <Text style={styles.label}>Bank Name</Text>
         {isEditing ? (
           <View style={styles.pickerContainer}>
-            {['GTBank', 'First Bank', 'UBA', 'Zenith', 'Access', 'Kuda', 'OPay', 'PalmPay'].map((bank) => (
+            {banks.map((bank) => (
               <TouchableOpacity
                 key={bank}
                 onPress={() => setFormData({ ...formData, bankName: bank })}
@@ -479,39 +869,39 @@ const notificationItems: { key: NotificationKey; label: string }[] = [
 
   const renderPreferencesTab = () => (
     <View style={styles.tabContent}>
-     <View style={styles.settingsCard}>
-  <Text style={styles.settingsCardTitle}>Notifications</Text>
-  
-  {notificationItems.map((item) => (
-    <View key={item.key} style={styles.notificationRow}>
-      <Text style={styles.notificationLabel}>{item.label}</Text>
-      {isEditing ? (
-        <Switch
-          value={formData.notifications?.[item.key] ?? true}
-          onValueChange={(value) =>
-            setFormData({
-              ...formData,
-              notifications: { ...formData.notifications, [item.key]: value }
-            })
-          }
-          trackColor={{ false: '#2a2a2a', true: '#f97316' }}
-          thumbColor="#fff"
-        />
-      ) : (
-        <View style={[
-          styles.notificationIndicator,
-          profile.notifications?.[item.key] && styles.notificationActive
-        ]}>
-          <Feather 
-            name={profile.notifications?.[item.key] ? 'check' : 'x'} 
-            size={14} 
-            color={profile.notifications?.[item.key] ? '#10b981' : '#666'} 
-          />
-        </View>
-      )}
-    </View>
-  ))}
-</View>
+      <View style={styles.settingsCard}>
+        <Text style={styles.settingsCardTitle}>Notifications</Text>
+        
+        {notificationItems.map((item) => (
+          <View key={item.key} style={styles.notificationRow}>
+            <Text style={styles.notificationLabel}>{item.label}</Text>
+            {isEditing ? (
+              <Switch
+                value={formData.notifications?.[item.key] ?? true}
+                onValueChange={(value) =>
+                  setFormData({
+                    ...formData,
+                    notifications: { ...formData.notifications, [item.key]: value }
+                  })
+                }
+                trackColor={{ false: '#2a2a2a', true: '#f97316' }}
+                thumbColor="#fff"
+              />
+            ) : (
+              <View style={[
+                styles.notificationIndicator,
+                profile.notifications?.[item.key] && styles.notificationActive
+              ]}>
+                <Feather 
+                  name={profile.notifications?.[item.key] ? 'check' : 'x'} 
+                  size={14} 
+                  color={profile.notifications?.[item.key] ? '#10b981' : '#666'} 
+                />
+              </View>
+            )}
+          </View>
+        ))}
+      </View>
 
       <View style={styles.settingsCard}>
         <Text style={styles.settingsCardTitle}>Business Hours</Text>
@@ -540,45 +930,17 @@ const notificationItems: { key: NotificationKey; label: string }[] = [
           </View>
         ))}
       </View>
-
-     <View style={styles.settingsCard}>
-  <Text style={styles.settingsCardTitle}>Notifications</Text>
-  
-  {notificationItems.map((item) => (
-    <View key={item.key} style={styles.notificationRow}>
-      <Text style={styles.notificationLabel}>{item.label}</Text>
-      {isEditing ? (
-        <Switch
-          value={formData.notifications?.[item.key] ?? true}
-          onValueChange={(value) =>
-            setFormData({
-              ...formData,
-              notifications: { ...formData.notifications, [item.key]: value }
-            })
-          }
-          trackColor={{ false: '#2a2a2a', true: '#f97316' }}
-          thumbColor="#fff"
-        />
-      ) : (
-        <View style={[
-          styles.notificationIndicator,
-          profile.notifications?.[item.key] && styles.notificationActive
-        ]}>
-          <Feather 
-            name={profile.notifications?.[item.key] ? 'check' : 'x'} 
-            size={14} 
-            color={profile.notifications?.[item.key] ? '#10b981' : '#666'} 
-          />
-        </View>
-      )}
-    </View>
-  ))}
-</View>
     </View>
   );
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Modals */}
+      {showTerms && <TermsConditionsScreen onClose={() => setShowTerms(false)} />}
+      {showPrivacy && <PrivacyPolicyScreen onClose={() => setShowPrivacy(false)} />}
+      {showHelp && <HelpSupportScreen onClose={() => setShowHelp(false)} />}
+      {showQA && <QAScreen onClose={() => setShowQA(false)} />}
+
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -704,6 +1066,7 @@ const notificationItems: { key: NotificationKey; label: string }[] = [
           {activeTab === 'bank' && renderBankTab()}
           {activeTab === 'preferences' && renderPreferencesTab()}
           {activeTab === 'promos' && <PromoCodeManager />}
+          {activeTab === 'support' && renderSupportTab()}
         </View>
 
         {/* Logout Button */}
@@ -720,7 +1083,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0a0a0a',
-    paddingBottom:80,
+    paddingTop:40,
+    paddingBottom: 80,
   },
   loadingContainer: {
     flex: 1,
@@ -981,29 +1345,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   menuItem: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  backgroundColor: '#2a2a2a',
-  padding: 16,
-  borderRadius: 8,
-},
-menuItemLeft: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 12,
-  flex: 1,
-},
-menuItemTitle: {
-  fontSize: 15,
-  fontWeight: '500',
-  color: '#fff',
-  marginBottom: 2,
-},
-menuItemSubtitle: {
-  fontSize: 11,
-  color: '#666',
-},
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#2a2a2a',
+    padding: 16,
+    borderRadius: 8,
+  },
+  menuItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  menuItemTitle: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#fff',
+    marginBottom: 2,
+  },
+  menuItemSubtitle: {
+    fontSize: 11,
+    color: '#666',
+  },
   uploadButton: {
     flex: 1,
     backgroundColor: '#2a2a2a',
@@ -1158,5 +1522,178 @@ menuItemSubtitle: {
     color: '#ef4444',
     fontSize: 15,
     fontWeight: '600',
+  },
+  // Support tab styles
+  supportOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2a2a2a',
+    padding: 16,
+    borderRadius: 8,
+    marginTop: 30,
+  },
+  supportIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(249,115,22,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  supportInfo: {
+    flex: 1,
+  },
+  supportTitle: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#fff',
+    marginBottom: 2,
+  },
+  supportSubtitle: {
+    fontSize: 12,
+    color: '#666',
+  },
+  // Modal styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#0a0a0a',
+    paddingTop:40,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.05)',
+  },
+  modalCloseButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#1a1a1a',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  modalContent: {
+    flex: 1,
+    padding: 20,
+  },
+  modalSectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#f97316',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  modalText: {
+    fontSize: 14,
+    color: '#ccc',
+    lineHeight: 22,
+    marginBottom: 15,
+  },
+  modalLastUpdated: {
+    fontSize: 12,
+    color: '#666',
+    fontStyle: 'italic',
+    marginTop: 30,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  // Contact options
+  contactOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1a1a1a',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
+  contactIconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(249,115,22,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  contactInfo: {
+    flex: 1,
+  },
+  contactLabel: {
+    fontSize: 14,
+    color: '#999',
+    marginBottom: 2,
+  },
+  contactValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 2,
+  },
+  contactNote: {
+    fontSize: 12,
+    color: '#666',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    marginVertical: 20,
+  },
+  faqItem: {
+    marginBottom: 16,
+  },
+  faqQuestion: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#f97316',
+    marginBottom: 4,
+  },
+  faqAnswer: {
+    fontSize: 14,
+    color: '#ccc',
+    lineHeight: 20,
+  },
+  // FAQ accordion styles
+  faqContainer: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+    overflow: 'hidden',
+  },
+  faqHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+  },
+  faqHeaderQuestion: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#fff',
+    flex: 1,
+    marginRight: 10,
+  },
+  faqBody: {
+    padding: 16,
+    paddingTop: 0,
+    backgroundColor: '#0a0a0a',
+  },
+  faqBodyAnswer: {
+    fontSize: 14,
+    color: '#ccc',
+    lineHeight: 20,
   },
 });
