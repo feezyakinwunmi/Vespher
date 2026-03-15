@@ -66,7 +66,11 @@ export function CartScreen() {
   const [processingPayment, setProcessingPayment] = useState(false);
   const [calculatedDeliveryFee, setCalculatedDeliveryFee] = useState<number | null>(null);
   const [isCalculatingFee, setIsCalculatingFee] = useState(false);
-   const showToast = (message: string) => {
+  const [flutterwaveResponse, setFlutterwaveResponse] = useState<any>(null);
+  const [platformSettings, setPlatformSettings] = useState<{ platform_fee_percentage: number } | null>(null);
+const [loadingSettings, setLoadingSettings] = useState(true);
+  
+  const showToast = (message: string) => {
     Toast.show({
       type: 'success',
       text1: message,
@@ -74,6 +78,7 @@ export function CartScreen() {
       visibilityTime: 2000,
     });
   };
+  
   // Payment States
   const [showFlutterwave, setShowFlutterwave] = useState(false);
   const [paymentReference, setPaymentReference] = useState('');
@@ -81,45 +86,69 @@ export function CartScreen() {
   const vendor = vendors.find(v => v.id === vendorId);
   const subtotal = getSubtotal();
 
-  // Handle selected address from navigation params
-// In CartScreen.tsx, update the useEffect that handles route params:
 
+
+
+// Fetch platform settings for commission percentage
 useEffect(() => {
-  if (route.params?.selectedAddress) {
-    setSelectedAddress(route.params.selectedAddress);
-    // Clear the param to prevent re-triggering
-    navigation.setParams({ selectedAddress: undefined });
-  }
-}, [route.params?.selectedAddress]);
-  // Calculate delivery fee when vendor and selected address are available
- useEffect(() => {
-  const calculateFee = async () => {
-   
+  const fetchPlatformSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('platform_settings')
+        .select('platform_fee_percentage')
+        .order('id', { ascending: false })
+        .limit(1)
+        .single();
 
-    // Only calculate if we have both vendor and address coordinates
-    if (vendor?.latitude && vendor?.longitude && selectedAddress?.latitude && selectedAddress?.longitude) {
-      setIsCalculatingFee(true);
-      try {
-        const fee = await calculateDeliveryToVendor(
-          vendor.latitude, 
-          vendor.longitude,
-          selectedAddress.latitude,
-          selectedAddress.longitude
-        );
-        setCalculatedDeliveryFee(fee);
-      } catch (error) {
-        console.error('Error calculating delivery fee:', error);
-        setCalculatedDeliveryFee(null);
-      } finally {
-        setIsCalculatingFee(false);
-      }
-    } else {
-      setCalculatedDeliveryFee(null);
+      if (error) throw error;
+      setPlatformSettings(data);
+    } catch (error) {
+      console.error('Error fetching platform settings:', error);
+    } finally {
+      setLoadingSettings(false);
     }
   };
 
-  calculateFee();
-}, [vendor, selectedAddress]); // Make sure both are in dependencies
+  fetchPlatformSettings();
+}, []);
+
+
+
+  // Handle selected address from navigation params
+  useEffect(() => {
+    if (route.params?.selectedAddress) {
+      setSelectedAddress(route.params.selectedAddress);
+      navigation.setParams({ selectedAddress: undefined });
+    }
+  }, [route.params?.selectedAddress]);
+
+  // Calculate delivery fee when vendor and selected address are available
+  useEffect(() => {
+    const calculateFee = async () => {
+      if (vendor?.latitude && vendor?.longitude && selectedAddress?.latitude && selectedAddress?.longitude) {
+        setIsCalculatingFee(true);
+        try {
+          const fee = await calculateDeliveryToVendor(
+            vendor.latitude, 
+            vendor.longitude,
+            selectedAddress.latitude,
+            selectedAddress.longitude
+          );
+          setCalculatedDeliveryFee(fee);
+        } catch (error) {
+          console.error('Error calculating delivery fee:', error);
+          setCalculatedDeliveryFee(null);
+        } finally {
+          setIsCalculatingFee(false);
+        }
+      } else {
+        setCalculatedDeliveryFee(null);
+      }
+    };
+
+    calculateFee();
+  }, [vendor, selectedAddress]);
+
   // Use calculated fee
   const deliveryFee = calculatedDeliveryFee || 0;
   
@@ -262,97 +291,139 @@ useEffect(() => {
       setPromoApplied(true);
       setAppliedPromoData(result.code);
       setDiscount(result.discount);
-      showToast( result.message);
+      showToast(result.message);
     } else {
       setPromoApplied(false);
       setAppliedPromoData(null);
       setDiscount(0);
-      showToast( 'Invalid promo code');
+      showToast('Invalid promo code');
     }
   };
 
-  const processOrder = async (paymentRef?: string) => {
-    setIsPlacingOrder(true);
+const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
+  setIsPlacingOrder(true);
 
-    try {
-      const platformFee = Math.round(subtotal * 0.1);
-      const vendorPayout = subtotal - platformFee;
-      const riderPayout = deliveryFee;
+  try {
+    // Get platform fee percentage from settings (default to 10 if not loaded)
+    const commissionPercentage = platformSettings?.platform_fee_percentage || 10;
+    
+    // Apply discount to subtotal FIRST (simple approach)
+    const discountedSubtotal = subtotal - finalDiscount;
+    
+    // Calculate platform commission on the DISCOUNTED subtotal
+    const platformCommission = Math.round(discountedSubtotal * (commissionPercentage / 100));
+    
+    // Vendor gets discounted subtotal minus commission
+    const vendorPayout = discountedSubtotal - platformCommission;
+    
+    // Rider gets full delivery fee
+    const riderPayout = deliveryFee;
+    
+    // Get the actual Flutterwave fee from response (or calculate on discounted subtotal)
+    const flutterwaveFee = gatewayResponse?.fee || Math.round(discountedSubtotal * 0.02);
+    
+    // Platform net earnings (commission - flutterwave fee)
+    const platformNetEarnings = platformCommission - flutterwaveFee;
 
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          customer_id: user?.id,
-          vendor_id: vendorId,
-          items: items.map(item => ({
-            product_id: item.product.id,
-            name: item.product.name,
-            quantity: item.quantity,
-            price: item.product.price,
-            options: item.selectedOptions || []
-          })),
-          status: 'pending',
-          subtotal: subtotal,
-          delivery_fee: deliveryFee,
-          discount: finalDiscount,
-          total: total,
-          payment_method: paymentMethod,
-          payment_status: paymentRef ? 'paid' : 'pending',
-          payment_reference: paymentRef,
-          delivery_address: selectedAddress,
-          created_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
+    console.log('Inserting order with:', {
+      originalSubtotal: subtotal,
+      discount: finalDiscount,
+      discountedSubtotal,
+      platformCommission,
+      flutterwaveFee,
+      platformNetEarnings,
+      vendorPayout
+    });
 
-      if (orderError) throw orderError;
-
-      // Record first order discount if applied
-      if (isFirstOrder && firstOrderDiscount > 0) {
-        await supabase.from('first_order_discounts').insert({
-          user_id: user?.id,
-          order_id: order.id,
-          discount_amount: firstOrderDiscount,
-          applied_at: new Date().toISOString(),
-        });
-      }
-
-      // Record promo code usage if applied
-      if (appliedPromoData) {
-        await supabase.from('promo_code_usage').insert({
-          promo_code_id: appliedPromoData.id,
-          user_id: user?.id,
-          order_id: order.id,
-          discount_amount: discount,
-          used_at: new Date().toISOString(),
-        });
-      }
-
-      // Record platform fees
-      await supabase.from('platform_fees').insert({
-        order_id: order.id,
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .insert({
+        customer_id: user?.id,
         vendor_id: vendorId,
-        fee_percentage: 10,
-        fee_amount: platformFee,
-        vendor_payout: vendorPayout,
-        rider_payout: riderPayout,
+        items: items.map(item => ({
+          product_id: item.product.id,
+          name: item.product.name,
+          quantity: item.quantity,
+          price: item.product.price,
+          options: item.selectedOptions || []
+        })),
+        status: 'pending',
+        subtotal: subtotal, // Keep original subtotal for records
+        delivery_fee: deliveryFee,
+        discount: finalDiscount,
+        total: total, // subtotal + delivery - discount
+        payment_method: 'card',
+        payment_status: 'paid',
+        payment_reference: paymentRef,
+        delivery_address: selectedAddress,
         created_at: new Date().toISOString(),
-      });
+        
+        // Financial fields based on discounted subtotal
+        flutterwave_fee: flutterwaveFee,
+        platform_commission: platformCommission,
+        platform_net_earnings: platformNetEarnings,
+        payment_gateway_response: gatewayResponse
+      })
+      .select()
+      .single();
 
-      clearCart();
-      
-      showToast('Order placed successfully!');
-      navigation.navigate('Orders');
-      
-    } catch (error: any) {
-      console.error('Error placing order:', error);
-      showToast('Failed to place order');
-    } finally {
-      setIsPlacingOrder(false);
-      setShowCheckout(false);
-      setProcessingPayment(false);
+    if (orderError) {
+      console.error('Order insert error:', orderError);
+      throw orderError;
     }
-  };
+
+    console.log('Order inserted successfully:', order.id);
+
+    // Record first order discount if applied
+    if (isFirstOrder && firstOrderDiscount > 0) {
+      await supabase.from('first_order_discounts').insert({
+        user_id: user?.id,
+        order_id: order.id,
+        discount_amount: firstOrderDiscount,
+        applied_at: new Date().toISOString(),
+      });
+    }
+
+    // Record promo code usage if applied
+    if (appliedPromoData) {
+      await supabase.from('promo_code_usage').insert({
+        promo_code_id: appliedPromoData.id,
+        user_id: user?.id,
+        order_id: order.id,
+        discount_amount: discount,
+        used_at: new Date().toISOString(),
+      });
+    }
+
+    // Record platform fees
+    await supabase.from('platform_fees').insert({
+      order_id: order.id,
+      vendor_id: vendorId,
+      fee_percentage: commissionPercentage,
+      fee_amount: platformCommission,
+      flutterwave_fee: flutterwaveFee,
+      vendor_payout: vendorPayout,
+      rider_payout: riderPayout,
+      platform_net: platformNetEarnings,
+      created_at: new Date().toISOString(),
+    });
+
+    console.log('Platform fees recorded, clearing cart now...');
+    
+    clearCart();
+    
+    showToast('Order placed successfully!');
+    navigation.navigate('Orders');
+    
+  } catch (error: any) {
+    console.error('Error placing order:', error);
+    showToast('Failed to place order: ' + error.message);
+  } finally {
+    setIsPlacingOrder(false);
+    setShowCheckout(false);
+    setProcessingPayment(false);
+  }
+};
 
   const handleCardPayment = () => {
     if (!user || !selectedAddress || !vendorId) return;
@@ -362,6 +433,7 @@ useEffect(() => {
     
     const reference = generateReference();
     setPaymentReference(reference);
+    setFlutterwaveResponse(null);
     
     setTimeout(() => {
       setShowFlutterwave(true);
@@ -369,37 +441,35 @@ useEffect(() => {
     }, 500);
   };
 
-  const handlePlaceOrder = async () => {
-    if (!user) {
-      showToast('Please login to place order');
-      navigation.navigate('Login');
-      return;
-    }
+const handlePlaceOrder = async () => {
+  if (!user) {
+    showToast('Please login to place order');
+    navigation.navigate('Login');
+    return;
+  }
 
-    if (!selectedAddress) {
-      showToast( 'Please select a delivery address');
-      return;
-    }
+  if (!selectedAddress) {
+    showToast('Please select a delivery address');
+    return;
+  }
 
-    if (!vendorId) {
-      showToast('Vendor information missing');
-      return;
-    }
+  if (!vendorId) {
+    showToast('Vendor information missing');
+    return;
+  }
 
-    if (!calculatedDeliveryFee) {
-     showToast( 'Unable to calculate delivery fee. Please ensure your address has valid coordinates.');
-      return;
-    }
+  if (!calculatedDeliveryFee) {
+    showToast('Unable to calculate delivery fee. Please ensure your address has valid coordinates.');
+    return;
+  }
 
-    // For card payments, open Flutterwave
-    if (paymentMethod === 'card') {
-      handleCardPayment();
-      return;
-    }
+  if (loadingSettings) {
+    showToast('Loading platform settings...');
+    return;
+  }
 
-    // For cash/transfer, proceed normally
-    await processOrder();
-  };
+  handleCardPayment();
+};
 
   const navigateToAddresses = () => {
     setShowCheckout(false);
@@ -640,16 +710,16 @@ useEffect(() => {
                 ) : addresses.length > 0 ? (
                   <View style={styles.addressList}>
                     {addresses.map(address => (
-                     <TouchableOpacity
-  key={address.id}
-  onPress={() => {
-    setSelectedAddress(address); // This should trigger the useEffect
-  }}
-  style={[
-    styles.addressCard,
-    selectedAddress?.id === address.id && styles.addressCardSelected,
-  ]}
->
+                      <TouchableOpacity
+                        key={address.id}
+                        onPress={() => {
+                          setSelectedAddress(address);
+                        }}
+                        style={[
+                          styles.addressCard,
+                          selectedAddress?.id === address.id && styles.addressCardSelected,
+                        ]}
+                      >
                         <Feather name="map-pin" size={16} color="#f97316" />
                         <View style={styles.addressInfo}>
                           <Text style={styles.addressLabel}>{address.label}</Text>
@@ -677,37 +747,30 @@ useEffect(() => {
               </View>
 
               {/* Payment Method */}
-              <View style={styles.modalSection}>
-                <Text style={styles.modalSectionTitle}>Payment Method</Text>
-                <View style={styles.paymentList}>
-                  {[
-                    { value: 'card', label: 'Card Payment', icon: 'credit-card' },
-                  ].map((option) => (
-                    <TouchableOpacity
-                      key={option.value}
-                      onPress={() => setPaymentMethod(option.value as PaymentMethod)}
-                      style={[
-                        styles.paymentCard,
-                        paymentMethod === option.value && styles.paymentCardSelected,
-                      ]}
-                    >
-                      <Feather name={option.icon as any} size={18} color="#f97316" />
-                      <Text style={styles.paymentLabel}>{option.label}</Text>
-                      {paymentMethod === option.value && (
-                        <View style={styles.paymentSelectedDot} />
-                      )}
-                    </TouchableOpacity>
-                  ))}
-                </View>
-                {paymentMethod === 'transfer' && (
-                  <View style={styles.transferInfo}>
-                    <Text style={styles.transferInfoTitle}>Bank Transfer Details:</Text>
-                    <Text style={styles.transferInfoText}>Bank: GTBank</Text>
-                    <Text style={styles.transferInfoText}>Account: 0123456789</Text>
-                    <Text style={styles.transferInfoText}>Name: Vespher Foods</Text>
-                  </View>
-                )}
-              </View>
+          {/* Payment Method */}
+<View style={styles.modalSection}>
+  <Text style={styles.modalSectionTitle}>Payment Method</Text>
+  <View style={styles.paymentList}>
+    {[
+      { value: 'card', label: 'Proceed to payment', icon: 'credit-card' },
+    ].map((option) => (
+      <TouchableOpacity
+        key={option.value}
+        onPress={() => setPaymentMethod(option.value as PaymentMethod)}
+        style={[
+          styles.paymentCard,
+          paymentMethod === option.value && styles.paymentCardSelected,
+        ]}
+      >
+        <Feather name={option.icon as any} size={18} color="#f97316" />
+        <Text style={styles.paymentLabel}>{option.label}</Text>
+        {paymentMethod === option.value && (
+          <View style={styles.paymentSelectedDot} />
+        )}
+      </TouchableOpacity>
+    ))}
+  </View>
+</View>
 
               {/* Order Summary */}
               <View style={styles.modalSection}>
@@ -815,13 +878,16 @@ useEffect(() => {
           reference={paymentReference}
           customerName={user?.name}
           phone={user?.phone}
+          onPaymentComplete={(paymentData) => {
+            setFlutterwaveResponse(paymentData);
+          }}
           onSuccess={async (response) => {
             setShowFlutterwave(false);
-            await processOrder(response.tx_ref || paymentReference);
+            await processOrder(response.tx_ref || paymentReference, flutterwaveResponse);
           }}
           onClose={() => {
             setShowFlutterwave(false);
-            showToast( 'You cancelled the payment');
+            showToast('You cancelled the payment');
             setShowCheckout(true);
           }}
         />
@@ -1234,23 +1300,6 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: '#f97316',
-  },
-  transferInfo: {
-    marginTop: 12,
-    padding: 12,
-    backgroundColor: 'rgba(249,115,22,0.1)',
-    borderRadius: 12,
-  },
-  transferInfoTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#f97316',
-    marginBottom: 6,
-  },
-  transferInfoText: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 2,
   },
   modalSummary: {
     backgroundColor: '#2a2a2a',

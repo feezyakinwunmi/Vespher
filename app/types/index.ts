@@ -237,6 +237,14 @@ export interface Order {
   paymentMethod?: PaymentMethod;
   deliveryAddress?: any;
   estimatedDelivery?: string;
+
+
+
+  flutterwave_fee?: number;
+  flutterwave_fee_percentage?: number;
+  platform_commission?: number;
+  platform_net_earnings?: number;
+  payment_gateway_response?: any;
 }
 
 // Order Item Types - New for detailed order items

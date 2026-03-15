@@ -69,6 +69,13 @@ export function useOrders() {
         vendor: order.vendor,
         rider: order.rider,
         
+        // NEW FIELDS - Add these
+        flutterwave_fee: order.flutterwave_fee,
+        platform_commission: order.platform_commission,
+        platform_commission_percentage: order.platform_commission_percentage,
+        platform_net_earnings: order.platform_net_earnings,
+        payment_gateway_response: order.payment_gateway_response,
+        
         // For backward compatibility
         customerId: order.customer_id,
         vendorId: order.vendor_id,
@@ -139,6 +146,13 @@ export function useOrders() {
           delivered_at: data.delivered_at,
           vendor: data.vendor,
           rider: data.rider,
+          
+          // NEW FIELDS - Add these
+          flutterwave_fee: data.flutterwave_fee,
+          platform_commission: data.platform_commission,
+          platform_commission_percentage: data.platform_commission_percentage,
+          platform_net_earnings: data.platform_net_earnings,
+          payment_gateway_response: data.payment_gateway_response,
         };
       }
       return null;

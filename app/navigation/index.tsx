@@ -1,7 +1,17 @@
 // navigation/index.tsx
-import React from 'react';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  Modal,
+  TouchableOpacity,
+  StyleSheet,
+  Linking,
+} from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../contexts/AuthContext';
 import { RootStackParamList } from './types';
 
@@ -54,8 +64,91 @@ import { AdminAnalyticsScreen } from '../screens/admin/AdminAnalyticsScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
+// Warning Modal for Rider/Business users
+function WrongAppWarningModal({ 
+  visible, 
+  onClose,
+  userRole 
+}: { 
+  visible: boolean; 
+  onClose: () => void;
+  userRole: string;
+}) {
+  const { signOut } = useAuth();
+
+  const handleDownloadApp = () => {
+    // Open app store link - replace with your actual app store URL
+    Linking.openURL('https://play.google.com/store/apps/details?id=com.vespher.logistics');
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    onClose();
+  };
+
+  const roleText = userRole === 'rider' ? 'Rider' : 'Business';
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <View style={styles.warningIconContainer}>
+            <LinearGradient
+              colors={['#f97316', '#f43f5e']}
+              style={styles.warningIconGradient}
+            >
+              <Feather name="alert-triangle" size={40} color="#fff" />
+            </LinearGradient>
+          </View>
+
+          <Text style={styles.warningTitle}>Wrong App</Text>
+          
+          <Text style={styles.warningMessage}>
+            This app is for <Text style={styles.highlightText}>Customers</Text> and{' '}
+            <Text style={styles.highlightText}>Vendors</Text> only.
+          </Text>
+
+          <Text style={styles.warningDescription}>
+            You are logged in as a <Text style={styles.roleText}>{roleText}</Text>. 
+            Please download the Vespher Logistics app for {roleText.toLowerCase()} services.
+          </Text>
+
+          <TouchableOpacity
+            style={styles.downloadButton}
+            onPress={handleDownloadApp}
+          >
+            <LinearGradient
+              colors={['#f97316', '#f43f5e']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.downloadButtonGradient}
+            >
+              <Feather name="download" size={18} color="#fff" />
+              <Text style={styles.downloadButtonText}>Download Vespher Logistics</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.signOutButton}
+            onPress={handleSignOut}
+          >
+            <Feather name="log-out" size={16} color="#ef4444" />
+            <Text style={styles.signOutText}>Sign Out</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 function AppContent() {
   const { user, isLoading } = useAuth();
+  const [showWrongAppModal, setShowWrongAppModal] = useState(false);
 
   if (isLoading) {
     return <SplashScreen />;
@@ -64,6 +157,20 @@ function AppContent() {
   // If user is suspended → show suspension screen (full-screen, no tabs)
   if (user && user.is_suspended) {
     return <SuspendedScreen />;
+  }
+
+  // If user is rider or business, show warning modal
+  if (user && (user.role === 'rider' || user.role === 'business')) {
+    return (
+      <>
+        <SplashScreen />
+        <WrongAppWarningModal
+          visible={true}
+          onClose={() => setShowWrongAppModal(false)}
+          userRole={user.role}
+        />
+      </>
+    );
   }
 
   return (
@@ -134,3 +241,89 @@ export function AppNavigator() {
     </NavigationContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '85%',
+    backgroundColor: '#1a1a1a',
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(249,115,22,0.3)',
+  },
+  warningIconContainer: {
+    marginBottom: 16,
+  },
+  warningIconGradient: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  warningTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#f97316',
+    marginBottom: 12,
+  },
+  warningMessage: {
+    fontSize: 16,
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  highlightText: {
+    color: '#f97316',
+    fontWeight: '600',
+  },
+  warningDescription: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  roleText: {
+    color: '#f43f5e',
+    fontWeight: '600',
+  },
+  downloadButton: {
+    width: '100%',
+    height: 50,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  downloadButtonGradient: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+  },
+  downloadButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  signOutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+  },
+  signOutText: {
+    color: '#ef4444',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+});
