@@ -28,19 +28,27 @@ const { userLocation, getDistanceFromUser, calculateDeliveryFeeFromDistance, req
     longitudeDelta: 0.02,
   });
 
-  useEffect(() => {
+useEffect(() => {
+  if (userLocation) {
     calculateVendorDistance();
-  }, [userLocation]);
+  }
+}, [userLocation]);
 
-  const calculateVendorDistance = async () => {
-   const dist = await getDistanceFromUser(vendorLocation.latitude, vendorLocation.longitude);
-const fee = calculateDeliveryFeeFromDistance(dist);
-    setDeliveryFee(fee);
-    
-    if (onDistanceCalculated) {
-      onDistanceCalculated(dist, fee);
-    }
-  };
+const calculateVendorDistance = async () => {
+  const dist = await getDistanceFromUser(
+    vendorLocation.latitude,
+    vendorLocation.longitude
+  );
+
+  const fee = calculateDeliveryFeeFromDistance(dist);
+
+  setDistance(dist);
+  setDeliveryFee(fee);
+
+  if (onDistanceCalculated) {
+    onDistanceCalculated(dist, fee);
+  }
+};
 
   const openMaps = () => {
     const url = `https://www.google.com/maps/dir/?api=1&destination=${vendorLocation.latitude},${vendorLocation.longitude}`;
@@ -58,12 +66,11 @@ const fee = calculateDeliveryFeeFromDistance(dist);
 
   return (
     <View style={styles.container}>
-      <MapView
-        style={styles.map}
-        provider={PROVIDER_DEFAULT}
-        region={mapRegion}
-        onRegionChangeComplete={setMapRegion}
-      >
+    <MapView
+  style={styles.map}
+  provider={PROVIDER_DEFAULT}
+  initialRegion={mapRegion}
+>
         {/* Vendor Marker */}
         <Marker
           coordinate={{
