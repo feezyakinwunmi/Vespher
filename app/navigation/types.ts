@@ -65,6 +65,7 @@ AdminAllOrders: undefined;
   AdminBusinessRequestDetails: { requestId: string };
   AdminUsers: undefined;
   AdminAnalytics: undefined;
+  OutstandingPayments:undefined;
 
 
 };

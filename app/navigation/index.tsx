@@ -54,13 +54,14 @@ import { AdminOrderDetailsScreen } from '../screens/admin/AdminOrderDetailsScree
 import { AdminVendorsScreen } from '../screens/admin/AdminVendorsScreen';
 import { AdminWithdrawalsScreen } from '../screens/admin/AdminWithdrawalsScreen';
 import { AdminMenuScreen } from '../screens/admin/AdminMenuScreen';
-import { AdminLogisticsScreen } from '../screens/admin/AdminLogisticsScreen';
+import { AdminLogisticsScreen } from '../lib/AdminLogisticsScreen';
 import { AdminCreateLogisticScreen } from '../screens/admin/AdminCreateLogisticScreen';
 import { AdminSettingsScreen } from '../screens/admin/AdminSettingsScreen';
 import { AdminBusinessRequestsScreen } from '../screens/admin/AdminBusinessRequestsScreen';
 import { AdminAllOrdersScreen } from '../screens/admin/AdminAllOrdersScreen';
 import { AdminUsersScreen } from '../screens/admin/AdminUsersScreen';
 import { AdminAnalyticsScreen } from '../screens/admin/AdminAnalyticsScreen';
+import { OutstandingPaymentsScreen } from '../screens/admin/OutstandingPaymentsScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -224,6 +225,8 @@ function AppContent() {
               <Stack.Screen name="AdminUsers" component={AdminUsersScreen} />
               <Stack.Screen name="AdminAnalytics" component={AdminAnalyticsScreen} />
               <Stack.Screen name="AdminAllOrders" component={AdminAllOrdersScreen} />
+              <Stack.Screen name="OutstandingPayments" component={OutstandingPaymentsScreen}/>
+
             </>
           )}
         </>

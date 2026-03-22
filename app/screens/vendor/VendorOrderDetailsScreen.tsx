@@ -11,7 +11,7 @@ import {
   Alert,
   Linking,
   Dimensions,
-  Platform, // ← added
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -24,6 +24,17 @@ import Toast from 'react-native-toast-message';
 const { width } = Dimensions.get('window');
 
 type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'ready' | 'picked_up' | 'in_transit' | 'delivered' | 'cancelled';
+
+// ✅ Add interface for fee breakdown
+interface FeeBreakdown {
+  subtotal: number;
+  platformCommission: number;
+  flutterwaveFee: number;
+  vatOnFee: number;
+  stampDuty: number;
+  vendorPayout: number;
+  platformNetEarnings: number;
+}
 
 export function VendorOrderDetailsScreen() {
   const navigation = useNavigation();
@@ -45,17 +56,61 @@ export function VendorOrderDetailsScreen() {
   const [rider, setRider] = useState<any>(null);
   const [customer, setCustomer] = useState<any>(null);
   const [updating, setUpdating] = useState(false);
-const mapRef = useRef<any>(null);
+  const [platformSettings, setPlatformSettings] = useState<any>(null);
+  const [feeBreakdown, setFeeBreakdown] = useState<FeeBreakdown | null>(null);
+  
+  const mapRef = useRef<any>(null);
   const subscriptionRef = useRef<any>(null);
 
   useEffect(() => {
     fetchOrderDetails();
+    fetchPlatformSettings();
     return () => {
       if (subscriptionRef.current) {
         subscriptionRef.current.unsubscribe();
       }
     };
   }, [orderId]);
+
+  const fetchPlatformSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('platform_settings')
+        .select('*')
+        .order('id', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error) throw error;
+      setPlatformSettings(data);
+    } catch (error) {
+      console.error('Error fetching platform settings:', error);
+    }
+  };
+
+  const calculateFeeBreakdown = (orderData: any) => {
+    if (!orderData) return null;
+
+    const subtotal = orderData.subtotal || 0;
+    const platformCommission = orderData.platform_commission || Math.round(subtotal * 0.1);
+    const vendorPayout = orderData.vendor_payout || (subtotal - platformCommission);
+    
+    const flutterwaveFee = orderData.flutterwave_fee || Math.round(orderData.total * 0.02);
+    const vatOnFee = orderData.vat_on_fee || Math.round(flutterwaveFee * 0.075);
+    const stampDuty = orderData.stamp_duty || (orderData.total >= 10000 ? 50 : 0);
+    const platformNetEarnings = orderData.platform_net_earnings || 
+      (platformCommission - flutterwaveFee - vatOnFee - stampDuty);
+
+    return {
+      subtotal,
+      platformCommission,
+      flutterwaveFee,
+      vatOnFee,
+      stampDuty,
+      vendorPayout,
+      platformNetEarnings,
+    };
+  };
 
   const fetchOrderDetails = async () => {
     try {
@@ -78,6 +133,7 @@ const mapRef = useRef<any>(null);
       if (error) throw error;
 
       setOrder(data);
+      setFeeBreakdown(calculateFeeBreakdown(data));
 
       if (data.customer_id) {
         const { data: customerData } = await supabase
@@ -154,7 +210,6 @@ const mapRef = useRef<any>(null);
   }, [riderId]);
 
   const centerMap = () => {
-
     const coordinates = [];
 
     if (order?.vendor?.latitude && order?.vendor?.longitude) {
@@ -174,8 +229,6 @@ const mapRef = useRef<any>(null);
     if (riderLocation) {
       coordinates.push(riderLocation);
     }
-
-  
   };
 
   const updateOrderStatus = async (newStatus: OrderStatus) => {
@@ -305,6 +358,139 @@ const mapRef = useRef<any>(null);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  const getEventTypeLabel = (eventType: string) => {
+    const types: Record<string, string> = {
+      party: 'Party/Celebration',
+      corporate: 'Corporate Event',
+      family: 'Family Gathering',
+      dietary: 'Dietary Restrictions',
+      allergies: 'Allergies',
+      other: 'Other',
+    };
+    return types[eventType] || eventType;
+  };
+
+  // ✅ Render earnings breakdown
+  const renderEarningsBreakdown = () => {
+    if (!feeBreakdown) return null;
+
+    return (
+      <View style={styles.earningsCard}>
+        <Text style={styles.sectionTitle}>Earnings Breakdown</Text>
+        
+        <View style={styles.earningsRow}>
+          <Text style={styles.earningsLabel}>Order Subtotal:</Text>
+          <Text style={styles.earningsValue}>₦{feeBreakdown.subtotal.toLocaleString()}</Text>
+        </View>
+
+        <View style={styles.earningsDivider} />
+
+        <View style={styles.earningsRow}>
+          <Text style={styles.earningsLabel}>Platform Commission (10%):</Text>
+          <Text style={[styles.earningsValue, styles.deduction]}>
+            -₦{feeBreakdown.platformCommission.toLocaleString()}
+          </Text>
+        </View>
+
+        <View style={styles.earningsRow}>
+          <Text style={styles.earningsLabel}>Flutterwave Fee (2%):</Text>
+          <Text style={[styles.earningsValue, styles.deduction]}>
+            -₦{feeBreakdown.flutterwaveFee.toLocaleString()}
+          </Text>
+        </View>
+
+        <View style={styles.earningsRow}>
+          <Text style={styles.earningsLabel}>VAT on Fee (7.5%):</Text>
+          <Text style={[styles.earningsValue, styles.deduction]}>
+            -₦{feeBreakdown.vatOnFee.toLocaleString()}
+          </Text>
+        </View>
+
+        {feeBreakdown.stampDuty > 0 && (
+          <View style={styles.earningsRow}>
+            <Text style={styles.earningsLabel}>Stamp Duty:</Text>
+            <Text style={[styles.earningsValue, styles.deduction]}>
+              -₦{feeBreakdown.stampDuty.toLocaleString()}
+            </Text>
+          </View>
+        )}
+
+        <View style={styles.earningsDivider} />
+
+        <View style={[styles.earningsRow, styles.netEarningsRow]}>
+          <Text style={styles.netEarningsLabel}>Your Net Payout:</Text>
+          <Text style={styles.netEarningsValue}>₦{feeBreakdown.vendorPayout.toLocaleString()}</Text>
+        </View>
+
+        <View style={styles.earningsNote}>
+          <Feather name="info" size={12} color="#f97316" />
+          <Text style={styles.earningsNoteText}>
+            Payout will be sent to your registered bank account within 1-3 business days
+          </Text>
+        </View>
+      </View>
+    );
+  };
+
+  // ✅ Render scheduled details (now from orders table)
+ // ✅ Render scheduled details (from orders table)
+const renderScheduledDetails = () => {
+  if (!order?.is_scheduled) return null;
+
+  const scheduledDateTime = order.scheduled_datetime ? new Date(order.scheduled_datetime) : null;
+
+  return (
+    <View style={styles.scheduledCard}>
+      <Text style={styles.sectionTitle}>
+        <Feather name="calendar" size={16} color="#8b5cf6" /> Scheduled Order
+      </Text>
+      
+      {scheduledDateTime && (
+        <>
+          <View style={styles.infoRow}>
+            <Feather name="calendar" size={16} color="#f97316" />
+            <Text style={styles.infoText}>
+              Date: {scheduledDateTime.toLocaleDateString()}
+            </Text>
+          </View>
+          
+          <View style={styles.infoRow}>
+            <Feather name="clock" size={16} color="#f97316" />
+            <Text style={styles.infoText}>
+              Time: {scheduledDateTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </Text>
+          </View>
+        </>
+      )}
+      
+      {order.event_type && order.event_type !== 'other' && (
+        <View style={styles.infoRow}>
+          <Feather name="tag" size={16} color="#f97316" />
+          <Text style={styles.infoText}>
+            Event Type: {order.event_type.charAt(0).toUpperCase() + order.event_type.slice(1)}
+          </Text>
+        </View>
+      )}
+      
+      {order.special_request_category && (
+        <View style={styles.infoRow}>
+          <Feather name="alert-circle" size={16} color="#f97316" />
+          <Text style={styles.infoText}>
+            Request Category: {order.special_request_category}
+          </Text>
+        </View>
+      )}
+      
+      {order.special_request_text && (
+        <View style={styles.instructionsContainer}>
+          <Text style={styles.instructionsLabel}>Special Request:</Text>
+          <Text style={styles.instructionsText}>{order.special_request_text}</Text>
+        </View>
+      )}
+    </View>
+  );
+};
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -342,37 +528,25 @@ const mapRef = useRef<any>(null);
 
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.mapContainer}>
-
-<WebView
-  originWhitelist={['*']}
-  style={styles.map}
-  source={{
-    html: `
+          <WebView
+            originWhitelist={['*']}
+            style={styles.map}
+            source={{
+              html: `
 <!DOCTYPE html>
 <html>
 <head>
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<link rel="stylesheet"
-href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
 html,body{margin:0;padding:0}
 #map{height:100vh;width:100vw}
 </style>
-
 </head>
-
 <body>
-
 <div id="map"></div>
-
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
 <script>
-// Custom marker icons
-
 var vendorIcon = new L.Icon({
   iconUrl: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
   iconSize: [40, 40],
@@ -469,12 +643,11 @@ weight:5
 map.fitBounds(polyline.getBounds());
 
 </script>
-
 </body>
 </html>
 `
-  }}
-/>
+            }}
+          />
 
           <View style={styles.mapLegend}>
             <View style={styles.legendItem}>
@@ -508,13 +681,18 @@ map.fitBounds(polyline.getBounds());
           </View>
         )}
 
-        {/* The rest of your UI remains unchanged — status card, customer info, rider info, items, payment... */}
         <View style={styles.statusCard}>
           <Text style={styles.statusLabel}>Order Status</Text>
           <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order?.status) }]}>
             <Text style={styles.statusBadgeText}>{order?.status?.toUpperCase()}</Text>
           </View>
         </View>
+
+        {/* ✅ Scheduled Details - Now from orders table */}
+        {renderScheduledDetails()}
+
+        {/* ✅ Earnings Breakdown */}
+        {feeBreakdown && renderEarningsBreakdown()}
 
         <View style={styles.customerCard}>
           <Text style={styles.sectionTitle}>Customer Details</Text>
@@ -655,16 +833,12 @@ map.fitBounds(polyline.getBounds());
   );
 }
 
-
-
-
-// Styles (unchanged from your original)
+// Add new styles for earnings breakdown
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0a0a0a',
-        paddingBottom:60,
-
+    paddingBottom: 60,
   },
   loadingContainer: {
     flex: 1,
@@ -701,6 +875,32 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
+  },
+  scheduledCard: {
+    backgroundColor: '#1a1a1a',
+    marginHorizontal: 16,
+    marginBottom: 12,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(139,92,246,0.3)',
+  },
+  instructionsContainer: {
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: '#2a2a2a',
+    borderRadius: 8,
+  },
+  instructionsLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#f97316',
+    marginBottom: 4,
+  },
+  instructionsText: {
+    fontSize: 13,
+    color: '#fff',
+    lineHeight: 18,
   },
   header: {
     flexDirection: 'row',
@@ -898,6 +1098,63 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 12,
     fontWeight: '600',
+  },
+  earningsCard: {
+    backgroundColor: '#1a1a1a',
+    marginHorizontal: 16,
+    marginBottom: 12,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(249,115,22,0.2)',
+  },
+  earningsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  earningsLabel: {
+    fontSize: 13,
+    color: '#666',
+  },
+  earningsValue: {
+    fontSize: 13,
+    color: '#fff',
+  },
+  deduction: {
+    color: '#f43f5e',
+  },
+  earningsDivider: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    marginVertical: 8,
+  },
+  netEarningsRow: {
+    marginTop: 4,
+  },
+  netEarningsLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  netEarningsValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#10b981',
+  },
+  earningsNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(249,115,22,0.1)',
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 12,
+  },
+  earningsNoteText: {
+    fontSize: 11,
+    color: '#f97316',
+    flex: 1,
   },
   customerCard: {
     backgroundColor: '#1a1a1a',

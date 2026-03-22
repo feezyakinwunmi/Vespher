@@ -117,6 +117,8 @@ export interface Vendor {
   created_at?: string;
   latitude?: number;      // Add this
   longitude?: number; 
+  flutterwave_subaccount_id?: string | null;  // Add this!
+
 }
 // Product Types
 export interface Product {
@@ -237,6 +239,8 @@ export interface Order {
   paymentMethod?: PaymentMethod;
   deliveryAddress?: any;
   estimatedDelivery?: string;
+  is_scheduled?: boolean;
+  refund_status?:string;
 
 
 
@@ -245,6 +249,7 @@ export interface Order {
   platform_commission?: number;
   platform_net_earnings?: number;
   payment_gateway_response?: any;
+  flutterwave_transaction_id?: string;
 }
 
 // Order Item Types - New for detailed order items

@@ -69,12 +69,20 @@ export function useOrders() {
         vendor: order.vendor,
         rider: order.rider,
         
-        // NEW FIELDS - Add these
+        // Financial fields
         flutterwave_fee: order.flutterwave_fee,
         platform_commission: order.platform_commission,
         platform_commission_percentage: order.platform_commission_percentage,
         platform_net_earnings: order.platform_net_earnings,
         payment_gateway_response: order.payment_gateway_response,
+        
+        // ✅ REFUND FIELDS - ADD THESE
+        refund_status: order.refund_status,
+        refund_reference: order.refund_reference,
+        refund_amount: order.refund_amount,
+        refund_requested_at: order.refund_requested_at,
+        refund_completed_at: order.refund_completed_at,
+        refund_reason: order.refund_reason,
         
         // For backward compatibility
         customerId: order.customer_id,
@@ -147,12 +155,20 @@ export function useOrders() {
           vendor: data.vendor,
           rider: data.rider,
           
-          // NEW FIELDS - Add these
+          // Financial fields
           flutterwave_fee: data.flutterwave_fee,
           platform_commission: data.platform_commission,
           platform_commission_percentage: data.platform_commission_percentage,
           platform_net_earnings: data.platform_net_earnings,
           payment_gateway_response: data.payment_gateway_response,
+          
+          // ✅ REFUND FIELDS - ADD THESE
+          refund_status: data.refund_status,
+          refund_reference: data.refund_reference,
+          refund_amount: data.refund_amount,
+          refund_requested_at: data.refund_requested_at,
+          refund_completed_at: data.refund_completed_at,
+          refund_reason: data.refund_reason,
         };
       }
       return null;

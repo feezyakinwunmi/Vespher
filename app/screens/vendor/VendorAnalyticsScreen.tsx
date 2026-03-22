@@ -12,7 +12,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
-import { useVendorStats } from '../../hooks/vendor/useVendorStats';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { SimpleLineChart, SimpleBarChart } from '../../components/SimpleChart';
@@ -20,29 +19,78 @@ import { SimpleLineChart, SimpleBarChart } from '../../components/SimpleChart';
 export function VendorAnalyticsScreen() {
   const navigation = useNavigation();
   const { user } = useAuth();
-  const { stats, isLoading: statsLoading, refreshStats } = useVendorStats();
   const [period, setPeriod] = useState<'week' | 'month' | 'year'>('month');
   const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [totalEarned, setTotalEarned] = useState(0);
+  const [pendingPayout, setPendingPayout] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [vendorId, setVendorId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
-    fetchAnalyticsData();
-  }, [user, period]);
+    fetchVendorId();
+  }, [user]);
 
-  const fetchAnalyticsData = async () => {
+  const fetchVendorId = async () => {
     try {
-      setLoading(true);
-      
-      // Get vendor ID
-      const { data: vendorData } = await supabase
+      const { data, error } = await supabase
         .from('vendors')
         .select('id')
         .eq('owner_id', user?.id)
         .single();
 
-      if (!vendorData) return;
+      if (error) throw error;
+      if (data) {
+        setVendorId(data.id);
+        fetchWalletData(data.id);
+        fetchAnalyticsData(data.id);
+      }
+    } catch (error) {
+      console.error('Error fetching vendor ID:', error);
+      setLoading(false);
+    }
+  };
 
+  const fetchWalletData = async (vendorId: string) => {
+    try {
+      // Fetch wallet balance
+      const { data: wallet, error: walletError } = await supabase
+        .from('vendor_wallets')
+        .select('balance, total_earned')
+        .eq('vendor_id', vendorId)
+        .single();
+
+      if (walletError && walletError.code !== 'PGRST116') {
+        console.error('Error fetching wallet:', walletError);
+      }
+
+      if (wallet) {
+        setWalletBalance(wallet.balance || 0);
+        setTotalEarned(wallet.total_earned || 0);
+      }
+
+      // Fetch pending withdrawals
+      const { data: withdrawals, error: withdrawalsError } = await supabase
+        .from('withdrawals')
+        .select('amount, status')
+        .eq('user_id', user?.id)
+        .eq('user_type', 'vendor')
+        .in('status', ['pending', 'processing']);
+
+      if (!withdrawalsError && withdrawals) {
+        const pending = withdrawals.reduce((sum, w) => sum + (w.amount || 0), 0);
+        setPendingPayout(pending);
+      }
+    } catch (error) {
+      console.error('Error fetching wallet data:', error);
+    }
+  };
+
+  const fetchAnalyticsData = async (vendorId: string) => {
+    try {
+      setLoading(true);
+      
       // Get date range
       const endDate = new Date();
       const startDate = new Date();
@@ -54,11 +102,83 @@ export function VendorAnalyticsScreen() {
       const { data: orders } = await supabase
         .from('orders')
         .select('*')
-        .eq('vendor_id', vendorData.id)
+        .eq('vendor_id', vendorId)
         .eq('status', 'delivered')
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString())
         .order('created_at', { ascending: true });
+
+      // Calculate vendor earnings for each order (use stored vendor_payout)
+      const ordersWithEarnings = orders?.map(order => ({
+        ...order,
+        earnings: typeof order.vendor_payout === 'string' 
+          ? parseFloat(order.vendor_payout) 
+          : (order.vendor_payout || 0)
+      })) || [];
+
+      // Calculate sales over time
+      const salesMap = new Map();
+      ordersWithEarnings.forEach(order => {
+        const date = new Date(order.created_at).toLocaleDateString();
+        const existing = salesMap.get(date) || { earnings: 0, orders: 0 };
+        
+        salesMap.set(date, {
+          earnings: existing.earnings + order.earnings,
+          orders: existing.orders + 1,
+        });
+      });
+
+      const salesOverTime = Array.from(salesMap.entries()).map(([date, values]) => ({
+        date,
+        ...values,
+      }));
+
+      // Calculate period totals
+      const periodOrders = ordersWithEarnings.length;
+      const periodEarnings = ordersWithEarnings.reduce((sum, o) => sum + o.earnings, 0);
+
+      // Calculate top products
+      const productMap = new Map();
+      ordersWithEarnings.forEach(order => {
+        order.items?.forEach((item: any) => {
+          const existing = productMap.get(item.name) || { count: 0, earnings: 0 };
+          const itemEarnings = (item.price * item.quantity) * 0.9; // 90% of item price goes to vendor
+          productMap.set(item.name, {
+            count: existing.count + item.quantity,
+            earnings: existing.earnings + itemEarnings,
+          });
+        });
+      });
+
+      const topProducts = Array.from(productMap.entries())
+        .map(([name, values]) => ({ name, ...values }))
+        .sort((a, b) => b.earnings - a.earnings)
+        .slice(0, 5);
+
+      // Calculate top locations
+      const locationMap = new Map();
+      ordersWithEarnings.forEach(order => {
+        const area = order.delivery_address?.area || 'Unknown';
+        locationMap.set(area, (locationMap.get(area) || 0) + 1);
+      });
+
+      const topLocations = Array.from(locationMap.entries())
+        .map(([area, orders]) => ({ area, orders }))
+        .sort((a, b) => b.orders - a.orders)
+        .slice(0, 5);
+
+      // Calculate peak hours
+      const hourMap = new Map();
+      for (let i = 0; i < 24; i++) hourMap.set(i, 0);
+      
+      ordersWithEarnings.forEach(order => {
+        const hour = new Date(order.created_at).getHours();
+        hourMap.set(hour, (hourMap.get(hour) || 0) + 1);
+      });
+
+      const peakHours = Array.from(hourMap.entries())
+        .map(([hour, orders]) => ({ hour, orders }))
+        .filter(h => h.orders > 0);
 
       // Fetch reviews
       const { data: reviews } = await supabase
@@ -73,80 +193,16 @@ export function VendorAnalyticsScreen() {
             name
           )
         `)
-        .eq('vendor_id', vendorData.id)
+        .eq('vendor_id', vendorId)
         .order('created_at', { ascending: false });
 
-      // Calculate sales over time
-      const salesMap = new Map();
-      orders?.forEach(order => {
-        const date = new Date(order.created_at).toLocaleDateString();
-        const existing = salesMap.get(date) || { earnings: 0, orders: 0 };
-        
-        // Use the same calculation as vendorStats
-        const subtotal = (order.total || 0) - (order.delivery_fee || 0);
-        const platformFee = Math.round(subtotal * 0.1);
-        const earnings = subtotal - platformFee;
-        
-        salesMap.set(date, {
-          earnings: existing.earnings + earnings,
-          orders: existing.orders + 1,
-        });
-      });
-
-      const salesOverTime = Array.from(salesMap.entries()).map(([date, values]) => ({
-        date,
-        ...values,
+      const formattedReviews = (reviews || []).map(review => ({
+        id: review.id,
+        rating: review.rating,
+        comment: review.comment || '',
+        created_at: review.created_at,
+        customer_name: (review.users as any)?.name || 'Anonymous Customer',
       }));
-
-      // Calculate top products
-      const productMap = new Map();
-      orders?.forEach(order => {
-        order.items?.forEach((item: any) => {
-          const existing = productMap.get(item.name) || { count: 0 };
-          productMap.set(item.name, {
-            count: existing.count + item.quantity,
-          });
-        });
-      });
-
-      const topProducts = Array.from(productMap.entries())
-        .map(([name, values]) => ({ name, ...values }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 5);
-
-      // Calculate top locations
-      const locationMap = new Map();
-      orders?.forEach(order => {
-        const area = order.delivery_address?.area || 'Unknown';
-        locationMap.set(area, (locationMap.get(area) || 0) + 1);
-      });
-
-      const topLocations = Array.from(locationMap.entries())
-        .map(([area, orders]) => ({ area, orders }))
-        .sort((a, b) => b.orders - a.orders)
-        .slice(0, 5);
-
-      // Calculate peak hours
-      const hourMap = new Map();
-      for (let i = 0; i < 24; i++) hourMap.set(i, 0);
-      
-      orders?.forEach(order => {
-        const hour = new Date(order.created_at).getHours();
-        hourMap.set(hour, (hourMap.get(hour) || 0) + 1);
-      });
-
-      const peakHours = Array.from(hourMap.entries())
-        .map(([hour, orders]) => ({ hour, orders }))
-        .filter(h => h.orders > 0);
-
-      // Format reviews
-     const formattedReviews = (reviews || []).map(review => ({
-  id: review.id,
-  rating: review.rating,
-  comment: review.comment || '',
-  created_at: review.created_at,
-  customer_name: (review.users as any)?.name || 'Anonymous Customer',
-}));
 
       setAnalyticsData({
         salesOverTime,
@@ -155,12 +211,8 @@ export function VendorAnalyticsScreen() {
         peakHours,
         recentReviews: formattedReviews.slice(0, 5),
         periodStats: {
-          totalOrders: orders?.length || 0,
-          totalEarnings: orders?.reduce((sum, o) => {
-            const subtotal = (o.total || 0) - (o.delivery_fee || 0);
-            const platformFee = Math.round(subtotal * 0.1);
-            return sum + (subtotal - platformFee);
-          }, 0) || 0,
+          totalOrders: periodOrders,
+          totalEarnings: periodEarnings,
         },
       });
 
@@ -171,7 +223,23 @@ export function VendorAnalyticsScreen() {
     }
   };
 
-  if (statsLoading || loading) {
+  const handlePeriodChange = (newPeriod: 'week' | 'month' | 'year') => {
+    setPeriod(newPeriod);
+    if (vendorId) {
+      fetchAnalyticsData(vendorId);
+    }
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  if (loading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#f97316" />
@@ -179,12 +247,12 @@ export function VendorAnalyticsScreen() {
     );
   }
 
-  if (!analyticsData || !stats) {
+  if (!analyticsData) {
     return (
       <View style={styles.errorContainer}>
         <Feather name="alert-circle" size={48} color="#ef4444" />
         <Text style={styles.errorText}>Failed to load analytics</Text>
-        <TouchableOpacity onPress={refreshStats} style={styles.retryButton}>
+        <TouchableOpacity onPress={() => vendorId && fetchAnalyticsData(vendorId)} style={styles.retryButton}>
           <Text style={styles.retryText}>Try Again</Text>
         </TouchableOpacity>
       </View>
@@ -199,10 +267,7 @@ export function VendorAnalyticsScreen() {
           <Feather name="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Analytics</Text>
-        <TouchableOpacity onPress={() => {
-          refreshStats();
-          fetchAnalyticsData();
-        }} style={styles.refreshButton}>
+        <TouchableOpacity onPress={() => vendorId && fetchAnalyticsData(vendorId)} style={styles.refreshButton}>
           <Feather name="refresh-cw" size={20} color="#f97316" />
         </TouchableOpacity>
       </View>
@@ -217,7 +282,7 @@ export function VendorAnalyticsScreen() {
           ].map((option) => (
             <TouchableOpacity
               key={option.value}
-              onPress={() => setPeriod(option.value as typeof period)}
+              onPress={() => handlePeriodChange(option.value as typeof period)}
               style={[
                 styles.periodButton,
                 period === option.value && styles.periodButtonActive,
@@ -233,36 +298,40 @@ export function VendorAnalyticsScreen() {
           ))}
         </View>
 
-        {/* Summary Cards - Using stats for total, analyticsData for period */}
+        {/* Summary Cards - Using wallet data for totals */}
         <View style={styles.summaryGrid}>
+          {/* Total Earnings Card */}
           <LinearGradient
             colors={['#f97316', '#f43f5e']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.summaryCard}
           >
-            <Text style={styles.summaryLabel}>Total Orders</Text>
-            <Text style={styles.summaryValue}>{stats.totalOrders}</Text>
+            <Text style={styles.summaryLabel}>Total Earnings (All Time)</Text>
+            <Text style={styles.summaryValue}>{formatCurrency(totalEarned)}</Text>
           </LinearGradient>
 
+          {/* Available Balance Card */}
           <LinearGradient
             colors={['#10b981', '#059669']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.summaryCard}
           >
-            <Text style={styles.summaryLabel}>Total Earnings</Text>
-            <Text style={styles.summaryValue}>₦{stats.totalVendorEarnings.toLocaleString()}</Text>
+            <Text style={styles.summaryLabel}>Available Balance</Text>
+            <Text style={styles.summaryValue}>{formatCurrency(walletBalance)}</Text>
           </LinearGradient>
 
+          {/* Pending Payout Card */}
           <View style={styles.summaryCardSecondary}>
-            <Text style={styles.summaryLabelSecondary}>Period Orders</Text>
-            <Text style={styles.summaryValueSecondary}>{analyticsData.periodStats.totalOrders}</Text>
+            <Text style={styles.summaryLabelSecondary}>Pending Payout</Text>
+            <Text style={styles.summaryValueSecondary}>{formatCurrency(pendingPayout)}</Text>
           </View>
 
+          {/* Period Earnings Card */}
           <View style={styles.summaryCardSecondary}>
-            <Text style={styles.summaryLabelSecondary}>Period Earnings</Text>
-            <Text style={styles.summaryValueSecondary}>₦{analyticsData.periodStats.totalEarnings.toLocaleString()}</Text>
+            <Text style={styles.summaryLabelSecondary}>{period === 'week' ? 'This Week' : period === 'month' ? 'This Month' : 'This Year'}</Text>
+            <Text style={styles.summaryValueSecondary}>{formatCurrency(analyticsData.periodStats.totalEarnings)}</Text>
           </View>
         </View>
 
@@ -294,6 +363,7 @@ export function VendorAnalyticsScreen() {
                     <Text style={styles.listItemSubtext}>{product.count} orders</Text>
                   </View>
                 </View>
+                <Text style={styles.listItemValue}>{formatCurrency(product.earnings)}</Text>
               </View>
             ))}
           </View>
@@ -369,13 +439,11 @@ export function VendorAnalyticsScreen() {
   );
 }
 
-// Add all the styles from your existing file
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0a0a0a',
-        paddingBottom:60,
-
+    paddingBottom: 60,
   },
   loadingContainer: {
     flex: 1,
@@ -489,7 +557,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   summaryValue: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     color: '#fff',
   },
@@ -499,14 +567,9 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   summaryValueSecondary: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     color: '#fff',
-  },
-  summarySubtext: {
-    fontSize: 10,
-    color: '#666',
-    marginTop: 2,
   },
   card: {
     backgroundColor: '#1a1a1a',
@@ -560,8 +623,10 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#666',
   },
-  listItemRight: {
-    alignItems: 'flex-end',
+  listItemValue: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#f97316',
   },
   listItemCount: {
     fontSize: 13,

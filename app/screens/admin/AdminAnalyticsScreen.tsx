@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import Toast from 'react-native-toast-message';
@@ -20,7 +19,6 @@ import {
   LineChart,
   BarChart,
   PieChart,
-  ProgressChart,
 } from 'react-native-chart-kit';
 
 const { width } = Dimensions.get('window');
@@ -28,54 +26,81 @@ const { width } = Dimensions.get('window');
 type TimeRange = 'week' | 'month' | 'year' | 'all';
 
 interface AnalyticsData {
-  // Order stats
+  // ===== ORDER TOTALS =====
   totalOrders: number;
   totalFoodOrders: number;
   totalBusinessOrders: number;
+  
+  // ===== REVENUE TOTALS =====
   totalRevenue: number;
   totalFoodRevenue: number;
   totalBusinessRevenue: number;
-  platformFees: number;
-  platformFeesBeforeFees?: number; // Platform income before Flutterwave
-  totalBusinessPlatformShare: number;
-  totalRiderEarnings: number;
-  totalFlutterwaveFees?: number;
-  totalBusinessFlutterwaveFees?: number;
-  totalFlutterwaveFeesOverall?: number;
-  foodPlatformIncomeBeforeFees?: number;
-  totalBusinessPlatformShareBeforeFees?: number;
-  platformDeliveryShare?: number;
-  totalFoodPlatformNetEarnings?: number;
-  // Additional fields for debugging/info
-  totalFoodDeliveryFees: number;
-  totalBusinessRiderShare: number;
   
-  // Vendor stats
+  // ===== VENDOR EARNINGS =====
+  totalVendorEarnings: number;
+  vendorEarningsBreakdown: { vendorName: string; earnings: number }[];
+  
+  // ===== RIDER EARNINGS =====
+  totalRiderEarnings: number;
+  riderEarningsBreakdown: { riderName: string; earnings: number }[];
+  
+  // ===== PLATFORM EARNINGS =====
+  platformEarnings: {
+    total: number;
+    fromFoodCommission: number;
+    fromDeliveryShare: number;
+    fromBusinessOrders: number;
+  };
+  
+  // ===== FEES =====
+  flutterwaveFees: {
+    total: number;
+    fromFoodOrders: number;
+    fromBusinessOrders: number;
+  };
+  stampDutyTotal: number;
+  
+  // ===== VENDOR STATS =====
   totalVendors: number;
   approvedVendors: number;
   pendingVendors: number;
   suspendedVendors: number;
-
-  // User stats
+  
+  // ===== USER STATS =====
   totalUsers: number;
   totalCustomers: number;
   totalRiders: number;
-  totalBusinesses: number;
   
-  // Order trends
-  ordersByDay: { date: string; food: number; business: number }[];
+  // ===== TRENDS =====
+  ordersByDay: { date: string; food: number; business: number; total: number }[];
   
-  // Top performers
+  // ===== TOP PERFORMERS =====
   topVendorsByOrders: any[];
   topVendorsByRevenue: any[];
-  topVendorsByRating: any[];
+  topRidersByEarnings: any[];
   
-  // Category distribution
-  ordersByCategory: { category: string; count: number }[];
+  // ===== CATEGORY DISTRIBUTION =====
+  ordersByCategory: { category: string; count: number; revenue: number }[];
   
-  // Revenue breakdown
-  revenueByType: { name: string; revenue: number; color: string }[];
+  // ===== REVENUE BREAKDOWN (for pie chart) =====
+  revenueBreakdown: { name: string; amount: number; color: string }[];
 }
+
+// Professional color palette
+const colors = {
+  primary: '#3b82f6',
+  success: '#10b981',
+  warning: '#f59e0b',
+  danger: '#ef4444',
+  info: '#8b5cf6',
+  orange: '#f97316',
+  pink: '#ec489a',
+  background: '#0a0a0a',
+  card: '#1a1a1a',
+  border: '#2a2a2a',
+  text: '#ffffff',
+  textSecondary: '#9ca3af',
+};
 
 export function AdminAnalyticsScreen() {
   const navigation = useNavigation();
@@ -89,110 +114,89 @@ export function AdminAnalyticsScreen() {
     totalRevenue: 0,
     totalFoodRevenue: 0,
     totalBusinessRevenue: 0,
-    platformFees: 0,
+    totalVendorEarnings: 0,
+    vendorEarningsBreakdown: [],
+    totalRiderEarnings: 0,
+    riderEarningsBreakdown: [],
+    platformEarnings: { total: 0, fromFoodCommission: 0, fromDeliveryShare: 0, fromBusinessOrders: 0 },
+    flutterwaveFees: { total: 0, fromFoodOrders: 0, fromBusinessOrders: 0 },
+    stampDutyTotal: 0,
     totalVendors: 0,
     approvedVendors: 0,
     pendingVendors: 0,
     suspendedVendors: 0,
     totalUsers: 0,
     totalCustomers: 0,
-    totalBusinessPlatformShare: 0,
-    totalRiderEarnings: 0,
-    // Additional fields for debugging/info
-    totalFoodDeliveryFees: 0,
-    totalBusinessRiderShare: 0,
     totalRiders: 0,
-    totalBusinesses: 0,
     ordersByDay: [],
     topVendorsByOrders: [],
     topVendorsByRevenue: [],
-    topVendorsByRating: [],
+    topRidersByEarnings: [],
     ordersByCategory: [],
-    revenueByType: [],
+    revenueBreakdown: [],
   });
 
   useEffect(() => {
     fetchAnalytics();
   }, [timeRange]);
 
-  const fetchAnalytics = async () => {
-    try {
-      setLoading(true);
+ const fetchAnalytics = async () => {
+  try {
+    setLoading(true);
 
-      // Get date range filter
-      const dateFilter = getDateFilter(timeRange);
+    const dateFilter = getDateFilter(timeRange);
 
-      // Fetch all required data in parallel
-      const [
-        foodOrdersData,
-        businessOrdersData,
-        vendorsData,
-        usersData,
-        reviewsData,
-        platformSettings,
-      ] = await Promise.all([
-        // Food orders
-        supabase
-          .from('orders')
-          .select(`
-            *,
-            vendor:vendors(name, rating),
-            items:order_items(quantity, price)
-          `)
-          .gte('created_at', dateFilter.startDate),
-        
-        // Business logistics
-        supabase
-          .from('business_logistics')
-          .select('*')
-          .gte('created_at', dateFilter.startDate),
-        
-        // Vendors
-        supabase
-          .from('vendors')
-          .select('*'),
-        
-        // Users
-        supabase
-          .from('users')
-          .select('role, created_at'),
-        
-        // Reviews
-        supabase
-          .from('reviews')
-          .select('vendor_id, rating, created_at'),
-        
-        // Platform settings for fee percentage
-        supabase
-          .from('platform_settings')
-          .select('platform_fee_percentage')
-          .order('id', { ascending: true })
-          .limit(1)
-          .single(),
-      ]);
+    // Fetch all delivered food orders
+    const { data: foodOrders } = await supabase
+      .from('orders')
+      .select(`
+        *,
+        vendor:vendors(id, name, category)
+      `)
+      .eq('status', 'delivered')
+      .gte('created_at', dateFilter.startDate);
 
-      // Process the data
-      const processedData = processAnalyticsData(
-        foodOrdersData.data || [],
-        businessOrdersData.data || [],
-        vendorsData.data || [],
-        usersData.data || [],
-        reviewsData.data || [],
-        platformSettings.data?.platform_fee_percentage || 10
-      );
+    // Fetch all business logistics orders (from business_logistics table)
+    const { data: businessOrders } = await supabase
+      .from('business_logistics')
+      .select('*')
+      .gte('created_at', dateFilter.startDate);
 
-      setAnalytics(processedData);
-    } catch (error) {
-      console.error('Error fetching analytics:', error);
-      Toast.show({
-        type: 'error',
-        text1: 'Failed to load analytics',
-      });
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+    // Fetch all vendors
+    const { data: vendors } = await supabase
+      .from('vendors')
+      .select('*');
+
+    // Fetch all riders (users with role 'rider')
+    const { data: riders } = await supabase
+      .from('users')
+      .select('id, name, phone')
+      .eq('role', 'rider');
+
+    // Fetch all users for stats
+    const { data: users } = await supabase
+      .from('users')
+      .select('role');
+
+    // Process all data (this is now async because it fetches rider_earnings)
+    const processedData = await processAnalyticsData(
+      foodOrders || [],
+      businessOrders || [],
+      vendors || [],
+      riders || [],
+      users || [],
+      10 // platform fee percentage
+    );
+
+    setAnalytics(processedData);
+  } catch (error) {
+    console.error('Error fetching analytics:', error);
+    Toast.show({ type: 'error', text1: 'Failed to load analytics' });
+  } finally {
+    setLoading(false);
+    setRefreshing(false);
+  }
+};
 
   const getDateFilter = (range: TimeRange) => {
     const now = new Date();
@@ -209,290 +213,313 @@ export function AdminAnalyticsScreen() {
         startDate.setFullYear(now.getFullYear() - 1);
         break;
       case 'all':
-        startDate.setFullYear(2000); // Far in the past
+        startDate.setFullYear(2000);
         break;
     }
 
-    return {
-      startDate: startDate.toISOString(),
-      endDate: now.toISOString(),
-    };
+    return { startDate: startDate.toISOString(), endDate: now.toISOString() };
   };
 
 const processAnalyticsData = (
   foodOrders: any[],
   businessOrders: any[],
   vendors: any[],
+  riders: any[],
   users: any[],
-  reviews: any[],
   platformFeePercentage: number
 ): AnalyticsData => {
-  // For food orders: filter by delivered/completed status
-  const completedFoodOrders = foodOrders.filter(order => 
+  
+  // ===== BUSINESS ORDERS: Filter by delivered/completed =====
+  const completedBusinessOrders = businessOrders.filter(order => 
     order.status === 'delivered' || order.status === 'completed'
   );
-  
-  // For business orders: filter by paid status
-  const completedBusinessOrders = businessOrders.filter(order => 
-    order.payment_status === 'paid'
-  );
 
-  // ===== FOOD ORDERS METRICS =====
-  const totalFoodOrders = completedFoodOrders.length;
+  // ===== FOOD ORDERS CALCULATIONS =====
+  const totalFoodOrders = foodOrders.length;
+  const totalFoodRevenue = foodOrders.reduce((sum, order) => sum + (order.total || 0), 0);
   
-  // Total food revenue (order total)
-  const totalFoodRevenue = completedFoodOrders.reduce((sum, order) => sum + (order.total || 0), 0);
-  
-  // Total food delivery fees
-  const totalFoodDeliveryFees = completedFoodOrders.reduce((sum, order) => {
-    return sum + (order.delivery_fee || 0);
+  // Vendor earnings from food orders
+  const vendorEarningsFromFood = foodOrders.reduce((sum, order) => {
+    const payout = typeof order.vendor_payout === 'string' 
+      ? parseFloat(order.vendor_payout) 
+      : (order.vendor_payout || 0);
+    return sum + payout;
   }, 0);
   
-  // Total food service fees (for future)
-  const totalFoodServiceFees = completedFoodOrders.reduce((sum, order) => {
-    return sum + (order.service_fee || 0);
+  // Platform commission from food orders
+  const platformCommissionFromFood = foodOrders.reduce((sum, order) => {
+    const commission = typeof order.platform_commission === 'string' 
+      ? parseFloat(order.platform_commission) 
+      : (order.platform_commission || 0);
+    return sum + commission;
   }, 0);
   
-  // Calculate total food subtotal for 2% fee
-  const totalFoodSubtotal = completedFoodOrders.reduce((sum, order) => {
-    return sum + (order.subtotal || 0);
+  // ===== RIDER EARNINGS FROM FOOD ORDERS =====
+  // Directly from the rider_earnings column in orders table
+  const riderEarningsFromFoodOrders = foodOrders.reduce((sum, order) => {
+    const earnings = typeof order.rider_earnings === 'string' 
+      ? parseFloat(order.rider_earnings) 
+      : (order.rider_earnings || 0);
+    return sum + earnings;
   }, 0);
-
-  // Calculate Flutterwave fee (2% of subtotal)
-  const totalFlutterwaveFees = totalFoodSubtotal * 0.02;
-
-  // Platform share from delivery fees (50%)
-  const platformDeliveryShare = totalFoodDeliveryFees * 0.5;
-
-  // Calculate total platform_net_earnings from all food orders
-  const totalFoodPlatformNetEarnings = completedFoodOrders.reduce((sum, order) => {
-    // Use stored platform_net_earnings if available
-    if (order.platform_net_earnings) {
-      const net = typeof order.platform_net_earnings === 'string' 
-        ? parseFloat(order.platform_net_earnings) 
-        : order.platform_net_earnings;
-      return sum + net;
+  
+  // ===== RIDER EARNINGS FROM BUSINESS ORDERS =====
+  const riderEarningsFromBusinessOrders = completedBusinessOrders.reduce((sum, order) => {
+    const share = typeof order.rider_share === 'string' 
+      ? parseFloat(order.rider_share) 
+      : (order.rider_share || 0);
+    return sum + share;
+  }, 0);
+  
+  // ===== TOTAL RIDER EARNINGS =====
+  const totalRiderEarnings = riderEarningsFromFoodOrders + riderEarningsFromBusinessOrders;
+  
+  // ===== BUILD RIDER EARNINGS BREAKDOWN =====
+  const riderEarningsMap = new Map();
+  
+  // 1. Process food orders - get earnings by rider_id
+  foodOrders.forEach(order => {
+    const riderId = order.rider_id;
+    if (riderId) {
+      const earnings = typeof order.rider_earnings === 'string' 
+        ? parseFloat(order.rider_earnings) 
+        : (order.rider_earnings || 0);
+      
+      if (earnings > 0) {
+        if (!riderEarningsMap.has(riderId)) {
+          const rider = riders.find(r => r.id === riderId);
+          riderEarningsMap.set(riderId, { 
+            name: rider?.name || 'Unknown Rider', 
+            earnings: 0,
+            fromFood: 0,
+            fromBusiness: 0,
+            orders: 0
+          });
+        }
+        const riderData = riderEarningsMap.get(riderId);
+        riderData.earnings += earnings;
+        riderData.fromFood += earnings;
+        riderData.orders += 1;
+      }
     }
-    // Fallback calculation if not stored
-    const commission = (order.subtotal || 0) * (platformFeePercentage / 100);
-    const flutterwaveFee = (order.subtotal || 0) * 0.02;
-    return sum + (commission - flutterwaveFee);
+  });
+  
+  // 2. Process business orders - get earnings by rider_id
+  completedBusinessOrders.forEach(order => {
+    const riderId = order.rider_id;
+    if (riderId && order.rider_share) {
+      const share = typeof order.rider_share === 'string' 
+        ? parseFloat(order.rider_share) 
+        : (order.rider_share || 0);
+      
+      if (share > 0) {
+        if (!riderEarningsMap.has(riderId)) {
+          const rider = riders.find(r => r.id === riderId);
+          riderEarningsMap.set(riderId, { 
+            name: rider?.name || 'Unknown Rider', 
+            earnings: 0,
+            fromFood: 0,
+            fromBusiness: 0,
+            orders: 0
+          });
+        }
+        const riderData = riderEarningsMap.get(riderId);
+        riderData.earnings += share;
+        riderData.fromBusiness += share;
+      }
+    }
+  });
+  
+  const riderEarningsBreakdown = Array.from(riderEarningsMap.values())
+    .sort((a, b) => b.earnings - a.earnings)
+    .slice(0, 10);
+  
+  // Log for debugging
+  console.log('Rider earnings breakdown:', riderEarningsBreakdown);
+  console.log('Total rider earnings:', totalRiderEarnings);
+  
+  // Delivery share for platform (50% of delivery fee)
+  const totalDeliveryFees = foodOrders.reduce((sum, order) => sum + (order.delivery_fee || 0), 0);
+  const deliveryShare = totalDeliveryFees * 0.5;
+  
+  // Flutterwave fees from food orders
+  const flutterwaveFeesFood = foodOrders.reduce((sum, order) => {
+    const fee = typeof order.flutterwave_fee === 'string' 
+      ? parseFloat(order.flutterwave_fee) 
+      : (order.flutterwave_fee || 0);
+    return sum + fee;
   }, 0);
-
-  // CURRENT food platform income (before fees) - for debugging
-  const foodPlatformIncomeBeforeFees = platformDeliveryShare + totalFoodServiceFees;
-
-  // Food rider earnings = 50% of delivery fees
-  const foodRiderEarnings = totalFoodDeliveryFees * 0.5;
-
-  // ===== BUSINESS ORDERS METRICS =====
+  
+  // Stamp duty from food orders
+  const stampDutyTotal = foodOrders.reduce((sum, order) => {
+    const duty = typeof order.stamp_duty === 'string' 
+      ? parseFloat(order.stamp_duty) 
+      : (order.stamp_duty || 0);
+    return sum + duty;
+  }, 0);
+  
+  // ===== BUSINESS ORDERS CALCULATIONS =====
   const totalBusinessOrders = completedBusinessOrders.length;
-
-  // Total business revenue (calculated_fee)
   const totalBusinessRevenue = completedBusinessOrders.reduce((sum, order) => {
     const fee = typeof order.calculated_fee === 'string' 
       ? parseFloat(order.calculated_fee) 
       : (order.calculated_fee || 0);
     return sum + fee;
   }, 0);
-
-  // CURRENT business platform share (before fees)
-  const totalBusinessPlatformShareBeforeFees = completedBusinessOrders.reduce((sum, order) => {
-    if (order.platform_share) {
-      const share = typeof order.platform_share === 'string' 
-        ? parseFloat(order.platform_share) 
-        : order.platform_share;
-      return sum + share;
-    }
-    return sum;
-  }, 0);
-
-  // Calculate business subtotal for accurate fee calculation
-  const totalBusinessSubtotal = completedBusinessOrders.reduce((sum, order) => {
-    // Try to get subtotal if available
-    if (order.subtotal) {
-      const sub = typeof order.subtotal === 'string' 
-        ? parseFloat(order.subtotal) 
-        : order.subtotal;
-      return sum + sub;
-    }
-    // Estimate from platform_share if subtotal not available (assuming platform_share is 10% of total)
-    if (order.platform_share) {
-      const platformShare = typeof order.platform_share === 'string' 
-        ? parseFloat(order.platform_share) 
-        : order.platform_share;
-      return sum + (platformShare * 10);
-    }
-    return sum;
-  }, 0);
-
-  // Calculate Flutterwave fee for business (2% of subtotal)
-const totalBusinessFlutterwaveFees = completedBusinessOrders.reduce((sum, order) => {
-  // Get the total from calculated_fee (this is the actual order total)
-  if (order.calculated_fee) {
-    const total = typeof order.calculated_fee === 'string' 
-      ? parseFloat(order.calculated_fee) 
-      : order.calculated_fee;
-    return sum + (total * 0.02);
-  };
-
-
-    if (order.platform_share && order.rider_share) {
-    const platformShare = typeof order.platform_share === 'string' 
+  
+  // Platform earnings from business orders (platform_share column)
+  const platformEarningsFromBusiness = completedBusinessOrders.reduce((sum, order) => {
+    const share = typeof order.platform_share === 'string' 
       ? parseFloat(order.platform_share) 
-      : order.platform_share;
-    const riderShare = typeof order.rider_share === 'string' 
-      ? parseFloat(order.rider_share) 
-      : order.rider_share;
-    
-    const total = platformShare + riderShare;
-    return sum + (total * 0.02);
-  }
-  
-  return sum;
-}, 0);
-  // REAL business platform share (after subtracting 2% fee)
-  const totalBusinessPlatformShare = totalBusinessPlatformShareBeforeFees - totalBusinessFlutterwaveFees;
-
-  // Total business rider share (from column)
-  const totalBusinessRiderShare = completedBusinessOrders.reduce((sum, order) => {
-    if (order.rider_share) {
-      const share = typeof order.rider_share === 'string' 
-        ? parseFloat(order.rider_share) 
-        : order.rider_share;
-      return sum + share;
-    }
-    return sum;
+      : (order.platform_share || 0);
+    return sum + share;
   }, 0);
-
-  // ===== TOTAL PLATFORM INCOME =====
-  // Platform income BEFORE Flutterwave fees (delivery share + commissions before fees)
-  const totalPlatformIncomeBeforeFees = platformDeliveryShare + 
-    (totalFoodSubtotal * (platformFeePercentage / 100)) + 
-    totalBusinessPlatformShareBeforeFees;
   
-  // Platform income AFTER Flutterwave fees (delivery share + platform net earnings)
-  const totalPlatformIncome = platformDeliveryShare + totalFoodPlatformNetEarnings + totalBusinessPlatformShare;
+  // Flutterwave fees from business orders (estimate 2% of total)
+  const flutterwaveFeesBusiness = totalBusinessRevenue * 0.02;
   
-  // ===== TOTAL RIDER EARNINGS =====
-  // Rider earnings = Food rider earnings + Business rider share
-  const totalRiderEarnings = foodRiderEarnings + totalBusinessRiderShare;
-  
-  // ===== TOTAL REVENUE =====
+  // ===== TOTAL CALCULATIONS =====
+  const totalOrders = totalFoodOrders + totalBusinessOrders;
   const totalRevenue = totalFoodRevenue + totalBusinessRevenue;
-
-  // Vendor stats
+  const totalVendorEarnings = vendorEarningsFromFood;
+  
+  // Platform earnings breakdown
+  const platformEarnings = {
+    total: platformCommissionFromFood + deliveryShare + platformEarningsFromBusiness - flutterwaveFeesFood - flutterwaveFeesBusiness - stampDutyTotal,
+    fromFoodCommission: platformCommissionFromFood,
+    fromDeliveryShare: deliveryShare,
+    fromBusinessOrders: platformEarningsFromBusiness,
+  };
+  
+  // Flutterwave fees breakdown
+  const flutterwaveFees = {
+    total: flutterwaveFeesFood + flutterwaveFeesBusiness,
+    fromFoodOrders: flutterwaveFeesFood,
+    fromBusinessOrders: flutterwaveFeesBusiness,
+  };
+  
+  // ===== VENDOR EARNINGS BREAKDOWN =====
+  const vendorEarningsMap = new Map();
+  foodOrders.forEach(order => {
+    const vendorId = order.vendor_id;
+    const vendorName = order.vendor?.name || 'Unknown';
+    const payout = typeof order.vendor_payout === 'string' 
+      ? parseFloat(order.vendor_payout) 
+      : (order.vendor_payout || 0);
+    
+    if (!vendorEarningsMap.has(vendorId)) {
+      vendorEarningsMap.set(vendorId, { name: vendorName, earnings: 0, orders: 0 });
+    }
+    const vendor = vendorEarningsMap.get(vendorId);
+    vendor.earnings += payout;
+    vendor.orders += 1;
+  });
+  
+  const vendorEarningsBreakdown = Array.from(vendorEarningsMap.values())
+    .sort((a, b) => b.earnings - a.earnings)
+    .slice(0, 10);
+  
+  // ===== VENDOR STATS =====
   const totalVendors = vendors.length;
   const approvedVendors = vendors.filter(v => v.is_approved).length;
-  const pendingVendors = vendors.filter(v => !v.is_approved).length;
+  const pendingVendors = vendors.filter(v => !v.is_approved && !v.is_suspended).length;
   const suspendedVendors = vendors.filter(v => v.is_suspended).length;
-
-  // User stats
+  
+  // ===== USER STATS =====
   const totalUsers = users.length;
   const totalCustomers = users.filter(u => u.role === 'customer').length;
   const totalRiders = users.filter(u => u.role === 'rider').length;
-  const totalBusinesses = users.filter(u => u.role === 'business').length;
-
-  // Orders by day
-  const ordersByDay = generateOrdersByDay(completedFoodOrders, completedBusinessOrders);
-
-  // Top vendors by orders
-  const vendorOrderCount = new Map();
-  completedFoodOrders.forEach(order => {
-    if (order.vendor_id) {
-      vendorOrderCount.set(
-        order.vendor_id,
-        (vendorOrderCount.get(order.vendor_id) || 0) + 1
-      );
-    }
+  
+  // ===== ORDERS BY DAY (last 7 days) =====
+  const ordersByDay = [];
+  for (let i = 6; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    const dateStr = date.toLocaleDateString('en-US', { weekday: 'short' });
+    
+    const foodCount = foodOrders.filter(order => {
+      const orderDate = new Date(order.created_at);
+      return orderDate.toDateString() === date.toDateString();
+    }).length;
+    
+    const businessCount = completedBusinessOrders.filter(order => {
+      const orderDate = new Date(order.created_at);
+      return orderDate.toDateString() === date.toDateString();
+    }).length;
+    
+    ordersByDay.push({
+      date: dateStr,
+      food: foodCount,
+      business: businessCount,
+      total: foodCount + businessCount,
+    });
+  }
+  
+  // ===== TOP VENDORS =====
+  const vendorOrderMap = new Map();
+  const vendorRevenueMap = new Map();
+  foodOrders.forEach(order => {
+    const vendorId = order.vendor_id;
+    vendorOrderMap.set(vendorId, (vendorOrderMap.get(vendorId) || 0) + 1);
+    vendorRevenueMap.set(vendorId, (vendorRevenueMap.get(vendorId) || 0) + (order.total || 0));
   });
-
+  
   const topVendorsByOrders = vendors
     .map(vendor => ({
       id: vendor.id,
       name: vendor.name,
-      orderCount: vendorOrderCount.get(vendor.id) || 0,
-      revenue: completedFoodOrders
-        .filter(o => o.vendor_id === vendor.id)
-        .reduce((sum, o) => sum + (o.total || 0), 0),
+      orderCount: vendorOrderMap.get(vendor.id) || 0,
+      revenue: vendorRevenueMap.get(vendor.id) || 0,
       rating: parseFloat(vendor.rating) || 0,
-      reviewCount: vendor.review_count || 0,
     }))
+    .filter(v => v.orderCount > 0)
     .sort((a, b) => b.orderCount - a.orderCount)
     .slice(0, 5);
-
-  // Top vendors by revenue
+  
   const topVendorsByRevenue = [...topVendorsByOrders]
     .sort((a, b) => b.revenue - a.revenue)
     .slice(0, 5);
-
-  // Top vendors by rating
-  const topVendorsByRating = vendors
-    .map(vendor => ({
-      id: vendor.id,
-      name: vendor.name,
-      orderCount: vendorOrderCount.get(vendor.id) || 0,
-      revenue: completedFoodOrders
-        .filter(o => o.vendor_id === vendor.id)
-        .reduce((sum, o) => sum + (o.total || 0), 0),
-      rating: parseFloat(vendor.rating) || 0,
-      reviewCount: vendor.review_count || 0,
-    }))
-    .filter(v => v.reviewCount > 0)
-    .sort((a, b) => b.rating - a.rating)
-    .slice(0, 5);
-
-  // Orders by category
-  const categoryCount = new Map();
-  vendors.forEach(vendor => {
-    if (vendor.category) {
-      const count = completedFoodOrders.filter(o => o.vendor_id === vendor.id).length;
-      categoryCount.set(vendor.category, (categoryCount.get(vendor.category) || 0) + count);
-    }
+  
+  // ===== TOP RIDERS BY EARNINGS =====
+  const topRidersByEarnings = riderEarningsBreakdown.slice(0, 5);
+  
+  // ===== ORDERS BY CATEGORY =====
+  const categoryMap = new Map();
+  foodOrders.forEach(order => {
+    const category = order.vendor?.category || 'Other';
+    const existing = categoryMap.get(category) || { count: 0, revenue: 0 };
+    existing.count += 1;
+    existing.revenue += (order.total || 0);
+    categoryMap.set(category, existing);
   });
-
-  const ordersByCategory = Array.from(categoryCount.entries())
-    .map(([category, count]) => ({ category, count }))
+  
+  const ordersByCategory = Array.from(categoryMap.entries())
+    .map(([category, data]) => ({ category, count: data.count, revenue: data.revenue }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
-
-  // Revenue by type for pie chart
-  const revenueByType = [
-    {
-      name: 'Food Orders',
-      population: totalFoodRevenue,
-      revenue: totalFoodRevenue,
-      color: '#f97316',
-      legendFontColor: '#fff',
-      legendFontSize: 10,
-    },
-    {
-      name: 'Business Orders',
-      population: totalBusinessRevenue,
-      revenue: totalBusinessRevenue,
-      color: '#f43f5e',
-      legendFontColor: '#fff',
-      legendFontSize: 10,
-    },
-    {
-      name: 'Platform Income',
-      population: totalPlatformIncome,
-      revenue: totalPlatformIncome,
-      color: '#8b5cf6',
-      legendFontColor: '#fff',
-      legendFontSize: 10,
-    },
-  ];
-
+  
+  // ===== REVENUE BREAKDOWN FOR PIE CHART =====
+  const revenueBreakdown = [
+    { name: 'Vendor Payouts', amount: totalVendorEarnings, color: colors.success },
+    { name: 'Rider Earnings', amount: totalRiderEarnings, color: colors.warning },
+    { name: 'Platform Earnings', amount: platformEarnings.total, color: colors.primary },
+    { name: 'Flutterwave Fees', amount: flutterwaveFees.total, color: colors.danger },
+  ].filter(r => r.amount > 0);
+  
   return {
-    totalOrders: totalFoodOrders + totalBusinessOrders,
+    totalOrders,
     totalFoodOrders,
     totalBusinessOrders,
     totalRevenue,
     totalFoodRevenue,
     totalBusinessRevenue,
-    platformFees: totalPlatformIncome, // This is AFTER Flutterwave fees
-    platformFeesBeforeFees: totalPlatformIncomeBeforeFees, // This is BEFORE Flutterwave fees
+    totalVendorEarnings,
+    vendorEarningsBreakdown,
+    totalRiderEarnings,
+    riderEarningsBreakdown,
+    platformEarnings,
+    flutterwaveFees,
+    stampDutyTotal,
     totalVendors,
     approvedVendors,
     pendingVendors,
@@ -500,56 +527,14 @@ const totalBusinessFlutterwaveFees = completedBusinessOrders.reduce((sum, order)
     totalUsers,
     totalCustomers,
     totalRiders,
-    totalBusinesses,
     ordersByDay,
     topVendorsByOrders,
     topVendorsByRevenue,
-    topVendorsByRating,
+    topRidersByEarnings,
     ordersByCategory,
-    revenueByType,
-    totalRiderEarnings,
-    // Additional fields for debugging/info
-    totalFoodDeliveryFees,
-    totalBusinessPlatformShare,
-    totalBusinessRiderShare,
-    totalFlutterwaveFees,
-    totalBusinessFlutterwaveFees,
-    totalFlutterwaveFeesOverall: totalFlutterwaveFees + totalBusinessFlutterwaveFees,
-    foodPlatformIncomeBeforeFees,
-    totalBusinessPlatformShareBeforeFees,
-    platformDeliveryShare,
-    totalFoodPlatformNetEarnings,
+    revenueBreakdown,
   };
 };
-
-  const generateOrdersByDay = (foodOrders: any[], businessOrders: any[]) => {
-    const days = 7; // Show last 7 days
-    const result = [];
-    
-    for (let i = days - 1; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toLocaleDateString('en-US', { weekday: 'short' });
-      
-      const foodCount = foodOrders.filter(order => {
-        const orderDate = new Date(order.created_at);
-        return orderDate.toDateString() === date.toDateString();
-      }).length;
-      
-      const businessCount = businessOrders.filter(order => {
-        const orderDate = new Date(order.created_at);
-        return orderDate.toDateString() === date.toDateString();
-      }).length;
-      
-      result.push({
-        date: dateStr,
-        food: foodCount,
-        business: businessCount,
-      });
-    }
-    
-    return result;
-  };
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -566,43 +551,32 @@ const totalBusinessFlutterwaveFees = completedBusinessOrders.reduce((sum, order)
   };
 
   const formatNumber = (num: number) => {
-    if (num >= 1000000) {
-      return (num / 1000000).toFixed(1) + 'M';
-    }
-    if (num >= 1000) {
-      return (num / 1000).toFixed(1) + 'K';
-    }
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
     return num.toString();
   };
 
   const chartConfig = {
-    backgroundColor: '#1a1a1a',
-    backgroundGradientFrom: '#1a1a1a',
-    backgroundGradientTo: '#1a1a1a',
+    backgroundColor: colors.card,
+    backgroundGradientFrom: colors.card,
+    backgroundGradientTo: colors.card,
     decimalPlaces: 0,
-    color: (opacity = 1) => `rgba(249, 115, 22, ${opacity})`,
-    labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-    style: {
-      borderRadius: 16,
-    },
-    propsForDots: {
-      r: '6',
-      strokeWidth: '2',
-      stroke: '#f97316',
-    },
+    color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
+    labelColor: (opacity = 1) => `rgba(156, 163, 175, ${opacity})`,
+    style: { borderRadius: 16 },
   };
 
   const timeRanges: Array<{ label: string; value: TimeRange }> = [
     { label: 'Week', value: 'week' },
     { label: 'Month', value: 'month' },
     { label: 'Year', value: 'year' },
-    { label: 'All Time', value: 'all' },
+    { label: 'All', value: 'all' },
   ];
 
   if (loading && !refreshing) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#f97316" />
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.loadingText}>Loading analytics...</Text>
       </View>
     );
@@ -611,18 +585,15 @@ const totalBusinessFlutterwaveFees = completedBusinessOrders.reduce((sum, order)
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
-      <LinearGradient
-        colors={['#f97316', '#f43f5e']}
-        style={styles.header}
-      >
+      <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Feather name="arrow-left" size={24} color="#fff" />
+          <Feather name="arrow-left" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Analytics Dashboard</Text>
+        <Text style={styles.headerTitle}>Analytics</Text>
         <TouchableOpacity onPress={fetchAnalytics} style={styles.refreshButton}>
-          <Feather name="refresh-cw" size={20} color="#fff" />
+          <Feather name="refresh-cw" size={20} color={colors.primary} />
         </TouchableOpacity>
-      </LinearGradient>
+      </View>
 
       {/* Time Range Selector */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.timeRangeContainer}>
@@ -651,410 +622,235 @@ const totalBusinessFlutterwaveFees = completedBusinessOrders.reduce((sum, order)
         style={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#f97316" />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
         }
       >
-        {/* Key Metrics Cards */}
+        {/* ===== KEY METRICS CARDS ===== */}
         <View style={styles.metricsGrid}>
-          {/* Total Orders Card */}
-          <LinearGradient
-            colors={['#f97316', '#f43f5e']}
-            style={styles.metricCard}
-          >
+          {/* Total Orders */}
+          <View style={styles.metricCard}>
+            <Feather name="shopping-bag" size={20} color={colors.primary} />
             <Text style={styles.metricValue}>{formatNumber(analytics.totalOrders)}</Text>
             <Text style={styles.metricLabel}>Total Orders</Text>
-            <View style={styles.metricBreakdown}>
-              <Text style={styles.metricBreakdownText}>🍔 {analytics.totalFoodOrders}</Text>
-              <Text style={styles.metricBreakdownText}>📦 {analytics.totalBusinessOrders}</Text>
+            <View style={styles.metricSubtext}>
+              <Text style={styles.metricSubtextText}>🍔 {analytics.totalFoodOrders}</Text>
+              <Text style={styles.metricSubtextText}>📦 {analytics.totalBusinessOrders}</Text>
             </View>
-          </LinearGradient>
+          </View>
 
-          {/* Total Revenue Card */}
-          <LinearGradient
-            colors={['#3b82f6', '#8b5cf6']}
-            style={styles.metricCard}
-          >
+          {/* Total Revenue */}
+          <View style={styles.metricCard}>
+            <Feather name="dollar-sign" size={20} color={colors.success} />
             <Text style={styles.metricValue}>{formatCurrency(analytics.totalRevenue)}</Text>
             <Text style={styles.metricLabel}>Total Revenue</Text>
-            
-            <View style={styles.metricDivider} />
-            
-            {/* Food Revenue */}
-            <View style={styles.revenueRow}>
-              <View style={styles.revenueLeft}>
-                <View style={[styles.revenueDot, { backgroundColor: '#f97316' }]} />
-                <Text style={styles.revenueLabel}>Total Food Order Revenue</Text>
-              </View>
-              <Text style={styles.revenueValue}>{formatCurrency(analytics.totalFoodRevenue)}</Text>
+            <View style={styles.metricSubtext}>
+              <Text style={styles.metricSubtextText}>🍔 {formatCurrency(analytics.totalFoodRevenue)}</Text>
+              <Text style={styles.metricSubtextText}>📦 {formatCurrency(analytics.totalBusinessRevenue)}</Text>
             </View>
-            
-            {/* Business Revenue */}
-            <View style={styles.revenueRow}>
-              <View style={styles.revenueLeft}>
-                <View style={[styles.revenueDot, { backgroundColor: '#f43f5e' }]} />
-                <Text style={styles.revenueLabel}>Total Business Order Revenue</Text>
-              </View>
-              <Text style={styles.revenueValue}>{formatCurrency(analytics.totalBusinessRevenue)}</Text>
-            </View>
-          </LinearGradient>
+          </View>
 
-          {/* Platform & Rider Earnings Card - UPDATED */}
-          <LinearGradient
-            colors={['#8b5cf6', '#ec4899']}
-            style={styles.metricCard}
-          >
-            {/* Platform Income Before Fees */}
-            <View style={styles.revenueRow}>
-              <View style={styles.revenueLeft}>
-                <Feather name="trending-up" size={14} color="#fff" />
-                <Text style={styles.revenueLabel}>Platform Income (Before Fees)</Text>
-              </View>
-              <Text style={styles.revenueValue}>
-                {formatCurrency(analytics.platformFeesBeforeFees || 0)}
-              </Text>
-            </View>
-            
-            {/* Flutterwave Fees */}
-            <View style={styles.revenueRow}>
-              <View style={styles.revenueLeft}>
-                <Feather name="credit-card" size={14} color="#ef4444" />
-                <Text style={styles.revenueLabel}>Flutterwave Fees (2%)</Text>
-              </View>
-              <Text style={[styles.revenueValue, { color: '#ef4444' }]}>
-                -{formatCurrency(analytics.totalFlutterwaveFeesOverall || 0)}
-              </Text>
-            </View>
-            
-            {/* Platform Income After Fees (Main Metric) */}
-            <View style={[styles.revenueRow, { marginTop: 4 }]}>
-              <View style={styles.revenueLeft}>
-                <Feather name="briefcase" size={16} color="#10b981" />
-                <Text style={[styles.revenueLabel, { fontWeight: '700', fontSize: 13 }]}>PLATFORM INCOME (AFTER FEES)</Text>
-              </View>
-              <Text style={[styles.revenueValue, { color: '#10b981', fontWeight: '800', fontSize: 15 }]}>
-                {formatCurrency(analytics.platformFees)}
-              </Text>
-            </View>
-            
-            <View style={styles.revenueDivider} />
+          {/* Vendor Earnings */}
+          <View style={styles.metricCard}>
+            <Feather name="home" size={20} color={colors.success} />
+            <Text style={styles.metricValue}>{formatCurrency(analytics.totalVendorEarnings)}</Text>
+            <Text style={styles.metricLabel}>Vendor Earnings</Text>
+          </View>
 
-            {/* Flutterwave Fee Breakdown */}
-            <Text style={[styles.revenueLabel, { fontWeight: '600', marginBottom: 8 }]}>Flutterwave Fee Breakdown</Text>
-            
-            {/* Food Flutterwave Fee */}
-            <View style={styles.revenueRow}>
-              <View style={styles.revenueLeft}>
-                <View style={[styles.revenueDot, { backgroundColor: '#ef4444' }]} />
-                <Text style={styles.revenueLabel}>Food Orders Fee</Text>
-              </View>
-              <Text style={[styles.revenueValue, { color: '#ef4444' }]}>
-                -{formatCurrency(analytics.totalFlutterwaveFees || 0)}
-              </Text>
-            </View>
+          {/* Rider Earnings */}
+          <View style={styles.metricCard}>
+            <Feather name="truck" size={20} color={colors.warning} />
+            <Text style={styles.metricValue}>{formatCurrency(analytics.totalRiderEarnings)}</Text>
+            <Text style={styles.metricLabel}>Rider Earnings</Text>
+          </View>
 
-            {/* Business Flutterwave Fee */}
-            <View style={styles.revenueRow}>
-              <View style={styles.revenueLeft}>
-                <View style={[styles.revenueDot, { backgroundColor: '#ef4444' }]} />
-                <Text style={styles.revenueLabel}>Business Orders Fee</Text>
-              </View>
-              <Text style={[styles.revenueValue, { color: '#ef4444' }]}>
-                -{formatCurrency(analytics.totalBusinessFlutterwaveFees || 0)}
-              </Text>
+          {/* Platform Earnings */}
+          <View style={[styles.metricCard, styles.metricCardHighlight]}>
+            <Feather name="trending-up" size={20} color={colors.primary} />
+            <Text style={[styles.metricValue, { color: colors.primary }]}>{formatCurrency(analytics.platformEarnings.total)}</Text>
+            <Text style={styles.metricLabel}>Platform Earnings</Text>
+            <View style={styles.metricSubtext}>
+              <Text style={styles.metricSubtextText}>Commission: {formatCurrency(analytics.platformEarnings.fromFoodCommission)}</Text>
+              <Text style={styles.metricSubtextText}>Delivery: {formatCurrency(analytics.platformEarnings.fromDeliveryShare)}</Text>
+              <Text style={styles.metricSubtextText}>Business: {formatCurrency(analytics.platformEarnings.fromBusinessOrders)}</Text>
             </View>
-            
-            {/* Total Flutterwave Fees */}
-            <View style={[styles.revenueRow, { marginTop: 4 }]}>
-              <View style={styles.revenueLeft}>
-                <Feather name="credit-card" size={12} color="#ef4444" />
-                <Text style={[styles.revenueLabel, { fontWeight: '600' }]}>Total Flutterwave Fees</Text>
-              </View>
-              <Text style={[styles.revenueValue, { color: '#ef4444', fontWeight: '700' }]}>
-                -{formatCurrency(analytics.totalFlutterwaveFeesOverall || 0)}
-              </Text>
-            </View>
-            
-            <View style={styles.revenueDivider} />
+          </View>
 
-            {/* Delivery Fees */}
-            <View style={styles.revenueRow}>
-              <View style={styles.revenueLeft}>
-                <Feather name="truck" size={12} color="#f97316" />
-                <Text style={styles.revenueLabel}>Total Food Delivery Fees</Text>
-              </View>
-              <Text style={styles.revenueValue}>{formatCurrency(analytics.totalFoodDeliveryFees || 0)}</Text>
+          {/* Flutterwave Fees */}
+          <View style={styles.metricCard}>
+            <Feather name="credit-card" size={20} color={colors.danger} />
+            <Text style={[styles.metricValue, { color: colors.danger }]}>{formatCurrency(analytics.flutterwaveFees.total)}</Text>
+            <Text style={styles.metricLabel}>Flutterwave Fees</Text>
+            <View style={styles.metricSubtext}>
+              <Text style={styles.metricSubtextText}>Food: {formatCurrency(analytics.flutterwaveFees.fromFoodOrders)}</Text>
+              <Text style={styles.metricSubtextText}>Business: {formatCurrency(analytics.flutterwaveFees.fromBusinessOrders)}</Text>
             </View>
+          </View>
 
-            {/* Platform Delivery Share (50%) */}
-            <View style={styles.revenueRow}>
-              <View style={styles.revenueLeft}>
-                <View style={[styles.revenueDot, { backgroundColor: '#f97316' }]} />
-                <Text style={styles.revenueLabel}>Platform Delivery Share (50%)</Text>
-              </View>
-              <Text style={styles.revenueValue}>
-                {formatCurrency((analytics.totalFoodDeliveryFees || 0) * 0.5)}
-              </Text>
-            </View>
-
-            {/* Platform Net from Food Orders */}
-            <View style={styles.revenueRow}>
-              <View style={styles.revenueLeft}>
-                <View style={[styles.revenueDot, { backgroundColor: '#f97316' }]} />
-                <Text style={styles.revenueLabel}>Platform Net from Orders Commission</Text>
-              </View>
-              <Text style={styles.revenueValue}>
-                {formatCurrency(analytics.totalFoodPlatformNetEarnings || 0)}
-              </Text>
-            </View>
-
-            {/* Business Platform Share */}
-            <View style={styles.revenueRow}>
-              <View style={styles.revenueLeft}>
-                <View style={[styles.revenueDot, { backgroundColor: '#f43f5e' }]} />
-                <Text style={styles.revenueLabel}>Platform Net from Business Orders</Text>
-              </View>
-              <Text style={styles.revenueValue}>
-                {formatCurrency(analytics.totalBusinessPlatformShare || 0)}
-              </Text>
-            </View>
-            
-            <View style={styles.revenueDivider} />
-            
-            {/* Total Rider Earnings */}
-            <View style={styles.revenueRow}>
-              <View style={styles.revenueLeft}>
-                <Feather name="users" size={12} color="#10b981" />
-                <Text style={[styles.revenueLabel, { fontWeight: '600' }]}>Total Rider Earnings</Text>
-              </View>
-              <Text style={[styles.revenueValue, { color: '#10b981', fontWeight: '700' }]}>
-                {formatCurrency(analytics.totalRiderEarnings || 0)}
-              </Text>
-            </View>
-            
-            {/* Rider Breakdown */}
-            <View style={styles.revenueRow}>
-              <View style={styles.revenueLeft}>
-                <View style={[styles.revenueDot, { backgroundColor: '#f97316' }]} />
-                <Text style={styles.revenueSmallLabel}>From Food Orders</Text>
-              </View>
-              <Text style={styles.revenueSmallValue}>
-                {formatCurrency((analytics.totalFoodDeliveryFees || 0) * 0.5)}
-              </Text>
-            </View>
-            
-            <View style={styles.revenueRow}>
-              <View style={styles.revenueLeft}>
-                <View style={[styles.revenueDot, { backgroundColor: '#f43f5e' }]} />
-                <Text style={styles.revenueSmallLabel}>From Business Orders</Text>
-              </View>
-              <Text style={styles.revenueSmallValue}>
-                {formatCurrency(analytics.totalBusinessRiderShare || 0)}
-              </Text>
-            </View>
-          </LinearGradient>
-
-          {/* Users & Vendors Card */}
-          <View style={styles.metricCardSecondary}>
-            <View>
-              <Text style={styles.metricValueSecondary}>{analytics.totalUsers}</Text>
-              <Text style={styles.metricLabelSecondary}>Total Users</Text>
-              <View style={styles.metricBreakdown}>
-                <Text style={styles.metricBreakdownText}>👤 {analytics.totalCustomers}</Text>
-                <Text style={styles.metricBreakdownText}>🛵 {analytics.totalRiders}</Text>
-                <Text style={styles.metricBreakdownText}>🏢 {analytics.totalBusinesses}</Text>
-              </View>
-            </View>
-            <View style={styles.metricSmallDivider} />
-            <View>
-              <Text style={styles.metricValueSecondary}>{analytics.totalVendors}</Text>
-              <Text style={styles.metricLabelSecondary}>Total Vendors</Text>
-              <View style={styles.metricBreakdown}>
-                <Text style={[styles.metricBreakdownText, { color: '#10b981' }]}>✅ {analytics.approvedVendors}</Text>
-                <Text style={[styles.metricBreakdownText, { color: '#f59e0b' }]}>⏳ {analytics.pendingVendors}</Text>
-                <Text style={[styles.metricBreakdownText, { color: '#ef4444' }]}>🚫 {analytics.suspendedVendors}</Text>
-              </View>
-            </View>
+          {/* Stamp Duty */}
+          <View style={styles.metricCard}>
+            <Feather name="file-text" size={20} color={colors.warning} />
+            <Text style={styles.metricValue}>{formatCurrency(analytics.stampDutyTotal)}</Text>
+            <Text style={styles.metricLabel}>Stamp Duty</Text>
           </View>
         </View>
 
-        {/* Orders Trend Chart */}
+        {/* ===== ORDERS TREND CHART ===== */}
         <View style={styles.chartCard}>
           <Text style={styles.chartTitle}>Orders Trend</Text>
           <Text style={styles.chartSubtitle}>Last 7 days</Text>
-          
           {analytics.ordersByDay.length > 0 && (
             <LineChart
               data={{
                 labels: analytics.ordersByDay.map(d => d.date),
                 datasets: [
-                  {
-                    data: analytics.ordersByDay.map(d => d.food),
-                    color: (opacity = 1) => `rgba(249, 115, 22, ${opacity})`,
-                    strokeWidth: 2,
-                  },
-                  {
-                    data: analytics.ordersByDay.map(d => d.business),
-                    color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
-                    strokeWidth: 2,
-                  },
+                  { data: analytics.ordersByDay.map(d => d.food), color: () => `rgba(249, 115, 22, 1)`, strokeWidth: 2 },
+                  { data: analytics.ordersByDay.map(d => d.business), color: () => `rgba(59, 130, 246, 1)`, strokeWidth: 2 },
+                  { data: analytics.ordersByDay.map(d => d.total), color: () => `rgba(16, 185, 129, 1)`, strokeWidth: 2 },
                 ],
-                legend: ['Food Orders', 'Business Logistics'],
+                legend: ['Food', 'Business', 'Total'],
               }}
               width={width - 32}
-              height={220}
-              chartConfig={{
-                ...chartConfig,
-                color: (opacity = 1) => `rgba(249, 115, 22, ${opacity})`,
-              }}
+              height={200}
+              chartConfig={chartConfig}
               bezier
               style={styles.chart}
             />
           )}
         </View>
 
-        {/* Revenue Distribution */}
-        <View style={styles.row}>
-          <View style={[styles.chartCard, { flex: 1, marginRight: 8 }]}>
+        {/* ===== REVENUE BREAKDOWN PIE CHART ===== */}
+        {analytics.revenueBreakdown.length > 0 && (
+          <View style={styles.chartCard}>
             <Text style={styles.chartTitle}>Revenue Distribution</Text>
-            
-            {analytics.revenueByType.length > 0 && (
-              <PieChart
-                data={analytics.revenueByType}
-                width={width/1.5}
-                height={150}
-                chartConfig={chartConfig}
-                accessor="population"
-                backgroundColor="transparent"
-                paddingLeft=""
-                absolute
-              />
-            )}
-          </View>
-        </View>
-
-        {/* Vendor Categories */}
-        <View style={styles.chartCard}>
-          <Text style={styles.chartTitle}>Orders by Category</Text>
-          
-          {analytics.ordersByCategory.length > 0 && (
-            <BarChart
-              data={{
-                labels: analytics.ordersByCategory.map(c => c.category.substring(0, 5) + '...'),
-                datasets: [
-                  {
-                    data: analytics.ordersByCategory.map(c => c.count),
-                  },
-                ],
-              }}
+            <PieChart
+              data={analytics.revenueBreakdown.map(r => ({
+                name: r.name,
+                population: r.amount,
+                color: r.color,
+                legendFontColor: colors.textSecondary,
+                legendFontSize: 10,
+              }))}
               width={width - 32}
-              height={220}
-              yAxisLabel=""
-              yAxisSuffix=""
-              chartConfig={{
-                backgroundColor: '#1a1a1a',
-                backgroundGradientFrom: '#1a1a1a',
-                backgroundGradientTo: '#1a1a1a',
-                decimalPlaces: 0,
-                color: (opacity = 1) => `rgba(249, 115, 22, ${opacity})`,
-                labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-                style: {
-                  borderRadius: 16,
-                },
-                propsForDots: {
-                  r: '6',
-                  strokeWidth: '2',
-                  stroke: '#f97316',
-                },
-              }}
-              style={{
-                marginVertical: 8,
-                borderRadius: 16,
-              }}
-              showValuesOnTopOfBars={true}
-              fromZero={true}
+              height={180}
+              chartConfig={chartConfig}
+              accessor="population"
+              backgroundColor="transparent"
+              paddingLeft="15"
+              absolute
             />
-          )}
-        </View>
+          </View>
+        )}
 
-        {/* Top Vendors Section */}
-        <Text style={styles.sectionTitle}>Top Performers</Text>
+        {/* ===== ORDERS BY CATEGORY ===== */}
+       {/* Orders by Category */}
+{analytics.ordersByCategory.length > 0 && (
+  <View style={styles.chartCard}>
+    <Text style={styles.chartTitle}>Orders by Category</Text>
+    <BarChart
+      data={{
+        labels: analytics.ordersByCategory.map(c => c.category.length > 10 ? c.category.substring(0, 8) + '...' : c.category),
+        datasets: [{ data: analytics.ordersByCategory.map(c => c.count) }],
+      }}
+      width={width - 32}
+      height={200}
+      yAxisLabel=""
+      yAxisSuffix=""  // ✅ ADD THIS LINE
+      chartConfig={chartConfig}
+      showValuesOnTopOfBars
+      fromZero
+    />
+  </View>
+)}
 
-        {/* Top Vendors by Orders */}
+        {/* ===== TOP VENDORS SECTION ===== */}
+        <Text style={styles.sectionTitle}>Top Vendors</Text>
+
+        {/* By Orders */}
         <View style={styles.topVendorsCard}>
           <Text style={styles.topVendorsTitle}>🏆 Most Orders</Text>
           {analytics.topVendorsByOrders.map((vendor, index) => (
             <View key={vendor.id} style={styles.vendorRankItem}>
               <View style={styles.vendorRankLeft}>
                 <Text style={styles.vendorRank}>#{index + 1}</Text>
-                <View style={styles.vendorInfo}>
+                <View>
                   <Text style={styles.vendorName}>{vendor.name}</Text>
-                  <Text style={styles.vendorStats}>{vendor.orderCount} orders • ₦{vendor.revenue.toLocaleString()}</Text>
+                  <Text style={styles.vendorStats}>
+                    {vendor.orderCount} orders • {formatCurrency(vendor.revenue)}
+                  </Text>
                 </View>
               </View>
               <View style={styles.vendorRating}>
-                <Feather name="star" size={12} color="#fbbf24" />
+                <Feather name="star" size={12} color={colors.warning} />
                 <Text style={styles.vendorRatingText}>{vendor.rating.toFixed(1)}</Text>
               </View>
             </View>
           ))}
+          {analytics.topVendorsByOrders.length === 0 && (
+            <Text style={styles.emptyText}>No orders yet</Text>
+          )}
         </View>
 
-        {/* Top Vendors by Revenue */}
+        {/* By Revenue */}
         <View style={styles.topVendorsCard}>
           <Text style={styles.topVendorsTitle}>💰 Highest Revenue</Text>
           {analytics.topVendorsByRevenue.map((vendor, index) => (
             <View key={vendor.id} style={styles.vendorRankItem}>
               <View style={styles.vendorRankLeft}>
                 <Text style={styles.vendorRank}>#{index + 1}</Text>
-                <View style={styles.vendorInfo}>
+                <View>
                   <Text style={styles.vendorName}>{vendor.name}</Text>
-                  <Text style={styles.vendorStats}>{vendor.orderCount} orders • ₦{vendor.revenue.toLocaleString()}</Text>
+                  <Text style={styles.vendorStats}>
+                    {vendor.orderCount} orders • {formatCurrency(vendor.revenue)}
+                  </Text>
                 </View>
               </View>
               <View style={styles.vendorRating}>
-                <Feather name="star" size={12} color="#fbbf24" />
+                <Feather name="star" size={12} color={colors.warning} />
                 <Text style={styles.vendorRatingText}>{vendor.rating.toFixed(1)}</Text>
               </View>
             </View>
           ))}
+          {analytics.topVendorsByRevenue.length === 0 && (
+            <Text style={styles.emptyText}>No orders yet</Text>
+          )}
         </View>
 
-        {/* Top Rated Vendors */}
+        {/* ===== TOP RIDERS SECTION ===== */}
+        <Text style={styles.sectionTitle}>Top Riders</Text>
         <View style={styles.topVendorsCard}>
-          <Text style={styles.topVendorsTitle}>⭐ Top Rated</Text>
-          {analytics.topVendorsByRating.map((vendor, index) => (
-            <View key={vendor.id} style={styles.vendorRankItem}>
+          <Text style={styles.topVendorsTitle}>🛵 Highest Earnings</Text>
+          {analytics.topRidersByEarnings.map((rider, index) => (
+            <View key={index} style={styles.vendorRankItem}>
               <View style={styles.vendorRankLeft}>
                 <Text style={styles.vendorRank}>#{index + 1}</Text>
-                <View style={styles.vendorInfo}>
-                  <Text style={styles.vendorName}>{vendor.name}</Text>
-                  <Text style={styles.vendorStats}>{vendor.reviewCount} reviews • {vendor.rating.toFixed(1)} ⭐</Text>
-                </View>
+                <Text style={styles.vendorName}>{rider.name}</Text>
               </View>
-              <View style={styles.vendorRating}>
-                <Text style={styles.vendorRatingText}>₦{vendor.revenue.toLocaleString()}</Text>
-              </View>
+              <Text style={styles.vendorRatingText}>{formatCurrency(rider.earnings)}</Text>
             </View>
           ))}
+          {analytics.topRidersByEarnings.length === 0 && (
+            <Text style={styles.emptyText}>No rider earnings yet</Text>
+          )}
         </View>
 
-        {/* Vendor Stats Summary */}
+        {/* ===== STATS SUMMARY ===== */}
         <View style={styles.statsSummary}>
           <View style={styles.statSummaryItem}>
-            <Text style={styles.statSummaryLabel}>Total Vendors</Text>
+            <Text style={styles.statSummaryLabel}>Vendors</Text>
             <Text style={styles.statSummaryValue}>{analytics.totalVendors}</Text>
+            <View style={styles.statSummaryBadges}>
+              <Text style={[styles.statBadge, styles.approvedBadge]}>✓ {analytics.approvedVendors}</Text>
+              <Text style={[styles.statBadge, styles.pendingBadge]}>⏳ {analytics.pendingVendors}</Text>
+              <Text style={[styles.statBadge, styles.suspendedBadge]}>⚠️ {analytics.suspendedVendors}</Text>
+            </View>
           </View>
           <View style={styles.statSummaryItem}>
-            <Text style={styles.statSummaryLabel}>Approved</Text>
-            <Text style={[styles.statSummaryValue, { color: '#10b981' }]}>{analytics.approvedVendors}</Text>
-          </View>
-          <View style={styles.statSummaryItem}>
-            <Text style={styles.statSummaryLabel}>Pending</Text>
-            <Text style={[styles.statSummaryValue, { color: '#f59e0b' }]}>{analytics.pendingVendors}</Text>
-          </View>
-          <View style={styles.statSummaryItem}>
-            <Text style={styles.statSummaryLabel}>Suspended</Text>
-            <Text style={[styles.statSummaryValue, { color: '#ef4444' }]}>{analytics.suspendedVendors}</Text>
+            <Text style={styles.statSummaryLabel}>Users</Text>
+            <Text style={styles.statSummaryValue}>{analytics.totalUsers}</Text>
+            <View style={styles.statSummaryBadges}>
+              <Text style={[styles.statBadge, styles.customerBadge]}>👤 {analytics.totalCustomers}</Text>
+              <Text style={[styles.statBadge, styles.riderBadge]}>🛵 {analytics.totalRiders}</Text>
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -1065,45 +861,46 @@ const totalBusinessFlutterwaveFees = completedBusinessOrders.reduce((sum, order)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
-    paddingBottom: 25,
+    backgroundColor: colors.background,
+    paddingBottom: 60,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: colors.background,
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    color: '#666',
+    color: colors.textSecondary,
     marginTop: 12,
-    fontSize: 14,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: colors.card,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: colors.text,
   },
   refreshButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: colors.card,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1119,21 +916,21 @@ const styles = StyleSheet.create({
   timeRangeChip: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: colors.card,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: colors.border,
   },
   timeRangeChipActive: {
-    backgroundColor: 'rgba(249,115,22,0.1)',
-    borderColor: '#f97316',
+    backgroundColor: `${colors.primary}20`,
+    borderColor: colors.primary,
   },
   timeRangeChipText: {
     fontSize: 13,
-    color: '#666',
+    color: colors.textSecondary,
   },
   timeRangeChipTextActive: {
-    color: '#f97316',
+    color: colors.primary,
   },
   content: {
     flex: 1,
@@ -1146,143 +943,81 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   metricCard: {
-    width: '100%',
+    flex: 1,
+    minWidth: '47%',
+    backgroundColor: colors.card,
     padding: 16,
-    borderRadius: 16,
-  },
-  metricCardSecondary: {
-    flexDirection: 'row',
-    width: '100%',
-    justifyContent: 'space-between',
-    backgroundColor: '#1a1a1a',
-    padding: 16,
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: colors.border,
+  },
+  metricCardHighlight: {
+    borderColor: colors.primary,
+    backgroundColor: `${colors.primary}10`,
   },
   metricValue: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
-    color: '#fff',
-    marginBottom: 4,
-  },
-  metricValueSecondary: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#fff',
+    color: colors.text,
+    marginTop: 8,
     marginBottom: 4,
   },
   metricLabel: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.8)',
-  },
-  metricLabelSecondary: {
     fontSize: 12,
-    color: '#666',
+    color: colors.textSecondary,
+    marginBottom: 8,
   },
-  metricBreakdown: {
+  metricSubtext: {
     flexDirection: 'row',
-    gap: 12,
-    marginTop: 8,
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 4,
   },
-  metricBreakdownText: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.6)',
-  },
-  metricDivider: {
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    marginVertical: 12,
-  },
-  metricSmallDivider: {
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    marginVertical: 8,
-  },
-  revenueRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  revenueLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  revenueDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  revenueLabel: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.9)',
-  },
-  revenueValue: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  revenueSmallLabel: {
+  metricSubtextText: {
     fontSize: 10,
-    color: 'rgba(255,255,255,0.7)',
-    marginLeft: 14,
-  },
-  revenueSmallValue: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.8)',
-  },
-  revenueDivider: {
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    marginVertical: 8,
+    color: colors.textSecondary,
   },
   chartCard: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 16,
-    padding: 5,
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: colors.border,
   },
   chartTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: colors.text,
     marginBottom: 4,
   },
   chartSubtitle: {
     fontSize: 12,
-    color: '#666',
-    marginBottom: 16,
+    color: colors.textSecondary,
+    marginBottom: 12,
   },
   chart: {
     marginVertical: 8,
-    borderRadius: 16,
-  },
-  row: {
-    flexDirection: 'row',
-    marginBottom: 16,
+    borderRadius: 8,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: colors.text,
     marginBottom: 12,
   },
   topVendorsCard: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 16,
+    backgroundColor: colors.card,
+    borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: colors.border,
   },
   topVendorsTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
-    color: '#f97316',
+    color: colors.primary,
     marginBottom: 12,
   },
   vendorRankItem: {
@@ -1291,30 +1026,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: colors.border,
   },
   vendorRankLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    flex: 1,
   },
   vendorRank: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666',
+    color: colors.textSecondary,
     width: 30,
-  },
-  vendorInfo: {
-    gap: 2,
   },
   vendorName: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#fff',
+    color: colors.text,
   },
   vendorStats: {
     fontSize: 11,
-    color: '#666',
+    color: colors.textSecondary,
   },
   vendorRating: {
     flexDirection: 'row',
@@ -1323,30 +1056,70 @@ const styles = StyleSheet.create({
   },
   vendorRatingText: {
     fontSize: 12,
-    color: '#fbbf24',
-    fontWeight: '600',
+    color: colors.warning,
+  },
+  emptyText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    paddingVertical: 20,
   },
   statsSummary: {
     flexDirection: 'row',
-    backgroundColor: '#1a1a1a',
-    borderRadius: 16,
+    backgroundColor: colors.card,
+    borderRadius: 12,
     padding: 16,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-    justifyContent: 'space-around',
+    borderColor: colors.border,
+    gap: 16,
   },
   statSummaryItem: {
+    flex: 1,
     alignItems: 'center',
   },
   statSummaryLabel: {
     fontSize: 11,
-    color: '#666',
+    color: colors.textSecondary,
     marginBottom: 4,
   },
   statSummaryValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 8,
+  },
+  statSummaryBadges: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  statBadge: {
+    fontSize: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  approvedBadge: {
+    backgroundColor: `${colors.success}20`,
+    color: colors.success,
+  },
+  pendingBadge: {
+    backgroundColor: `${colors.warning}20`,
+    color: colors.warning,
+  },
+  suspendedBadge: {
+    backgroundColor: `${colors.danger}20`,
+    color: colors.danger,
+  },
+  customerBadge: {
+    backgroundColor: `${colors.primary}20`,
+    color: colors.primary,
+  },
+  riderBadge: {
+    backgroundColor: `${colors.info}20`,
+    color: colors.info,
   },
 });

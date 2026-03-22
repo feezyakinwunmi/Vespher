@@ -1,5 +1,5 @@
 // app/screens/vendor/VendorSettingsScreen.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -26,12 +26,27 @@ import { supabase } from '../../lib/supabase';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import Toast from 'react-native-toast-message';
+import { verifyBankAccount } from '../../utils/flutterwave';
 
 type VendorScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
-type SettingsTab = 'profile' | 'business' | 'bank' | 'preferences' | 'promos' | 'support';
+type SettingsTab = 'profile' | 'business' | 'bank' | 'preferences' | 'promos' | 'support' ; // ✅ Added 'payouts'
 type NotificationKey = keyof VendorProfile['notifications'];
 
-const banks = ['GTBank', 'First Bank', 'UBA', 'Zenith', 'Access', 'Kuda', 'OPay', 'PalmPay'];
+// ✅ Updated banks with Flutterwave codes
+const banks = [
+  { label: 'GTBank', value: 'gtb', code: '058' },
+  { label: 'First Bank', value: 'first', code: '011' },
+  { label: 'UBA', value: 'uba', code: '033' },
+  { label: 'Zenith Bank', value: 'zenith', code: '057' },
+  { label: 'Access Bank', value: 'access', code: '044' },
+  { label: 'Kuda Bank', value: 'kuda', code: '090267' },
+  { label: 'OPay', value: 'opay', code: '100052' },
+  { label: 'PalmPay', value: 'palmpay', code: '100033' },
+  { label: 'Fidelity Bank', value: 'fidelity', code: '070' },
+  { label: 'Union Bank', value: 'union', code: '032' },
+  { label: 'Sterling Bank', value: 'sterling', code: '232' },
+  { label: 'Wema Bank', value: 'wema', code: '035' },
+];
 
 type DayKey = keyof BusinessHours;
 
@@ -60,8 +75,9 @@ const notificationItems: { key: NotificationKey; label: string }[] = [
   { key: 'payments', label: 'Payment Notifications' },
 ];
 
-// Terms & Conditions Page
+// Terms & Conditions Page (keep as is)
 function TermsConditionsScreen({ onClose }: { onClose: () => void }) {
+  // ... (keep your existing code)
   return (
     <Modal animationType="slide" transparent={false} onRequestClose={onClose}>
       <SafeAreaView style={styles.modalContainer}>
@@ -76,7 +92,7 @@ function TermsConditionsScreen({ onClose }: { onClose: () => void }) {
         <ScrollView style={styles.modalContent}>
           <Text style={styles.modalSectionTitle}>1. Acceptance of Terms</Text>
           <Text style={styles.modalText}>
-            By accessing and using Vesphe as a vendor, you agree to be bound by these Terms and Conditions. 
+            By accessing and using Vespher as a vendor, you agree to be bound by these Terms and Conditions. 
             If you do not agree with any part of these terms, you may not use our platform.
           </Text>
 
@@ -91,37 +107,37 @@ function TermsConditionsScreen({ onClose }: { onClose: () => void }) {
 
           <Text style={styles.modalSectionTitle}>3. Commission and Fees</Text>
           <Text style={styles.modalText}>
-            Vesphe charges a commission on each order processed through our platform. The current commission 
+            Vespher charges a commission on each order processed through our platform. The current commission 
             rate is displayed in your dashboard. This rate may be subject to change with prior notice.
           </Text>
 
           <Text style={styles.modalSectionTitle}>4. Payment Terms</Text>
           <Text style={styles.modalText}>
-            Vendor payouts are processed on a weekly basis. Payments are made to the bank account information 
+            Vendor payouts are processed on  weekdays . Payments are made to the bank account information 
             provided in your settings. You are responsible for ensuring your bank details are accurate.
           </Text>
 
           <Text style={styles.modalSectionTitle}>5. Cancellation and Refunds</Text>
           <Text style={styles.modalText}>
             Vendors may cancel orders only in exceptional circumstances. Refunds are handled according to 
-            Vesphe's refund policy. Repeated cancellations may affect your vendor standing.
+            Vespher's refund policy. Repeated cancellations may affect your vendor standing.
           </Text>
 
           <Text style={styles.modalSectionTitle}>6. Platform Usage</Text>
           <Text style={styles.modalText}>
             You agree not to misuse the platform, attempt to circumvent commission fees, or engage in any 
-            fraudulent activities. Vesphe reserves the right to suspend accounts violating these terms.
+            fraudulent activities. Vespher reserves the right to suspend accounts violating these terms.
           </Text>
 
           <Text style={styles.modalSectionTitle}>7. Limitation of Liability</Text>
           <Text style={styles.modalText}>
-            Vesphe is not liable for any indirect, incidental, or consequential damages arising from your 
+            Vespher is not liable for any indirect, incidental, or consequential damages arising from your 
             use of the platform. Our total liability is limited to the commissions earned from your account.
           </Text>
 
           <Text style={styles.modalSectionTitle}>8. Modifications</Text>
           <Text style={styles.modalText}>
-            Vesphe reserves the right to modify these terms at any time. Continued use of the platform 
+            Vespher reserves the right to modify these terms at any time. Continued use of the platform 
             constitutes acceptance of modified terms.
           </Text>
 
@@ -132,8 +148,9 @@ function TermsConditionsScreen({ onClose }: { onClose: () => void }) {
   );
 }
 
-// Privacy Policy Page
+// Privacy Policy Page (keep as is)
 function PrivacyPolicyScreen({ onClose }: { onClose: () => void }) {
+  // ... (keep your existing code)
   return (
     <Modal animationType="slide" transparent={false} onRequestClose={onClose}>
       <SafeAreaView style={styles.modalContainer}>
@@ -196,7 +213,7 @@ function PrivacyPolicyScreen({ onClose }: { onClose: () => void }) {
   );
 }
 
-// Help & Support Page
+// Help & Support Page (keep as is)
 function HelpSupportScreen({ onClose }: { onClose: () => void }) {
   const handleCall = () => {
     Linking.openURL('tel:09161460898');
@@ -271,12 +288,7 @@ function HelpSupportScreen({ onClose }: { onClose: () => void }) {
             </Text>
           </View>
 
-          <View style={styles.faqItem}>
-            <Text style={styles.faqQuestion}>When do I get paid?</Text>
-            <Text style={styles.faqAnswer}>
-              Payouts 1-2 working days after request. You can track your earnings in the Analytics section.
-            </Text>
-          </View>
+          
 
           <View style={styles.faqItem}>
             <Text style={styles.faqQuestion}>How do I handle customer complaints?</Text>
@@ -288,7 +300,7 @@ function HelpSupportScreen({ onClose }: { onClose: () => void }) {
           <View style={styles.faqItem}>
             <Text style={styles.faqQuestion}>What is the commission rate?</Text>
             <Text style={styles.faqAnswer}>
-              The current commission rate is displayed in your dashboard. This rate is applied to each order's subtotal.
+              The current commission rate is 10% of the order subtotal. This rate is applied to each order.
             </Text>
           </View>
 
@@ -304,7 +316,7 @@ function HelpSupportScreen({ onClose }: { onClose: () => void }) {
   );
 }
 
-// Q&A Page
+// Q&A Page (keep as is)
 function QAScreen({ onClose }: { onClose: () => void }) {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
@@ -335,7 +347,7 @@ function QAScreen({ onClose }: { onClose: () => void }) {
     },
     {
       question: "How do delivery fees work?",
-      answer: "Delivery fees are calculated based on distance and are split 50/50 between the platform and rider. You don't pay delivery fees as a vendor."
+      answer: "Delivery fees are calculated based on distance. You don't pay delivery fees as a vendor - they're handled by the customer and rider."
     },
     {
       question: "What if a customer reports an issue with their order?",
@@ -390,6 +402,210 @@ function QAScreen({ onClose }: { onClose: () => void }) {
   );
 }
 
+// ✅ NEW: Payouts Tab Component
+// function PayoutsTab({ profile }: { profile: VendorProfile }) {
+//   const [isVerifying, setIsVerifying] = useState(false);
+//   const [platformSettings, setPlatformSettings] = useState<any>(null);
+
+//   useEffect(() => {
+//     fetchPlatformSettings();
+//   }, []);
+
+//   const fetchPlatformSettings = async () => {
+//     try {
+//       const { data, error } = await supabase
+//         .from('platform_settings')
+//         .select('*')
+//         .order('id', { ascending: false })
+//         .limit(1)
+//         .single();
+
+//       if (error) throw error;
+//       setPlatformSettings(data);
+//     } catch (error) {
+//       console.error('Error fetching platform settings:', error);
+//     }
+//   };
+
+//   const getBankLabel = (bankValue: string) => {
+//     const bank = banks.find(b => b.value === bankValue);
+//     return bank?.label || bankValue;
+//   };
+
+// const handleRetrySubaccount = async () => {
+//   setIsVerifying(true);
+//   try {
+//     const selectedBank = banks.find(b => b.value === profile.bankName);
+//     if (!selectedBank?.code) {
+//       throw new Error('Bank not found');
+//     }
+
+//     // First verify the account
+//     const verification = await verifyBankAccount(
+//       profile.accountNumber || '',
+//       selectedBank.code
+//     );
+
+//     if (verification.status !== 'success' || !verification.data) {
+//       throw new Error('Bank account verification failed');
+//     }
+
+//     // Create subaccount
+//     const platformFee = platformSettings ? parseFloat(platformSettings.platform_fee_percentage) : 10;
+    
+//     const result = await createVendorSubaccount({
+//       accountBank: selectedBank.code,
+//       accountNumber: profile.accountNumber || '',
+//       businessName: profile.businessName,
+//       businessEmail: profile.email,
+//       businessMobile: profile.phone,
+//       splitPercentage: platformFee,
+//     });
+
+//     if (result.status === 'success' && result.data) {
+//       // Update vendor with subaccount ID
+//       const { error } = await supabase
+//         .from('vendors')
+//         .update({ 
+//           flutterwave_subaccount_id: result.data.subaccount_id,
+//           account_name: result.data.account_name
+//         })
+//         .eq('id', profile.id);
+
+//       if (error) throw error;
+
+//       Alert.alert('Success', 'Payment setup completed successfully!');
+      
+//       // ✅ Refresh the profile to show updated subaccount
+//       // You'll need to add a refresh function from useVendorProfile
+//       // For now, we can reload the page
+//       // window.location.reload(); // Or use a refresh callback
+//     } else {
+//       throw new Error(result.message);
+//     }
+//   } catch (error: any) {
+//     Alert.alert('Error', error.message || 'Failed to setup payment');
+//   } finally {
+//     setIsVerifying(false);
+//   }
+// };
+
+//   return (
+//     <View style={styles.tabContent}>
+//       {/* Payment Status Card */}
+//       <View style={styles.paymentStatusCard}>
+//         <View style={styles.paymentStatusHeader}>
+//           <Feather 
+//             name={profile.flutterwave_subaccount_id ? "check-circle" : "alert-circle"} 
+//             size={24} 
+//             color={profile.flutterwave_subaccount_id ? "#10b981" : "#f59e0b"} 
+//           />
+//           <View style={styles.paymentStatusInfo}>
+//             <Text style={styles.paymentStatusTitle}>
+//               {profile.flutterwave_subaccount_id ? 'Payment Active' : 'Payment Setup Required'}
+//             </Text>
+//             <Text style={styles.paymentStatusSubtitle}>
+//               {profile.flutterwave_subaccount_id 
+//                 ? 'Your account is ready to receive payments' 
+//                 : 'Complete payment setup to start receiving payouts'}
+//             </Text>
+//           </View>
+//         </View>
+
+//         {profile.flutterwave_subaccount_id && (
+//           <View style={styles.subaccountInfo}>
+//             <Text style={styles.subaccountLabel}>Subaccount ID:</Text>
+//             <Text style={styles.subaccountValue} numberOfLines={1}>
+//               {profile.flutterwave_subaccount_id}
+//             </Text>
+//           </View>
+//         )}
+//       </View>
+
+//       {/* Bank Details Card */}
+//       <View style={styles.paymentDetailsCard}>
+//         <Text style={styles.paymentDetailsTitle}>Bank Account Details</Text>
+        
+//         <View style={styles.paymentDetailRow}>
+//           <Text style={styles.paymentDetailLabel}>Bank Name:</Text>
+//           <Text style={styles.paymentDetailValue}>
+//             {getBankLabel(profile.bankName) || 'Not set'}
+//           </Text>
+//         </View>
+
+//         <View style={styles.paymentDetailRow}>
+//           <Text style={styles.paymentDetailLabel}>Account Number:</Text>
+//           <Text style={styles.paymentDetailValue}>
+//             {profile.accountNumber ? `****${profile.accountNumber.slice(-4)}` : 'Not set'}
+//           </Text>
+//         </View>
+
+//         <View style={styles.paymentDetailRow}>
+//           <Text style={styles.paymentDetailLabel}>Account Name:</Text>
+//           <Text style={styles.paymentDetailValue}>
+//             {profile.accountName || 'Not set'}
+//           </Text>
+//         </View>
+//       </View>
+
+//       {/* Platform Fee Card */}
+//       <View style={styles.paymentDetailsCard}>
+//         <Text style={styles.paymentDetailsTitle}>Commission & Fees</Text>
+        
+//         <View style={styles.paymentDetailRow}>
+//           <Text style={styles.paymentDetailLabel}>Platform Commission:</Text>
+//           <Text style={styles.paymentDetailValueHighlight}>
+//             {platformSettings?.platform_fee_percentage || 10}%
+//           </Text>
+//         </View>
+
+//         <View style={styles.paymentDetailRow}>
+//           <Text style={styles.paymentDetailLabel}>Payment Processor:</Text>
+//           <Text style={styles.paymentDetailValue}>Flutterwave</Text>
+//         </View>
+
+//         <View style={styles.paymentNote}>
+//           <Feather name="info" size={14} color="#f97316" />
+//           <Text style={styles.paymentNoteText}>
+//             Commission is deducted from each order's subtotal before payout
+//           </Text>
+//         </View>
+//       </View>
+
+//       {/* Retry Button (if no subaccount) */}
+//       {!profile.flutterwave_subaccount_id && profile.bankName && profile.accountNumber && (
+//         <TouchableOpacity
+//           style={styles.retryButton}
+//           onPress={handleRetrySubaccount}
+//           disabled={isVerifying}
+//         >
+//           <LinearGradient
+//             colors={['#f97316', '#f43f5e']}
+//             style={styles.retryButtonGradient}
+//           >
+//             {isVerifying ? (
+//               <ActivityIndicator color="#fff" />
+//             ) : (
+//               <>
+//                 <Feather name="refresh-cw" size={18} color="#fff" />
+//                 <Text style={styles.retryButtonText}>Complete Payment Setup</Text>
+//               </>
+//             )}
+//           </LinearGradient>
+//         </TouchableOpacity>
+//       )}
+
+//       {/* Info Box */}
+//       <View style={styles.paymentInfoBox}>
+//         <Feather name="info" size={16} color="#666" />
+//         <Text style={styles.paymentInfoText}>
+//           Payouts are processed weekly. Make sure your bank details are correct to avoid payment delays.
+//         </Text>
+//       </View>
+//     </View>
+//   );
+// }
+
 export function VendorSettingsScreen() {
   const navigation = useNavigation<VendorScreenNavigationProp>();
   const { signOut } = useAuth();
@@ -406,6 +622,11 @@ export function VendorSettingsScreen() {
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showQA, setShowQA] = useState(false);
+  
+  // ✅ Bank verification state
+  const [isVerifyingBank, setIsVerifyingBank] = useState(false);
+  const [bankVerified, setBankVerified] = useState(false);
+  const [verificationError, setVerificationError] = useState('');
   
   const showToast = (message: string) => {
     Toast.show({
@@ -433,6 +654,47 @@ export function VendorSettingsScreen() {
     );
   };
 
+  // ✅ Bank verification function
+ const handleVerifyBank = async () => {
+  if (!formData.accountNumber || !formData.bankName) {
+    setVerificationError('Please select bank and enter account number');
+    return;
+  }
+
+  setIsVerifyingBank(true);
+  setVerificationError('');
+
+  try {
+    const selectedBank = banks.find(b => b.value === formData.bankName);
+    if (!selectedBank?.code) {
+      throw new Error('Invalid bank selection');
+    }
+
+    const result = await verifyBankAccount(
+      formData.accountNumber,
+      selectedBank.code
+    );
+
+    if (result.status === 'success' && result.data) {
+      setFormData((prev: any) => ({ 
+        ...prev, 
+        accountName: result.data?.account_name || '',
+        bankCode: selectedBank.code, // ✅ Save bank code too
+      }));
+      setBankVerified(true);
+      showToast(`Account verified: ${result.data.account_name}`);
+    } else {
+      throw new Error(result.message);
+    }
+  } catch (error: any) {
+    console.error('Verification error:', error);
+    setVerificationError(error.message || 'Invalid account details');
+    setBankVerified(false);
+  } finally {
+    setIsVerifyingBank(false);
+  }
+};
+
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -454,6 +716,7 @@ export function VendorSettingsScreen() {
     { id: 'profile', label: 'Profile', icon: 'user' },
     { id: 'business', label: 'Business', icon: 'home' },
     { id: 'bank', label: 'Bank', icon: 'credit-card' },
+    // { id: 'payouts', label: 'Payouts', icon: 'dollar-sign' }, // ✅ Added Payouts tab
     { id: 'preferences', label: 'Settings', icon: 'clock' },
     { id: 'promos', label: 'Promos', icon: 'tag' },
     { id: 'support', label: 'Help', icon: 'help-circle' },
@@ -464,21 +727,48 @@ export function VendorSettingsScreen() {
       ...profile,
       businessHours: { ...profile.businessHours }
     });
+    setBankVerified(false);
+    setVerificationError('');
     setIsEditing(true);
   };
 
-  const handleSave = async () => {
-    try {
-      await updateProfile(formData);
-      setIsEditing(false);
-    } catch (error) {
-      // Error is handled in the hook
-    }
-  };
+ const handleSave = async () => {
+  try {
+
+      const profileData: Partial<VendorProfile> = {
+      name: formData.name,
+      phone: formData.phone,
+      businessName: formData.businessName,
+      businessCategory: formData.businessCategory,
+      businessAddress: formData.businessAddress,
+      businessDescription: formData.businessDescription,
+      businessLogo: formData.businessLogo,
+      businessCover: formData.businessCover,
+      avatar_url: formData.avatar_url,
+      notifications: formData.notifications,
+      businessHours: formData.businessHours,
+      // Bank fields that exist in VendorProfile
+      bankName: formData.bankName,
+      accountNumber: formData.accountNumber,
+      accountName: formData.accountName,
+    };
+    // Update profile with new data
+    await updateProfile(  profileData );
+    
+    setIsEditing(false);
+    showToast('Profile updated successfully');
+    
+  } catch (error) {
+    console.error('Error saving:', error);
+    showToast('Failed to update profile');
+  }
+};
 
   const handleCancel = () => {
     setIsEditing(false);
     setFormData({});
+    setBankVerified(false);
+    setVerificationError('');
   };
 
   const pickImage = async (type: 'avatar' | 'logo' | 'cover') => {
@@ -809,44 +1099,77 @@ export function VendorSettingsScreen() {
       <View style={styles.formGroup}>
         <Text style={styles.label}>Bank Name</Text>
         {isEditing ? (
-          <View style={styles.pickerContainer}>
-            {banks.map((bank) => (
-              <TouchableOpacity
-                key={bank}
-                onPress={() => setFormData({ ...formData, bankName: bank })}
-                style={[
-                  styles.bankChip,
-                  formData.bankName === bank && styles.bankChipSelected,
-                ]}
-              >
-                <Text style={[
-                  styles.bankChipText,
-                  formData.bankName === bank && styles.bankChipTextSelected,
-                ]}>
-                  {bank}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          <>
+            <View style={styles.pickerContainer}>
+              {banks.map((bank) => (
+                <TouchableOpacity
+                  key={bank.value}
+                  onPress={() => {
+                    setFormData({ ...formData, bankName: bank.value });
+                    setBankVerified(false);
+                  }}
+                  style={[
+                    styles.bankChip,
+                    formData.bankName === bank.value && styles.bankChipSelected,
+                  ]}
+                >
+                  <Text style={[
+                    styles.bankChipText,
+                    formData.bankName === bank.value && styles.bankChipTextSelected,
+                  ]}>
+                    {bank.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            {verificationError ? (
+              <Text style={styles.verificationError}>{verificationError}</Text>
+            ) : null}
+          </>
         ) : (
-          <Text style={styles.value}>{profile.bankName || 'Not set'}</Text>
+          <Text style={styles.value}>
+            {banks.find(b => b.value === profile.bankName)?.label || profile.bankName || 'Not set'}
+          </Text>
         )}
       </View>
 
       <View style={styles.formGroup}>
         <Text style={styles.label}>Account Number</Text>
         {isEditing ? (
-          <TextInput
-            style={styles.input}
-            value={formData.accountNumber || ''}
-            onChangeText={(text) => setFormData({ ...formData, accountNumber: text })}
-            placeholder="10-digit account number"
-            placeholderTextColor="#666"
-            keyboardType="numeric"
-            maxLength={10}
-          />
+          <View style={styles.verificationRow}>
+            <TextInput
+              style={[styles.input, { flex: 1 }]}
+              value={formData.accountNumber || ''}
+              onChangeText={(text) => {
+                setFormData({ ...formData, accountNumber: text });
+                setBankVerified(false);
+              }}
+              placeholder="10-digit account number"
+              placeholderTextColor="#666"
+              keyboardType="numeric"
+              maxLength={10}
+            />
+            <TouchableOpacity
+              onPress={handleVerifyBank}
+              disabled={!formData.accountNumber || !formData.bankName || isVerifyingBank || bankVerified}
+              style={[
+                styles.verifyButton,
+                bankVerified && styles.verifyButtonSuccess
+              ]}
+            >
+              {isVerifyingBank ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : bankVerified ? (
+                <Feather name="check" size={20} color="#fff" />
+              ) : (
+                <Text style={styles.verifyButtonText}>Verify</Text>
+              )}
+            </TouchableOpacity>
+          </View>
         ) : (
-          <Text style={styles.value}>{profile.accountNumber || 'Not set'}</Text>
+          <Text style={styles.value}>
+            {profile.accountNumber ? `****${profile.accountNumber.slice(-4)}` : 'Not set'}
+          </Text>
         )}
       </View>
 
@@ -854,15 +1177,30 @@ export function VendorSettingsScreen() {
         <Text style={styles.label}>Account Name</Text>
         {isEditing ? (
           <TextInput
-            style={styles.input}
+            style={[styles.input, bankVerified && styles.verifiedInput]}
             value={formData.accountName || ''}
             onChangeText={(text) => setFormData({ ...formData, accountName: text })}
             placeholder="Account name"
             placeholderTextColor="#666"
+            editable={!bankVerified}
           />
         ) : (
           <Text style={styles.value}>{profile.accountName || 'Not set'}</Text>
         )}
+      </View>
+
+      {bankVerified && (
+        <View style={styles.verificationSuccess}>
+          <Feather name="check-circle" size={16} color="#10b981" />
+          <Text style={styles.verificationSuccessText}>Account verified successfully</Text>
+        </View>
+      )}
+
+      <View style={styles.paymentNote}>
+        <Feather name="info" size={14} color="#f97316" />
+        <Text style={styles.paymentNoteText}>
+          Your bank details will be verified before they can be used for payouts
+        </Text>
       </View>
     </View>
   );
@@ -1023,40 +1361,44 @@ export function VendorSettingsScreen() {
         ))}
       </ScrollView>
 
-      {/* Action Buttons */}
-      <View style={styles.actionButtons}>
-        {isEditing ? (
-          <>
-            <TouchableOpacity
-              onPress={handleCancel}
-              style={[styles.actionButton, styles.cancelButton]}
-            >
-              <Feather name="x" size={18} color="#ef4444" />
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleSave}
-              style={[styles.actionButton, styles.saveButton]}
-            >
-              <LinearGradient
-                colors={['#f97316', '#f43f5e']}
-                style={styles.saveButtonGradient}
-              >
-                <Feather name="save" size={18} color="#fff" />
-                <Text style={styles.saveButtonText}>Save Changes</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          </>
-        ) : (
-          <TouchableOpacity
-            onPress={handleEdit}
-            style={[styles.actionButton, styles.editButton]}
+
+{/* Action Buttons - Only show for editable tabs */}
+{activeTab !== 'support' && activeTab !== 'promos' && (
+  <View style={styles.actionButtons}>
+    {isEditing ? (
+      <>
+        <TouchableOpacity
+          onPress={handleCancel}
+          style={[styles.actionButton, styles.cancelButton]}
+        >
+          <Feather name="x" size={18} color="#ef4444" />
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={handleSave}
+          style={[styles.actionButton, styles.saveButton]}
+        >
+          <LinearGradient
+            colors={['#f97316', '#f43f5e']}
+            style={styles.saveButtonGradient}
           >
-            <Feather name="edit-2" size={18} color="#f97316" />
-            <Text style={styles.editButtonText}>Edit Profile</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+            <Feather name="save" size={18} color="#fff" />
+            <Text style={styles.saveButtonText}>Save Changes</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </>
+    ) : (
+      <TouchableOpacity
+        onPress={handleEdit}
+        style={[styles.actionButton, styles.editButton]}
+      >
+        <Feather name="edit-2" size={18} color="#f97316" />
+        <Text style={styles.editButtonText}>Edit Profile</Text>
+      </TouchableOpacity>
+    )}
+  </View>
+)}
+     
 
       {/* Content */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -1079,11 +1421,13 @@ export function VendorSettingsScreen() {
   );
 }
 
+// ✅ Add new styles for payment features
 const styles = StyleSheet.create({
+  // ... (keep all your existing styles)
   container: {
     flex: 1,
     backgroundColor: '#0a0a0a',
-    paddingTop:40,
+    paddingTop: 40,
     paddingBottom: 80,
   },
   loadingContainer: {
@@ -1558,7 +1902,7 @@ const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
     backgroundColor: '#0a0a0a',
-    paddingTop:40,
+    paddingTop: 40,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1695,5 +2039,161 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#ccc',
     lineHeight: 20,
+  },
+  // ✅ New payment styles
+  verificationRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  verifyButton: {
+    width: 80,
+    height: 48,
+    backgroundColor: '#f97316',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  verifyButtonSuccess: {
+    backgroundColor: '#10b981',
+  },
+  verifyButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  verificationError: {
+    color: '#ef4444',
+    fontSize: 12,
+    marginTop: 4,
+  },
+  verificationSuccess: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+  },
+  verificationSuccessText: {
+    color: '#10b981',
+    fontSize: 12,
+  },
+  verifiedInput: {
+    backgroundColor: '#1a2a1a',
+    borderColor: '#10b981',
+  },
+  paymentNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(249,115,22,0.1)',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  paymentNoteText: {
+    fontSize: 12,
+    color: '#f97316',
+    flex: 1,
+  },
+  paymentStatusCard: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  paymentStatusHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  paymentStatusInfo: {
+    flex: 1,
+  },
+  paymentStatusTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 2,
+  },
+  paymentStatusSubtitle: {
+    fontSize: 12,
+    color: '#666',
+  },
+  subaccountInfo: {
+    backgroundColor: '#1a1a1a',
+    padding: 12,
+    borderRadius: 8,
+  },
+  subaccountLabel: {
+    fontSize: 11,
+    color: '#666',
+    marginBottom: 2,
+  },
+  subaccountValue: {
+    fontSize: 12,
+    color: '#fff',
+    fontFamily: 'monospace',
+  },
+  paymentDetailsCard: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  paymentDetailsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#f97316',
+    marginBottom: 12,
+  },
+  paymentDetailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  paymentDetailLabel: {
+    fontSize: 12,
+    color: '#666',
+  },
+  paymentDetailValue: {
+    fontSize: 12,
+    color: '#fff',
+    fontWeight: '500',
+  },
+  paymentDetailValueHighlight: {
+    fontSize: 12,
+    color: '#f97316',
+    fontWeight: '600',
+  },
+  paymentInfoBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#2a2a2a',
+    padding: 12,
+    borderRadius: 8,
+  },
+  paymentInfoText: {
+    fontSize: 11,
+    color: '#666',
+    flex: 1,
+  },
+  retryButton: {
+    height: 48,
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginBottom: 16,
+  },
+  retryButtonGradient: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

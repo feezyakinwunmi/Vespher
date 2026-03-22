@@ -23,6 +23,9 @@ import { supabase } from '../lib/supabase';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
+import { verifyBankAccount } from '../utils/flutterwave';
+
+
 
 type RegistrationStep = 'auth' | 'business' | 'documents' | 'review' | 'success';
 
@@ -44,28 +47,79 @@ interface FormData {
   // Document fields
   cacNumber: string;
   bankName: string;
+  bankCode: string; // ✅ NEW: Store bank code separately
   accountNumber: string;
   accountName: string;
+  accountVerified: boolean; // ✅ NEW: Track if account was verified
 }
 
+// ✅ EXPANDED categories for your platform (not just food)
 const categories = [
+  // Food & Restaurants
   { label: 'Restaurant', value: 'restaurant' },
   { label: 'Fast Food', value: 'fastfood' },
   { label: 'Local Cuisine', value: 'local' },
   { label: 'Seafood', value: 'seafood' },
+  { label: 'Bakeries', value: 'bakery' },
+  { label: 'Grills & Barbecue', value: 'grill' },
+  
+  // Groceries & Raw Foods
   { label: 'Groceries', value: 'groceries' },
+  { label: 'Fresh Produce', value: 'produce' },
+  { label: 'Meat & Fish', value: 'meat' },
+  { label: 'Beverages', value: 'beverages' },
+  
+  // Other Categories
   { label: 'Pharmacy', value: 'pharmacy' },
+  { label: 'Electronics', value: 'electronics' },
+  { label: 'Fashion', value: 'fashion' },
+  { label: 'Home & Kitchen', value: 'home' },
+  { label: 'Beauty & Personal Care', value: 'beauty' },
+  { label: 'Books & Stationery', value: 'books' },
+  { label: 'Pets & Pet Supplies', value: 'pets' },
+  { label: 'Baby & Kids', value: 'baby' },
+  { label: 'Sports & Outdoors', value: 'sports' },
+  { label: 'Automotive', value: 'auto' },
 ];
 
+// ✅ COMPREHENSIVE bank list with Flutterwave bank codes
 const banks = [
-  { label: 'GTBank', value: 'gtb' },
-  { label: 'First Bank', value: 'first' },
-  { label: 'UBA', value: 'uba' },
-  { label: 'Zenith Bank', value: 'zenith' },
-  { label: 'Access Bank', value: 'access' },
-  { label: 'Kuda Bank', value: 'kuda' },
-  { label: 'OPay', value: 'opay' },
-  { label: 'PalmPay', value: 'palmpay' },
+  // Major Nigerian Banks
+  { label: 'Access Bank', value: 'access', code: '044' },
+  { label: 'Citibank', value: 'citibank', code: '023' },
+  { label: 'Ecobank', value: 'ecobank', code: '050' },
+  { label: 'Fidelity Bank', value: 'fidelity', code: '070' },
+  { label: 'First Bank of Nigeria', value: 'first', code: '011' },
+  { label: 'First City Monument Bank (FCMB)', value: 'fcmb', code: '214' },
+  { label: 'Globus Bank', value: 'globus', code: '001' }, // Check code
+  { label: 'Guaranty Trust Bank (GTBank)', value: 'gtb', code: '058' },
+  { label: 'Heritage Bank', value: 'heritage', code: '030' },
+  { label: 'Keystone Bank', value: 'keystone', code: '082' },
+  { label: 'Parallex Bank', value: 'parallex', code: '526' },
+  { label: 'Polaris Bank', value: 'polaris', code: '076' },
+  { label: 'Providus Bank', value: 'providus', code: '101' },
+  { label: 'Stanbic IBTC Bank', value: 'stanbic', code: '221' },
+  { label: 'Standard Chartered Bank', value: 'standard', code: '068' },
+  { label: 'Sterling Bank', value: 'sterling', code: '232' },
+  { label: 'Suntrust Bank', value: 'suntrust', code: '100' },
+  { label: 'Titan Trust Bank', value: 'titan', code: '102' },
+  { label: 'Union Bank', value: 'union', code: '032' },
+  { label: 'United Bank for Africa (UBA)', value: 'uba', code: '033' },
+  { label: 'Unity Bank', value: 'unity', code: '215' },
+  { label: 'Wema Bank', value: 'wema', code: '035' },
+  { label: 'Zenith Bank', value: 'zenith', code: '057' },
+  
+  // Microfinance & Digital Banks
+  { label: 'Kuda Bank', value: 'kuda', code: '090267' }, // Check code
+  { label: 'OPay', value: 'opay', code: '100052' },
+  { label: 'PalmPay', value: 'palmpay', code: '100033' }, // Check code
+  { label: 'Moniepoint', value: 'moniepoint', code: '090315' }, // Check code
+  { label: 'FairMoney', value: 'fairmoney', code: '090318' }, // Check code
+  { label: 'Rubies Bank', value: 'rubies', code: '090175' }, // Check code
+  { label: 'Sparkle Bank', value: 'sparkle', code: '090325' }, // Check code
+  { label: 'VBank', value: 'vbank', code: '090110' }, // Check code
+  { label: 'Mint Bank', value: 'mint', code: '090340' }, // Check code
+  { label: 'Eyowo', value: 'eyowo', code: '090328' }, // Check code
 ];
 
 export function VendorSignupScreen() {
@@ -80,6 +134,11 @@ const [step, setStep] = useState<RegistrationStep>('auth');
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [showBankDropdown, setShowBankDropdown] = useState(false);
   
+  // ✅ NEW: Account verification state
+  const [isVerifyingAccount, setIsVerifyingAccount] = useState(false);
+  const [accountVerified, setAccountVerified] = useState(false);
+  const [verificationError, setVerificationError] = useState('');
+  
   // OTP State
   const [showOTPModal, setShowOTPModal] = useState(false);
   const [otpCode, setOtpCode] = useState(['', '', '', '', '', '']);
@@ -90,6 +149,9 @@ const [step, setStep] = useState<RegistrationStep>('auth');
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
   const [maskedEmail, setMaskedEmail] = useState('');
   const otpInputs = useRef<Array<TextInput | null>>([]);
+
+  // ✅ Initialize Flutterwave
+ 
 
   const [formData, setFormData] = useState<FormData>({
     email: '',
@@ -104,8 +166,10 @@ const [step, setStep] = useState<RegistrationStep>('auth');
     logo: null,
     cacNumber: '',
     bankName: '',
+    bankCode: '',
     accountNumber: '',
     accountName: '',
+    accountVerified: false,
   });
 
   // Countdown timer for OTP resend
@@ -124,6 +188,13 @@ const [step, setStep] = useState<RegistrationStep>('auth');
 
   const updateField = (field: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // If bank or account number changes, reset verification
+    if (field === 'bankName' || field === 'accountNumber') {
+      setAccountVerified(false);
+      setFormData(prev => ({ ...prev, accountVerified: false }));
+      setVerificationError('');
+    }
   };
 
   const pickImage = async () => {
@@ -153,6 +224,46 @@ const [step, setStep] = useState<RegistrationStep>('auth');
     
     return `${maskedLocal}@${domain}`;
   };
+
+  // ✅ NEW: Verify bank account with Flutterwave
+// Update the verifyBankAccount function (make sure it's named differently from the import)
+const handleVerifyBankAccount = async () => {
+  if (!formData.accountNumber || !formData.bankCode) {
+    setVerificationError('Please select bank and enter account number');
+    return;
+  }
+
+  setIsVerifyingAccount(true);
+  setVerificationError('');
+
+  try {
+    const result = await verifyBankAccount(
+      formData.accountNumber,
+      formData.bankCode
+    );
+
+    if (result.status === 'success' && result.data) {
+      setFormData(prev => ({ 
+        ...prev, 
+        accountName: result.data?.account_name || '',
+        accountVerified: true 
+      }));
+      setAccountVerified(true);
+      
+      Alert.alert('Success', `Account verified: ${result.data.account_name}`);
+    } else {
+      throw new Error(result.message);
+    }
+  } catch (error: any) {
+    console.error('Verification error:', error);
+    setVerificationError(error.message || 'Invalid account details');
+    setAccountVerified(false);
+    setFormData(prev => ({ ...prev, accountVerified: false }));
+  } finally {
+    setIsVerifyingAccount(false);
+  }
+};
+
 
   const handleNext = async () => {
     setError('');
@@ -192,6 +303,13 @@ const [step, setStep] = useState<RegistrationStep>('auth');
         setError('Please fill in all payment details');
         return;
       }
+      
+      // ✅ Require account verification
+      if (!formData.accountVerified) {
+        setError('Please verify your bank account first');
+        return;
+      }
+      
       setStep('review');
     }
     else if (step === 'review') {
@@ -240,37 +358,35 @@ const [step, setStep] = useState<RegistrationStep>('auth');
     }
   };
 
-// Replace your existing handleOTPChange with this version
-const handleOTPChange = (text: string, index: number) => {
-  // Only allow single digit
-  if (text.length > 1) text = text.slice(-1);
-  if (!/^\d?$/.test(text)) return; // only digits or empty
+  const handleOTPChange = (text: string, index: number) => {
+    // Only allow single digit
+    if (text.length > 1) text = text.slice(-1);
+    if (!/^\d?$/.test(text)) return; // only digits or empty
 
-  const newOtp = [...otpCode];
-  newOtp[index] = text;
-  setOtpCode(newOtp);
-  setOtpError('');
+    const newOtp = [...otpCode];
+    newOtp[index] = text;
+    setOtpCode(newOtp);
+    setOtpError('');
 
-  // Auto-focus next input
-  if (text && index < 5) {
-    otpInputs.current[index + 1]?.focus();
-  }
+    // Auto-focus next input
+    if (text && index < 5) {
+      otpInputs.current[index + 1]?.focus();
+    }
 
-  // Auto-focus previous on backspace
-  if (!text && index > 0) {
-    otpInputs.current[index - 1]?.focus();
-  }
-};
+    // Auto-focus previous on backspace
+    if (!text && index > 0) {
+      otpInputs.current[index - 1]?.focus();
+    }
+  };
 
-// Add this new useEffect right after your existing useEffects
-useEffect(() => {
-  const otpString = otpCode.join('');
-  
-  // Only trigger when we have exactly 6 digits and not already verifying
-  if (otpString.length === 6 && !isVerifyingOTP) {
-    handleVerifyOTP();
-  }
-}, [otpCode, isVerifyingOTP]);
+  useEffect(() => {
+    const otpString = otpCode.join('');
+    
+    // Only trigger when we have exactly 6 digits and not already verifying
+    if (otpString.length === 6 && !isVerifyingOTP) {
+      handleVerifyOTP();
+    }
+  }, [otpCode, isVerifyingOTP]);
 
   const handleKeyPress = (e: any, index: number) => {
     if (e.nativeEvent.key === 'Backspace' && !otpCode[index] && index > 0) {
@@ -326,67 +442,91 @@ useEffect(() => {
     }
   };
 
-  const completeVendorRegistration = async () => {
-    try {
-      let logoUrl = null;
-      if (formData.logo) {
-        const fileName = `vendor-${pendingUserId}-logo.jpg`;
-        const response = await fetch(formData.logo);
-        const blob = await response.blob();
-        
-        const { error: uploadError } = await supabase.storage
-          .from('vendor-logos')
-          .upload(fileName, blob);
-
-        if (!uploadError) {
-          const { data: { publicUrl } } = supabase.storage
-            .from('vendor-logos')
-            .getPublicUrl(fileName);
-          logoUrl = publicUrl;
-        }
-      }
-
-      const { error: profileError } = await supabase
-        .from('users')
-        .insert([
-          {
-            id: pendingUserId,
-            email: formData.email,
-            name: formData.ownerName,
-            phone: formData.phone,
-            role: 'vendor',
-            created_at: new Date().toISOString(),
-          },
-        ]);
-
-      if (profileError) throw profileError;
-
-      const { error: vendorError } = await supabase
-        .from('vendors')
-        .insert([
-          {
-            owner_id: pendingUserId,
-            name: formData.businessName,
-            description: formData.description,
-            category: formData.category,
-            image_url: logoUrl,
-            address: formData.address,
-            phone: formData.phone,
-            email: formData.email,
-            is_approved: false,
-          },
-        ]);
-
-      if (vendorError) throw vendorError;
-
-      setShowOTPModal(false);
-      setStep('success');
+// ✅ UPDATED: Complete vendor registration with Flutterwave subaccount
+const completeVendorRegistration = async () => {
+  try {
+    let logoUrl = null;
+    if (formData.logo) {
+      const fileName = `vendor-${pendingUserId}-logo.jpg`;
+      const response = await fetch(formData.logo);
+      const blob = await response.blob();
       
-    } catch (err: any) {
-      Alert.alert('Error', 'Failed to complete registration. Please contact support.');
-      console.error(err);
+      const { error: uploadError } = await supabase.storage
+        .from('vendor-logos')
+        .upload(fileName, blob);
+
+      if (!uploadError) {
+        const { data: { publicUrl } } = supabase.storage
+          .from('vendor-logos')
+          .getPublicUrl(fileName);
+        logoUrl = publicUrl;
+      }
     }
-  };
+
+    // Insert user profile
+    const { error: profileError } = await supabase
+      .from('users')
+      .insert([
+        {
+          id: pendingUserId,
+          email: formData.email,
+          name: formData.ownerName,
+          phone: formData.phone,
+          role: 'vendor',
+          created_at: new Date().toISOString(),
+        },
+      ]);
+
+    if (profileError) throw profileError;
+
+
+    // Insert vendor record WITHOUT subaccount ID
+    const { error: vendorError } = await supabase
+      .from('vendors')
+      .insert([
+        {
+          owner_id: pendingUserId,
+          name: formData.businessName,
+          description: formData.description,
+          category: formData.category,
+          image_url: logoUrl,
+          address: formData.address,
+          phone: formData.phone,
+          email: formData.email,
+          is_approved: false,
+          bank_name: formData.bankName,
+          bank_code: formData.bankCode,
+          account_number: formData.accountNumber,
+          account_name: formData.accountName,
+        },
+      ]);
+
+    if (vendorError) throw vendorError;
+
+    // ✅ CREATE VENDOR WALLET
+    const { error: walletError } = await supabase
+      .from('vendor_wallets')
+      .insert({
+        vendor_id: pendingUserId,
+        balance: 0,
+        total_earned: 0,
+        updated_at: new Date().toISOString(),
+      });
+
+    if (walletError) {
+      console.error('Failed to create vendor wallet:', walletError);
+    } else {
+      console.log('✅ Vendor wallet created successfully');
+    }
+
+    setShowOTPModal(false);
+    setStep('success');
+    
+  } catch (err: any) {
+    Alert.alert('Error', 'Failed to complete registration. Please contact support.');
+    console.error(err);
+  }
+};
 
   const handleBack = () => {
     if (step === 'auth') {
@@ -409,8 +549,12 @@ useEffect(() => {
   };
 
   const selectBank = (bankValue: string) => {
-    updateField('bankName', bankValue);
-    setShowBankDropdown(false);
+    const selectedBank = banks.find(b => b.value === bankValue);
+    if (selectedBank) {
+      updateField('bankName', bankValue);
+      updateField('bankCode', selectedBank.code);
+      setShowBankDropdown(false);
+    }
   };
 
   const renderStep = () => {
@@ -745,28 +889,80 @@ useEffect(() => {
               {/* Account Number */}
               <View style={styles.fieldContainer}>
                 <Text style={styles.label}>Account Number *</Text>
-                <TextInput
-                  style={styles.simpleInput}
-                  value={formData.accountNumber}
-                  onChangeText={(text) => updateField('accountNumber', text)}
-                  placeholder="10-digit account number"
-                  placeholderTextColor="#666"
-                  keyboardType="numeric"
-                  maxLength={10}
-                />
+                <View style={styles.verificationRow}>
+                  <TextInput
+                    style={[styles.simpleInput, { flex: 1 }]}
+                    value={formData.accountNumber}
+                    onChangeText={(text) => updateField('accountNumber', text)}
+                    placeholder="10-digit account number"
+                    placeholderTextColor="#666"
+                    keyboardType="numeric"
+                    maxLength={10}
+                  />
+                {/* In the documents step, update the Verify button onPress */}
+<TouchableOpacity
+  onPress={handleVerifyBankAccount}  
+  disabled={!formData.accountNumber || !formData.bankCode || isVerifyingAccount || accountVerified}
+  style={[
+    styles.verifyButton,
+    accountVerified && styles.verifyButtonSuccess
+  ]}
+>
+  {isVerifyingAccount ? (
+    <ActivityIndicator size="small" color="#fff" />
+  ) : accountVerified ? (
+    <Feather name="check" size={20} color="#fff" />
+  ) : (
+    <Text style={styles.verifyButtonText}>Verify</Text>
+  )}
+</TouchableOpacity>
+                </View>
+                {verificationError ? (
+                  <Text style={styles.verificationError}>{verificationError}</Text>
+                ) : null}
+                {accountVerified ? (
+                  <Text style={styles.verificationSuccess}>✓ Account verified</Text>
+                ) : null}
               </View>
 
               {/* Account Name */}
-              <View style={styles.fieldContainer}>
-                <Text style={styles.label}>Account Name *</Text>
-                <TextInput
-                  style={styles.simpleInput}
-                  value={formData.accountName}
-                  onChangeText={(text) => updateField('accountName', text)}
-                  placeholder="Name on account"
-                  placeholderTextColor="#666"
-                />
-              </View>
+              {/* Account Number */}
+<View style={styles.fieldContainer}>
+  <Text style={styles.label}>Account Number *</Text>
+  <View style={styles.verificationRow}>
+    <TextInput
+      style={[styles.simpleInput, { flex: 1 }]}
+      value={formData.accountNumber}
+      onChangeText={(text) => updateField('accountNumber', text)}
+      placeholder="10-digit account number"
+      placeholderTextColor="#666"
+      keyboardType="numeric"
+      maxLength={10}
+    />
+    <TouchableOpacity
+      onPress={handleVerifyBankAccount}
+      disabled={!formData.accountNumber || !formData.bankCode || isVerifyingAccount || accountVerified}
+      style={[
+        styles.verifyButton,
+        accountVerified && styles.verifyButtonSuccess
+      ]}
+    >
+      {isVerifyingAccount ? (
+        <ActivityIndicator size="small" color="#fff" />
+      ) : accountVerified ? (
+        <Feather name="check" size={20} color="#fff" />
+      ) : (
+        <Text style={styles.verifyButtonText}>Verify</Text>
+      )}
+    </TouchableOpacity>
+  </View>
+  {verificationError ? (
+    <Text style={styles.verificationError}>{verificationError}</Text>
+  ) : null}
+  {accountVerified ? (
+    <Text style={styles.verificationSuccess}>✓ Account verified</Text>
+  ) : null}
+</View>
 
               {/* Info Box */}
               <View style={styles.infoBox}>
@@ -855,45 +1051,52 @@ useEffect(() => {
                   <Text style={styles.reviewLabel}>Account Name</Text>
                   <Text style={styles.reviewValue}>{formData.accountName}</Text>
                 </View>
+                {formData.accountVerified && (
+                  <View style={styles.reviewVerifiedBadge}>
+                    <Feather name="check-circle" size={14} color="#10b981" />
+                    <Text style={styles.reviewVerifiedText}>Account Verified</Text>
+                  </View>
+                )}
               </View>
             </View>
           </View>
         );
 
- case 'success':
-  // Auto-redirect after 3.5 seconds
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      navigation.navigate('Login');
-    }, 3500); // 3.5 seconds delay - feels natural
+      case 'success':
+        // Auto-redirect after 3.5 seconds
+        useEffect(() => {
+          const timer = setTimeout(() => {
+            navigation.navigate('Login');
+          }, 3500);
 
-    return () => clearTimeout(timer);
-  }, [navigation]);
+          return () => clearTimeout(timer);
+        }, [navigation]);
 
-  return (
-    <View style={styles.successContainer}>
-      <View style={styles.successIcon}>
-        <Feather name="check-circle" size={64} color="#10b981" />
-      </View>
-      
-      <Text style={styles.successTitle}>Registration Successful!</Text>
-      
-      <Text style={styles.successText}>
-        Your vendor application has been submitted and is under review.
-      </Text>
-      
-      <Text style={styles.successSubText}>
-        Redirecting you to login page in a few seconds...
-      </Text>
+        return (
+          <View style={styles.successContainer}>
+            <View style={styles.successIcon}>
+              <Feather name="check-circle" size={64} color="#10b981" />
+            </View>
+            
+            <Text style={styles.successTitle}>Registration Successful!</Text>
+            
+            <Text style={styles.successText}>
+              Your vendor application has been submitted and is under review.
+            </Text>
+            
+            <Text style={styles.successSubText}>
+              Redirecting you to login page in a few seconds...
+            </Text>
 
-      {/* Optional: small loading indicator */}
-      <ActivityIndicator 
-        size="small" 
-        color="#f97316" 
-        style={{ marginTop: 24 }} 
-      />
-    </View>
-  );  }
+            {/* Optional: small loading indicator */}
+            <ActivityIndicator 
+              size="small" 
+              color="#f97316" 
+              style={{ marginTop: 24 }} 
+            />
+          </View>
+        );
+    }
   };
 
   return (
@@ -1065,6 +1268,7 @@ useEffect(() => {
   );
 }
 
+// ✅ ADD NEW STYLES for verification features
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -1312,6 +1516,43 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#fff',
   },
+  // ✅ New styles for verification
+  verificationRow: {
+    flexDirection: 'row' as const,
+    gap: 8,
+  },
+  verifyButton: {
+    width: 80,
+    height: 56,
+    backgroundColor: '#f97316',
+    borderRadius: 14,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+  },
+  verifyButtonSuccess: {
+    backgroundColor: '#10b981',
+  },
+  verifyButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  verificationError: {
+    color: '#ef4444',
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
+  },
+  verificationSuccess: {
+    color: '#10b981',
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
+  },
+  verifiedInput: {
+    backgroundColor: '#1a2a1a',
+    borderColor: '#10b981',
+  },
   infoBox: {
     backgroundColor: '#1a1a1a',
     borderRadius: 14,
@@ -1370,6 +1611,20 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'right' as const,
     marginLeft: 16,
+  },
+  reviewVerifiedBadge: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 6,
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.05)',
+  },
+  reviewVerifiedText: {
+    fontSize: 12,
+    color: '#10b981',
+    fontWeight: '500',
   },
   successContainer: {
     flex: 1,

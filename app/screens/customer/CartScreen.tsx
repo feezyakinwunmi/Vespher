@@ -11,12 +11,14 @@ import {
   Alert,
   Modal,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useVendors } from '../../hooks/customer/useVendors';
@@ -29,11 +31,23 @@ import Toast from 'react-native-toast-message';
 
 type CartScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type CartScreenRouteProp = RouteProp<RootStackParamList, 'Cart'>;
-type PaymentMethod = 'cash' | 'transfer' | 'card';
+type PaymentMethod = 'cash' | 'card';
+type OrderType = 'now' | 'schedule';
+
+// Special request categories
+const requestCategories = [
+  { label: 'Dietary Restrictions', value: 'dietary', icon: 'alert-circle' },
+  { label: 'Allergies', value: 'allergies', icon: 'alert-triangle' },
+  { label: 'Preparation Instructions', value: 'preparation', icon: 'coffee' },
+  { label: 'Packaging Instructions', value: 'packaging', icon: 'package' },
+  { label: 'Delivery Instructions', value: 'delivery', icon: 'truck' },
+  { label: 'Other', value: 'other', icon: 'more-horizontal' },
+];
 
 // Generate unique reference for payment
 const generateReference = () => {
-  return `VESP-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`.toUpperCase();
+  const orderId = `ORD-${Date.now().toString(36).substring(2, 8)}`;
+  return `VESP-${orderId}`;
 };
 
 export function CartScreen() {
@@ -49,12 +63,18 @@ export function CartScreen() {
   } = useCart();
   const { user } = useAuth();
   const { vendors } = useVendors();
-  const { calculateDeliveryToVendor, deliveryDistance, isLoading: locationLoading } = useLocation();
+  const { calculateDeliveryToVendor, deliveryDistance } = useLocation();
 
   // UI States
   const [showCheckout, setShowCheckout] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
+  const [orderType, setOrderType] = useState<OrderType>('now');
+  const [selectedDateTime, setSelectedDateTime] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [specialRequest, setSpecialRequest] = useState('');
+  const [selectedRequestCategory, setSelectedRequestCategory] = useState<string>('');
   const [promoCode, setPromoCode] = useState('');
   const [promoApplied, setPromoApplied] = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
@@ -68,7 +88,7 @@ export function CartScreen() {
   const [isCalculatingFee, setIsCalculatingFee] = useState(false);
   const [flutterwaveResponse, setFlutterwaveResponse] = useState<any>(null);
   const [platformSettings, setPlatformSettings] = useState<{ platform_fee_percentage: number } | null>(null);
-const [loadingSettings, setLoadingSettings] = useState(true);
+  const [loadingSettings, setLoadingSettings] = useState(true);
   
   const showToast = (message: string) => {
     Toast.show({
@@ -86,33 +106,37 @@ const [loadingSettings, setLoadingSettings] = useState(true);
   const vendor = vendors.find(v => v.id === vendorId);
   const subtotal = getSubtotal();
 
+  // Check if free delivery applies
+  const freeDeliveryEligible = isFirstOrder && subtotal > 10000;
+  
+  // Calculate first order discount (10% instead of 20%)
+  const firstOrderDiscount = isFirstOrder ? Math.round(subtotal * 0.1) : 0;
+  const finalDiscount = Math.max(discount, firstOrderDiscount);
+  const effectiveDeliveryFee = freeDeliveryEligible ? 0 : (calculatedDeliveryFee || 0);
+  const total = subtotal + effectiveDeliveryFee - finalDiscount;
 
+  // Fetch platform settings for commission percentage
+  useEffect(() => {
+    const fetchPlatformSettings = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('platform_settings')
+          .select('platform_fee_percentage')
+          .order('id', { ascending: false })
+          .limit(1)
+          .single();
 
+        if (error) throw error;
+        setPlatformSettings(data);
+      } catch (error) {
+        console.error('Error fetching platform settings:', error);
+      } finally {
+        setLoadingSettings(false);
+      }
+    };
 
-// Fetch platform settings for commission percentage
-useEffect(() => {
-  const fetchPlatformSettings = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('platform_settings')
-        .select('platform_fee_percentage')
-        .order('id', { ascending: false })
-        .limit(1)
-        .single();
-
-      if (error) throw error;
-      setPlatformSettings(data);
-    } catch (error) {
-      console.error('Error fetching platform settings:', error);
-    } finally {
-      setLoadingSettings(false);
-    }
-  };
-
-  fetchPlatformSettings();
-}, []);
-
-
+    fetchPlatformSettings();
+  }, []);
 
   // Handle selected address from navigation params
   useEffect(() => {
@@ -148,14 +172,6 @@ useEffect(() => {
 
     calculateFee();
   }, [vendor, selectedAddress]);
-
-  // Use calculated fee
-  const deliveryFee = calculatedDeliveryFee || 0;
-  
-  // Calculate discounts
-  const firstOrderDiscount = isFirstOrder ? Math.round(subtotal * 0.2) : 0;
-  const finalDiscount = Math.max(discount, firstOrderDiscount);
-  const total = subtotal + deliveryFee - finalDiscount;
 
   // Check if first order
   useEffect(() => {
@@ -305,36 +321,112 @@ const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
 
   try {
     // Get platform fee percentage from settings (default to 10 if not loaded)
-    const commissionPercentage = platformSettings?.platform_fee_percentage || 10;
+    const platformFeePercentage = platformSettings?.platform_fee_percentage || 10;
     
-    // Apply discount to subtotal FIRST (simple approach)
-    const discountedSubtotal = subtotal - finalDiscount;
+    // Get actual delivery fee
+    const actualDeliveryFee = calculatedDeliveryFee || 0;
     
-    // Calculate platform commission on the DISCOUNTED subtotal
-    const platformCommission = Math.round(discountedSubtotal * (commissionPercentage / 100));
+    // Check if free delivery applies
+    const freeDeliveryEligible = isFirstOrder && subtotal > 10000;
     
-    // Vendor gets discounted subtotal minus commission
-    const vendorPayout = discountedSubtotal - platformCommission;
+    // Calculate first order discount (10%)
+    const firstOrderDiscount = isFirstOrder ? Math.round(subtotal * 0.1) : 0;
+    const totalDiscount = Math.max(discount, firstOrderDiscount);
     
-    // Rider gets full delivery fee
-    const riderPayout = deliveryFee;
+    // What customer pays for delivery (0 if free)
+    const customerDeliveryFee = freeDeliveryEligible ? 0 : actualDeliveryFee;
     
-    // Get the actual Flutterwave fee from response (or calculate on discounted subtotal)
-    const flutterwaveFee = gatewayResponse?.fee || Math.round(discountedSubtotal * 0.02);
+    // Total customer pays
+    const discountedSubtotal = subtotal - totalDiscount;
+    const totalAmount = discountedSubtotal + customerDeliveryFee;
     
-    // Platform net earnings (commission - flutterwave fee)
-    const platformNetEarnings = platformCommission - flutterwaveFee;
+    // ✅ Calculate Flutterwave fee ONLY if not provided in response
+    let flutterwaveFee = gatewayResponse?.fee || gatewayResponse?.flutterwave_fee || 0;
+    let flutterwaveFeePercentage = 1.4;
+    
+    if (flutterwaveFee === 0) {
+      // Manual calculation (1.4% for Nigerian transactions)
+      flutterwaveFee = Math.round(totalAmount * (flutterwaveFeePercentage / 100));
+      console.log('💰 Flutterwave fee calculated manually:', flutterwaveFee);
+    } else {
+      console.log('💰 Flutterwave fee from gateway:', flutterwaveFee);
+    }
+    
+    // CRITICAL FIX: For database constraint, we need to store delivery_fee as actual fee
+    // and add free delivery amount to discount to satisfy total = subtotal + delivery_fee - discount
+    let discountForDB = totalDiscount;
+    let deliveryFeeForDB = actualDeliveryFee;
+    
+    // If free delivery applies, add the delivery fee to discount
+    if (freeDeliveryEligible) {
+      discountForDB = totalDiscount + actualDeliveryFee;
+      deliveryFeeForDB = actualDeliveryFee;
+    }
+    
+    // Calculate rider earnings (50% of actual delivery fee)
+    const riderEarnings = Math.round(actualDeliveryFee * 0.5);
+    const platformDeliveryEarnings = actualDeliveryFee - riderEarnings;
+    
+    // Calculate vendor payout - based on ORIGINAL subtotal (platform absorbs first order discount)
+    const vendorPayout = Math.round(subtotal * ((100 - platformFeePercentage) / 100));
+    
+    // Calculate platform commission (based on original subtotal)
+    const platformCommission = subtotal - vendorPayout;
+    
+    // Stamp duty (₦50 for transactions ₦10,000 and above)
+    const stampDuty = totalAmount >= 10000 ? 50 : 0;
+    
+    // Platform net earnings = commission + delivery earnings - first order discount - promo discount - flutterwave fee - stamp duty
+    const platformNetEarnings = platformCommission + platformDeliveryEarnings - firstOrderDiscount - discount - flutterwaveFee - stampDuty;
 
-    console.log('Inserting order with:', {
-      originalSubtotal: subtotal,
-      discount: finalDiscount,
-      discountedSubtotal,
-      platformCommission,
+    console.log('💰 Payment breakdown:', {
+      subtotal,
+      actualDeliveryFee,
+      customerDeliveryFee,
+      freeDeliveryEligible,
+      totalDiscount,
+      discountForDB,
+      deliveryFeeForDB,
+      totalAmount,
       flutterwaveFee,
+      flutterwaveFeePercentage,
+      feeSource: gatewayResponse?.fee ? 'from_gateway' : 'calculated',
+      vendorPayout,
+      riderEarnings,
       platformNetEarnings,
-      vendorPayout
     });
 
+    // Determine event type
+    let eventType = 'other';
+    if (selectedRequestCategory === 'party') eventType = 'party';
+    else if (selectedRequestCategory === 'corporate') eventType = 'corporate';
+    else if (selectedRequestCategory === 'family') eventType = 'family';
+
+    const scheduledDateTime = orderType === 'schedule' ? selectedDateTime : null;
+
+    // Auto-cancel logic
+    let autoCancelAt = null;
+    
+    if (orderType === 'schedule' && scheduledDateTime) {
+      const now = new Date();
+      const scheduledDate = new Date(scheduledDateTime);
+      const timeUntilScheduled = scheduledDate.getTime() - now.getTime();
+      const halfWaitTime = Math.min(timeUntilScheduled * 0.5, 3 * 24 * 60 * 60 * 1000);
+      autoCancelAt = new Date(now.getTime() + halfWaitTime);
+    } else {
+      autoCancelAt = new Date();
+      autoCancelAt.setMinutes(autoCancelAt.getMinutes() + 60);
+    }
+
+    // Payment status
+    let paymentStatus = 'pending';
+    if (paymentMethod === 'card') {
+      paymentStatus = 'paid';
+    } else {
+      paymentStatus = 'pending';
+    }
+
+    // Insert into orders table
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
@@ -348,21 +440,34 @@ const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
           options: item.selectedOptions || []
         })),
         status: 'pending',
-        subtotal: subtotal, // Keep original subtotal for records
-        delivery_fee: deliveryFee,
-        discount: finalDiscount,
-        total: total, // subtotal + delivery - discount
-        payment_method: 'card',
-        payment_status: 'paid',
+        is_scheduled: orderType === 'schedule',
+        scheduled_datetime: scheduledDateTime,
+        event_type: eventType,
+        guest_count: null,
+        special_request_category: selectedRequestCategory,
+        special_request_text: specialRequest,
+        subtotal: subtotal,
+        delivery_fee: deliveryFeeForDB,
+        discount: discountForDB,
+        total: totalAmount,
+        payment_method: paymentMethod,
+        payment_status: paymentStatus,
         payment_reference: paymentRef,
         delivery_address: selectedAddress,
         created_at: new Date().toISOString(),
+        auto_cancel_at: autoCancelAt?.toISOString() || null,
         
-        // Financial fields based on discounted subtotal
+        // Financial fields
+        stamp_duty: stampDuty,
         flutterwave_fee: flutterwaveFee,
+        flutterwave_fee_percentage: flutterwaveFeePercentage,
         platform_commission: platformCommission,
+        platform_commission_percentage: platformFeePercentage,
+        platform_delivery_earnings: platformDeliveryEarnings,
         platform_net_earnings: platformNetEarnings,
-        payment_gateway_response: gatewayResponse
+        vendor_payout: vendorPayout,
+        payment_gateway_response: gatewayResponse,
+        rider_earnings: riderEarnings,
       })
       .select()
       .single();
@@ -372,7 +477,7 @@ const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
       throw orderError;
     }
 
-    console.log('Order inserted successfully:', order.id);
+    console.log('✅ Order inserted successfully:', order.id);
 
     // Record first order discount if applied
     if (isFirstOrder && firstOrderDiscount > 0) {
@@ -380,6 +485,7 @@ const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
         user_id: user?.id,
         order_id: order.id,
         discount_amount: firstOrderDiscount,
+        free_delivery_applied: freeDeliveryEligible,
         applied_at: new Date().toISOString(),
       });
     }
@@ -399,24 +505,32 @@ const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
     await supabase.from('platform_fees').insert({
       order_id: order.id,
       vendor_id: vendorId,
-      fee_percentage: commissionPercentage,
+      fee_percentage: platformFeePercentage,
       fee_amount: platformCommission,
+      delivery_earnings: platformDeliveryEarnings,
+      stamp_duty: stampDuty,
       flutterwave_fee: flutterwaveFee,
       vendor_payout: vendorPayout,
-      rider_payout: riderPayout,
       platform_net: platformNetEarnings,
       created_at: new Date().toISOString(),
     });
 
-    console.log('Platform fees recorded, clearing cart now...');
+    console.log('✅ Platform fees recorded, clearing cart now...');
     
     clearCart();
     
-    showToast('Order placed successfully!');
-    navigation.navigate('Orders');
+    const successMessage = orderType === 'schedule' 
+      ? 'Order scheduled successfully!' 
+      : 'Order placed successfully!';
+    
+    showToast(successMessage);
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Orders' }],
+    });
     
   } catch (error: any) {
-    console.error('Error placing order:', error);
+    console.error('❌ Error placing order:', error);
     showToast('Failed to place order: ' + error.message);
   } finally {
     setIsPlacingOrder(false);
@@ -426,7 +540,10 @@ const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
 };
 
   const handleCardPayment = () => {
-    if (!user || !selectedAddress || !vendorId) return;
+    if (!user || !selectedAddress || !vendorId) {
+      showToast('Please complete all required fields');
+      return;
+    }
     
     setProcessingPayment(true);
     setShowCheckout(false);
@@ -434,6 +551,11 @@ const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
     const reference = generateReference();
     setPaymentReference(reference);
     setFlutterwaveResponse(null);
+
+    console.log('💰 Sending to Flutterwave:', {
+      total,
+      deliveryFee: effectiveDeliveryFee
+    });
     
     setTimeout(() => {
       setShowFlutterwave(true);
@@ -441,39 +563,90 @@ const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
     }, 500);
   };
 
-const handlePlaceOrder = async () => {
-  if (!user) {
-    showToast('Please login to place order');
-    navigation.navigate('Login');
-    return;
-  }
+  const handlePlaceOrder = async () => {
+    if (!user) {
+      showToast('Please login to place order');
+      navigation.navigate('Login');
+      return;
+    }
 
-  if (!selectedAddress) {
-    showToast('Please select a delivery address');
-    return;
-  }
+    if (!selectedAddress) {
+      showToast('Please select a delivery address');
+      return;
+    }
 
-  if (!vendorId) {
-    showToast('Vendor information missing');
-    return;
-  }
+    if (!vendorId) {
+      showToast('Vendor information missing');
+      return;
+    }
 
-  if (!calculatedDeliveryFee) {
-    showToast('Unable to calculate delivery fee. Please ensure your address has valid coordinates.');
-    return;
-  }
+    if (!calculatedDeliveryFee) {
+      showToast('Unable to calculate delivery fee. Please ensure your address has valid coordinates.');
+      return;
+    }
 
-  if (loadingSettings) {
-    showToast('Loading platform settings...');
-    return;
-  }
+    if (loadingSettings) {
+      showToast('Loading platform settings...');
+      return;
+    }
 
-  handleCardPayment();
-};
+    // Validate scheduled order
+    if (orderType === 'schedule' && !selectedDateTime) {
+      showToast('Please select a date and time for your scheduled order');
+      return;
+    }
+
+    // Validate Cash on Delivery restriction
+    if (paymentMethod === 'cash' && total >= 10000) {
+      showToast('Cash on delivery is only available for orders below ₦10,000. Please select card payment.');
+      return;
+    }
+
+    // For card payments, process payment
+    if (paymentMethod === 'card') {
+      handleCardPayment();
+      return;
+    }
+
+    // For cash on delivery, proceed directly
+    await processOrder();
+  };
 
   const navigateToAddresses = () => {
     setShowCheckout(false);
     navigation.navigate('Addresses', { selectMode: true });
+  };
+
+  const onDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      if (selectedDateTime) {
+        const newDate = new Date(selectedDate);
+        newDate.setHours(selectedDateTime.getHours());
+        newDate.setMinutes(selectedDateTime.getMinutes());
+        setSelectedDateTime(newDate);
+      } else {
+        selectedDate.setHours(12, 0, 0, 0);
+        setSelectedDateTime(selectedDate);
+      }
+    }
+  };
+
+  const onTimeChange = (event: any, selectedTime?: Date) => {
+    setShowTimePicker(false);
+    if (selectedTime) {
+      if (selectedDateTime) {
+        const newDateTime = new Date(selectedDateTime);
+        newDateTime.setHours(selectedTime.getHours());
+        newDateTime.setMinutes(selectedTime.getMinutes());
+        setSelectedDateTime(newDateTime);
+      } else {
+        const today = new Date();
+        today.setHours(selectedTime.getHours());
+        today.setMinutes(selectedTime.getMinutes());
+        setSelectedDateTime(today);
+      }
+    }
   };
 
   if (items.length === 0) {
@@ -607,8 +780,13 @@ const handlePlaceOrder = async () => {
         {promoApplied && (
           <Text style={styles.promoSuccess}>Promo code applied! You saved ₦{discount.toLocaleString()}</Text>
         )}
-        {isFirstOrder && !promoApplied && (
-          <Text style={styles.firstOrderText}>🎉 First order! You get 20% off automatically</Text>
+        {isFirstOrder && !promoApplied && subtotal > 10000 && (
+          <Text style={styles.firstOrderText}>🎉 First order over ₦10,000 gets 10% off + FREE delivery!</Text>
+        )}
+        {isFirstOrder && !promoApplied && subtotal <= 10000 && (
+          <Text style={styles.firstOrderTextSmall}>
+            🎉 Add ₦{(10000 - subtotal).toLocaleString()} more to get 10% off + FREE delivery on your first order!
+          </Text>
         )}
 
         {/* Order Summary */}
@@ -637,8 +815,13 @@ const handlePlaceOrder = async () => {
                 </View>
               )}
               <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Delivery Fee (₦500/km)</Text>
-                <Text style={styles.summaryValue}>₦{deliveryFee.toLocaleString()}</Text>
+                <Text style={styles.summaryLabel}>Delivery Fee</Text>
+                <Text style={[
+                  styles.summaryValue,
+                  freeDeliveryEligible && styles.discountValue
+                ]}>
+                  {freeDeliveryEligible ? 'FREE' : `₦${calculatedDeliveryFee.toLocaleString()}`}
+                </Text>
               </View>
             </>
           ) : (
@@ -650,7 +833,7 @@ const handlePlaceOrder = async () => {
 
           {firstOrderDiscount > 0 && !promoApplied && (
             <View style={[styles.summaryRow, styles.discountRow]}>
-              <Text style={styles.discountLabel}>First Order Discount (20%)</Text>
+              <Text style={styles.discountLabel}>First Order Discount (10%)</Text>
               <Text style={styles.discountValue}>-₦{firstOrderDiscount.toLocaleString()}</Text>
             </View>
           )}
@@ -664,6 +847,9 @@ const handlePlaceOrder = async () => {
             <Text style={styles.totalLabel}>Total</Text>
             <Text style={styles.totalValue}>₦{total.toLocaleString()}</Text>
           </View>
+          {freeDeliveryEligible && (
+            <Text style={styles.freeDeliveryNotice}>✨ Free delivery applied to this order!</Text>
+          )}
         </View>
       </ScrollView>
 
@@ -712,9 +898,7 @@ const handlePlaceOrder = async () => {
                     {addresses.map(address => (
                       <TouchableOpacity
                         key={address.id}
-                        onPress={() => {
-                          setSelectedAddress(address);
-                        }}
+                        onPress={() => setSelectedAddress(address)}
                         style={[
                           styles.addressCard,
                           selectedAddress?.id === address.id && styles.addressCardSelected,
@@ -746,31 +930,218 @@ const handlePlaceOrder = async () => {
                 )}
               </View>
 
+              {/* Order Type - Schedule Option */}
+              <View style={styles.modalSection}>
+                <Text style={styles.modalSectionTitle}>Order Type</Text>
+                <View style={styles.orderTypeContainer}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setOrderType('now');
+                      setSelectedDateTime(null);
+                    }}
+                    style={[
+                      styles.orderTypeButton,
+                      orderType === 'now' && styles.orderTypeButtonActive,
+                    ]}
+                  >
+                    <Feather 
+                      name="clock" 
+                      size={20} 
+                      color={orderType === 'now' ? '#f97316' : '#666'} 
+                    />
+                    <Text style={[
+                      styles.orderTypeText,
+                      orderType === 'now' && styles.orderTypeTextActive,
+                    ]}>
+                      Now
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => setOrderType('schedule')}
+                    style={[
+                      styles.orderTypeButton,
+                      orderType === 'schedule' && styles.orderTypeButtonActive,
+                    ]}
+                  >
+                    <Feather 
+                      name="calendar" 
+                      size={20} 
+                      color={orderType === 'schedule' ? '#f97316' : '#666'} 
+                    />
+                    <Text style={[
+                      styles.orderTypeText,
+                      orderType === 'schedule' && styles.orderTypeTextActive,
+                    ]}>
+                      Schedule
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {orderType === 'schedule' && (
+                  <View style={styles.scheduleOptions}>
+                    <TouchableOpacity
+                      style={styles.dateTimeButton}
+                      onPress={() => setShowDatePicker(true)}
+                    >
+                      <Feather name="calendar" size={20} color="#f97316" />
+                      <Text style={styles.dateTimeButtonText}>
+                        {selectedDateTime 
+                          ? selectedDateTime.toLocaleDateString() 
+                          : 'Select Date'}
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.dateTimeButton}
+                      onPress={() => setShowTimePicker(true)}
+                    >
+                      <Feather name="clock" size={20} color="#f97316" />
+                      <Text style={styles.dateTimeButtonText}>
+                        {selectedDateTime 
+                          ? selectedDateTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                          : 'Select Time'}
+                      </Text>
+                    </TouchableOpacity>
+
+                    {selectedDateTime && (
+                      <Text style={styles.selectedDateTimeText}>
+                        Scheduled for: {selectedDateTime.toLocaleString()}
+                      </Text>
+                    )}
+                  </View>
+                )}
+              </View>
+
+              {/* Special Request */}
+              <View style={styles.modalSection}>
+                <Text style={styles.modalSectionTitle}>Special Request (Optional)</Text>
+                
+                <Text style={styles.requestLabel}>Category</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.requestCategories}>
+                  <View style={styles.requestChips}>
+                    {requestCategories.map((category) => (
+                      <TouchableOpacity
+                        key={category.value}
+                        onPress={() => setSelectedRequestCategory(category.value)}
+                        style={[
+                          styles.requestChip,
+                          selectedRequestCategory === category.value && styles.requestChipSelected,
+                        ]}
+                      >
+                        <Feather 
+                          name={category.icon as any} 
+                          size={14} 
+                          color={selectedRequestCategory === category.value ? '#fff' : '#666'} 
+                        />
+                        <Text style={[
+                          styles.requestChipText,
+                          selectedRequestCategory === category.value && styles.requestChipTextSelected,
+                        ]}>
+                          {category.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </ScrollView>
+
+                <TextInput
+                  style={styles.requestInput}
+                  value={specialRequest}
+                  onChangeText={setSpecialRequest}
+                  placeholder="Tell us about any special requirements..."
+                  placeholderTextColor="#666"
+                  multiline
+                  numberOfLines={3}
+                  textAlignVertical="top"
+                />
+              </View>
+
               {/* Payment Method */}
-          {/* Payment Method */}
-<View style={styles.modalSection}>
-  <Text style={styles.modalSectionTitle}>Payment Method</Text>
-  <View style={styles.paymentList}>
-    {[
-      { value: 'card', label: 'Proceed to payment', icon: 'credit-card' },
-    ].map((option) => (
-      <TouchableOpacity
-        key={option.value}
-        onPress={() => setPaymentMethod(option.value as PaymentMethod)}
-        style={[
-          styles.paymentCard,
-          paymentMethod === option.value && styles.paymentCardSelected,
-        ]}
-      >
-        <Feather name={option.icon as any} size={18} color="#f97316" />
-        <Text style={styles.paymentLabel}>{option.label}</Text>
-        {paymentMethod === option.value && (
-          <View style={styles.paymentSelectedDot} />
-        )}
-      </TouchableOpacity>
-    ))}
-  </View>
-</View>
+              <View style={styles.modalSection}>
+                <Text style={styles.modalSectionTitle}>Payment Method</Text>
+                <View style={styles.paymentList}>
+                  {/* Cash on Delivery - Only for orders below ₦10,000 */}
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (total >= 10000) {
+                        showToast('Cash on delivery is only available for orders below ₦10,000. Please select card payment.');
+                        return;
+                      }
+                      setPaymentMethod('cash');
+                    }}
+                    style={[
+                      styles.paymentCard,
+                      paymentMethod === 'cash' && styles.paymentCardSelected,
+                      total >= 10000 && styles.paymentCardUnavailable,
+                    ]}
+                  >
+                    <View style={styles.paymentCardContent}>
+                      <View style={styles.paymentLeft}>
+                        <Feather name="dollar-sign" size={18} color={total >= 10000 ? "#666" : "#f97316"} />
+                        <View>
+                          <Text style={[
+                            styles.paymentLabel,
+                            total >= 10000 && styles.textDisabled
+                          ]}>
+                            Cash on Delivery
+                          </Text>
+                          <Text style={styles.paymentDescription}>
+                            {total >= 10000 
+                              ? 'Not available for orders ₦10,000 and above'
+                              : 'Pay with cash when your order arrives'
+                            }
+                          </Text>
+                        </View>
+                      </View>
+                      {paymentMethod === 'cash' && (
+                        <View style={styles.paymentSelectedDot} />
+                      )}
+                    </View>
+                  </TouchableOpacity>
+
+                  {/* Card Payment */}
+                  <TouchableOpacity
+                    onPress={() => setPaymentMethod('card')}
+                    style={[
+                      styles.paymentCard,
+                      paymentMethod === 'card' && styles.paymentCardSelected,
+                    ]}
+                  >
+                    <View style={styles.paymentCardContent}>
+                      <View style={styles.paymentLeft}>
+                        <Feather name="credit-card" size={18} color="#f97316" />
+                        <View>
+                          <Text style={styles.paymentLabel}>Card Payment</Text>
+                          <Text style={styles.paymentDescription}>
+                            Pay securely with your card
+                          </Text>
+                        </View>
+                      </View>
+                      {paymentMethod === 'card' && (
+                        <View style={styles.paymentSelectedDot} />
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                </View>
+
+                {paymentMethod === 'cash' && total < 10000 && (
+                  <View style={styles.infoBox}>
+                    <Feather name="info" size={16} color="#f97316" />
+                    <Text style={styles.infoText}>
+                      Pay with cash when your order is delivered
+                    </Text>
+                  </View>
+                )}
+                {paymentMethod === 'cash' && total >= 10000 && (
+                  <View style={styles.infoBoxWarning}>
+                    <Feather name="alert-circle" size={16} color="#f59e0b" />
+                    <Text style={styles.infoTextWarning}>
+                      Cash on delivery not available for orders ₦10,000 and above. Please select card payment.
+                    </Text>
+                  </View>
+                )}
+              </View>
 
               {/* Order Summary */}
               <View style={styles.modalSection}>
@@ -799,8 +1170,13 @@ const handlePlaceOrder = async () => {
                         </View>
                       )}
                       <View style={styles.modalSummaryRow}>
-                        <Text style={styles.modalSummaryLabel}>Delivery Fee (₦500/km)</Text>
-                        <Text style={styles.modalSummaryValue}>₦{deliveryFee.toLocaleString()}</Text>
+                        <Text style={styles.modalSummaryLabel}>Delivery Fee</Text>
+                        <Text style={[
+                          styles.modalSummaryValue,
+                          freeDeliveryEligible && styles.modalDiscountValue
+                        ]}>
+                          {freeDeliveryEligible ? 'FREE' : `₦${calculatedDeliveryFee.toLocaleString()}`}
+                        </Text>
                       </View>
                     </>
                   ) : (
@@ -812,7 +1188,7 @@ const handlePlaceOrder = async () => {
 
                   {firstOrderDiscount > 0 && !promoApplied && (
                     <View style={[styles.modalSummaryRow, styles.modalDiscountRow]}>
-                      <Text style={styles.modalDiscountLabel}>First Order Discount (20%)</Text>
+                      <Text style={styles.modalDiscountLabel}>First Order Discount (10%)</Text>
                       <Text style={styles.modalDiscountValue}>-₦{firstOrderDiscount.toLocaleString()}</Text>
                     </View>
                   )}
@@ -826,6 +1202,9 @@ const handlePlaceOrder = async () => {
                     <Text style={styles.modalTotalLabel}>Total</Text>
                     <Text style={styles.modalTotalValue}>₦{total.toLocaleString()}</Text>
                   </View>
+                  {freeDeliveryEligible && (
+                    <Text style={styles.modalFreeDeliveryNotice}>✨ Free delivery applied!</Text>
+                  )}
                 </View>
               </View>
             </ScrollView>
@@ -834,7 +1213,7 @@ const handlePlaceOrder = async () => {
             <View style={styles.modalFooter}>
               <TouchableOpacity
                 onPress={handlePlaceOrder}
-                disabled={!selectedAddress || !calculatedDeliveryFee || isPlacingOrder || processingPayment || isCalculatingFee}
+                disabled={!selectedAddress || !calculatedDeliveryFee || isPlacingOrder || processingPayment || isCalculatingFee || loadingSettings}
                 style={styles.placeOrderButton}
               >
                 <LinearGradient
@@ -860,7 +1239,7 @@ const handlePlaceOrder = async () => {
                     </View>
                   ) : (
                     <Text style={styles.placeOrderText}>
-                      Place Order • ₦{total.toLocaleString()}
+                      {orderType === 'schedule' ? 'Schedule Order' : 'Place Order'} • ₦{total.toLocaleString()}
                     </Text>
                   )}
                 </LinearGradient>
@@ -870,37 +1249,71 @@ const handlePlaceOrder = async () => {
         </View>
       </Modal>
 
-      {showFlutterwave && (
-        <FlutterwavePayment
-          visible={showFlutterwave}
-          amount={total}
-          email={user?.email || ''}
-          reference={paymentReference}
-          customerName={user?.name}
-          phone={user?.phone}
-          onPaymentComplete={(paymentData) => {
-            setFlutterwaveResponse(paymentData);
-          }}
-          onSuccess={async (response) => {
-            setShowFlutterwave(false);
-            await processOrder(response.tx_ref || paymentReference, flutterwaveResponse);
-          }}
-          onClose={() => {
-            setShowFlutterwave(false);
-            showToast('You cancelled the payment');
-            setShowCheckout(true);
-          }}
+      {/* Date Picker - Outside Modal */}
+      {showDatePicker && (
+        <DateTimePicker
+          value={selectedDateTime || new Date()}
+          mode="date"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={onDateChange}
+          minimumDate={new Date()}
         />
       )}
+
+      {/* Time Picker - Outside Modal */}
+      {showTimePicker && (
+        <DateTimePicker
+          value={selectedDateTime || new Date()}
+          mode="time"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={onTimeChange}
+        />
+      )}
+
+
+{showFlutterwave && (
+  <FlutterwavePayment
+    visible={showFlutterwave}
+    amount={total}
+    email={user?.email || ''}
+    reference={paymentReference}
+    customerName={user?.name}
+    phone={user?.phone}
+    isScheduled={orderType === 'schedule'}
+    onPaymentComplete={(paymentData) => {
+      console.log('💳 Payment Complete Callback - Full Payment Data:', JSON.stringify(paymentData, null, 2));
+      console.log('💰 Fee in paymentData:', paymentData?.fee);
+      console.log('💰 Charged amount in paymentData:', paymentData?.charged_amount);
+      setFlutterwaveResponse(paymentData);
+    }}
+    onSuccess={async (response) => {
+      console.log('🎉 Payment Success Callback - Full Response:', JSON.stringify(response, null, 2));
+      console.log('💰 Fee in response:', response?.fee);
+      console.log('💰 Charged amount in response:', response?.charged_amount);
+      console.log('💰 Transaction ID:', response?.transaction_id);
+      console.log('💰 TX Ref:', response?.tx_ref);
+      
+      setShowFlutterwave(false);
+      await processOrder(response.tx_ref || paymentReference, response);
+    }}
+    onClose={() => {
+      console.log('❌ Payment closed/cancelled by user');
+      setShowFlutterwave(false);
+      showToast('You cancelled the payment');
+      setShowCheckout(true);
+    }}
+  />
+)}
     </SafeAreaView>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0a0a0a',
-    paddingBottom:60,
+    paddingBottom: 60,
   },
   header: {
     flexDirection: 'row',
@@ -1063,6 +1476,19 @@ const styles = StyleSheet.create({
     fontSize: 12,
     paddingHorizontal: 16,
     marginBottom: 12,
+    fontWeight: '500',
+  },
+  firstOrderTextSmall: {
+    color: '#f97316',
+    fontSize: 12,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  freeDeliveryNotice: {
+    color: '#10b981',
+    fontSize: 12,
+    marginTop: 8,
+    textAlign: 'center',
   },
   summaryContainer: {
     backgroundColor: '#1a1a1a',
@@ -1273,6 +1699,102 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
+  orderTypeContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  orderTypeButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#2a2a2a',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  orderTypeButtonActive: {
+    backgroundColor: 'rgba(249,115,22,0.1)',
+    borderColor: '#f97316',
+  },
+  orderTypeText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  orderTypeTextActive: {
+    color: '#f97316',
+    fontWeight: '600',
+  },
+  scheduleOptions: {
+    marginTop: 8,
+  },
+  dateTimeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2a2a2a',
+    padding: 16,
+    borderRadius: 8,
+    gap: 12,
+    marginBottom: 10,
+  },
+  dateTimeButtonText: {
+    fontSize: 16,
+    color: '#fff',
+    flex: 1,
+  },
+  selectedDateTimeText: {
+    fontSize: 14,
+    color: '#f97316',
+    marginTop: 8,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  requestLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 8,
+  },
+  requestCategories: {
+    marginBottom: 12,
+  },
+  requestChips: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingRight: 16,
+  },
+  requestChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#2a2a2a',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  requestChipSelected: {
+    backgroundColor: '#f97316',
+  },
+  requestChipText: {
+    fontSize: 11,
+    color: '#666',
+  },
+  requestChipTextSelected: {
+    color: '#fff',
+  },
+  requestInput: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 8,
+    padding: 12,
+    color: '#fff',
+    fontSize: 14,
+    height: 80,
+    textAlignVertical: 'top',
+  },
   paymentList: {
     gap: 8,
   },
@@ -1290,16 +1812,70 @@ const styles = StyleSheet.create({
     borderColor: '#f97316',
     backgroundColor: 'rgba(249,115,22,0.1)',
   },
-  paymentLabel: {
+  paymentCardUnavailable: {
+    opacity: 0.6,
+    backgroundColor: '#1a1a1a',
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
+  paymentCardContent: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  paymentLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  paymentLabel: {
     fontSize: 14,
     color: '#fff',
+  },
+  paymentDescription: {
+    fontSize: 11,
+    color: '#666',
+    marginTop: 2,
   },
   paymentSelectedDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
     backgroundColor: '#f97316',
+  },
+  textDisabled: {
+    color: '#666',
+  },
+  infoBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(249,115,22,0.1)',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  infoBoxWarning: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(245,158,11,0.1)',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(245,158,11,0.3)',
+  },
+  infoText: {
+    fontSize: 12,
+    color: '#f97316',
+    flex: 1,
+  },
+  infoTextWarning: {
+    fontSize: 12,
+    color: '#f59e0b',
+    flex: 1,
   },
   modalSummary: {
     backgroundColor: '#2a2a2a',
@@ -1346,6 +1922,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#f97316',
+  },
+  modalFreeDeliveryNotice: {
+    fontSize: 11,
+    color: '#10b981',
+    textAlign: 'center',
+    marginTop: 8,
   },
   modalFooter: {
     padding: 16,

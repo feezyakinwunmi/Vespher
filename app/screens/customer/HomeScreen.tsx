@@ -173,25 +173,50 @@ export function HomeScreen() {
         </View>
 
         {/* Promotional Banner */}
-        <LinearGradient
-          colors={['#f97316', '#f43f5e']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.banner}
-        >
-          <View style={styles.bannerContent}>
-            <View style={styles.bannerBadge}>
-              <Text style={styles.bannerBadgeText}>New User Offer</Text>
-            </View>
-            <Text style={styles.bannerTitle}>Get 20% OFF</Text>
-            <Text style={styles.bannerSubtitle}>On your first order above ₦3000</Text>
-            <TouchableOpacity style={styles.bannerButton}>
-              <Text style={styles.bannerButtonText}>Order Now</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.bannerDecoration1} />
-          <View style={styles.bannerDecoration2} />
-        </LinearGradient>
+    {/* Promotional Banner */}
+<TouchableOpacity 
+  onPress={() => {
+    // Navigate to Explore page
+    navigation.navigate('Vendors');
+  }}
+  activeOpacity={0.9}
+>
+  <View style={styles.bannerContainer}>
+    <Image
+      source={require('../../assets/buggerbg.jpg')}
+      style={styles.bannerImage}
+      resizeMode="cover"
+    />
+    <LinearGradient
+      colors={['rgba(0,0,0,0.7)', 'rgba(0,0,0,0.3)', 'rgba(0,0,0,0.7)']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.bannerOverlay}
+    >
+      <View style={styles.bannerContent}>
+        <View style={styles.bannerBadge}>
+          <Feather name="gift" size={12} color="#f97316" />
+          <Text style={styles.bannerBadgeText}>New User Special</Text>
+        </View>
+        <Text style={styles.bannerTitle}>First Order Offer</Text>
+        <View style={styles.bannerOfferRow}>
+          <Text style={styles.bannerDiscount}>10% OFF</Text>
+          <Text style={styles.bannerAnd}>+</Text>
+          <Text style={styles.bannerFree}>FREE Delivery</Text>
+        </View>
+        <Text style={styles.bannerSubtitle}>On orders above ₦10,000</Text>
+        <View style={styles.bannerButtonContainer}>
+          {/* <View
+            style={styles.bannerButton}
+          >
+            <Text style={styles.bannerButtonText}>Order Now</Text>
+            <Feather name="arrow-right" size={16} color="#fff" />
+          </View> */}
+        </View>
+      </View>
+    </LinearGradient>
+  </View>
+</TouchableOpacity>
 
         {/* Categories */}
         {categories.length > 0 && (
@@ -456,6 +481,129 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#666',
   },
+  // Promotional Banner Styles
+bannerContainer: {
+  margin: 16,
+  marginTop: 8,
+  borderRadius: 16,
+  overflow: 'hidden',
+  height: 200,
+  position: 'relative',
+  shadowColor: '#000',
+  shadowOffset: {
+    width: 0,
+    height: 2,
+  },
+  shadowOpacity: 0.25,
+  shadowRadius: 3.84,
+  elevation: 5,
+},
+bannerImage: {
+  width: '100%',
+  height: '100%',
+  position: 'absolute',
+},
+bannerOverlay: {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  justifyContent: 'center',
+},
+bannerContent: {
+  padding: 20,
+  alignItems: 'center',
+},
+bannerBadge: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: 'rgba(255,255,255,0.2)',
+  paddingHorizontal: 12,
+  paddingVertical: 6,
+  borderRadius: 20,
+  marginBottom: 12,
+  gap: 6,
+},
+bannerBadgeText: {
+  color: '#fff',
+  fontSize: 12,
+  fontWeight: '600',
+  textTransform: 'uppercase',
+  letterSpacing: 0.5,
+},
+bannerTitle: {
+  fontSize: 24,
+  fontWeight: 'bold',
+  color: '#fff',
+  marginBottom: 8,
+  textShadowColor: 'rgba(0,0,0,0.3)',
+  textShadowOffset: { width: 1, height: 1 },
+  textShadowRadius: 3,
+},
+bannerOfferRow: {
+  flexDirection: 'row',
+  alignItems: 'baseline',
+  justifyContent:'flex-end',
+  marginBottom: 8,
+  gap: 8,
+},
+bannerDiscount: {
+  fontSize: 28,
+  fontWeight: '800',
+  color: '#f97316',
+  textShadowColor: 'rgba(0,0,0,0.5)',
+  textShadowOffset: { width: 1, height: 1 },
+  textShadowRadius: 3,
+},
+bannerAnd: {
+  fontSize: 16,
+  fontWeight: '600',
+  color: '#fff',
+  textShadowColor: 'rgba(0,0,0,0.3)',
+  textShadowOffset: { width: 1, height: 1 },
+  textShadowRadius: 2,
+},
+bannerFree: {
+  fontSize: 24,
+  fontWeight: '800',
+  color: '#10b981',
+  textShadowColor: 'rgba(0,0,0,0.5)',
+  textShadowOffset: { width: 1, height: 1 },
+  textShadowRadius: 3,
+},
+bannerSubtitle: {
+  fontSize: 13,
+  color: 'rgba(255,255,255,0.9)',
+  marginBottom: 16,
+  fontWeight: '500',
+},
+bannerButtonContainer: {
+  marginTop: 8,
+  borderRadius: 30,
+  overflow: 'hidden',
+  shadowColor: '#000',
+  shadowOffset: {
+    width: 0,
+    height: 2,
+  },
+  shadowOpacity: 0.3,
+  shadowRadius: 3,
+  elevation: 3,
+},
+bannerButton: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  paddingHorizontal: 28,
+  paddingVertical: 12,
+  gap: 8,
+},
+bannerButtonText: {
+  color: '#fff',
+  fontSize: 16,
+  fontWeight: 'bold',
+},
   banner: {
     marginHorizontal: 20,
     marginBottom: 24,
@@ -463,47 +611,7 @@ const styles = StyleSheet.create({
     padding: 20,
     overflow: 'hidden',
   },
-  bannerContent: {
-    position: 'relative',
-    zIndex: 10,
-  },
-  bannerBadge: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    marginBottom: 12,
-  },
-  bannerBadgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-  },
-  bannerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 4,
-  },
-  bannerSubtitle: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.8)',
-    marginBottom: 16,
-  },
-  bannerButton: {
-    backgroundColor: '#fff',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    alignSelf: 'flex-start',
-  },
-  bannerButtonText: {
-    color: '#f97316',
-    fontSize: 13,
-    fontWeight: '600',
-  },
+
   bannerDecoration1: {
     position: 'absolute',
     top: -20,

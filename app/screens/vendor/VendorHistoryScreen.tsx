@@ -31,7 +31,7 @@ interface OrderHistory {
   customer_address: string;
   items_count: number;
   total: number;
-  vendor_earnings: number; // After fees
+  vendor_earnings: number; // After fees - using stored vendor_payout
   status: string;
   payment_method: string;
   created_at: string;
@@ -39,8 +39,7 @@ interface OrderHistory {
 }
 
 export function VendorHistoryScreen({ onTabChange }: { onTabChange?: (tab: string) => void }) {
-    const navigation = useNavigation<VendorScreenNavigationProp>();
-    
+  const navigation = useNavigation<VendorScreenNavigationProp>();
   const { user } = useAuth();
   const { settings } = usePlatformSettings();
   const [orders, setOrders] = useState<OrderHistory[]>([]);
@@ -56,80 +55,87 @@ export function VendorHistoryScreen({ onTabChange }: { onTabChange?: (tab: strin
     fetchHistory();
   }, [user]);
 
-const fetchHistory = async () => {
-  try {
-    setIsLoading(true);
-    
-    // Get vendor ID
-    const { data: vendorData } = await supabase
-      .from('vendors')
-      .select('id')
-      .eq('owner_id', user?.id)
-      .single();
+  const fetchHistory = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Get vendor ID
+      const { data: vendorData } = await supabase
+        .from('vendors')
+        .select('id')
+        .eq('owner_id', user?.id)
+        .single();
 
-    if (!vendorData) return;
+      if (!vendorData) return;
 
-    // Fetch orders with customer details using join
-    const { data, error } = await supabase
-      .from('orders')
-      .select(`
-        id,
-        order_number,
-        customer_id,
-        delivery_address,
-        items,
-        total,
-        subtotal,
-        delivery_fee,
-        status,
-        payment_method,
-        created_at,
-        delivered_at,
-        users!customer_id (
-          name
-        )
-      `)
-      .eq('vendor_id', vendorData.id)
-      .order('created_at', { ascending: false });
+      // Fetch orders with customer details using join
+      const { data, error } = await supabase
+        .from('orders')
+        .select(`
+          id,
+          order_number,
+          customer_id,
+          delivery_address,
+          items,
+          total,
+          subtotal,
+          delivery_fee,
+          vendor_payout,
+          status,
+          payment_method,
+          created_at,
+          delivered_at,
+          users!customer_id (
+            name
+          )
+        `)
+        .eq('vendor_id', vendorData.id)
+        .order('created_at', { ascending: false });
 
-    if (error) throw error;
+      if (error) throw error;
 
-    const platformFeePercentage = settings?.platform_fee_percentage ? settings.platform_fee_percentage / 100 : 0.1;
+      const formattedOrders: OrderHistory[] = (data || []).map((order: any) => {
+        // ✅ USE STORED vendor_payout from the order
+        // This is the actual amount the vendor earned after all fees
+        let vendorEarnings = 0;
+        
+        // For delivered orders, use the stored vendor_payout
+        if (order.status === 'delivered') {
+          // Parse vendor_payout if it's a string (from your data it's stored as "3600")
+          vendorEarnings = typeof order.vendor_payout === 'string' 
+            ? parseFloat(order.vendor_payout) 
+            : (order.vendor_payout || 0);
+        }
 
-    const formattedOrders: OrderHistory[] = (data || []).map((order: any) => {
-      // Calculate vendor earnings correctly - ONLY FOR DELIVERED ORDERS
-      let vendorEarnings = 0;
-      if (order.status === 'delivered') {
-        const subtotal = (order.total || 0) - (order.delivery_fee || 0);
-        const platformFee = Math.round(subtotal * platformFeePercentage);
-        vendorEarnings = subtotal - platformFee;
-      }
+        // Count items (if items is an array)
+        const itemsCount = Array.isArray(order.items) ? order.items.length : 0;
 
-      return {
-        id: order.id,
-        order_number: order.order_number || order.id.slice(0, 8),
-        customer_name: order.users?.name || 'Customer',
-        customer_address: order.delivery_address ? 
-          `${order.delivery_address.street || ''}, ${order.delivery_address.area || ''}` : 
-          'Address not available',
-        items_count: order.items?.length || 0,
-        total: order.total || 0,
-        vendor_earnings: vendorEarnings,
-        status: order.status,
-        payment_method: order.payment_method,
-        created_at: order.created_at,
-        completed_at: order.delivered_at || order.created_at,
-      };
-    });
+        return {
+          id: order.id,
+          order_number: order.order_number || order.id.slice(0, 8),
+          customer_name: order.users?.name || 'Customer',
+          customer_address: order.delivery_address ? 
+            `${order.delivery_address.street || ''}, ${order.delivery_address.area || ''}` : 
+            'Address not available',
+          items_count: itemsCount,
+          total: order.total || 0,
+          vendor_earnings: vendorEarnings,
+          status: order.status,
+          payment_method: order.payment_method,
+          created_at: order.created_at,
+          completed_at: order.delivered_at || order.created_at,
+        };
+      });
 
-    setOrders(formattedOrders);
-  } catch (error) {
-    console.error('Error fetching history:', error);
-  } finally {
-    setIsLoading(false);
-    setRefreshing(false);
-  }
-};
+      console.log('Formatted orders with vendor earnings:', formattedOrders);
+      setOrders(formattedOrders);
+    } catch (error) {
+      console.error('Error fetching history:', error);
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -384,47 +390,47 @@ const fetchHistory = async () => {
       >
         {filteredOrders.length > 0 ? (
           filteredOrders.map((order) => (
-          <TouchableOpacity
-  key={order.id}
-  style={styles.orderCard}
-  onPress={() => navigation.navigate('VendorOrderDetails', { orderId: order.id })}
->
-  <View style={styles.orderHeader}>
-    <View>
-      <Text style={styles.orderNumber}>{order.order_number}</Text>
-      <View style={styles.customerInfoRow}>
-        <Feather name="user" size={12} color="#f97316" />
-        <Text style={styles.orderCustomer}>{order.customer_name}</Text>
-      </View>
-    </View>
-    <View style={[styles.statusBadge, { backgroundColor: getStatusBgColor(order.status) }]}>
-      <Text style={[styles.statusText, { color: getStatusColor(order.status) }]}>
-        {order.status.toUpperCase()}
-      </Text>
-    </View>
-  </View>
+            <TouchableOpacity
+              key={order.id}
+              style={styles.orderCard}
+              onPress={() => navigation.navigate('VendorOrderDetails', { orderId: order.id })}
+            >
+              <View style={styles.orderHeader}>
+                <View>
+                  <Text style={styles.orderNumber}>{order.order_number}</Text>
+                  <View style={styles.customerInfoRow}>
+                    <Feather name="user" size={12} color="#f97316" />
+                    <Text style={styles.orderCustomer}>{order.customer_name}</Text>
+                  </View>
+                </View>
+                <View style={[styles.statusBadge, { backgroundColor: getStatusBgColor(order.status) }]}>
+                  <Text style={[styles.statusText, { color: getStatusColor(order.status) }]}>
+                    {order.status.toUpperCase()}
+                  </Text>
+                </View>
+              </View>
 
-  <View style={styles.addressContainer}>
-    <Feather name="map-pin" size={12} color="#666" />
-    <Text style={styles.addressText} numberOfLines={2}>
-      {order.customer_address}
-    </Text>
-  </View>
+              <View style={styles.addressContainer}>
+                <Feather name="map-pin" size={12} color="#666" />
+                <Text style={styles.addressText} numberOfLines={2}>
+                  {order.customer_address}
+                </Text>
+              </View>
 
-  <View style={styles.orderFooter}>
-    <View style={styles.itemsInfo}>
-      <Feather name="package" size={12} color="#666" />
-      <Text style={styles.itemsText}>{order.items_count} items</Text>
-      <Text style={styles.paymentMethod}>• {order.payment_method}</Text>
-    </View>
-    <View style={styles.amountContainer}>
-      <Text style={styles.amount}>₦{order.total.toLocaleString()}</Text>
-      {order.status === 'delivered' && (
-        <Text style={styles.earnings}>You get: ₦{order.vendor_earnings.toLocaleString()}</Text>
-      )}
-    </View>
-  </View>
-</TouchableOpacity>
+              <View style={styles.orderFooter}>
+                <View style={styles.itemsInfo}>
+                  <Feather name="package" size={12} color="#666" />
+                  <Text style={styles.itemsText}>{order.items_count} items</Text>
+                  <Text style={styles.paymentMethod}>• {order.payment_method}</Text>
+                </View>
+                <View style={styles.amountContainer}>
+                  <Text style={styles.amount}>₦{order.total.toLocaleString()}</Text>
+                  {order.status === 'delivered' && (
+                    <Text style={styles.earnings}>You get: ₦{order.vendor_earnings.toLocaleString()}</Text>
+                  )}
+                </View>
+              </View>
+            </TouchableOpacity>
           ))
         ) : (
           <View style={styles.emptyContainer}>
@@ -443,8 +449,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0a0a0a',
-        paddingBottom:60,
-
+    paddingBottom: 60,
   },
   loadingContainer: {
     flex: 1,
@@ -639,7 +644,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
   },
-    customerInfoRow: {
+  customerInfoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,

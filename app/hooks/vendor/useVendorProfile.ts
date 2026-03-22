@@ -38,8 +38,10 @@ export interface VendorProfile {
   
   // Bank details
   bankName: string;
+  bankCode?: string;
   accountNumber: string;
   accountName: string;
+
   
   // Notification settings - ADD THIS
   notifications: {

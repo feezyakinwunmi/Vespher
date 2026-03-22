@@ -1,5 +1,5 @@
 // app/components/vendor/OrderDetailsModal.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,10 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { supabase } from '../../lib/supabase';
+import { addOrderToCalendar } from '../../utils/calendar';
+import { Linking } from 'react-native';
+
+
 
 interface OrderDetailsModalProps {
   visible: boolean;
@@ -34,7 +37,6 @@ const statusColors: Record<string, string> = {
   in_transit: '#f97316',
   delivered: '#10b981',
   cancelled: '#ef4444',
-  scheduled: '#8b5cf6',
 };
 
 const statusLabels: Record<string, string> = {
@@ -46,7 +48,6 @@ const statusLabels: Record<string, string> = {
   in_transit: 'On the Way',
   delivered: 'Delivered',
   cancelled: 'Cancelled',
-  scheduled: 'Scheduled',
 };
 
 export function OrderDetailsModal({
@@ -58,68 +59,102 @@ export function OrderDetailsModal({
   onPrepare,
   onReady,
 }: OrderDetailsModalProps) {
-  const [scheduledDetails, setScheduledDetails] = useState<any>(null);
-  const [loadingScheduled, setLoadingScheduled] = useState(false);
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    if (order?.id) {
-      fetchScheduledDetails(order.id);
-    }
-  }, [order]);
-
-  const fetchScheduledDetails = async (orderId: string) => {
-    setLoadingScheduled(true);
-    try {
-      const { data, error } = await supabase
-        .from('scheduled_orders')
-        .select('*')
-        .eq('order_id', orderId)
-        .maybeSingle();
-
-      if (error) throw error;
-      setScheduledDetails(data);
-    } catch (error) {
-      console.error('Error fetching scheduled details:', error);
-    } finally {
-      setLoadingScheduled(false);
-    }
-  };
 
   if (!order) return null;
 
-  const handleAction = (action: string) => {
-    switch (action) {
-      case 'accept':
-        onAccept?.(order.id);
-        break;
-      case 'reject':
+   console.log('🧾 Order in modal:', {
+    id: order.id,
+    is_scheduled: order.is_scheduled,
+    scheduled_datetime: order.scheduled_datetime,
+    event_type: order.event_type,
+    special_request_category: order.special_request_category,
+    special_request_text: order.special_request_text,
+    status: order.status
+  });
+
+  const isScheduled = order.is_scheduled === true;
+  const scheduledDateTime = order.scheduled_datetime ? new Date(order.scheduled_datetime) : null;
+
+ const handleAction = (action: string) => {
+  switch (action) {
+    case 'accept':
+      onAccept?.(order.id);
+      break;
+      
+    case 'reject':
+      // Check if scheduled order
+      if (order.is_scheduled) {
+        Alert.alert(
+          'Cancel Scheduled Order',
+          'This is a scheduled order. Are you sure you want to cancel it?',
+          [
+            { text: 'No', style: 'cancel' },
+            { text: 'Yes, Cancel', onPress: () => onReject?.(order.id), style: 'destructive' }
+          ]
+        );
+      }
+      // Show refund warning if paid
+      else if (order.payment_method === 'card' && order.payment_status === 'paid') {
+        Alert.alert(
+          'Refund Warning',
+          'This order was already paid. A refund will be processed to the customer. Continue?',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { 
+              text: 'Yes, Reject & Refund', 
+              onPress: () => onReject?.(order.id),
+              style: 'destructive'
+            }
+          ]
+        );
+      } else {
         onReject?.(order.id);
-        break;
-      case 'prepare':
-        onPrepare?.(order.id);
-        break;
-      case 'ready':
-        onReady?.(order.id);
-        break;
-    }
-  };
+      }
+      break;
+      
+    case 'prepare':
+      onPrepare?.(order.id);
+      break;
+      
+    case 'ready':
+      onReady?.(order.id);
+      break;
+  }
+};
+
+
+  const handleAddToCalendar = async () => {
+  await addOrderToCalendar(order);
+};
 
   const getActionButtons = () => {
-    if (order.status === 'scheduled') {
+    // For scheduled orders in pending status
+    if (isScheduled && order.status === 'pending') {
       return (
         <View style={styles.actionButtonsContainer}>
-          <View style={styles.scheduledInfo}>
+          <View style={[styles.scheduledInfo, styles.warningInfo]}>
             <Feather name="calendar" size={16} color="#8b5cf6" />
-            <Text style={styles.scheduledText}>This order is scheduled for future delivery</Text>
+            <Text style={styles.scheduledText}>
+              This order is scheduled for {scheduledDateTime?.toLocaleString()}
+            </Text>
           </View>
-          <TouchableOpacity
-            onPress={() => handleAction('accept')}
-            style={[styles.actionButton, styles.acceptButton]}
-          >
-            <Feather name="check-circle" size={18} color="#fff" />
-            <Text style={styles.actionButtonText}>Accept & Start Preparing</Text>
-          </TouchableOpacity>
+          <View style={styles.actionRow}>
+            <TouchableOpacity
+              onPress={() => handleAction('reject')}
+              style={[styles.actionButton, styles.rejectButton]}
+            >
+              <Feather name="x-circle" size={18} color="#fff" />
+              <Text style={styles.actionButtonText}>Decline</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => handleAction('accept')}
+              style={[styles.actionButton, styles.acceptButton]}
+            >
+              <Feather name="check-circle" size={18} color="#fff" />
+              <Text style={styles.actionButtonText}>Accept Order</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       );
     }
@@ -181,6 +216,18 @@ export function OrderDetailsModal({
     });
   };
 
+  const getEventTypeLabel = (eventType: string) => {
+    const types: Record<string, string> = {
+      party: 'Party/Celebration',
+      corporate: 'Corporate Event',
+      family: 'Family Gathering',
+      dietary: 'Dietary Restrictions',
+      allergies: 'Allergies',
+      other: 'Other',
+    };
+    return types[eventType] || eventType;
+  };
+
   return (
     <Modal
       visible={visible}
@@ -200,7 +247,7 @@ export function OrderDetailsModal({
             </View>
             <View style={[styles.statusBadge, { backgroundColor: `${statusColors[order.status]}20` }]}>
               <Text style={[styles.statusText, { color: statusColors[order.status] }]}>
-                {statusLabels[order.status]}
+                {statusLabels[order.status] || order.status.toUpperCase()}
               </Text>
             </View>
           </View>
@@ -216,38 +263,55 @@ export function OrderDetailsModal({
               </View>
             </View>
 
-            {/* Scheduled Order Details */}
-            {scheduledDetails && (
-              <View style={[styles.section, styles.scheduledSection]}>
-                <Text style={styles.sectionTitle}>
-                  <Feather name="calendar" size={14} color="#8b5cf6" /> Scheduled Delivery
-                </Text>
-                <View style={styles.scheduledDetail}>
-                  <Text style={styles.scheduledDetailText}>
-                    Date: {formatDate(scheduledDetails.scheduled_date)}
-                  </Text>
-                  <Text style={styles.scheduledDetailText}>
-                    Time: {scheduledDetails.scheduled_time}
-                  </Text>
-                  <Text style={styles.scheduledDetailText}>
-                    Event: {scheduledDetails.event_type}
-                  </Text>
-                  {scheduledDetails.guest_count && (
-                    <Text style={styles.scheduledDetailText}>
-                      Guests: {scheduledDetails.guest_count}
-                    </Text>
-                  )}
-                  {scheduledDetails.special_instructions && (
-                    <View style={styles.instructionsBox}>
-                      <Text style={styles.instructionsLabel}>Special Instructions:</Text>
-                      <Text style={styles.instructionsText}>
-                        {scheduledDetails.special_instructions}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-            )}
+            {/* Scheduled Order Details - Now from orders table */}
+         {/* Scheduled Order Details - Directly from orders table */}
+{order?.is_scheduled && order?.scheduled_datetime && (
+  <View style={[styles.section, styles.scheduledSection]}>
+    <Text style={styles.sectionTitle}>
+      <Feather name="calendar" size={14} color="#8b5cf6" /> Scheduled Order
+    </Text>
+    <View style={styles.scheduledDetail}>
+      <View style={styles.infoRow}>
+        <Feather name="calendar" size={14} color="#f97316" />
+        <Text style={styles.scheduledDetailText}>
+          Date: {new Date(order.scheduled_datetime).toLocaleDateString()}
+        </Text>
+      </View>
+      
+      <View style={styles.infoRow}>
+        <Feather name="clock" size={14} color="#f97316" />
+        <Text style={styles.scheduledDetailText}>
+          Time: {new Date(order.scheduled_datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        </Text>
+      </View>
+      
+      {order.event_type && order.event_type !== 'other' && (
+        <View style={styles.infoRow}>
+          <Feather name="tag" size={14} color="#f97316" />
+          <Text style={styles.scheduledDetailText}>
+            Event: {order.event_type.charAt(0).toUpperCase() + order.event_type.slice(1)}
+          </Text>
+        </View>
+      )}
+      
+      {order.special_request_category && (
+        <View style={styles.infoRow}>
+          <Feather name="alert-circle" size={14} color="#f97316" />
+          <Text style={styles.scheduledDetailText}>
+            Category: {order.special_request_category}
+          </Text>
+        </View>
+      )}
+      
+      {order.special_request_text && (
+        <View style={styles.instructionsBox}>
+          <Text style={styles.instructionsLabel}>Special Request:</Text>
+          <Text style={styles.instructionsText}>{order.special_request_text}</Text>
+        </View>
+      )}
+    </View>
+  </View>
+)}
 
             {/* Customer Info */}
             <View style={styles.section}>
@@ -362,13 +426,20 @@ export function OrderDetailsModal({
             </View>
 
             {/* Notes */}
-            {(order.notes || order.special_instructions) && (
+            {(order.notes || order.special_request_text) && !isScheduled && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Order Notes</Text>
-                <Text style={styles.notesText}>{order.notes || order.special_instructions}</Text>
+                <Text style={styles.notesText}>{order.notes || order.special_request_text}</Text>
               </View>
             )}
           </ScrollView>
+          <TouchableOpacity
+  onPress={handleAddToCalendar}
+  style={styles.calendarButton}
+>
+  <Feather name="calendar" size={18} color="#fff" />
+  <Text style={styles.calendarButtonText}>Add to Calender</Text>
+</TouchableOpacity>
 
           {/* Action Buttons - Fixed at bottom */}
           <View style={styles.modalFooter}>
@@ -422,6 +493,21 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
   },
+  calendarButton: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 8,
+  backgroundColor: '#8b5cf6',
+  padding: 12,
+  borderRadius: 8,
+  marginTop: 12,
+},
+calendarButtonText: {
+  color: '#fff',
+  fontSize: 14,
+  fontWeight: '500',
+},
   modalBody: {
     flex: 1,
     padding: 16,
@@ -672,6 +758,9 @@ const styles = StyleSheet.create({
     padding: 12,
     backgroundColor: 'rgba(139,92,246,0.1)',
     borderRadius: 8,
+  },
+  warningInfo: {
+    backgroundColor: 'rgba(139,92,246,0.1)',
   },
   scheduledText: {
     flex: 1,
