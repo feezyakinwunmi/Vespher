@@ -524,10 +524,7 @@ const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
       : 'Order placed successfully!';
     
     showToast(successMessage);
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Orders' }],
-    });
+  navigation.navigate('Orders')
     
   } catch (error: any) {
     console.error('❌ Error placing order:', error);
