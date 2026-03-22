@@ -13,6 +13,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
+import { useOrderTimer } from '../../hooks/useOrderTimer';
+
+
 interface OrderCardProps {
   order: any;
   onPress: () => void;
@@ -22,6 +25,7 @@ interface OrderCardProps {
   onPrepare?: () => void;
   onReady?: () => void;
 }
+
 type OrderCardNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const { width } = Dimensions.get('window');
@@ -36,7 +40,7 @@ export function OrderCard({
   onReady,
 }: OrderCardProps) {
   const [imageError, setImageError] = useState<Record<string, boolean>>({});
-const navigation = useNavigation<OrderCardNavigationProp>();
+  const navigation = useNavigation<OrderCardNavigationProp>();
   
   const firstItem = order.items?.[0];
   const itemImage = firstItem?.product?.image || 'https://via.placeholder.com/100';
@@ -49,7 +53,19 @@ const navigation = useNavigation<OrderCardNavigationProp>();
   // Check if rider is assigned (rider_id exists)
   const hasRider = !!order.rider_id;
 
+  const { timeRemaining, isExpired, formattedTime } = useOrderTimer(
+  order.created_at,
+  order.status,
+  order.id
+);
+  
+  // Check if this is a scheduled order
+  const isScheduled = order.is_scheduled === true;
+  const scheduledDateTime = order.scheduled_datetime ? new Date(order.scheduled_datetime) : null;
+
   const getStatusColor = () => {
+    if (isScheduled && status === 'pending') return '#8b5cf6'; // Purple for scheduled
+    
     switch (status) {
       case 'pending': return '#f59e0b';
       case 'confirmed': return '#3b82f6';
@@ -61,7 +77,32 @@ const navigation = useNavigation<OrderCardNavigationProp>();
     }
   };
 
+  const getStatusText = () => {
+    if (isScheduled && status === 'pending') return 'SCHEDULED';
+    return status.toUpperCase();
+  };
+
   const getActionButtons = () => {
+    // For scheduled orders in pending status, show accept button
+    if (isScheduled && status === 'pending') {
+      return (
+        <View style={styles.actionButtons}>
+          <TouchableOpacity 
+            onPress={onReject} 
+            style={[styles.actionButton, styles.rejectButton]}
+          >
+            <Text style={styles.actionButtonText}>Decline</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            onPress={onAccept} 
+            style={[styles.actionButton, styles.acceptButton]}
+          >
+            <Text style={styles.actionButtonText}>Accept</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
     switch (status) {
       case 'pending':
         return (
@@ -103,6 +144,16 @@ const navigation = useNavigation<OrderCardNavigationProp>();
     }
   };
 
+  const formatScheduledDateTime = () => {
+    if (!scheduledDateTime) return '';
+    return scheduledDateTime.toLocaleString([], { 
+      month: 'short', 
+      day: 'numeric', 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+  };
+
   return (
     <TouchableOpacity onPress={onPress} style={styles.card}>
       <View style={styles.header}>
@@ -112,12 +163,32 @@ const navigation = useNavigation<OrderCardNavigationProp>();
           </Text>
           <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor()}20` }]}>
             <Text style={[styles.statusText, { color: getStatusColor() }]}>
-              {status.toUpperCase()}
+              {getStatusText()}
             </Text>
           </View>
         </View>
         <Text style={styles.timeText}>{timeAgo}</Text>
       </View>
+
+      {/* Show scheduled badge if scheduled */}
+      {isScheduled && scheduledDateTime && (
+        <View style={styles.scheduledBadge}>
+          <Feather name="calendar" size={12} color="#8b5cf6" />
+          <Text style={styles.scheduledText}>
+            Scheduled for: {formatScheduledDateTime()}
+          </Text>
+        </View>
+      )}
+
+      {/* Show event type if available */}
+      {isScheduled && order.event_type && order.event_type !== 'other' && (
+        <View style={styles.eventBadge}>
+          <Feather name="tag" size={12} color="#8b5cf6" />
+          <Text style={styles.eventText}>
+            Event: {order.event_type.charAt(0).toUpperCase() + order.event_type.slice(1)}
+          </Text>
+        </View>
+      )}
 
       <View style={styles.customerInfo}>
         <Feather name="user" size={14} color="#666" />
@@ -154,17 +225,42 @@ const navigation = useNavigation<OrderCardNavigationProp>();
         </Text>
       </View>
 
+      {status === 'pending' && !isExpired && timeRemaining && timeRemaining > 0 && (
+  <View style={styles.timerContainer}>
+    <View style={styles.timerIcon}>
+      <Feather name="clock" size={14} color="#f59e0b" />
+    </View>
+    <View style={styles.timerContent}>
+      <Text style={styles.timerLabel}>Auto-cancels in</Text>
+      <Text style={[
+        styles.timerValue,
+        timeRemaining < 300 && styles.timerUrgent // Less than 5 minutes
+      ]}>
+        {formattedTime}
+      </Text>
+    </View>
+  </View>
+)}
+
+{status === 'pending' && isExpired && (
+  <View style={styles.expiredContainer}>
+    <Feather name="alert-circle" size={14} color="#ef4444" />
+    <Text style={styles.expiredText}>Order expired - not accepted in time</Text>
+  </View>
+)}
+
       {getActionButtons()}
 
       {/* Show rider info if rider is assigned */}
       {hasRider && (
         <TouchableOpacity 
           style={styles.riderInfoRow}
-onPress={(e) => {
-  e.stopPropagation();
-  console.log('Navigating to VendorOrderDetails with orderId:', order.id);
-  navigation.navigate('VendorOrderDetails', { orderId: order.id });
-}}        >
+          onPress={(e) => {
+            e.stopPropagation();
+            console.log('Navigating to VendorOrderDetails with orderId:', order.id);
+            navigation.navigate('VendorOrderDetails', { orderId: order.id });
+          }}
+        >
           <Feather name="truck" size={14} color="#f97316" />
           <Text style={styles.riderTrackingText}>
             {status === 'ready' ? 'Rider assigned - waiting for pickup' : 'Track Rider'}
@@ -214,6 +310,77 @@ const styles = StyleSheet.create({
   timeText: {
     fontSize: 11,
     color: '#666',
+  },
+  scheduledBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(139,92,246,0.1)',
+    padding: 6,
+    borderRadius: 4,
+    marginBottom: 8,
+  },
+  scheduledText: {
+    fontSize: 11,
+    color: '#8b5cf6',
+    flex: 1,
+  },
+  eventBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(139,92,246,0.05)',
+    padding: 6,
+    borderRadius: 4,
+    marginBottom: 8,
+  },
+  timerContainer: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: 'rgba(245,158,11,0.1)',
+  borderRadius: 8,
+  padding: 10,
+  marginTop: 12,
+  borderWidth: 1,
+  borderColor: 'rgba(245,158,11,0.2)',
+},
+timerIcon: {
+  marginRight: 10,
+},
+timerContent: {
+  flex: 1,
+},
+timerLabel: {
+  fontSize: 11,
+  color: '#f59e0b',
+  marginBottom: 2,
+},
+timerValue: {
+  fontSize: 16,
+  fontWeight: '700',
+  color: '#f59e0b',
+},
+timerUrgent: {
+  color: '#ef4444',
+},
+expiredContainer: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 8,
+  backgroundColor: 'rgba(239,68,68,0.1)',
+  padding: 10,
+  borderRadius: 8,
+  marginTop: 12,
+},
+expiredText: {
+  fontSize: 12,
+  color: '#ef4444',
+  flex: 1,
+},
+  eventText: {
+    fontSize: 11,
+    color: '#8b5cf6',
+    flex: 1,
   },
   customerInfo: {
     flexDirection: 'row',

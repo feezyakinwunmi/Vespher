@@ -18,6 +18,7 @@ import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
+import { verifyBankAccount } from '../../utils/flutterwave'; // Only verifyBankAccount
 
 type VendorStatus = 'all' | 'pending' | 'approved' | 'suspended';
 
@@ -33,12 +34,49 @@ interface Vendor {
   is_approved: boolean;
   is_suspended: boolean;
   created_at: string;
+  bank_name: string;
+  bank_code: string;
+  account_number: string;
+  account_name: string;
   owner: {
     name: string;
     email: string;
     phone: string;
   } | null;
 }
+
+interface PlatformSettings {
+  platform_fee_percentage: string;
+  delivery_fee_per_km: number;
+  min_delivery_fee: number;
+  max_delivery_fee: number;
+  weight_rate_per_kg: number;
+  service_fee: string;
+}
+
+// Bank list with codes
+const banks = [
+  { label: 'Access Bank', value: 'access', code: '044' },
+  { label: 'Citibank', value: 'citibank', code: '023' },
+  { label: 'Ecobank', value: 'ecobank', code: '050' },
+  { label: 'Fidelity Bank', value: 'fidelity', code: '070' },
+  { label: 'First Bank of Nigeria', value: 'first', code: '011' },
+  { label: 'FCMB', value: 'fcmb', code: '214' },
+  { label: 'GTBank', value: 'gtb', code: '058' },
+  { label: 'Heritage Bank', value: 'heritage', code: '030' },
+  { label: 'Keystone Bank', value: 'keystone', code: '082' },
+  { label: 'Polaris Bank', value: 'polaris', code: '076' },
+  { label: 'Stanbic IBTC', value: 'stanbic', code: '221' },
+  { label: 'Standard Chartered', value: 'standard', code: '068' },
+  { label: 'Sterling Bank', value: 'sterling', code: '232' },
+  { label: 'Union Bank', value: 'union', code: '032' },
+  { label: 'UBA', value: 'uba', code: '033' },
+  { label: 'Wema Bank', value: 'wema', code: '035' },
+  { label: 'Zenith Bank', value: 'zenith', code: '057' },
+  { label: 'Kuda Bank', value: 'kuda', code: '090267' },
+  { label: 'OPay', value: 'opay', code: '100052' },
+  { label: 'PalmPay', value: 'palmpay', code: '100033' },
+];
 
 export function AdminVendorsScreen() {
   const navigation = useNavigation();
@@ -51,18 +89,52 @@ export function AdminVendorsScreen() {
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [showActionsModal, setShowActionsModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showPaymentDetailsModal, setShowPaymentDetailsModal] = useState(false);
   const [confirmAction, setConfirmAction] = useState<{
     type: 'approve' | 'reject' | 'suspend' | 'unsuspend' | 'delete';
     vendor: Vendor;
   } | null>(null);
+  
+  // Edit bank details states
+  const [isEditingBank, setIsEditingBank] = useState(false);
+  const [editedBankDetails, setEditedBankDetails] = useState({
+    bank_name: '',
+    bank_code: '',
+    account_number: '',
+    account_name: '',
+  });
+  const [isVerifyingBank, setIsVerifyingBank] = useState(false);
+  const [bankVerified, setBankVerified] = useState(false);
+  const [verificationError, setVerificationError] = useState('');
+  const [showBankDropdown, setShowBankDropdown] = useState(false);
+  
+  // Platform settings
+  const [platformSettings, setPlatformSettings] = useState<PlatformSettings | null>(null);
 
   useEffect(() => {
     fetchVendors();
+    fetchPlatformSettings();
   }, []);
 
   useEffect(() => {
     filterVendors();
   }, [vendors, searchQuery, statusFilter]);
+
+  const fetchPlatformSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('platform_settings')
+        .select('*')
+        .order('id', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error) throw error;
+      setPlatformSettings(data);
+    } catch (error) {
+      console.error('Error fetching platform settings:', error);
+    }
+  };
 
   const fetchVendors = async () => {
     try {
@@ -94,7 +166,6 @@ export function AdminVendorsScreen() {
   const filterVendors = () => {
     let filtered = [...vendors];
 
-    // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(v => 
@@ -104,7 +175,6 @@ export function AdminVendorsScreen() {
       );
     }
 
-    // Status filter
     if (statusFilter !== 'all') {
       filtered = filtered.filter(v => {
         if (statusFilter === 'pending') return !v.is_approved;
@@ -120,6 +190,114 @@ export function AdminVendorsScreen() {
   const onRefresh = () => {
     setRefreshing(true);
     fetchVendors();
+    fetchPlatformSettings();
+  };
+
+  const startEditingBank = (vendor: Vendor) => {
+    setEditedBankDetails({
+      bank_name: vendor.bank_name || '',
+      bank_code: vendor.bank_code || '',
+      account_number: vendor.account_number || '',
+      account_name: vendor.account_name || '',
+    });
+    setBankVerified(false);
+    setVerificationError('');
+    setIsEditingBank(true);
+  };
+
+  const cancelEditingBank = () => {
+    setIsEditingBank(false);
+    setEditedBankDetails({
+      bank_name: '',
+      bank_code: '',
+      account_number: '',
+      account_name: '',
+    });
+    setBankVerified(false);
+    setVerificationError('');
+  };
+
+  const selectBank = (bankValue: string) => {
+    const selectedBank = banks.find(b => b.value === bankValue);
+    if (selectedBank) {
+      setEditedBankDetails({
+        ...editedBankDetails,
+        bank_name: selectedBank.label,
+        bank_code: selectedBank.code,
+      });
+      setBankVerified(false);
+    }
+    setShowBankDropdown(false);
+  };
+
+  const handleVerifyBank = async () => {
+    if (!editedBankDetails.account_number || !editedBankDetails.bank_code) {
+      setVerificationError('Please select bank and enter account number');
+      return;
+    }
+
+    setIsVerifyingBank(true);
+    setVerificationError('');
+
+    try {
+      const result = await verifyBankAccount(
+        editedBankDetails.account_number,
+        editedBankDetails.bank_code
+      );
+
+      if (result.status === 'success' && result.data) {
+        setEditedBankDetails(prev => ({ 
+          ...prev, 
+          account_name: result.data?.account_name || '',
+        }));
+        setBankVerified(true);
+        Alert.alert('Success', `Account verified: ${result.data.account_name}`);
+      } else {
+        throw new Error(result.message);
+      }
+    } catch (error: any) {
+      console.error('Verification error:', error);
+      setVerificationError(error.message || 'Invalid account details');
+      setBankVerified(false);
+    } finally {
+      setIsVerifyingBank(false);
+    }
+  };
+
+  const saveBankDetails = async () => {
+    if (!selectedVendor) return;
+
+    if (!editedBankDetails.bank_name || !editedBankDetails.account_number || !editedBankDetails.account_name) {
+      Alert.alert('Error', 'Please fill in all bank details');
+      return;
+    }
+
+    if (!bankVerified) {
+      Alert.alert('Error', 'Please verify the bank account first');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('vendors')
+        .update({
+          bank_name: editedBankDetails.bank_name,
+          bank_code: editedBankDetails.bank_code,
+          account_number: editedBankDetails.account_number,
+          account_name: editedBankDetails.account_name,
+        })
+        .eq('id', selectedVendor.id);
+
+      if (error) throw error;
+
+      Alert.alert('Success', 'Bank details updated successfully');
+      fetchVendors();
+      setIsEditingBank(false);
+
+    } catch (error: any) {
+      console.error('Error updating bank details:', error);
+      Alert.alert('Error', error.message || 'Failed to update bank details');
+    }
   };
 
   const handleVendorAction = (vendor: Vendor, actionType: 'approve' | 'reject' | 'suspend' | 'unsuspend' | 'delete') => {
@@ -128,64 +306,65 @@ export function AdminVendorsScreen() {
     setShowConfirmModal(true);
   };
 
- // In AdminVendorsScreen.tsx, update the executeAction function
+  const executeAction = async () => {
+    if (!confirmAction) return;
 
-const executeAction = async () => {
-  if (!confirmAction) return;
+    const { type, vendor } = confirmAction;
 
-  const { type, vendor } = confirmAction;
+    try {
+      let successMessage = '';
+      
+      switch (type) {
+        case 'approve':
+          await supabase
+            .from('vendors')
+            .update({ 
+              is_approved: true,
+              is_suspended: false 
+            })
+            .eq('id', vendor.id);
+          successMessage = 'Vendor approved successfully';
+          break;
 
-  try {
-    let successMessage = '';
-    
-    switch (type) {
-      case 'approve':
-        await supabase
-          .from('vendors')
-          .update({ 
-            is_approved: true,
-            is_suspended: false 
-          })
-          .eq('id', vendor.id);
-        successMessage = 'Vendor approved successfully';
-        break;
+        case 'reject':
+        case 'delete':
+          await supabase
+            .from('vendors')
+            .delete()
+            .eq('id', vendor.id);
+          successMessage = 'Vendor deleted successfully';
+          break;
 
-      case 'reject':
-      case 'delete':
-        await supabase
-          .from('vendors')
-          .delete()
-          .eq('id', vendor.id);
-        successMessage = 'Vendor deleted successfully';
-        break;
+        case 'suspend':
+          await supabase
+            .from('vendors')
+            .update({ is_suspended: true })
+            .eq('id', vendor.id);
+          successMessage = 'Vendor suspended successfully';
+          break;
 
-      case 'suspend':
-        await supabase
-          .from('vendors')
-          .update({ is_suspended: true })
-          .eq('id', vendor.id);
-        successMessage = 'Vendor suspended successfully';
-        break;
+        case 'unsuspend':
+          await supabase
+            .from('vendors')
+            .update({ is_suspended: false })
+            .eq('id', vendor.id);
+          successMessage = 'Vendor unsuspended successfully';
+          break;
+      }
 
-      case 'unsuspend':
-        await supabase
-          .from('vendors')
-          .update({ is_suspended: false })
-          .eq('id', vendor.id);
-        successMessage = 'Vendor unsuspended successfully';
-        break;
+      if (successMessage) {
+        Alert.alert('Success', successMessage);
+      }
+      fetchVendors();
+    } catch (error) {
+      console.error('Error:', error);
+      Alert.alert('Error', `Failed to ${type} vendor`);
+    } finally {
+      setShowConfirmModal(false);
+      setConfirmAction(null);
     }
+  };
 
-    Alert.alert('Success', successMessage);
-    fetchVendors(); // Refresh the list
-  } catch (error) {
-    console.error('Error:', error);
-    Alert.alert('Error', `Failed to ${type} vendor`);
-  } finally {
-    setShowConfirmModal(false);
-    setConfirmAction(null);
-  }
-};
   const getVendorStatus = (vendor: Vendor) => {
     if (vendor.is_suspended) return { label: 'Suspended', color: '#ef4444' };
     if (!vendor.is_approved) return { label: 'Pending', color: '#f59e0b' };
@@ -210,12 +389,11 @@ const executeAction = async () => {
         <Text style={styles.headerTitle}>Vendor Management</Text>
         <TouchableOpacity 
           onPress={() => {
-            // Navigate to create vendor screen
-            Alert.alert('Coming Soon', 'Create vendor functionality coming soon');
+            Alert.alert('Platform Fee', `Current platform fee: ${platformSettings?.platform_fee_percentage || 10}%`);
           }} 
           style={styles.addButton}
         >
-          <Feather name="plus" size={24} color="#f97316" />
+          <Feather name="info" size={24} color="#f97316" />
         </TouchableOpacity>
       </View>
 
@@ -346,6 +524,21 @@ const executeAction = async () => {
                   <Text style={styles.vendorDetail}>
                     <Feather name="tag" size={12} color="#666" /> {vendor.category}
                   </Text>
+                  
+                  {/* Bank Details */}
+                  <TouchableOpacity 
+                    onPress={() => {
+                      setSelectedVendor(vendor);
+                      setShowPaymentDetailsModal(true);
+                    }}
+                    style={styles.paymentStatusRow}
+                  >
+                    <Feather name="credit-card" size={14} color="#f97316" />
+                    <Text style={styles.paymentStatusText}>
+                      View Bank Details
+                    </Text>
+                    <Feather name="chevron-right" size={14} color="#666" style={styles.paymentChevron} />
+                  </TouchableOpacity>
                 </View>
 
                 <View style={styles.vendorFooter}>
@@ -426,6 +619,214 @@ const executeAction = async () => {
         </TouchableOpacity>
       </Modal>
 
+      {/* Payment Details Modal - Bank Info Only */}
+      <Modal
+        visible={showPaymentDetailsModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => {
+          setShowPaymentDetailsModal(false);
+          setIsEditingBank(false);
+          setBankVerified(false);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.paymentModal}>
+            <View style={styles.paymentModalHeader}>
+              <Text style={styles.paymentModalTitle}>Bank Details</Text>
+              <TouchableOpacity onPress={() => {
+                setShowPaymentDetailsModal(false);
+                setIsEditingBank(false);
+                setBankVerified(false);
+              }}>
+                <Feather name="x" size={20} color="#fff" />
+              </TouchableOpacity>
+            </View>
+
+            {selectedVendor && (
+              <ScrollView style={styles.paymentModalBody}>
+                {/* Bank Details Section */}
+                <View style={styles.paymentSection}>
+                  <View style={styles.sectionHeader}>
+                    <Text style={styles.paymentSectionTitle}>Bank Information</Text>
+                    {!isEditingBank ? (
+                      <TouchableOpacity onPress={() => startEditingBank(selectedVendor)}>
+                        <Feather name="edit-2" size={16} color="#f97316" />
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+
+                  {!isEditingBank ? (
+                    // View Mode
+                    <>
+                      <View style={styles.paymentDetailRow}>
+                        <Text style={styles.paymentDetailLabel}>Bank Name:</Text>
+                        <Text style={styles.paymentDetailValue}>
+                          {banks.find(b => b.value === selectedVendor.bank_name)?.label || selectedVendor.bank_name || 'Not provided'}
+                        </Text>
+                      </View>
+                      <View style={styles.paymentDetailRow}>
+                        <Text style={styles.paymentDetailLabel}>Account Number:</Text>
+                        <Text style={styles.paymentDetailValue}>
+                          {selectedVendor.account_number || 'Not provided'}
+                        </Text>
+                      </View>
+                      <View style={styles.paymentDetailRow}>
+                        <Text style={styles.paymentDetailLabel}>Account Name:</Text>
+                        <Text style={styles.paymentDetailValue}>
+                          {selectedVendor.account_name || 'Not provided'}
+                        </Text>
+                      </View>
+                    </>
+                  ) : (
+                    // Edit Mode
+                    <>
+                      {/* Bank Dropdown */}
+                      <View style={styles.formGroup}>
+                        <Text style={styles.label}>Bank Name</Text>
+                        <TouchableOpacity 
+                          style={styles.dropdownButton}
+                          onPress={() => setShowBankDropdown(true)}
+                        >
+                          <Text style={[
+                            styles.dropdownButtonText,
+                            !editedBankDetails.bank_name && styles.dropdownPlaceholder
+                          ]}>
+                            {editedBankDetails.bank_name || 'Select bank'}
+                          </Text>
+                          <Feather name="chevron-down" size={20} color="#666" />
+                        </TouchableOpacity>
+                      </View>
+
+                      {/* Account Number with Verify Button */}
+                      <View style={styles.formGroup}>
+                        <Text style={styles.label}>Account Number</Text>
+                        <View style={styles.verificationRow}>
+                          <TextInput
+                            style={[styles.input, { flex: 1 }]}
+                            value={editedBankDetails.account_number}
+                            onChangeText={(text) => {
+                              setEditedBankDetails({ ...editedBankDetails, account_number: text });
+                              setBankVerified(false);
+                            }}
+                            placeholder="10-digit account number"
+                            placeholderTextColor="#666"
+                            keyboardType="numeric"
+                            maxLength={10}
+                          />
+                          <TouchableOpacity
+                            onPress={handleVerifyBank}
+                            disabled={!editedBankDetails.account_number || !editedBankDetails.bank_code || isVerifyingBank || bankVerified}
+                            style={[
+                              styles.verifyButton,
+                              bankVerified && styles.verifyButtonSuccess
+                            ]}
+                          >
+                            {isVerifyingBank ? (
+                              <ActivityIndicator size="small" color="#fff" />
+                            ) : bankVerified ? (
+                              <Feather name="check" size={20} color="#fff" />
+                            ) : (
+                              <Text style={styles.verifyButtonText}>Verify</Text>
+                            )}
+                          </TouchableOpacity>
+                        </View>
+                        {verificationError ? (
+                          <Text style={styles.verificationError}>{verificationError}</Text>
+                        ) : null}
+                      </View>
+
+                      {/* Account Name */}
+                      <View style={styles.formGroup}>
+                        <Text style={styles.label}>Account Name</Text>
+                        <TextInput
+                          style={[styles.input, bankVerified && styles.verifiedInput]}
+                          value={editedBankDetails.account_name}
+                          onChangeText={(text) => setEditedBankDetails({ ...editedBankDetails, account_name: text })}
+                          placeholder="Account name"
+                          placeholderTextColor="#666"
+                          editable={!bankVerified}
+                        />
+                      </View>
+
+                      {bankVerified && (
+                        <View style={styles.verificationSuccess}>
+                          <Feather name="check-circle" size={16} color="#10b981" />
+                          <Text style={styles.verificationSuccessText}>Account verified successfully</Text>
+                        </View>
+                      )}
+
+                      {/* Edit Mode Buttons */}
+                      <View style={styles.editActions}>
+                        <TouchableOpacity
+                          style={[styles.editButton, styles.cancelEditButton]}
+                          onPress={cancelEditingBank}
+                        >
+                          <Text style={styles.cancelEditText}>Cancel</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.editButton, styles.saveEditButton]}
+                          onPress={saveBankDetails}
+                          disabled={!bankVerified}
+                        >
+                          <LinearGradient
+                            colors={['#f97316', '#f43f5e']}
+                            style={styles.saveEditGradient}
+                          >
+                            <Text style={styles.saveEditText}>Save Changes</Text>
+                          </LinearGradient>
+                        </TouchableOpacity>
+                      </View>
+                    </>
+                  )}
+                </View>
+
+                {/* Platform Fee Info */}
+                <View style={[styles.paymentSection, styles.platformFeeSection]}>
+                  <Feather name="info" size={16} color="#f97316" />
+                  <Text style={styles.platformFeeText}>
+                    Platform Fee: {platformSettings?.platform_fee_percentage || 10}% per transaction
+                  </Text>
+                </View>
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Bank Dropdown Modal */}
+      <Modal
+        visible={showBankDropdown}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowBankDropdown(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.dropdownModal}>
+            <View style={styles.dropdownHeader}>
+              <Text style={styles.dropdownTitle}>Select Bank</Text>
+              <TouchableOpacity onPress={() => setShowBankDropdown(false)}>
+                <Feather name="x" size={24} color="#fff" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView>
+              {banks.map((bank) => (
+                <TouchableOpacity
+                  key={bank.value}
+                  style={styles.dropdownItem}
+                  onPress={() => selectBank(bank.value)}
+                >
+                  <Text style={styles.dropdownItemText}>{bank.label}</Text>
+                  {editedBankDetails.bank_name === bank.label && (
+                    <Feather name="check" size={20} color="#f97316" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
       {/* Confirmation Modal */}
       <Modal
         visible={showConfirmModal}
@@ -485,11 +886,160 @@ const executeAction = async () => {
 }
 
 const styles = StyleSheet.create({
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  formGroup: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 6,
+  },
+  input: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 8,
+    padding: 12,
+    color: '#fff',
+    fontSize: 14,
+    height: 44,
+  },
+  dropdownButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#2a2a2a',
+    borderRadius: 8,
+    padding: 12,
+    height: 44,
+  },
+  dropdownButtonText: {
+    fontSize: 14,
+    color: '#fff',
+  },
+  dropdownPlaceholder: {
+    color: '#666',
+  },
+  dropdownModal: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 20,
+    padding: 16,
+    maxHeight: '70%',
+    width: '90%',
+  },
+  dropdownHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.05)',
+    marginBottom: 16,
+  },
+  dropdownTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.05)',
+  },
+  dropdownItemText: {
+    fontSize: 16,
+    color: '#fff',
+  },
+  verificationRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  verifyButton: {
+    width: 80,
+    height: 44,
+    backgroundColor: '#f97316',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  verifyButtonSuccess: {
+    backgroundColor: '#10b981',
+  },
+  verifyButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  verificationError: {
+    color: '#ef4444',
+    fontSize: 12,
+    marginTop: 4,
+  },
+  verificationSuccess: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  verificationSuccessText: {
+    color: '#10b981',
+    fontSize: 12,
+  },
+  verifiedInput: {
+    backgroundColor: '#1a2a1a',
+    borderColor: '#10b981',
+    borderWidth: 1,
+  },
+  editActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16,
+  },
+  editButton: {
+    flex: 1,
+    height: 44,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  cancelEditButton: {
+    backgroundColor: '#2a2a2a',
+    borderWidth: 1,
+    borderColor: '#ef4444',
+  },
+  cancelEditText: {
+    color: '#ef4444',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  saveEditButton: {
+    overflow: 'hidden',
+  },
+  saveEditGradient: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  saveEditText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   container: {
     flex: 1,
     backgroundColor: '#0a0a0a',
-        paddingBottom:60,
-
+    paddingBottom: 60,
   },
   loadingContainer: {
     flex: 1,
@@ -656,6 +1206,19 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
   },
+  paymentStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    gap: 6,
+  },
+  paymentStatusText: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  paymentChevron: {
+    marginLeft: 'auto',
+  },
   vendorFooter: {
     paddingTop: 12,
     borderTopWidth: 1,
@@ -715,6 +1278,69 @@ const styles = StyleSheet.create({
   },
   actionTextDelete: {
     color: '#ef4444',
+  },
+  paymentModal: {
+    width: '90%',
+    maxHeight: '80%',
+    backgroundColor: '#1a1a1a',
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  paymentModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.05)',
+  },
+  paymentModalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  paymentModalBody: {
+    padding: 16,
+  },
+  paymentSection: {
+    marginBottom: 20,
+    padding: 12,
+    backgroundColor: '#2a2a2a',
+    borderRadius: 8,
+  },
+  paymentSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#f97316',
+    marginBottom: 12,
+  },
+  paymentDetailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  paymentDetailLabel: {
+    fontSize: 12,
+    color: '#666',
+  },
+  paymentDetailValue: {
+    fontSize: 12,
+    color: '#fff',
+    fontWeight: '500',
+    flex: 1,
+    textAlign: 'right',
+    marginLeft: 8,
+  },
+  platformFeeSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(249,115,22,0.1)',
+  },
+  platformFeeText: {
+    fontSize: 12,
+    color: '#f97316',
+    flex: 1,
   },
   confirmModal: {
     width: '80%',

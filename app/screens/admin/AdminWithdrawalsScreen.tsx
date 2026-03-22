@@ -20,6 +20,10 @@ import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import Toast from 'react-native-toast-message';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../navigation/types';
+
+// In the component
 
 type WithdrawalStatus = 'all' | 'pending' | 'completed' | 'failed';
 
@@ -45,7 +49,6 @@ interface Withdrawal {
 }
 
 export function AdminWithdrawalsScreen() {
-  const navigation = useNavigation();
   const { user } = useAuth();
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   const [filteredWithdrawals, setFilteredWithdrawals] = useState<Withdrawal[]>([]);
@@ -57,7 +60,10 @@ export function AdminWithdrawalsScreen() {
   const [selectedWithdrawal, setSelectedWithdrawal] = useState<Withdrawal | null>(null);
   const [showActionsModal, setShowActionsModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-   const showToast = (message: string) => {
+  const [processingPayment, setProcessingPayment] = useState(false);
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  const showToast = (message: string) => {
     Toast.show({
       type: 'success',
       text1: message,
@@ -101,7 +107,7 @@ export function AdminWithdrawalsScreen() {
       setWithdrawals(data || []);
     } catch (error) {
       console.error('Error fetching withdrawals:', error);
-      showToast( 'Failed to load withdrawals');
+      showToast('Failed to load withdrawals');
     } finally {
       setIsLoading(false);
       setRefreshing(false);
@@ -111,7 +117,6 @@ export function AdminWithdrawalsScreen() {
   const filterWithdrawals = () => {
     let filtered = [...withdrawals];
 
-    // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(w => 
@@ -122,12 +127,10 @@ export function AdminWithdrawalsScreen() {
       );
     }
 
-    // Status filter
     if (statusFilter !== 'all') {
       filtered = filtered.filter(w => w.status === statusFilter);
     }
 
-    // User type filter
     if (userTypeFilter !== 'all') {
       filtered = filtered.filter(w => w.user_type === userTypeFilter);
     }
@@ -140,28 +143,163 @@ export function AdminWithdrawalsScreen() {
     fetchWithdrawals();
   };
 
-  const handleProcessWithdrawal = async (withdrawalId: string, action: 'approve' | 'reject', notes?: string) => {
-    try {
-      const status = action === 'approve' ? 'completed' : 'failed';
+
+
+
+const processWithdrawalPayment = async (withdrawal: Withdrawal) => {
+  setProcessingPayment(true);
+  
+  try {
+    // ✅ Call your process-withdrawal Edge Function
+    const response = await fetch(
+      `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/process-withdrawal`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({
+          withdrawalId: withdrawal.id,
+          amount: withdrawal.amount,
+          accountNumber: withdrawal.account_number,
+          bankCode: getBankCodeFromName(withdrawal.bank_name),
+          accountName: withdrawal.account_name
+        })
+      }
+    );
+
+    const result = await response.json();
+
+    if (result.success) {
+      showToast(`Withdrawal of ₦${withdrawal.amount.toLocaleString()} initiated successfully`);
+      fetchWithdrawals(); // Refresh the list
+      return true;
+    } else {
+      throw new Error(result.message || 'Payment failed');
+    }
+  } catch (error: any) {
+    console.error('Error processing withdrawal payment:', error);
+    showToast(`Payment failed: ${error.message}`);
+    
+    // Mark as failed
+    await supabase
+      .from('withdrawals')
+      .update({ 
+        status: 'failed', 
+        notes: `Failed: ${error.message}`,
+        processed_at: new Date().toISOString()
+      })
+      .eq('id', withdrawal.id);
+    
+    fetchWithdrawals();
+    return false;
+  } finally {
+    setProcessingPayment(false);
+  }
+};
+
+// Add a new function for retry
+const handleRetryWithdrawal = async (withdrawal: Withdrawal) => {
+  setProcessingPayment(true);
+  
+  try {
+    // Reset status to processing and retry
+    await supabase
+      .from('withdrawals')
+      .update({ 
+        status: 'processing',
+        notes: 'Retrying payment...',
+        processed_at: new Date().toISOString()
+      })
+      .eq('id', withdrawal.id);
+    
+    // Process the payment again
+    const success = await processWithdrawalPayment(withdrawal);
+    
+    if (!success) {
+      // Payment failed again
+      showToast('Retry failed. Please check bank details.');
+    } else {
+      showToast('Retry initiated successfully');
+    }
+    
+    fetchWithdrawals();
+  } catch (error) {
+    console.error('Error retrying withdrawal:', error);
+    showToast('Failed to retry withdrawal');
+  } finally {
+    setProcessingPayment(false);
+  }
+};
+  // Helper to get bank code from bank name
+  const getBankCodeFromName = (bankName: string): string => {
+    const bankMap: Record<string, string> = {
+      'Access Bank': '044',
+      'GTBank': '058',
+      'First Bank': '011',
+      'UBA': '033',
+      'Zenith Bank': '057',
+      'Kuda Bank': '090267',
+      'OPay': '100052',
+      'PalmPay': '100033',
+      'Fidelity Bank': '070',
+      'Union Bank': '032',
+      'Sterling Bank': '232',
+      'Wema Bank': '035',
+    };
+    
+    const matchedKey = Object.keys(bankMap).find(key => 
+      bankName.toLowerCase().includes(key.toLowerCase())
+    );
+    
+    return bankMap[matchedKey || ''] || '044';
+  };
+
+ const handleProcessWithdrawal = async (withdrawalId: string, action: 'approve' | 'reject', notes?: string) => {
+  try {
+    if (action === 'approve') {
+      // Find the withdrawal
+      const withdrawal = withdrawals.find(w => w.id === withdrawalId);
+      if (!withdrawal) throw new Error('Withdrawal not found');
       
+      // First mark as processing
+      await supabase
+        .from('withdrawals')
+        .update({ 
+          status: 'processing', 
+          notes: notes || 'Processing payment...' 
+        })
+        .eq('id', withdrawalId);
+      
+      // Process the actual payment
+      const success = await processWithdrawalPayment(withdrawal);
+      
+      if (!success) {
+        // Payment failed, already marked as failed in processWithdrawalPayment
+        return;
+      }
+    } else {
+      // Reject - just update status
       const { error } = await supabase
         .from('withdrawals')
         .update({ 
-          status, 
+          status: 'failed', 
           processed_at: new Date().toISOString(),
-          notes: notes || null
+          notes: notes || 'Rejected by admin'
         })
         .eq('id', withdrawalId);
 
       if (error) throw error;
-
-      showToast( `Withdrawal ${action === 'approve' ? 'approved' : 'rejected'} successfully`);
-      fetchWithdrawals();
-    } catch (error) {
-      console.error('Error processing withdrawal:', error);
-      showToast( 'Failed to process withdrawal');
+      showToast('Withdrawal rejected');
     }
-  };
+    
+    fetchWithdrawals();
+  } catch (error) {
+    console.error('Error processing withdrawal:', error);
+    showToast('Failed to process withdrawal');
+  }
+};
 
   const handleAction = (withdrawal: Withdrawal, actionType: 'approve' | 'reject') => {
     if (actionType === 'reject') {
@@ -246,15 +384,24 @@ export function AdminWithdrawalsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Feather name="arrow-left" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Withdrawals</Text>
-        <TouchableOpacity onPress={fetchWithdrawals} style={styles.refreshButton}>
-          <Feather name="refresh-cw" size={20} color="#f97316" />
-        </TouchableOpacity>
-      </View>
+
+<View style={styles.header}>
+  <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+    <Feather name="arrow-left" size={24} color="#fff" />
+  </TouchableOpacity>
+  <Text style={styles.headerTitle}>Withdrawals</Text>
+  <View style={styles.headerRight}>
+    <TouchableOpacity 
+      onPress={() => navigation.navigate('OutstandingPayments')} 
+      style={styles.outstandingButton}
+    >
+      <Feather name="credit-card" size={20} color="#f97316" />
+    </TouchableOpacity>
+    <TouchableOpacity onPress={fetchWithdrawals} style={styles.refreshButton}>
+      <Feather name="refresh-cw" size={20} color="#f97316" />
+    </TouchableOpacity>
+  </View>
+</View>
 
       {/* Stats Cards */}
       <View style={styles.statsContainer}>
@@ -278,6 +425,8 @@ export function AdminWithdrawalsScreen() {
           <Text style={styles.statLabelSmall}>Completed</Text>
         </View>
       </View>
+
+      
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
@@ -521,49 +670,79 @@ export function AdminWithdrawalsScreen() {
       </ScrollView>
 
       {/* Actions Modal */}
-      <Modal
-        visible={showActionsModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowActionsModal(false)}
-      >
-        <TouchableOpacity 
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowActionsModal(false)}
-        >
-          <View style={styles.actionsModal}>
-            {selectedWithdrawal?.status === 'pending' && (
-              <>
-                <TouchableOpacity
-                  style={styles.actionItem}
-                  onPress={() => handleAction(selectedWithdrawal, 'approve')}
-                >
-                  <Feather name="check-circle" size={18} color="#10b981" />
-                  <Text style={styles.actionText}>Approve Withdrawal</Text>
-                </TouchableOpacity>
+     {/* Actions Modal */}
+<Modal
+  visible={showActionsModal}
+  transparent
+  animationType="fade"
+  onRequestClose={() => setShowActionsModal(false)}
+>
+  <TouchableOpacity 
+    style={styles.modalOverlay}
+    activeOpacity={1}
+    onPress={() => setShowActionsModal(false)}
+  >
+    <View style={styles.actionsModal}>
+      {/* Pending - Show Approve & Reject */}
+      {selectedWithdrawal?.status === 'pending' && (
+        <>
+          <TouchableOpacity
+            style={styles.actionItem}
+            onPress={() => handleAction(selectedWithdrawal, 'approve')}
+            disabled={processingPayment}
+          >
+            <Feather name="check-circle" size={18} color="#10b981" />
+            <Text style={styles.actionText}>
+              {processingPayment ? 'Processing...' : 'Approve & Send Payment'}
+            </Text>
+          </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={[styles.actionItem, styles.actionItemDelete]}
-                  onPress={() => handleAction(selectedWithdrawal, 'reject')}
-                >
-                  <Feather name="x-circle" size={18} color="#ef4444" />
-                  <Text style={[styles.actionText, styles.actionTextDelete]}>Reject Withdrawal</Text>
-                </TouchableOpacity>
-              </>
-            )}
+          <TouchableOpacity
+            style={[styles.actionItem, styles.actionItemDelete]}
+            onPress={() => handleAction(selectedWithdrawal, 'reject')}
+          >
+            <Feather name="x-circle" size={18} color="#ef4444" />
+            <Text style={[styles.actionText, styles.actionTextDelete]}>Reject Withdrawal</Text>
+          </TouchableOpacity>
+        </>
+      )}
 
-            {selectedWithdrawal?.status !== 'pending' && (
-              <View style={styles.actionInfo}>
-                <Feather name="info" size={18} color="#666" />
-                <Text style={styles.actionInfoText}>
-                  This withdrawal is already {selectedWithdrawal?.status}
-                </Text>
-              </View>
-            )}
-          </View>
-        </TouchableOpacity>
-      </Modal>
+      {/* Failed - Show Retry Option */}
+      {selectedWithdrawal?.status === 'failed' && (
+        <>
+          <TouchableOpacity
+            style={styles.actionItem}
+            onPress={() => handleRetryWithdrawal(selectedWithdrawal)}
+            disabled={processingPayment}
+          >
+            <Feather name="refresh-cw" size={18} color="#f97316" />
+            <Text style={styles.actionText}>
+              {processingPayment ? 'Processing...' : 'Retry Withdrawal'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.actionItem, styles.actionItemDelete]}
+            onPress={() => handleAction(selectedWithdrawal, 'reject')}
+          >
+            <Feather name="x-circle" size={18} color="#ef4444" />
+            <Text style={[styles.actionText, styles.actionTextDelete]}>Reject Withdrawal</Text>
+          </TouchableOpacity>
+        </>
+      )}
+
+      {/* Completed/Processing - Show Info Only */}
+      {selectedWithdrawal?.status !== 'pending' && selectedWithdrawal?.status !== 'failed' && (
+        <View style={styles.actionInfo}>
+          <Feather name="info" size={18} color="#666" />
+          <Text style={styles.actionInfoText}>
+            This withdrawal is already {selectedWithdrawal?.status}
+          </Text>
+        </View>
+      )}
+    </View>
+  </TouchableOpacity>
+</Modal>
 
       {/* Confirmation Modal */}
       <Modal
@@ -581,7 +760,7 @@ export function AdminWithdrawalsScreen() {
             <Text style={styles.confirmTitle}>Confirm Action</Text>
             <Text style={styles.confirmMessage}>
               {confirmAction?.type === 'approve' 
-                ? `Are you sure you want to approve this withdrawal of ₦${confirmAction?.withdrawal.amount.toLocaleString()}?` 
+                ? `Are you sure you want to process this withdrawal of ₦${confirmAction?.withdrawal.amount.toLocaleString()}? This will send money to the vendor's bank account.` 
                 : `Are you sure you want to reject this withdrawal?`}
             </Text>
 
@@ -602,9 +781,10 @@ export function AdminWithdrawalsScreen() {
                   confirmAction?.type === 'approve' ? styles.approveConfirmButton : styles.rejectConfirmButton
                 ]}
                 onPress={executeAction}
+                disabled={processingPayment}
               >
                 <Text style={styles.confirmButtonText}>
-                  {confirmAction?.type === 'approve' ? 'Approve' : 'Reject'}
+                  {processingPayment ? 'Processing...' : (confirmAction?.type === 'approve' ? 'Approve & Send' : 'Reject')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -674,7 +854,6 @@ export function AdminWithdrawalsScreen() {
     </SafeAreaView>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -747,6 +926,18 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.8)',
     marginBottom: 4,
   },
+  headerRight: {
+  flexDirection: 'row',
+  gap: 8,
+},
+outstandingButton: {
+  width: 40,
+  height: 40,
+  borderRadius: 20,
+  backgroundColor: '#1a1a1a',
+  justifyContent: 'center',
+  alignItems: 'center',
+},
   statValue: {
     fontSize: 16,
     fontWeight: '700',

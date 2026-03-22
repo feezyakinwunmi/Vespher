@@ -10,7 +10,7 @@ import { AdminDashboardScreen } from '../screens/admin/AdminDashboardScreen';
 import { AdminVendorsScreen } from '../screens/admin/AdminVendorsScreen';
 import { AdminWithdrawalsScreen } from '../screens/admin/AdminWithdrawalsScreen';
 import { AdminMenuScreen } from '../screens/admin/AdminMenuScreen';
-import {AdminLogisticsScreen} from '../screens/admin/AdminLogisticsScreen';
+import {AdminLogisticsScreen} from '../lib/AdminLogisticsScreen';
 // import { AdminUsersScreen } from '../screens/admin/AdminUsersScreen';
 import { AdminSettingsScreen } from '../screens/admin/AdminSettingsScreen';
 import { useAdmin } from '../hooks/admin/useAdmin';

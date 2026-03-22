@@ -120,7 +120,7 @@ const renderOverview = () => (
     </View>
 
     {/* Main Stats Card */}
-    <LinearGradient
+    {/* <LinearGradient
       colors={['#f97316', '#f43f5e']}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
@@ -151,7 +151,7 @@ const renderOverview = () => (
           </Text>
         </View>
       </View>
-    </LinearGradient>
+    </LinearGradient> */}
 
     {/* Stats Grid */}
     <View style={styles.statsGrid}>
@@ -163,13 +163,13 @@ const renderOverview = () => (
         <Text style={styles.statLabel}>Total Orders</Text>
       </View>
 
-      <View style={styles.statCard}>
+      {/* <View style={styles.statCard}>
         <View style={[styles.statIconContainer, { backgroundColor: 'rgba(16,185,129,0.1)' }]}>
           <Feather name="dollar-sign" size={20} color="#10b981" />
         </View>
         <Text style={styles.statNumber}>₦{stats?.totalVendorEarnings?.toLocaleString() || 0}</Text>
         <Text style={styles.statLabel}>Total Revenue</Text>
-      </View>
+      </View> */}
 
       <View style={styles.statCard}>
         <View style={[styles.statIconContainer, { backgroundColor: 'rgba(249,115,22,0.1)' }]}>
@@ -192,7 +192,7 @@ const renderOverview = () => (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Order Status</Text>
-        <TouchableOpacity onPress={() => setActiveTab('orders')}>
+        <TouchableOpacity onPress={() => navigation.navigate('VendorOrders' as never)}>
           <Text style={styles.seeAllText}>View All</Text>
         </TouchableOpacity>
       </View>
@@ -459,7 +459,6 @@ onPress={() => (navigation as any).navigate('VendorOrders', { orderId: order.id 
 const styles = StyleSheet.create({
   container:{
     flex:1,
-    marginTop:40,
         paddingBottom:60,
 
   },
