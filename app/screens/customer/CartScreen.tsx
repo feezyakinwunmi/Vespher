@@ -427,50 +427,76 @@ const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
     }
 
     // Insert into orders table
-    const { data: order, error: orderError } = await supabase
-      .from('orders')
-      .insert({
-        customer_id: user?.id,
-        vendor_id: vendorId,
-        items: items.map(item => ({
-          product_id: item.product.id,
-          name: item.product.name,
-          quantity: item.quantity,
-          price: item.product.price,
-          options: item.selectedOptions || []
-        })),
-        status: 'pending',
-        is_scheduled: orderType === 'schedule',
-        scheduled_datetime: scheduledDateTime,
-        event_type: eventType,
-        guest_count: null,
-        special_request_category: selectedRequestCategory,
-        special_request_text: specialRequest,
-        subtotal: subtotal,
-        delivery_fee: deliveryFeeForDB,
-        discount: discountForDB,
-        total: totalAmount,
-        payment_method: paymentMethod,
-        payment_status: paymentStatus,
-        payment_reference: paymentRef,
-        delivery_address: selectedAddress,
-        created_at: new Date().toISOString(),
-        auto_cancel_at: autoCancelAt?.toISOString() || null,
-        
-        // Financial fields
-        stamp_duty: stampDuty,
-        flutterwave_fee: flutterwaveFee,
-        flutterwave_fee_percentage: flutterwaveFeePercentage,
-        platform_commission: platformCommission,
-        platform_commission_percentage: platformFeePercentage,
-        platform_delivery_earnings: platformDeliveryEarnings,
-        platform_net_earnings: platformNetEarnings,
-        vendor_payout: vendorPayout,
-        payment_gateway_response: gatewayResponse,
-        rider_earnings: riderEarnings,
-      })
-      .select()
-      .single();
+  // In processOrder, when creating the order, add:
+const { data: order, error: orderError } = await supabase
+  .from('orders')
+  .insert({
+    customer_id: user?.id,
+    vendor_id: vendorId,
+    items: items.map(item => ({
+      product_id: item.product.id,
+      name: item.product.name,
+      quantity: item.quantity,
+      price: item.product.price,
+      options: item.selectedOptions || [],
+      // Add promotion fields to each item
+      promotion_id: (item.product as any).promotion_id || null,
+      is_promotion: (item.product as any).is_promotion || false,
+      is_free_item: (item.product as any).is_free_item || false,
+      is_combo_main: (item.product as any).is_combo_main || false,
+      combo_details: (item.product as any).combo_details || null,
+      promotion_price: (item.product as any).promotion_price || null,
+    })),
+    status: 'pending',
+    is_scheduled: orderType === 'schedule',
+    scheduled_datetime: scheduledDateTime,
+    event_type: eventType,
+    guest_count: null,
+    special_request_category: selectedRequestCategory,
+    special_request_text: specialRequest,
+    subtotal: subtotal,
+    delivery_fee: deliveryFeeForDB,
+    discount: discountForDB,
+    total: totalAmount,
+    payment_method: paymentMethod,
+    payment_status: paymentStatus,
+    payment_reference: paymentRef,
+    delivery_address: selectedAddress,
+    created_at: new Date().toISOString(),
+    auto_cancel_at: autoCancelAt?.toISOString() || null,
+    
+    // Add promotion tracking to the order
+   // Fixed version
+// In the order insertion, add the promotion_id
+promotion_id: items.some(item => (item.product as any).promotion_id) 
+  ? items.find(item => (item.product as any).promotion_id)?.product.promotion_id 
+  : null,
+    promotion_details: items.filter(item => (item.product as any).is_promotion).map(item => ({
+      product_id: item.product.id,
+      product_name: item.product.name,
+      promotion_id: (item.product as any).promotion_id,
+      is_free_item: (item.product as any).is_free_item,
+      is_combo_main: (item.product as any).is_combo_main,
+      combo_details: (item.product as any).combo_details,
+      promotion_price: (item.product as any).promotion_price,
+      original_price: (item.product as any).original_price,
+      quantity: item.quantity,
+    })),
+    
+    // Financial fields
+    stamp_duty: stampDuty,
+    flutterwave_fee: flutterwaveFee,
+    flutterwave_fee_percentage: flutterwaveFeePercentage,
+    platform_commission: platformCommission,
+    platform_commission_percentage: platformFeePercentage,
+    platform_delivery_earnings: platformDeliveryEarnings,
+    platform_net_earnings: platformNetEarnings,
+    vendor_payout: vendorPayout,
+    payment_gateway_response: gatewayResponse,
+    rider_earnings: riderEarnings,
+  })
+  .select()
+  .single();
 
     if (orderError) {
       console.error('Order insert error:', orderError);
@@ -703,48 +729,77 @@ const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Cart Items */}
-        <View style={styles.itemsContainer}>
-          {items.map((item) => (
-            <View key={item.product.id} style={styles.cartItem}>
-              <Image 
-                source={{ uri: item.product.image || 'https://via.placeholder.com/80' }} 
-                style={styles.itemImage}
-              />
-              <View style={styles.itemInfo}>
-                <Text style={styles.itemName} numberOfLines={1}>{item.product.name}</Text>
-                <Text style={styles.itemDescription} numberOfLines={1}>
-                  {item.product.description}
-                </Text>
-                <View style={styles.itemFooter}>
-                  <Text style={styles.itemPrice}>
-                    ₦{(item.product.price * item.quantity).toLocaleString()}
-                  </Text>
-                  <View style={styles.quantityControl}>
-                    <TouchableOpacity 
-                      onPress={() => updateQuantity(item.product.id, item.quantity - 1)}
-                      style={styles.quantityButton}
-                    >
-                      <Feather name="minus" size={14} color="#fff" />
-                    </TouchableOpacity>
-                    <Text style={styles.quantityText}>{item.quantity}</Text>
-                    <TouchableOpacity 
-                      onPress={() => updateQuantity(item.product.id, item.quantity + 1)}
-                      style={[styles.quantityButton, styles.primaryButton]}
-                    >
-                      <Feather name="plus" size={14} color="#fff" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-              <TouchableOpacity 
-                onPress={() => removeItem(item.product.id)}
-                style={styles.removeButton}
-              >
-                <Feather name="trash-2" size={18} color="#666" />
-              </TouchableOpacity>
+
+{/* Cart Items */}
+<View style={styles.itemsContainer}>
+  {items.map((item) => (
+    <View key={item.product.id} style={styles.cartItem}>
+      <Image 
+        source={{ uri: item.product.image || 'https://via.placeholder.com/80' }} 
+        style={styles.itemImage}
+      />
+      <View style={styles.itemInfo}>
+        <View style={styles.itemHeader}>
+          <Text style={styles.itemName} numberOfLines={1}>{item.product.name}</Text>
+          {item.product.is_promotion && (
+            <View style={styles.promoBadge}>
+              <Feather name="gift" size={10} color="#f97316" />
+              <Text style={styles.promoBadgeText}>Promo</Text>
             </View>
-          ))}
+          )}
         </View>
+        <Text style={styles.itemDescription} numberOfLines={1}>
+          {item.product.description}
+        </Text>
+        <View style={styles.itemFooter}>
+          <View>
+            <Text style={styles.itemPrice}>
+              ₦{(item.product.price * item.quantity).toLocaleString()}
+            </Text>
+            {item.product.original_price && item.product.original_price > item.product.price && (
+              <Text style={styles.originalPriceText}>
+                ₦{item.product.original_price.toLocaleString()}
+              </Text>
+            )}
+          </View>
+         {/* Quantity Control */}
+<View style={styles.quantityControl}>
+  <TouchableOpacity 
+    onPress={() => updateQuantity(item.product.id, item.quantity - 1)}
+    style={[
+      styles.quantityButton,
+      // Only disable for combo items, not for regular promo items
+      (item.product.is_combo_main || item.product.is_free_item) && styles.disabledButton
+    ]}
+    disabled={item.product.is_combo_main || item.product.is_free_item}
+  >
+    <Feather name="minus" size={14} color={(item.product.is_combo_main || item.product.is_free_item) ? "#666" : "#fff"} />
+  </TouchableOpacity>
+  <Text style={styles.quantityText}>{item.quantity}</Text>
+  <TouchableOpacity 
+    onPress={() => updateQuantity(item.product.id, item.quantity + 1)}
+    style={[
+      styles.quantityButton, 
+      styles.primaryButton,
+      // Only disable for combo items, not for regular promo items
+      (item.product.is_combo_main || item.product.is_free_item) && styles.disabledButton
+    ]}
+    disabled={item.product.is_combo_main || item.product.is_free_item}
+  >
+    <Feather name="plus" size={14} color={(item.product.is_combo_main || item.product.is_free_item) ? "#666" : "#fff"} />
+  </TouchableOpacity>
+</View>
+        </View>
+      </View>
+      <TouchableOpacity 
+        onPress={() => removeItem(item.product.id)}
+        style={styles.removeButton}
+      >
+        <Feather name="trash-2" size={18} color="#666" />
+      </TouchableOpacity>
+    </View>
+  ))}
+</View>
 
         {/* Promo Code */}
         <View style={styles.promoContainer}>
@@ -1365,6 +1420,36 @@ const styles = StyleSheet.create({
     padding: 12,
     gap: 12,
   },
+  itemHeader: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  marginBottom: 2,
+},
+promoBadge: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: 'rgba(249,115,22,0.15)',
+  paddingHorizontal: 8,
+  paddingVertical: 2,
+  borderRadius: 12,
+  gap: 4,
+},
+promoBadgeText: {
+  fontSize: 9,
+  color: '#f97316',
+  fontWeight: '500',
+},
+originalPriceText: {
+  fontSize: 10,
+  color: '#666',
+  textDecorationLine: 'line-through',
+  marginTop: 2,
+},
+disabledButton: {
+  backgroundColor: '#2a2a2a',
+  opacity: 0.5,
+},
   itemImage: {
     width: 60,
     height: 60,

@@ -39,6 +39,12 @@ interface FilterState {
 export function ExploreScreen() {
   const navigation = useNavigation<ExploreScreenNavigationProp>();
   const { vendors, isLoading: vendorsLoading, refresh: refreshVendors } = useVendors();
+  console.log('🔍 Vendors from useVendors:', vendors.map(v => ({
+  name: v.name,
+  productsCount: v.products?.length || 0,
+  products: v.products?.map(p => p.name)
+})));
+
   const { categories, isLoading: categoriesLoading } = useCategories();
   
   const [searchQuery, setSearchQuery] = useState('');
@@ -49,7 +55,7 @@ export function ExploreScreen() {
   const [filters, setFilters] = useState<FilterState>({
     categories: [],
     vendors: [],
-    priceRange: { min: 0, max: 10000 },
+    priceRange: { min: 0, max: 1000000000 },
     sortBy: 'popular',
   });
 
@@ -58,16 +64,19 @@ export function ExploreScreen() {
 
   // Get all available products from vendors
   const allProducts = useMemo(() => {
-    return vendors.flatMap(vendor => 
-      vendor.products.map(product => ({
-        ...product,
-        vendorName: vendor.name,
-        vendorId: vendor.id,
-        vendorImage: vendor.image,
-        vendorRating: vendor.rating,
-      }))
-    );
-  }, [vendors]);
+  const products = vendors.flatMap(vendor => 
+    vendor.products.map(product => ({
+      ...product,
+      vendorName: vendor.name,
+      vendorId: vendor.id,
+      vendorImage: vendor.image,
+      vendorRating: vendor.rating,
+    }))
+  );
+  console.log('📦 All products count:', products.length);
+  console.log('📦 All products:', products.map(p => p.name));
+  return products;
+}, [vendors]);
 
   // Filter and sort products
   const filteredProducts = useMemo(() => {
@@ -140,7 +149,7 @@ export function ExploreScreen() {
     setTempFilters({
       categories: [],
       vendors: [],
-      priceRange: { min: 0, max: 10000 },
+      priceRange: { min: 0, max: 1000000000 },
       sortBy: 'popular',
     });
   };
@@ -167,7 +176,7 @@ export function ExploreScreen() {
     let count = 0;
     if (filters.categories.length > 0) count += filters.categories.length;
     if (filters.vendors.length > 0) count += filters.vendors.length;
-    if (filters.priceRange.min > 0 || filters.priceRange.max < 10000) count += 1;
+    if (filters.priceRange.min > 0 || filters.priceRange.max < 1000000000) count += 1;
     if (filters.sortBy !== 'popular') count += 1;
     return count;
   };
@@ -241,7 +250,7 @@ export function ExploreScreen() {
               setFilters({
                 categories: [],
                 vendors: [],
-                priceRange: { min: 0, max: 10000 },
+                priceRange: { min: 0, max: 1000000000 },
                 sortBy: 'popular',
               });
             }}
@@ -414,10 +423,10 @@ export function ExploreScreen() {
                       value={tempFilters.priceRange.max.toString()}
                       onChangeText={(text) => setTempFilters(prev => ({
                         ...prev,
-                        priceRange: { ...prev.priceRange, max: parseInt(text) || 10000 }
+                        priceRange: { ...prev.priceRange, max: parseInt(text) || 1000000000 }
                       }))}
                       keyboardType="numeric"
-                      placeholder="10000"
+                      placeholder="1000000000"
                       placeholderTextColor="#666"
                     />
                   </View>

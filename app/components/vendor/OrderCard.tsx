@@ -225,6 +225,14 @@ export function OrderCard({
         </Text>
       </View>
 
+      {/* Show promotion badge if any item is a promotion */}
+{order.items?.some((item: any) => item.is_promotion || item.promotion_id) && (
+  <View style={styles.promotionBadge}>
+    <Feather name="gift" size={12} color="#f97316" />
+    <Text style={styles.promotionText}>Promotion Order</Text>
+  </View>
+)}
+
       {status === 'pending' && !isExpired && timeRemaining && timeRemaining > 0 && (
   <View style={styles.timerContainer}>
     <View style={styles.timerIcon}>
@@ -320,6 +328,22 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     marginBottom: 8,
   },
+  promotionBadge: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 6,
+  backgroundColor: 'rgba(249,115,22,0.15)',
+  paddingHorizontal: 8,
+  paddingVertical: 4,
+  borderRadius: 4,
+  marginTop: 8,
+  alignSelf: 'flex-start',
+},
+promotionText: {
+  fontSize: 10,
+  color: '#f97316',
+  fontWeight: '500',
+},
   scheduledText: {
     fontSize: 11,
     color: '#8b5cf6',

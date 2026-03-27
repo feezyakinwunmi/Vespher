@@ -25,6 +25,7 @@ interface PlatformSettings {
   min_delivery_fee: number;
   max_delivery_fee: number;
   weight_rate_per_kg: number;
+  promotion_cost_per_day: number; // Added
   updated_at: string;
   updated_by: string | null;
 }
@@ -50,6 +51,7 @@ export function AdminSettingsScreen() {
   const [minDeliveryFee, setMinDeliveryFee] = useState('');
   const [maxDeliveryFee, setMaxDeliveryFee] = useState('');
   const [weightRatePerKg, setWeightRatePerKg] = useState('');
+  const [promotionCostPerDay, setPromotionCostPerDay] = useState(''); // Added
 
   useEffect(() => {
     fetchSettings();
@@ -74,7 +76,8 @@ export function AdminSettingsScreen() {
       setDeliveryFeePerKm(data.delivery_fee_per_km.toString());
       setMinDeliveryFee(data.min_delivery_fee.toString());
       setMaxDeliveryFee(data.max_delivery_fee.toString());
-      setWeightRatePerKg(data.weight_rate_per_kg?.toString());
+      setWeightRatePerKg(data.weight_rate_per_kg?.toString() || '100');
+      setPromotionCostPerDay(data.promotion_cost_per_day?.toString() || '300'); // Added
       
     } catch (error) {
       console.error('Error fetching settings:', error);
@@ -120,6 +123,13 @@ export function AdminSettingsScreen() {
       return false;
     }
 
+    // Promotion cost per day
+    const promotionCost = parseFloat(promotionCostPerDay);
+    if (isNaN(promotionCost) || promotionCost < 100) {
+      showToast('Promotion cost per day must be at least ₦100', 'error');
+      return false;
+    }
+
     return true;
   };
 
@@ -144,6 +154,7 @@ export function AdminSettingsScreen() {
           min_delivery_fee: parseInt(minDeliveryFee),
           max_delivery_fee: parseInt(maxDeliveryFee),
           weight_rate_per_kg: parseInt(weightRatePerKg),
+          promotion_cost_per_day: parseInt(promotionCostPerDay), // Added
           updated_by: user.id,
           updated_at: new Date().toISOString(),
         })
@@ -203,11 +214,16 @@ export function AdminSettingsScreen() {
   const exampleDistance = 5; // 5km
   const exampleWeight = 2; // 2kg
   const exampleOrderAmount = 10000; // ₦10,000
+  const examplePromotionDays = 7; // 7 days
 
   const calculatedDeliveryFee = (parseInt(deliveryFeePerKm || '0') * exampleDistance) + 
                                 (parseInt(weightRatePerKg || '0') * exampleWeight);
   const calculatedPlatformFee = exampleOrderAmount * (parseFloat(platformFee || '0') / 100);
   const totalCustomerPay = exampleOrderAmount + calculatedDeliveryFee;
+  
+  // Promotion cost calculation
+  const promotionCostPerDayNum = parseInt(promotionCostPerDay || '0');
+  const totalPromotionCost = promotionCostPerDayNum * examplePromotionDays;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -358,7 +374,81 @@ export function AdminSettingsScreen() {
             </View>
           </View>
 
-        
+          {/* NEW: Promotion Settings Section */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Feather name="phone" size={20} color="#f97316" />
+              <Text style={styles.sectionTitle}>Promotion Settings</Text>
+            </View>
+            <Text style={styles.sectionDescription}>
+              Cost for vendors to run promotions on the home screen banner slider
+            </Text>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Cost per Day (₦)</Text>
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputPrefix}>₦</Text>
+                <TextInput
+                  style={[styles.input, styles.inputWithPrefix]}
+                  value={promotionCostPerDay}
+                  onChangeText={(text) => setPromotionCostPerDay(formatCurrency(text))}
+                  placeholder="300"
+                  placeholderTextColor="#666"
+                  keyboardType="number-pad"
+                />
+              </View>
+              <Text style={styles.hint}>
+                Current: ₦{settings?.promotion_cost_per_day?.toLocaleString()}/day
+              </Text>
+            </View>
+
+            {/* Promotion Cost Example */}
+            <View style={styles.exampleCard}>
+              <Text style={styles.exampleTitle}>Promotion Cost Example</Text>
+              <Text style={styles.exampleSubtitle}>7-day promotion campaign</Text>
+              
+              <View style={styles.exampleRow}>
+                <Text style={styles.exampleLabel}>Days:</Text>
+                <Text style={styles.exampleValue}>{examplePromotionDays} days</Text>
+              </View>
+              <View style={styles.exampleRow}>
+                <Text style={styles.exampleLabel}>Cost per day:</Text>
+                <Text style={styles.exampleValue}>₦{promotionCostPerDayNum.toLocaleString()}</Text>
+              </View>
+              <View style={styles.exampleDivider} />
+              <View style={styles.exampleRow}>
+                <Text style={styles.exampleLabelTotal}>Total Promotion Cost:</Text>
+                <Text style={styles.exampleValueTotal}>₦{totalPromotionCost.toLocaleString()}</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Example Calculation Card */}
+          <LinearGradient
+            colors={['#1a1a1a', '#0a0a0a']}
+            style={styles.exampleCard}
+          >
+            <Text style={styles.exampleTitle}>Fee Calculation Example</Text>
+            <Text style={styles.exampleSubtitle}>Order: ₦10,000 | Distance: 5km | Weight: 2kg</Text>
+            
+            <View style={styles.exampleRow}>
+              <Text style={styles.exampleLabel}>Order Amount:</Text>
+              <Text style={styles.exampleValue}>₦{exampleOrderAmount.toLocaleString()}</Text>
+            </View>
+            <View style={styles.exampleRow}>
+              <Text style={styles.exampleLabel}>Delivery Fee:</Text>
+              <Text style={styles.exampleValue}>₦{calculatedDeliveryFee.toLocaleString()}</Text>
+            </View>
+            <View style={styles.exampleRow}>
+              <Text style={styles.exampleLabel}>Platform Fee ({platformFee}%):</Text>
+              <Text style={styles.exampleValue}>₦{calculatedPlatformFee.toLocaleString()}</Text>
+            </View>
+            <View style={styles.exampleDivider} />
+            <View style={styles.exampleRow}>
+              <Text style={styles.exampleLabelTotal}>Customer Pays:</Text>
+              <Text style={styles.exampleValueTotal}>₦{totalCustomerPay.toLocaleString()}</Text>
+            </View>
+          </LinearGradient>
 
           {/* Sign Out Button */}
           <TouchableOpacity 
@@ -530,6 +620,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     padding: 16,
     borderRadius: 12,
+    backgroundColor: '#1a1a1a',
   },
   exampleTitle: {
     fontSize: 14,

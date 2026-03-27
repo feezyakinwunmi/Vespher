@@ -18,6 +18,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { supabase } from '../../lib/supabase';
+import { useFocusEffect } from '@react-navigation/native';
+
 
 type AdminLogisticsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -34,7 +36,8 @@ interface DashboardFinancials {
 export function AdminDashboardScreen() {
   const [refreshing, setRefreshing] = React.useState(false);
   const navigation = useNavigation<AdminLogisticsScreenNavigationProp>();
-  
+  const [unreadCount, setUnreadCount] = useState(0);
+
   // State for business request stats
   const [businessRequestStats, setBusinessRequestStats] = useState({
     pending: 0,
@@ -56,6 +59,103 @@ export function AdminDashboardScreen() {
     totalRiderEarnings: 0,
   });
   const [loadingFinancials, setLoadingFinancials] = useState(true);
+
+  // Add this state with the other states
+const [promotionStats, setPromotionStats] = useState({
+  pending: 0,
+  active: 0,
+  total: 0
+});
+const [loadingPromotionStats, setLoadingPromotionStats] = useState(true);
+
+
+
+// Add this fetch function with the other fetch functions
+const fetchPromotionStats = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('promotions')
+      .select('status');
+
+    if (error) throw error;
+
+    const stats = {
+      pending: data.filter(p => p.status === 'pending_approval').length,
+      active: data.filter(p => p.status === 'active').length,
+      total: data.length
+    };
+    
+    setPromotionStats(stats);
+  } catch (error) {
+    console.error('Error fetching promotion stats:', error);
+  } finally {
+    setLoadingPromotionStats(false);
+  }
+};
+
+
+// Add this function after fetchPromotionStats
+const fetchUnreadMessages = async () => {
+  try {
+    const { data: conversations, error: convError } = await supabase
+      .from('conversations')
+      .select('id')
+      .contains('participants', ['8eac4518-c4c9-4e1f-9695-a623e96b6134']); // Use your admin user ID
+
+    if (convError || !conversations || conversations.length === 0) {
+      setUnreadCount(0);
+      return;
+    }
+
+    const conversationIds = conversations.map(c => c.id);
+
+    const { count, error } = await supabase
+      .from('messages')
+      .select('*', { count: 'exact', head: true })
+      .in('conversation_id', conversationIds)
+      .eq('read', false)
+      .neq('sender_id', '8eac4518-c4c9-4e1f-9695-a623e96b6134'); // Admin user ID
+
+    if (!error) {
+      setUnreadCount(count || 0);
+    }
+  } catch (error) {
+    console.error('Error fetching unread messages:', error);
+  }
+};
+
+// Add this to your useEffect (where you call fetchBusinessRequestStats and fetchFinancialData)
+useEffect(() => {
+  fetchBusinessRequestStats();
+  fetchFinancialData();
+  fetchPromotionStats(); // Add this line
+}, []);
+
+// Add this useEffect after the existing useEffect
+useEffect(() => {
+  fetchUnreadMessages();
+
+  const subscription = supabase
+    .channel('admin-messages')
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+      },
+      () => {
+        fetchUnreadMessages();
+      }
+    )
+    .subscribe();
+
+  return () => {
+    subscription.unsubscribe();
+  };
+}, []);
+
+
 
   const { 
     isLoading, 
@@ -172,6 +272,12 @@ export function AdminDashboardScreen() {
     fetchFinancialData();
   }, []);
 
+  useFocusEffect(
+  React.useCallback(() => {
+    fetchUnreadMessages();
+  }, [])
+);
+
   const onRefresh = async () => {
     setRefreshing(true);
     await refresh();
@@ -219,10 +325,23 @@ export function AdminDashboardScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.container}>
-        {/* Header - Only title, no tabs */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Dashboard</Text>
-        </View>
+      
+<View style={styles.header}>
+  <Text style={styles.headerTitle}>Dashboard</Text>
+  <TouchableOpacity 
+    onPress={() => navigation.navigate('Messaging')}
+    style={styles.messageButton}
+  >
+    <Feather name="message-circle" size={24} color="#f97316" />
+    {unreadCount > 0 && (
+      <View style={styles.unreadBadge}>
+        <Text style={styles.unreadBadgeText}>
+          {unreadCount > 9 ? '9+' : unreadCount}
+        </Text>
+      </View>
+    )}
+  </TouchableOpacity>
+</View>
 
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -352,6 +471,55 @@ export function AdminDashboardScreen() {
             
             <Feather name="chevron-right" size={20} color="#666" />
           </TouchableOpacity>
+
+
+          {/* Promotion Approvals Card with Status Dots */}
+<TouchableOpacity 
+  style={styles.menuCard}
+  onPress={() => navigation.navigate('AdminPromotions')}
+>
+  <LinearGradient
+    colors={['#f97316', '#f43f5e']}
+    style={styles.menuIcon}
+  >
+    <Feather name="phone" size={24} color="#fff" />
+  </LinearGradient>
+  
+  <View style={styles.menuInfo}>
+    <Text style={styles.menuTitle}>Promotion Approvals</Text>
+    <Text style={styles.menuDescription}>
+      Review and approve vendor promotions
+    </Text>
+    
+    {/* Status Dots and Counts */}
+    {!loadingPromotionStats && (
+      <View style={styles.statusContainer}>
+        <View style={styles.statusItem}>
+          <View style={[styles.statusDot, { backgroundColor: '#f59e0b' }]} />
+          <Text style={styles.statusCount}>{promotionStats.pending}</Text>
+        </View>
+        
+        <View style={styles.statusItem}>
+          <View style={[styles.statusDot, { backgroundColor: '#10b981' }]} />
+          <Text style={styles.statusCount}>{promotionStats.active}</Text>
+        </View>
+        
+        <View style={styles.statusDivider} />
+        
+        <View style={styles.statusItem}>
+          <Feather name="phone" size={12} color="#f97316" />
+          <Text style={styles.statusTotal}>{promotionStats.total}</Text>
+        </View>
+      </View>
+    )}
+    
+    {loadingPromotionStats && (
+      <ActivityIndicator size="small" color="#666" style={styles.statusLoader} />
+    )}
+  </View>
+  
+  <Feather name="chevron-right" size={20} color="#666" />
+</TouchableOpacity>
 
           {/* Quick Action Cards */}
           <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -556,11 +724,39 @@ const styles = StyleSheet.create({
         paddingBottom:25,
 
   },
+  messageButton: {
+  width: 44,
+  height: 44,
+  borderRadius: 22,
+  backgroundColor: '#1a1a1a',
+  justifyContent: 'center',
+  alignItems: 'center',
+  position: 'relative',
+},
+unreadBadge: {
+  position: 'absolute',
+  top: -2,
+  right: -2,
+  minWidth: 18,
+  height: 18,
+  borderRadius: 9,
+  backgroundColor: '#ef4444',
+  justifyContent: 'center',
+  alignItems: 'center',
+  paddingHorizontal: 4,
+},
+unreadBadgeText: {
+  fontSize: 10,
+  fontWeight: 'bold',
+  color: '#fff',
+},
   header: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.05)',
+    flexDirection:'row',
+    justifyContent:'space-between',
   },
   headerTitle: {
     fontSize: 20,

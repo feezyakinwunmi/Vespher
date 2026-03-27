@@ -228,6 +228,76 @@ export function OrderDetailsModal({
     return types[eventType] || eventType;
   };
 
+
+
+  // Add this function inside the component, before the return statement:
+
+// Render promotion details if order contains promotion items
+const renderPromotionDetails = () => {
+  if (!order?.items) return null;
+  
+  // Check if any item is from a promotion
+  const hasPromotion = order.items.some((item: any) => item.is_promotion || item.promotion_id);
+  
+  if (!hasPromotion) return null;
+  
+  return (
+    <View style={styles.promotionSection}>
+      <View style={styles.promotionHeader}>
+        <Feather name="gift" size={16} color="#f97316" />
+        <Text style={styles.promotionTitle}>Promotion Order</Text>
+      </View>
+      
+      {order.items.map((item: any, index: number) => {
+        if (item.is_promotion || item.promotion_id) {
+          return (
+            <View key={index} style={styles.promotionItem}>
+              <View style={styles.promotionItemHeader}>
+                <Text style={styles.promotionItemName}>{item.name || item.product?.name}</Text>
+                {item.is_free_item && (
+                  <View style={styles.freeBadge}>
+                    <Text style={styles.freeBadgeText}>FREE</Text>
+                  </View>
+                )}
+                {item.is_combo_main && !item.is_free_item && (
+                  <View style={styles.comboBadge}>
+                    <Text style={styles.comboBadgeText}>Combo Main</Text>
+                  </View>
+                )}
+              </View>
+              
+              {item.combo_details && (
+                <Text style={styles.comboDetailText}>
+                  Buy {item.combo_details.buy_quantity} get {item.combo_details.get_quantity} {item.combo_details.free_product_name} FREE
+                </Text>
+              )}
+              
+              {item.is_combo_main && !item.combo_details && (
+                <Text style={styles.comboMainText}>
+                  Main item in combo promotion
+                </Text>
+              )}
+              
+              {item.is_free_item && (
+                <Text style={styles.comboFreeText}>
+                  Free gift with combo purchase
+                </Text>
+              )}
+              
+              {item.promotion_price && !item.is_free_item && (
+                <Text style={styles.promotionPriceText}>
+                  Promotion price: ₦{item.promotion_price.toLocaleString()}
+                </Text>
+              )}
+            </View>
+          );
+        }
+        return null;
+      })}
+    </View>
+  );
+};
+
   return (
     <Modal
       visible={visible}
@@ -377,6 +447,8 @@ export function OrderDetailsModal({
                   </Text>
                 </View>
               ))}
+                {renderPromotionDetails()}
+
 
               {/* Order Summary */}
               <View style={styles.summaryContainer}>
@@ -407,6 +479,10 @@ export function OrderDetailsModal({
               </View>
             </View>
 
+
+
+            
+
             {/* Payment Info */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Payment Method</Text>
@@ -433,13 +509,7 @@ export function OrderDetailsModal({
               </View>
             )}
           </ScrollView>
-          <TouchableOpacity
-  onPress={handleAddToCalendar}
-  style={styles.calendarButton}
->
-  <Feather name="calendar" size={18} color="#fff" />
-  <Text style={styles.calendarButtonText}>Add to Calender</Text>
-</TouchableOpacity>
+     
 
           {/* Action Buttons - Fixed at bottom */}
           <View style={styles.modalFooter}>
@@ -632,6 +702,7 @@ calendarButtonText: {
     fontSize: 11,
     color: '#666',
   },
+  
   itemTotal: {
     fontSize: 13,
     fontWeight: '600',
@@ -656,6 +727,86 @@ calendarButtonText: {
     fontSize: 12,
     color: '#fff',
   },
+  promotionSection: {
+  marginTop: 12,
+  paddingTop: 12,
+  borderTopWidth: 1,
+  borderTopColor: 'rgba(249,115,22,0.3)',
+},
+promotionHeader: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 8,
+  marginBottom: 10,
+},
+promotionTitle: {
+  fontSize: 14,
+  fontWeight: '600',
+  color: '#f97316',
+},
+promotionItem: {
+  backgroundColor: 'rgba(249,115,22,0.08)',
+  padding: 10,
+  borderRadius: 8,
+  marginBottom: 8,
+  borderWidth: 1,
+  borderColor: 'rgba(249,115,22,0.2)',
+},
+promotionItemHeader: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: 4,
+},
+promotionItemName: {
+  fontSize: 13,
+  fontWeight: '500',
+  color: '#fff',
+  flex: 1,
+},
+freeBadge: {
+  backgroundColor: 'rgba(16,185,129,0.2)',
+  paddingHorizontal: 8,
+  paddingVertical: 2,
+  borderRadius: 4,
+},
+freeBadgeText: {
+  fontSize: 10,
+  color: '#10b981',
+  fontWeight: '600',
+},
+comboBadge: {
+  backgroundColor: 'rgba(249,115,22,0.2)',
+  paddingHorizontal: 8,
+  paddingVertical: 2,
+  borderRadius: 4,
+},
+comboBadgeText: {
+  fontSize: 10,
+  color: '#f97316',
+  fontWeight: '600',
+},
+comboDetailText: {
+  fontSize: 11,
+  color: '#f97316',
+  marginTop: 4,
+},
+comboMainText: {
+  fontSize: 10,
+  color: '#666',
+  marginTop: 2,
+},
+comboFreeText: {
+  fontSize: 10,
+  color: '#10b981',
+  marginTop: 2,
+},
+promotionPriceText: {
+  fontSize: 10,
+  color: '#f97316',
+  marginTop: 2,
+  fontWeight: '500',
+},
   discountRow: {
     marginBottom: 4,
   },

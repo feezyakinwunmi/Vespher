@@ -145,7 +145,7 @@ const saveCurrentLocationAsAddress = async (): Promise<Address | null> => {
       .from('addresses')
       .insert({
         user_id: user.id,
-        label: 'Business Location', // Changed from 'Current Location' to be more specific for vendors
+        label: 'Current Location', // Changed from 'Current Location' to be more specific for vendors
         street: location.street,
         area: location.area || '',
         phone: user.phone || '',

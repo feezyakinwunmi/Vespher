@@ -12,6 +12,9 @@ export type RootStackParamList = {
   ForgotPassword: undefined;
   VendorAddresses: undefined;
 
+  //common
+  Messaging:undefined;
+
   // Main Tabs
   CustomerTabs: undefined;
   VendorTabs: undefined;
@@ -48,6 +51,9 @@ export type RootStackParamList = {
     Settings: undefined;
     VendorOrderDetails: { orderId: string };
     VendorAnalytics: undefined;
+    CreatePromotion: undefined;
+    Promotions:undefined;
+  PromotionDetails: { promotionId: string };
 
 
     //admin screens
@@ -66,6 +72,7 @@ AdminAllOrders: undefined;
   AdminUsers: undefined;
   AdminAnalytics: undefined;
   OutstandingPayments:undefined;
+  AdminPromotions:undefined;
 
 
 };

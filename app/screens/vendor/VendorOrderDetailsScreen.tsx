@@ -72,6 +72,8 @@ export function VendorOrderDetailsScreen() {
     };
   }, [orderId]);
 
+  
+
   const fetchPlatformSettings = async () => {
     try {
       const { data, error } = await supabase
@@ -369,6 +371,57 @@ export function VendorOrderDetailsScreen() {
     };
     return types[eventType] || eventType;
   };
+  // Add this function to render promotion details
+const renderPromotionDetails = () => {
+  if (!order?.items) return null;
+  
+  // Check if any item is from a promotion
+  const hasPromotion = order.items.some((item: any) => item.is_promotion || item.promotion_id);
+  
+  if (!hasPromotion) return null;
+  
+  return (
+    <View style={styles.promotionCard}>
+      <View style={styles.promotionHeader}>
+        <Feather name="gift" size={18} color="#f97316" />
+        <Text style={styles.promotionTitle}>Promotion Order</Text>
+      </View>
+      
+      {order.items.map((item: any, index: number) => {
+        if (item.is_promotion || item.promotion_id) {
+          return (
+            <View key={index} style={styles.promotionItem}>
+              <View style={styles.promotionItemHeader}>
+                <Text style={styles.promotionItemName}>{item.name}</Text>
+                {item.is_free_item && (
+                  <View style={styles.freeBadge}>
+                    <Text style={styles.freeBadgeText}>FREE</Text>
+                  </View>
+                )}
+              </View>
+              {item.combo_details && (
+                <Text style={styles.comboDetailText}>
+                  Buy {item.combo_details.buy_quantity} get {item.combo_details.get_quantity} {item.combo_details.free_product_name} FREE
+                </Text>
+              )}
+              {item.is_combo_main && (
+                <Text style={styles.comboMainText}>
+                  Main item in combo
+                </Text>
+              )}
+              {item.is_free_item && (
+                <Text style={styles.comboFreeText}>
+                  Free gift with purchase
+                </Text>
+              )}
+            </View>
+          );
+        }
+        return null;
+      })}
+    </View>
+  );
+};
 
   // ✅ Render earnings breakdown
   const renderEarningsBreakdown = () => {
@@ -814,6 +867,9 @@ map.fitBounds(polyline.getBounds());
             <Text style={styles.totalValue}>₦{order?.total?.toLocaleString()}</Text>
           </View>
         </View>
+        
+        {renderPromotionDetails()}
+
 
         <View style={styles.paymentCard}>
           <Text style={styles.sectionTitle}>Payment Information</Text>
@@ -942,6 +998,71 @@ const styles = StyleSheet.create({
   map: {
     ...StyleSheet.absoluteFillObject,
   },
+  promotionCard: {
+  backgroundColor: '#1a1a1a',
+  marginHorizontal: 16,
+  marginBottom: 12,
+  padding: 16,
+  borderRadius: 12,
+  borderWidth: 1,
+  borderColor: 'rgba(249,115,22,0.3)',
+},
+promotionHeader: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 8,
+  marginBottom: 12,
+},
+promotionTitle: {
+  fontSize: 15,
+  fontWeight: '600',
+  color: '#f97316',
+},
+promotionItem: {
+  backgroundColor: '#0a0a0a',
+  padding: 12,
+  borderRadius: 8,
+  marginBottom: 8,
+  borderWidth: 1,
+  borderColor: 'rgba(255,255,255,0.05)',
+},
+promotionItemHeader: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: 4,
+},
+promotionItemName: {
+  fontSize: 14,
+  fontWeight: '500',
+  color: '#fff',
+},
+freeBadge: {
+  backgroundColor: 'rgba(16,185,129,0.2)',
+  paddingHorizontal: 8,
+  paddingVertical: 2,
+  borderRadius: 4,
+},
+freeBadgeText: {
+  fontSize: 10,
+  color: '#10b981',
+  fontWeight: '600',
+},
+comboDetailText: {
+  fontSize: 11,
+  color: '#f97316',
+  marginTop: 4,
+},
+comboMainText: {
+  fontSize: 10,
+  color: '#666',
+  marginTop: 2,
+},
+comboFreeText: {
+  fontSize: 10,
+  color: '#10b981',
+  marginTop: 2,
+},
   marker: {
     width: 40,
     height: 40,
