@@ -138,9 +138,20 @@ export interface Product {
   preparationTime?: number; // Changed from string to number
   preparation_time?: number; // For Supabase compatibility
   options?: ProductOption[];
-  
   created_at?: string;
+  original_price?: number;
   orders?: number; // For menu stats
+  promotion_id?: string;
+  is_promotion?: boolean;
+  is_free_item?: boolean;
+  is_combo_main?: boolean;
+  combo_details?: {
+    buy_quantity: number;
+    get_quantity: number;
+    free_product_name: string;
+  };
+  promotion_price?: number;
+  
 }
 
 export interface ProductOption {
@@ -161,7 +172,20 @@ export interface CartItem {
   quantity: number;
   selectedOptions?: SelectedOption[];
   special_instructions?: string; // Add for order items
+  
+  // ✅ Add these to CartItem
+  promotion_id?: string;
+  is_promotion?: boolean;
+  is_free_item?: boolean;
+  is_combo_main?: boolean;
+  combo_details?: {
+    buy_quantity: number;
+    get_quantity: number;
+    free_product_name: string;
+  };
+  promotion_price?: number;
 }
+
 
 export interface SelectedOption {
   optionId: string;
@@ -242,7 +266,8 @@ export interface Order {
   is_scheduled?: boolean;
   refund_status?:string;
 
-
+  promotion_id?: string;
+  promotion_details?: any; // JSONB data
 
   flutterwave_fee?: number;
   flutterwave_fee_percentage?: number;

@@ -14,7 +14,7 @@ import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../contexts/AuthContext';
 import { RootStackParamList } from './types';
-
+import { MessagingScreen } from '../screens/MessagingScreen';
 // Auth Screens
 import { SplashScreen } from '../screens/SplashScreen';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
@@ -32,6 +32,7 @@ import { CustomerTabs } from './CustomerTabs';
 import { VendorTabs } from './VendorTabs';
 import { AdminTabs } from './AdminTabs';
 
+
 // Customer Screens
 import { VendorDetailsScreen } from '../screens/customer/VendorDetailsScreen';
 import { OrderTrackingScreen } from '../screens/customer/OrderTrackingScreen';
@@ -48,6 +49,9 @@ import { VendorOrdersScreen } from '../screens/vendor/VendorOrdersScreen';
 import { VendorOrderDetailsScreen } from '../screens/vendor/VendorOrderDetailsScreen';
 import { VendorAnalyticsScreen } from '../screens/vendor/VendorAnalyticsScreen';
 import { VendorAddressesScreen } from '../screens/vendor/VendorAddressesScreen';
+import {CreatePromotionScreen} from '../screens/vendor/CreatePromotionScreen';
+import { PromotionsScreen } from '../screens/vendor/PromotionsScreen';
+import { PromotionDetailsScreen } from '../screens/vendor/PromotionDetailsScreen';
 
 // Admin Screens
 import { AdminOrderDetailsScreen } from '../screens/admin/AdminOrderDetailsScreen';
@@ -61,6 +65,7 @@ import { AdminBusinessRequestsScreen } from '../screens/admin/AdminBusinessReque
 import { AdminAllOrdersScreen } from '../screens/admin/AdminAllOrdersScreen';
 import { AdminUsersScreen } from '../screens/admin/AdminUsersScreen';
 import { AdminAnalyticsScreen } from '../screens/admin/AdminAnalyticsScreen';
+import { AdminPromotionsScreen } from '../screens/admin/AdminPromotionsScreen';
 import { OutstandingPaymentsScreen } from '../screens/admin/OutstandingPaymentsScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -186,6 +191,7 @@ function AppContent() {
           <Stack.Screen name="RoleSelection" component={RoleSelectionScreen} />
           <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
           <Stack.Screen name="AdminSettings" component={AdminSettingsScreen} />
+          <Stack.Screen name="Messaging" component={MessagingScreen}/>
         </>
       ) : (
         <>
@@ -200,6 +206,8 @@ function AppContent() {
               <Stack.Screen name="Support" component={SupportScreen} />
               <Stack.Screen name="Privacy" component={PrivacyScreen} />
               <Stack.Screen name="Cart" component={CartScreen} />
+                        <Stack.Screen name="Messaging" component={MessagingScreen}/>
+
             </>
           )}
           {user.role === 'vendor' && (
@@ -210,6 +218,12 @@ function AppContent() {
               <Stack.Screen name="VendorOrderDetails" component={VendorOrderDetailsScreen} />
               <Stack.Screen name="VendorAnalytics" component={VendorAnalyticsScreen} />
               <Stack.Screen name="VendorAddresses" component={VendorAddressesScreen} />
+              <Stack.Screen name="CreatePromotion" component={CreatePromotionScreen}/>
+              <Stack.Screen name="Promotions" component={PromotionsScreen} />
+              <Stack.Screen name ="PromotionDetails" component={PromotionDetailsScreen} />
+          <Stack.Screen name="Messaging" component={MessagingScreen}/>
+
+
             </>
           )}
           {user.role === 'admin' && (
@@ -226,6 +240,8 @@ function AppContent() {
               <Stack.Screen name="AdminAnalytics" component={AdminAnalyticsScreen} />
               <Stack.Screen name="AdminAllOrders" component={AdminAllOrdersScreen} />
               <Stack.Screen name="OutstandingPayments" component={OutstandingPaymentsScreen}/>
+              <Stack.Screen name="AdminPromotions" component={AdminPromotionsScreen} />
+          <Stack.Screen name="Messaging" component={MessagingScreen}/>
 
             </>
           )}

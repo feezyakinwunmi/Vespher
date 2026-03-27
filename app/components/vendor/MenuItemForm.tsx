@@ -11,6 +11,8 @@ import {
   Alert,
   ActivityIndicator,
   Image,
+   KeyboardAvoidingView,  // Add this
+  Platform,            
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -140,8 +142,16 @@ export function MenuItemForm({ onClose, onSubmit, initialData }: MenuItemFormPro
         <View style={styles.headerRight} />
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Image Upload */}
+<KeyboardAvoidingView 
+  behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+  style={{ flex: 1 }}
+>
+  <ScrollView 
+    style={styles.content} 
+    showsVerticalScrollIndicator={false}
+    keyboardShouldPersistTaps="handled"
+  >       
+  
         <TouchableOpacity onPress={pickImage} style={styles.imageUpload}>
           {formData.image_url ? (
             <Image source={{ uri: formData.image_url }} style={styles.imagePreview} />
@@ -292,6 +302,7 @@ export function MenuItemForm({ onClose, onSubmit, initialData }: MenuItemFormPro
           </Text>
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Submit Button */}
       <View style={styles.footer}>

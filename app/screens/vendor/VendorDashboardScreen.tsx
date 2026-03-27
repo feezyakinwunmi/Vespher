@@ -20,15 +20,135 @@ import { useVendorStats } from '../../hooks/vendor/useVendorStats';
 import { Image } from 'react-native'; // Add this import
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
+import { RootStackParamList } from '../../navigation/types';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 
 const { width } = Dimensions.get('window');
 const cardWidth = (width - 48) / 2;
+type VendorAddressesScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export function VendorDashboardScreen() {
   const [activeTab, setActiveTab] = useState<VendorTab>('overview');
   const [refreshing, setRefreshing] = useState(false);
-const navigation = useNavigation();
+  const navigation = useNavigation<VendorAddressesScreenNavigationProp>();
+const { user } = useAuth();
+const [vendorName, setVendorName] = useState('');
+// Add this state at the top with other states
+const [unreadCount, setUnreadCount] = useState(0);
+const [latestMessage, setLatestMessage] = useState<string | null>(null);
+
+// Add this function to fetch unread messages
+const fetchUnreadMessages = async () => {
+  if (!user?.id) return;
+  
+  try {
+    // Get vendor ID first
+    const { data: vendorData } = await supabase
+      .from('vendors')
+      .select('id')
+      .eq('owner_id', user.id)
+      .single();
+    
+    if (!vendorData) return;
+    
+    // Get conversations where vendor is a participant
+    const { data: conversations } = await supabase
+      .from('conversations')
+      .select('id')
+      .contains('participants', [vendorData.id]);
+    
+    if (!conversations || conversations.length === 0) {
+      setUnreadCount(0);
+      return;
+    }
+    
+    const conversationIds = conversations.map(c => c.id);
+    
+    // Count unread messages where vendor is not the sender
+    const { count, error } = await supabase
+      .from('messages')
+      .select('*', { count: 'exact', head: true })
+      .in('conversation_id', conversationIds)
+      .eq('read', false)
+      .neq('sender_id', user.id);
+    
+    if (!error) {
+      setUnreadCount(count || 0);
+    }
+    
+    // Get latest message preview
+    const { data: latest } = await supabase
+      .from('messages')
+      .select('content, created_at, sender_name')
+      .in('conversation_id', conversationIds)
+      .order('created_at', { ascending: false })
+      .limit(1);
+    
+    if (latest && latest.length > 0) {
+      const msg = latest[0];
+      const preview = msg.content.length > 40 ? msg.content.substring(0, 40) + '...' : msg.content;
+      setLatestMessage(`${msg.sender_name}: ${preview}`);
+    } else {
+      setLatestMessage(null);
+    }
+    
+  } catch (error) {
+    console.error('Error fetching messages:', error);
+  }
+};
+
+// Add useEffect to fetch messages on mount and periodically
+useEffect(() => {
+  fetchUnreadMessages();
+  
+  // Set up real-time subscription for new messages
+  const subscription = supabase
+    .channel('vendor-messages')
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+      },
+      () => {
+        fetchUnreadMessages();
+      }
+    )
+    .subscribe();
+  
+  return () => {
+    subscription.unsubscribe();
+  };
+}, [user?.id]);
+// Add this useEffect after the existing useEffects
+useEffect(() => {
+  fetchVendorName();
+}, [user?.id]);
+
+const fetchVendorName = async () => {
+  if (!user?.id) return;
+  
+  try {
+    const { data, error } = await supabase
+      .from('vendors')
+      .select('name')
+      .eq('owner_id', user.id)
+      .single();
+    
+    if (!error && data) {
+      setVendorName(data.name);
+    } else {
+      setVendorName('Vendor');
+    }
+  } catch (error) {
+    console.error('Error fetching vendor:', error);
+    setVendorName('Vendor');
+  }
+};
 
   const { 
     orders, 
@@ -102,56 +222,56 @@ const renderOverview = () => (
       <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#f97316" />
     }
   >
-    {/* Welcome Section */}
-    <View style={styles.welcomeSection}>
-      <View>
-        <Text style={styles.welcomeText}>Welcome back,</Text>
-      </View>
-      <View style={styles.dateBadge}>
-        <Feather name="calendar" size={14} color="#f97316" />
-        <Text style={styles.dateText}>
-          {new Date().toLocaleDateString('en-US', { 
-            weekday: 'short', 
-            month: 'short', 
-            day: 'numeric' 
-          })}
-        </Text>
-      </View>
+   {/* Welcome Section */}
+<View style={styles.welcomeSection}>
+  <View style={styles.welcomeLeft}>
+    <View>
+      <Text style={styles.welcomeText}>Welcome back, 👋</Text>
+      <Text style={styles.vendorName}>{vendorName || 'Vendor'}</Text>
     </View>
-
-    {/* Main Stats Card */}
-    {/* <LinearGradient
-      colors={['#f97316', '#f43f5e']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.mainStatCard}
+  </View>
+  <View style={styles.headerRight}>
+    <TouchableOpacity 
+      onPress={() => navigation.navigate('Messaging')}
+      style={styles.messageButton}
     >
-      <View style={styles.mainStatContent}>
-        <View>
-          <Text style={styles.mainStatLabel}>Today's Revenue</Text>
-          <Text style={styles.mainStatValue}>
-            ₦{stats?.todaySales?.toLocaleString() || '0'}
+      <Feather name="message-circle" size={20} color="#f97316" />
+      {unreadCount > 0 && (
+        <View style={styles.unreadBadge}>
+          <Text style={styles.unreadBadgeText}>
+            {unreadCount > 9 ? '9+' : unreadCount}
           </Text>
         </View>
-        <View style={styles.mainStatIcon}>
-          <Feather name="trending-up" size={32} color="rgba(255,255,255,0.3)" />
-        </View>
-      </View>
-      <View style={styles.mainStatFooter}>
-        <View style={styles.mainStatFooterItem}>
-          <Feather name="package" size={14} color="rgba(255,255,255,0.8)" />
-          <Text style={styles.mainStatFooterText}>
-            {stats?.todayOrders || 0} orders today
-          </Text>
-        </View>
-        <View style={styles.mainStatFooterItem}>
-          <Feather name="clock" size={14} color="rgba(255,255,255,0.8)" />
-          <Text style={styles.mainStatFooterText}>
-            {stats?.averagePrepTime || 0}min avg
-          </Text>
-        </View>
-      </View>
-    </LinearGradient> */}
+      )}
+    </TouchableOpacity>
+    <View style={styles.dateBadge}>
+      <Feather name="calendar" size={14} color="#f97316" />
+      <Text style={styles.dateText}>
+        {new Date().toLocaleDateString('en-US', { 
+          weekday: 'short', 
+          month: 'short', 
+          day: 'numeric' 
+        })}
+      </Text>
+    </View>
+  </View>
+</View>
+
+{/* Latest Message Preview (if there's a recent message) */}
+{latestMessage && (
+  <TouchableOpacity 
+    style={styles.latestMessagePreview}
+    onPress={() => navigation.navigate('Messaging')}
+  >
+    <Feather name="message-square" size={14} color="#f97316" />
+    <Text style={styles.latestMessageText} numberOfLines={1}>
+      {latestMessage}
+    </Text>
+    <Feather name="chevron-right" size={14} color="#666" />
+  </TouchableOpacity>
+)}
+
+
 
     {/* Stats Grid */}
     <View style={styles.statsGrid}>
@@ -163,13 +283,7 @@ const renderOverview = () => (
         <Text style={styles.statLabel}>Total Orders</Text>
       </View>
 
-      {/* <View style={styles.statCard}>
-        <View style={[styles.statIconContainer, { backgroundColor: 'rgba(16,185,129,0.1)' }]}>
-          <Feather name="dollar-sign" size={20} color="#10b981" />
-        </View>
-        <Text style={styles.statNumber}>₦{stats?.totalVendorEarnings?.toLocaleString() || 0}</Text>
-        <Text style={styles.statLabel}>Total Revenue</Text>
-      </View> */}
+     
 
       <View style={styles.statCard}>
         <View style={[styles.statIconContainer, { backgroundColor: 'rgba(249,115,22,0.1)' }]}>
@@ -220,6 +334,39 @@ const renderOverview = () => (
         </View>
       </View>
     </View>
+
+
+
+  <TouchableOpacity 
+      activeOpacity={0.9}
+      onPress={() => navigation.navigate('Promotions')}
+      style={stylesCompact.container}
+    >
+      <LinearGradient
+        colors={['#f97316', '#f43f5e']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={stylesCompact.gradient}
+      >
+        <View style={stylesCompact.content}>
+          <View style={stylesCompact.iconContainer}>
+            <Feather name="phone" size={24} color="#fff" />
+          </View>
+          
+          <View style={stylesCompact.textContainer}>
+            <Text style={stylesCompact.title}>Promote Your Business! 🚀</Text>
+            <Text style={stylesCompact.subtitle}>
+                Get featured on our homepage starting at ₦300/day
+            </Text>
+          </View>
+          
+          <View style={stylesCompact.button}>
+            <Text style={stylesCompact.buttonText}>Create</Text>
+            <Feather name="arrow-right" size={14} color="#fff" />
+          </View>
+        </View>
+      </LinearGradient>
+    </TouchableOpacity>
 
     {/* Recent Orders - Updated with images */}
     <View style={styles.section}>
@@ -462,6 +609,59 @@ const styles = StyleSheet.create({
         paddingBottom:60,
 
   },
+  welcomeLeft: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 12,
+},
+headerRight: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 12,
+},
+messageButton: {
+  width: 40,
+  height: 40,
+  borderRadius: 20,
+  backgroundColor: '#1a1a1a',
+  justifyContent: 'center',
+  alignItems: 'center',
+  position: 'relative',
+},
+unreadBadge: {
+  position: 'absolute',
+  top: -4,
+  right: -4,
+  minWidth: 18,
+  height: 18,
+  borderRadius: 9,
+  backgroundColor: '#ef4444',
+  justifyContent: 'center',
+  alignItems: 'center',
+  paddingHorizontal: 4,
+},
+unreadBadgeText: {
+  fontSize: 10,
+  fontWeight: 'bold',
+  color: '#fff',
+},
+latestMessagePreview: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: '#1a1a1a',
+  marginHorizontal: 16,
+  marginBottom: 16,
+  padding: 12,
+  borderRadius: 12,
+  gap: 10,
+  borderWidth: 1,
+  borderColor: 'rgba(249,115,22,0.2)',
+},
+latestMessageText: {
+  flex: 1,
+  fontSize: 12,
+  color: '#fff',
+},
   welcomeSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -549,6 +749,119 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
+  },
+
+  gradient: {
+    padding: 20,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  content: {
+    position: 'relative',
+    zIndex: 2,
+  },
+  iconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  textContainer: {
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 6,
+  },
+  subtitle: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.9)',
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  benefits: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 16,
+  },
+  benefitItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  benefitText: {
+    fontSize: 11,
+    color: '#fff',
+  },
+  priceTag: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 6,
+    marginBottom: 16,
+  },
+  priceLabel: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.8)',
+  },
+  price: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  buttonContainer: {
+    alignItems: 'flex-start',
+  },
+  button: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 30,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  decoration: {
+    position: 'absolute',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    zIndex: 1,
+  },
+  decoration1: {
+    top: -30,
+    right: -30,
+    width: 120,
+    height: 120,
+  },
+  decoration2: {
+    bottom: -20,
+    left: -20,
+    width: 80,
+    height: 80,
+  },
+  decoration3: {
+    top: 40,
+    right: 40,
+    width: 40,
+    height: 40,
   },
   statNumber: {
     fontSize: 20,
@@ -931,5 +1244,57 @@ recentOrderTotal: {
   placeholderText: {
     fontSize: 14,
     color: '#666',
+  },
+});
+
+const stylesCompact = StyleSheet.create({
+  container: {
+    marginHorizontal: 2,
+    marginVertical: 8,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  gradient: {
+    padding: 16,
+  },
+  content: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  iconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  textContainer: {
+    flex: 1,
+  },
+  title: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 2,
+  },
+  subtitle: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.9)',
+  },
+  button: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });
