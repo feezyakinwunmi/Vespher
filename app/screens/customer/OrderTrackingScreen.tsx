@@ -27,6 +27,8 @@ import { RootStackParamList } from "../../navigation/types";
 import { useTracking } from "../../contexts/TrackingContext";
 import type { Order, OrderStatus } from "../../types";
 import { useOrderTimer } from "../../hooks/useOrderTimer";
+import MapboxTrackingMap from '../../components/MapboxTrackingMap';
+
 
 import Toast from "react-native-toast-message";
 
@@ -221,116 +223,7 @@ if (loading) {
   const riderLat = riderLocation?.latitude;
   const riderLng = riderLocation?.longitude;
 
-  const mapHTML = `
 
-<!DOCTYPE html>
-<html>
-
-<head>
-
-<meta name="viewport"
-content="width=device-width, initial-scale=1.0">
-
-<link rel="stylesheet"
-href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-
-<style>
-html,body{margin:0;padding:0}
-#map{height:100vh;width:100vw}
-</style>
-
-</head>
-
-<body>
-
-<div id="map"></div>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-<script>
-
-
-// Custom marker icons
-
-var vendorIcon = new L.Icon({
-  iconUrl: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
-  iconSize: [40, 40],
-  iconAnchor: [20, 40],
-  popupAnchor: [0, -35]
-});
-
-var riderIcon = new L.Icon({
-  iconUrl: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-  iconSize: [40, 40],
-  iconAnchor: [20, 40],
-  popupAnchor: [0, -35]
-});
-
-var deliveryIcon = new L.Icon({
-  iconUrl: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png',
-  iconSize: [40, 40],
-  iconAnchor: [20, 40],
-  popupAnchor: [0, -35]
-});
-
-
-
-var map=L.map('map').setView(
-[${vendorLat},${vendorLng}],13);
-
-L.tileLayer(
-'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-{ attribution:'© OpenStreetMap'}
-).addTo(map);
-
-var vendor=L.marker(
-  [${vendorLat},${vendorLng}],
-  {icon: vendorIcon}
-).addTo(map).bindPopup("Restaurant");
-
-${
-  deliveryLat && deliveryLng
-    ? `
-var delivery=L.marker(
-  [${deliveryLat},${deliveryLng}],
-  {icon: deliveryIcon}
-).addTo(map).bindPopup("Delivery");
-`
-    : ""
-}
-
-${
-  riderLat && riderLng
-    ? `
-var rider=L.marker(
-  [${riderLat},${riderLng}],
-  {icon: riderIcon}
-).addTo(map).bindPopup("Rider");
-`
-    : ""
-}
-
-var routePoints=[];
-
-routePoints.push([${vendorLat},${vendorLng}]);
-
-${riderLat ? `routePoints.push([${riderLat},${riderLng}]);` : ""}
-
-${deliveryLat ? `routePoints.push([${deliveryLat},${deliveryLng}]);` : ""}
-
-var polyline=L.polyline(routePoints,{
-color:'#f97316',
-weight:5
-}).addTo(map);
-
-map.fitBounds(polyline.getBounds());
-
-</script>
-
-</body>
-</html>
-
-`;
 
   const currentStepIndex = trackingSteps.findIndex(
     (s) => s.status === order.status,
@@ -365,38 +258,17 @@ map.fitBounds(polyline.getBounds());
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.mapContainer}>
-          <WebView originWhitelist={["*"]} source={{ html: mapHTML }} />
-
-          <View style={styles.mapLegend}>
-            <View style={styles.legendItem}>
-              <View
-                style={[styles.legendDot, { backgroundColor: "#f97316" }]}
-              />
-              <Text style={styles.legendText}>Restaurant</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View
-                style={[styles.legendDot, { backgroundColor: "#10b981" }]}
-              />
-              <Text style={styles.legendText}>Delivery</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View
-                style={[styles.legendDot, { backgroundColor: "#3b82f6" }]}
-              />
-              <Text style={styles.legendText}>Rider</Text>
-            </View>
-          </View>
-
-          <View style={styles.mapStatus}>
-            <Text style={styles.mapStatusText}>
-              {order.status === "in_transit"
-                ? "Rider is on the way"
-                : "Preparing your order"}
-            </Text>
-          </View>
-        </View>
+      <View style={styles.mapContainer}>
+  <MapboxTrackingMap
+    vendorLat={vendorLat}
+    vendorLng={vendorLng}
+    deliveryLat={deliveryLat}
+    deliveryLng={deliveryLng}
+    riderLat={riderLat}
+    riderLng={riderLng}
+    orderStatus={order.status}
+  />
+</View>
 
         {/* Cancel */}
 

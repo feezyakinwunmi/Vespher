@@ -15,7 +15,8 @@ import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { addOrderToCalendar } from '../../utils/calendar';
 import { Linking } from 'react-native';
-
+import Mapbox from '@rnmapbox/maps';
+import { MAPBOX_TOKEN } from '../../config/mapbox';
 
 
 interface OrderDetailsModalProps {
@@ -228,7 +229,60 @@ export function OrderDetailsModal({
     return types[eventType] || eventType;
   };
 
+const DeliveryLocationMap = ({ latitude, longitude, address }: { latitude: number; longitude: number; address: string }) => {
+  const [mapReady, setMapReady] = useState(false);
 
+  if (!latitude || !longitude) {
+    return (
+      <View style={styles.mapPlaceholder}>
+        <Feather name="map-pin" size={24} color="#666" />
+        <Text style={styles.mapPlaceholderText}>No location coordinates available</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.mapContainer}>
+      {!mapReady && (
+        <View style={styles.mapLoadingOverlay}>
+          <ActivityIndicator size="small" color="#f97316" />
+        </View>
+      )}
+      
+      <Mapbox.MapView
+        style={styles.map}
+        styleURL="mapbox://styles/mapbox/streets-v12"
+        onDidFinishLoadingMap={() => setMapReady(true)}
+        logoEnabled={false}
+        attributionEnabled={false}
+      >
+        <Mapbox.Camera
+          centerCoordinate={[longitude, latitude]}
+          zoomLevel={15}
+          animationDuration={500}
+        />
+        
+        <Mapbox.PointAnnotation
+          id="delivery"
+          coordinate={[longitude, latitude]}
+          title="Delivery Location"
+        >
+          <View style={styles.deliveryMarker}>
+            <Feather name="home" size={18} color="#fff" />
+          </View>
+        </Mapbox.PointAnnotation>
+      </Mapbox.MapView>
+      
+      {/* Address Label Overlay */}
+      <View style={styles.mapAddressOverlay}>
+        <Feather name="map-pin" size={12} color="#f97316" />
+        <Text style={styles.mapAddressText} numberOfLines={1}>
+          {address}
+        </Text>
+      </View>
+    </View>
+  );
+};
 
   // Add this function inside the component, before the return statement:
 
@@ -400,20 +454,52 @@ const renderPromotionDetails = () => {
               </View>
             </View>
 
-            {/* Delivery Address */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Delivery Address</Text>
-              <View style={styles.addressInfo}>
-                <Feather name="map-pin" size={14} color="#f97316" />
-                <View style={styles.addressTextContainer}>
-                  <Text style={styles.addressStreet}>{order.delivery_address?.street}</Text>
-                  <Text style={styles.addressArea}>{order.delivery_address?.area}</Text>
-                  {order.delivery_address?.phone && (
-                    <Text style={styles.addressPhone}>Phone: {order.delivery_address.phone}</Text>
-                  )}
-                </View>
-              </View>
-            </View>
+           <View style={styles.section}>
+  <Text style={styles.sectionTitle}>Delivery Location</Text>
+  
+  {/* Map View */}
+  <DeliveryLocationMap
+    latitude={order.delivery_address?.latitude}
+    longitude={order.delivery_address?.longitude}
+    address={order.delivery_address?.street || ''}
+  />
+  
+  {/* Address Details */}
+  <View style={styles.addressDetailsContainer}>
+    <View style={styles.addressDetails}>
+      <Feather name="map-pin" size={14} color="#f97316" />
+      <View style={styles.addressTextContainer}>
+        <Text style={styles.addressStreet}>{order.delivery_address?.street}</Text>
+        <Text style={styles.addressArea}>{order.delivery_address?.area}</Text>
+        {order.delivery_address?.landmark && (
+          <Text style={styles.addressLandmark}>
+            Landmark: {order.delivery_address.landmark}
+          </Text>
+        )}
+        {order.delivery_address?.phone && (
+          <Text style={styles.addressPhone}>Phone: {order.delivery_address.phone}</Text>
+        )}
+      </View>
+    </View>
+  </View>
+</View>
+
+// Also add a "Get Directions" button for vendors to open Google Maps
+// Add this after the address section:
+
+{/* Get Directions Button */}
+{order.delivery_address?.latitude && order.delivery_address?.longitude && (
+  <TouchableOpacity
+    style={styles.directionsButton}
+    onPress={() => {
+      const url = `https://www.google.com/maps/dir/?api=1&destination=${order.delivery_address.latitude},${order.delivery_address.longitude}`;
+      Linking.openURL(url);
+    }}
+  >
+    <Feather name="navigation" size={16} color="#f97316" />
+    <Text style={styles.directionsButtonText}>Get Directions</Text>
+  </TouchableOpacity>
+)}
 
             {/* Order Items */}
             <View style={styles.section}>
@@ -635,6 +721,113 @@ calendarButtonText: {
   customerInfo: {
     gap: 8,
   },
+  // Add to styles object
+mapContainer: {
+  height: 160,
+  borderRadius: 12,
+  overflow: 'hidden',
+  marginBottom: 12,
+  position: 'relative',
+},
+map: {
+  flex: 1,
+},
+mapLoadingOverlay: {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: 'rgba(0,0,0,0.5)',
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 10,
+},
+mapPlaceholder: {
+  height: 160,
+  backgroundColor: '#2a2a2a',
+  borderRadius: 12,
+  justifyContent: 'center',
+  alignItems: 'center',
+  gap: 8,
+  marginBottom: 12,
+},
+mapPlaceholderText: {
+  fontSize: 12,
+  color: '#666',
+},
+mapAddressOverlay: {
+  position: 'absolute',
+  bottom: 8,
+  left: 8,
+  right: 8,
+  backgroundColor: 'rgba(0,0,0,0.7)',
+  borderRadius: 6,
+  paddingHorizontal: 8,
+  paddingVertical: 4,
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 4,
+},
+mapAddressText: {
+  fontSize: 10,
+  color: '#fff',
+  flex: 1,
+},
+addressDetailsContainer: {
+  marginTop: 8,
+},
+addressDetails: {
+  flexDirection: 'row',
+  gap: 12,
+},
+addressTextContainer: {
+  flex: 1,
+},
+addressStreet: {
+  fontSize: 14,
+  color: '#fff',
+  marginBottom: 2,
+},
+addressArea: {
+  fontSize: 12,
+  color: '#666',
+  marginBottom: 2,
+},
+addressLandmark: {
+  fontSize: 11,
+  color: '#666',
+  marginBottom: 2,
+},
+addressPhone: {
+  fontSize: 11,
+  color: '#666',
+},
+directionsButton: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 8,
+  backgroundColor: 'rgba(249,115,22,0.1)',
+  paddingVertical: 10,
+  borderRadius: 8,
+  marginTop: 8,
+},
+directionsButtonText: {
+  color: '#f97316',
+  fontSize: 13,
+  fontWeight: '500',
+},
+deliveryMarker: {
+  width: 36,
+  height: 36,
+  borderRadius: 18,
+  backgroundColor: '#10b981',
+  justifyContent: 'center',
+  alignItems: 'center',
+  borderWidth: 2,
+  borderColor: '#fff',
+},
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -648,23 +841,8 @@ calendarButtonText: {
     flexDirection: 'row',
     gap: 8,
   },
-  addressTextContainer: {
-    flex: 1,
-  },
-  addressStreet: {
-    fontSize: 13,
-    color: '#fff',
-    marginBottom: 2,
-  },
-  addressArea: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 2,
-  },
-  addressPhone: {
-    fontSize: 11,
-    color: '#666',
-  },
+ 
+ 
   itemCard: {
     flexDirection: 'row',
     backgroundColor: '#2a2a2a',

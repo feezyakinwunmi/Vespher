@@ -334,6 +334,13 @@ const handleSelectAddress = (address: Address) => {
                     <Text style={styles.addressDetail}>
                       Phone: {address.phone}
                     </Text>
+
+                    {/* 👇 ADD THIS RIGHT HERE - after phone number */}
+  {(address.latitude && address.longitude) && (
+    <Text style={styles.addressDetail}>
+      📍 Coordinates: {address.latitude.toFixed(6)}, {address.longitude.toFixed(6)}
+    </Text>
+  )}
                   </View>
                 </View>
 

@@ -321,6 +321,7 @@ export type PaymentMethod = 'cash' | 'card' | 'transfer' | 'wallet';
 // app/types/index.ts
 
 // Update the Address interface to include coordinates
+// types/index.ts
 export interface Address {
   id: string;
   user_id?: string;
@@ -332,11 +333,10 @@ export interface Address {
   phone: string;
   is_default?: boolean;
   isDefault?: boolean;
-  latitude?: number;      // Add this
-  longitude?: number;     // Add this
+  latitude?: number;
+  longitude?: number;
+  isCurrentLocation?: boolean;
   created_at?: string;
-    isCurrentLocation?: boolean; // Add this to identify current location
-
 }
 // Rider Types - Updated
 export interface Rider {

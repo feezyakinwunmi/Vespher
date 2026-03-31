@@ -1,4 +1,4 @@
-// App.tsx
+// App.tsx (your existing file - no changes needed!)
 import React from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -9,7 +9,8 @@ import { LocationProvider } from './app/contexts/LocationContext';
 import { TrackingProvider } from './app/contexts/TrackingContext';
 import Toast from 'react-native-toast-message';
 
-
+// Import mapbox config to initialize (optional)
+import './app/config/mapbox';
 
 export default function App() {
   return (
@@ -17,17 +18,17 @@ export default function App() {
       <SafeAreaProvider>
         <AuthProvider>
           <CartProvider>
-                    <LocationProvider> 
-          <TrackingProvider> 
-            <AppNavigator />
-          </TrackingProvider>
-                    </LocationProvider>
+            <LocationProvider> 
+              <TrackingProvider> 
+                <AppNavigator />
+              </TrackingProvider>
+            </LocationProvider>
           </CartProvider>
         </AuthProvider>
-            <Toast
-  topOffset={50}           
-  visibilityTime={3500}
-/>
+        <Toast
+          topOffset={50}           
+          visibilityTime={3500}
+        />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
