@@ -20,6 +20,8 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { WebView } from 'react-native-webview';
 import { supabase } from '../../lib/supabase';
 import Toast from 'react-native-toast-message';
+import Mapbox from '@rnmapbox/maps'; // ✅ Add Mapbox import
+
 
 const { width } = Dimensions.get('window');
 
@@ -57,9 +59,11 @@ export function VendorOrderDetailsScreen() {
   const [customer, setCustomer] = useState<any>(null);
   const [updating, setUpdating] = useState(false);
   const [platformSettings, setPlatformSettings] = useState<any>(null);
-  const [feeBreakdown, setFeeBreakdown] = useState<FeeBreakdown | null>(null);
+  const [feeBreakdown, setFeeBreakdown] = useState<any>(null);
+  const [mapReady, setMapReady] = useState(false);
   
-  const mapRef = useRef<any>(null);
+  const mapRef = useRef<Mapbox.MapView>(null);
+  const cameraRef = useRef<Mapbox.Camera>(null);
   const subscriptionRef = useRef<any>(null);
 
   useEffect(() => {
@@ -212,25 +216,51 @@ export function VendorOrderDetailsScreen() {
   }, [riderId]);
 
   const centerMap = () => {
-    const coordinates = [];
-
+    if (!cameraRef.current) return;
+    
+    const points: [number, number][] = [];
+    
     if (order?.vendor?.latitude && order?.vendor?.longitude) {
-      coordinates.push({
-        latitude: order.vendor.latitude,
-        longitude: order.vendor.longitude,
-      });
+      points.push([order.vendor.longitude, order.vendor.latitude]);
     }
-
+    
     if (order?.delivery_address?.latitude && order?.delivery_address?.longitude) {
-      coordinates.push({
-        latitude: order.delivery_address.latitude,
-        longitude: order.delivery_address.longitude,
-      });
+      points.push([order.delivery_address.longitude, order.delivery_address.latitude]);
     }
-
+    
     if (riderLocation) {
-      coordinates.push(riderLocation);
+      points.push([riderLocation.longitude, riderLocation.latitude]);
     }
+    
+    if (points.length === 0) return;
+    
+    if (points.length === 1) {
+      cameraRef.current.setCamera({
+        centerCoordinate: points[0],
+        zoomLevel: 14,
+        animationDuration: 500,
+      });
+      return;
+    }
+    
+    // Calculate bounds
+    let minLng = points[0][0], maxLng = points[0][0];
+    let minLat = points[0][1], maxLat = points[0][1];
+    
+    points.forEach(([lng, lat]) => {
+      minLng = Math.min(minLng, lng);
+      maxLng = Math.max(maxLng, lng);
+      minLat = Math.min(minLat, lat);
+      maxLat = Math.max(maxLat, lat);
+    });
+    
+    const padding = 0.02;
+    cameraRef.current.fitBounds(
+      [maxLng + padding, maxLat + padding],
+      [minLng - padding, minLat - padding],
+      [50, 50, 50, 50],
+      500
+    );
   };
 
   const updateOrderStatus = async (newStatus: OrderStatus) => {
@@ -485,8 +515,6 @@ const renderPromotionDetails = () => {
     );
   };
 
-  // ✅ Render scheduled details (now from orders table)
- // ✅ Render scheduled details (from orders table)
 const renderScheduledDetails = () => {
   if (!order?.is_scheduled) return null;
 
@@ -580,128 +608,102 @@ const renderScheduledDetails = () => {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.mapContainer}>
-          <WebView
-            originWhitelist={['*']}
+          <View style={styles.mapContainer}>
+          {!mapReady && (
+            <View style={styles.mapLoadingOverlay}>
+              <ActivityIndicator size="large" color="#f97316" />
+            </View>
+          )}
+          
+          <Mapbox.MapView
+            ref={mapRef}
             style={styles.map}
-            source={{
-              html: `
-<!DOCTYPE html>
-<html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<style>
-html,body{margin:0;padding:0}
-#map{height:100vh;width:100vw}
-</style>
-</head>
-<body>
-<div id="map"></div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-var vendorIcon = new L.Icon({
-  iconUrl: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
-  iconSize: [40, 40],
-  iconAnchor: [20, 40],
-  popupAnchor: [0, -35]
-});
+            styleURL="mapbox://styles/mapbox/streets-v12"
+            onDidFinishLoadingMap={() => setMapReady(true)}
+            logoEnabled={false}
+            attributionEnabled={false}
+          >
+            <Mapbox.Camera
+              ref={cameraRef}
+              centerCoordinate={[
+                order?.vendor?.longitude || 3.3792,
+                order?.vendor?.latitude || 6.5244
+              ]}
+              zoomLevel={12}
+              animationDuration={500}
+            />
+            
+            {/* Vendor Marker */}
+            {order?.vendor?.latitude && order?.vendor?.longitude && (
+              <Mapbox.PointAnnotation
+                id="vendor"
+                coordinate={[order.vendor.longitude, order.vendor.latitude]}
+                title="Restaurant"
+              >
+                <View style={[styles.marker, { backgroundColor: '#f97316' }]}>
+                  <Feather name="coffee" size={18} color="#fff" />
+                </View>
+              </Mapbox.PointAnnotation>
+            )}
+            
+            {/* Delivery Location Marker */}
+            {order?.delivery_address?.latitude && order?.delivery_address?.longitude && (
+              <Mapbox.PointAnnotation
+                id="delivery"
+                coordinate={[order.delivery_address.longitude, order.delivery_address.latitude]}
+                title="Delivery Location"
+              >
+                <View style={[styles.marker, { backgroundColor: '#10b981' }]}>
+                  <Feather name="home" size={18} color="#fff" />
+                </View>
+              </Mapbox.PointAnnotation>
+            )}
+            
+            {/* Rider Marker */}
+            {riderLocation && (
+              <Mapbox.PointAnnotation
+                id="rider"
+                coordinate={[riderLocation.longitude, riderLocation.latitude]}
+                title="Rider"
+              >
+                <View style={[styles.marker, { backgroundColor: '#3b82f6' }]}>
+                  <Feather name="truck" size={18} color="#fff" />
+                </View>
+              </Mapbox.PointAnnotation>
+            )}
+            
+            {/* Route Line between points */}
+            {order?.vendor?.latitude && order?.vendor?.longitude && 
+             order?.delivery_address?.latitude && order?.delivery_address?.longitude && (
+              <Mapbox.ShapeSource
+                id="route"
+                shape={{
+                  type: 'Feature',
+                  geometry: {
+                    type: 'LineString',
+                    coordinates: [
+                      [order.vendor.longitude, order.vendor.latitude],
+                      [order.delivery_address.longitude, order.delivery_address.latitude],
+                    ],
+                  },
+                  properties: {},
+                }}
+              >
+                <Mapbox.LineLayer
+                  id="routeLayer"
+                  style={{
+                    lineColor: '#f97316',
+                    lineWidth: 4,
+                    lineCap: 'round',
+                    lineJoin: 'round',
+                    lineOpacity: 0.8,
+                  }}
+                />
+              </Mapbox.ShapeSource>
+            )}
+          </Mapbox.MapView>
 
-var riderIcon = new L.Icon({
-  iconUrl: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-  iconSize: [40, 40],
-  iconAnchor: [20, 40],
-  popupAnchor: [0, -35]
-});
-
-var deliveryIcon = new L.Icon({
-  iconUrl: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png',
-  iconSize: [40, 40],
-  iconAnchor: [20, 40],
-  popupAnchor: [0, -35]
-});
-
-var map = L.map('map').setView(
-[${order?.vendor?.latitude || 6.5244}, ${order?.vendor?.longitude || 3.3792}],
-13
-);
-
-L.tileLayer(
-'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-{ attribution: '© OpenStreetMap' }
-).addTo(map);
-
-var vendor = L.marker([
-${order?.vendor?.latitude || 6.5244},
-${order?.vendor?.longitude || 3.3792}
-],  {icon: vendorIcon}
-).addTo(map).bindPopup("Restaurant");
-
-${
-order?.delivery_address?.latitude
-? `
-var delivery = L.marker([
-${order.delivery_address.latitude},
-${order.delivery_address.longitude}
-],{icon: deliveryIcon}).addTo(map).bindPopup("Delivery Location");
-`
-: ''
-}
-
-${
-riderLocation
-? `
-var rider = L.marker([
-${riderLocation.latitude},
-${riderLocation.longitude}
-],{icon: riderIcon}).addTo(map).bindPopup("Rider");
-`
-: ''
-}
-
-var routePoints = [];
-
-routePoints.push([
-${order?.vendor?.latitude || 6.5244},
-${order?.vendor?.longitude || 3.3792}
-]);
-
-${
-riderLocation
-? `
-routePoints.push([
-${riderLocation.latitude},
-${riderLocation.longitude}
-]);
-`
-: ''
-}
-
-${
-order?.delivery_address?.latitude
-? `
-routePoints.push([
-${order.delivery_address.latitude},
-${order.delivery_address.longitude}
-]);
-`
-: ''
-}
-
-var polyline = L.polyline(routePoints,{
-color:'#f97316',
-weight:5
-}).addTo(map);
-
-map.fitBounds(polyline.getBounds());
-
-</script>
-</body>
-</html>
-`
-            }}
-          />
-
+          {/* Map Legend */}
           <View style={styles.mapLegend}>
             <View style={styles.legendItem}>
               <View style={[styles.legendDot, { backgroundColor: '#f97316' }]} />
@@ -988,16 +990,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  mapContainer: {
-    height: 300,
-    margin: 16,
-    borderRadius: 16,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  map: {
-    ...StyleSheet.absoluteFillObject,
-  },
+ 
   promotionCard: {
   backgroundColor: '#1a1a1a',
   marginHorizontal: 16,
@@ -1063,15 +1056,7 @@ comboFreeText: {
   color: '#10b981',
   marginTop: 2,
 },
-  marker: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
+
   riderMarker: {
     width: 48,
     height: 48,
@@ -1128,6 +1113,41 @@ comboFreeText: {
     paddingVertical: 6,
     borderRadius: 4,
     alignItems: 'center',
+  },
+  mapContainer: {
+    height: 300,
+    margin: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  map: {
+    flex: 1,
+  },
+  mapLoadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  marker: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
   },
   mapLegend: {
     position: 'absolute',

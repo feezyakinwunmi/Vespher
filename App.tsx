@@ -1,4 +1,4 @@
-// App.tsx (your existing file - no changes needed!)
+// App.tsx
 import React from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -12,6 +12,15 @@ import Toast from 'react-native-toast-message';
 // Import mapbox config to initialize (optional)
 import './app/config/mapbox';
 
+// ✅ Import the push notifications hook
+import { usePushNotifications } from './app/hooks/usePushNotifications';
+
+// Create a separate component that uses the hook
+function PushNotificationsHandler() {
+  usePushNotifications();
+  return null;
+}
+
 export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -21,6 +30,8 @@ export default function App() {
             <LocationProvider> 
               <TrackingProvider> 
                 <AppNavigator />
+                {/* ✅ Add push notifications handler */}
+                <PushNotificationsHandler />
               </TrackingProvider>
             </LocationProvider>
           </CartProvider>

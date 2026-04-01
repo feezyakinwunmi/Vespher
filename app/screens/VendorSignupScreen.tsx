@@ -24,6 +24,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { verifyBankAccount } from '../utils/flutterwave';
+import ReuseLocationPicker from '../components/ReuseLocationPicker';
 
 
 
@@ -51,6 +52,10 @@ interface FormData {
   accountNumber: string;
   accountName: string;
   accountVerified: boolean; // ✅ NEW: Track if account was verified
+
+ latitude: number | null;
+  longitude: number | null;
+  locationAddress: string;
 }
 
 // ✅ EXPANDED categories for your platform (not just food)
@@ -149,6 +154,8 @@ const [step, setStep] = useState<RegistrationStep>('auth');
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
   const [maskedEmail, setMaskedEmail] = useState('');
   const otpInputs = useRef<Array<TextInput | null>>([]);
+const [showLocationPicker, setShowLocationPicker] = useState(false);  
+
 
   // ✅ Initialize Flutterwave
  
@@ -170,6 +177,9 @@ const [step, setStep] = useState<RegistrationStep>('auth');
     accountNumber: '',
     accountName: '',
     accountVerified: false,
+     latitude: null,
+  longitude: null,
+  locationAddress: '',
   });
 
   // Countdown timer for OTP resend
@@ -186,7 +196,7 @@ const [step, setStep] = useState<RegistrationStep>('auth');
     return () => clearTimeout(timer);
   }, [canResend, countdown]);
 
-  const updateField = (field: keyof FormData, value: string) => {
+  const updateField = (field: keyof FormData, value: string | number| null) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     
     // If bank or account number changes, reset verification
@@ -498,6 +508,8 @@ const completeVendorRegistration = async () => {
           bank_code: formData.bankCode,
           account_number: formData.accountNumber,
           account_name: formData.accountName,
+      latitude: formData.latitude,
+      longitude: formData.longitude,
         },
       ]);
 
@@ -717,20 +729,41 @@ const completeVendorRegistration = async () => {
                 </View>
               </View>
 
-              {/* Address */}
-              <View style={styles.fieldContainer}>
-                <Text style={styles.label}>Business Address *</Text>
-                <View style={styles.inputWrapper}>
-                  <Feather name="map-pin" size={20} color="#666" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    value={formData.address}
-                    onChangeText={(text) => updateField('address', text)}
-                    placeholder="Full address in Epe"
-                    placeholderTextColor="#666"
-                  />
-                </View>
-              </View>
+                {/* Business Address (Manual) */}
+        <View style={styles.fieldContainer}>
+          <Text style={styles.label}>Business Address *</Text>
+          <View style={styles.inputWrapper}>
+            <Feather name="map-pin" size={20} color="#666" style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              value={formData.address}
+              onChangeText={(text) => updateField('address', text)}
+              placeholder="Full address"
+              placeholderTextColor="#666"
+            />
+          </View>
+        </View>
+
+<View style={styles.fieldContainer}>
+  <Text style={styles.label}>Business Location on Map *</Text>
+  <TouchableOpacity
+    style={styles.locationPickerButton}
+    onPress={() => setShowLocationPicker(true)}
+  >
+    <Feather name="map" size={20} color="#f97316" />
+    <Text style={styles.locationPickerText}>
+      {formData.latitude !== null && formData.longitude !== null
+        ? `📍 Location selected: ${formData.latitude.toFixed(6)}, ${formData.longitude.toFixed(6)}`
+        : 'Tap to set your business location on map'}
+    </Text>
+    <Feather name="chevron-right" size={20} color="#666" />
+  </TouchableOpacity>
+  {formData.latitude !== null && formData.longitude !== null && (
+    <Text style={styles.locationCoordsText}>
+      📍 Coordinates: {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}
+    </Text>
+  )}
+</View>
 
               {/* Category Dropdown */}
               <View style={styles.fieldContainer}>
@@ -801,6 +834,27 @@ const completeVendorRegistration = async () => {
                 />
               </View>
             </View>
+
+             {/* Location Picker Modal */}
+     // In the location picker onLocationSelect callback
+< ReuseLocationPicker
+  visible={showLocationPicker}
+  onClose={() => setShowLocationPicker(false)}
+  onLocationSelect={(location) => {
+    updateField('latitude', location.latitude);
+    updateField('longitude', location.longitude);
+    updateField('locationAddress', location.address);
+    // Also update the manual address field
+    if (location.address) {
+      updateField('address', location.address);
+    }
+  }}
+  initialLocation={
+    formData.latitude && formData.longitude
+      ? { latitude: formData.latitude, longitude: formData.longitude }
+      : undefined
+  }
+/>
           </View>
         );
 
@@ -1023,6 +1077,14 @@ const completeVendorRegistration = async () => {
                   <Text style={[styles.reviewValue, styles.reviewValueAddress]}>
                     {formData.address}
                   </Text>
+                   {formData.latitude && formData.longitude && (
+    <View style={styles.reviewRow}>
+      <Text style={styles.reviewLabel}>Location</Text>
+      <Text style={styles.reviewValue}>
+        {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}
+      </Text>
+    </View>
+  )}
                 </View>
                 {formData.category && (
                   <View style={styles.reviewRow}>
@@ -1491,6 +1553,29 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.05)',
   },
+  // Add to styles object
+locationPickerButton: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: '#1a1a1a',
+  borderRadius: 14,
+  paddingHorizontal: 16,
+  paddingVertical: 16,
+  gap: 12,
+  borderWidth: 1,
+  borderColor: '#2a2a2a',
+},
+locationPickerText: {
+  flex: 1,
+  color: '#fff',
+  fontSize: 14,
+},
+locationCoordsText: {
+  fontSize: 11,
+  color: '#666',
+  marginTop: 6,
+  marginLeft: 4,
+},
   dropdownItemText: {
     fontSize: 16,
     color: '#fff',

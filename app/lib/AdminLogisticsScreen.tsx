@@ -23,6 +23,8 @@ import { supabase } from './supabase';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import Toast from 'react-native-toast-message';
+import Mapbox from '@rnmapbox/maps'; // ✅ Add Mapbox import
+
 import { WebView } from 'react-native-webview';
 type AdminLogisticsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -87,7 +89,7 @@ interface Rider {
 
 export function AdminLogisticsScreen() {
   const navigation = useNavigation<AdminLogisticsScreenNavigationProp>();
-const mapRef = useRef<any>(null);  
+const mapRef = useRef<Mapbox.Camera>(null);
   const [riders, setRiders] = useState<Rider[]>([]);
   const [filteredRiders, setFilteredRiders] = useState<Rider[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -297,18 +299,38 @@ const mapRef = useRef<any>(null);
     };
   };
 
-  const fitMapToRiders = (ridersToFit: Rider[]) => {
-
-    const coordinates = ridersToFit
-      .filter(r => r.current_latitude && r.current_longitude)
-      .map(r => ({
-        latitude: r.current_latitude!,
-        longitude: r.current_longitude!,
-      }));
-
-    
+ const fitMapToRiders = (ridersToFit: Rider[]) => {
+  const ridersWithCoords = ridersToFit.filter(
+    r => r.current_latitude && r.current_longitude && !r.is_suspended
+  );
+  
+  if (ridersWithCoords.length === 0 || !mapRef.current) return;
+  
+  // Calculate bounds
+  let minLng = Infinity, maxLng = -Infinity;
+  let minLat = Infinity, maxLat = -Infinity;
+  
+  ridersWithCoords.forEach(rider => {
+    minLng = Math.min(minLng, rider.current_longitude!);
+    maxLng = Math.max(maxLng, rider.current_longitude!);
+    minLat = Math.min(minLat, rider.current_latitude!);
+    maxLat = Math.max(maxLat, rider.current_latitude!);
+  });
+  
+  const padding = 0.05;
+  const bounds = {
+    ne: [maxLng + padding, maxLat + padding],
+    sw: [minLng - padding, minLat - padding],
   };
+  
+  mapRef.current?.fitBounds(bounds.ne, bounds.sw, 50, 500);
+};
 
+useEffect(() => {
+  if (showMap && mapReady && filteredRiders.length > 0) {
+    setTimeout(() => fitMapToRiders(filteredRiders), 500);
+  }
+}, [showMap, mapReady, filteredRiders]);
 
 
   const filterRiders = () => {
@@ -597,187 +619,88 @@ const mapRef = useRef<any>(null);
         </Text>
       </View>
 
-      {/* Map View */}
-      {showMap ? (
-        <View style={styles.mapContainer}>
-  <WebView
-  ref={mapRef}
-  originWhitelist={['*']}
-  style={styles.map}
-  source={{
-    html: `
-<!DOCTYPE html>
-<html>
-<head>
-
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<link rel="stylesheet"
-href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-
-<style>
-html,body{margin:0;padding:0}
-#map{height:100vh;width:100vw}
-</style>
-
-</head>
-
-<body>
-
-<div id="map"></div>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-<script>
-
-// rider icons based on status
-
-var availableIcon = new L.Icon({
-  iconUrl: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png',
-  iconSize: [40,40],
-  iconAnchor: [20,40]
-});
-
-var busyIcon = new L.Icon({
-  iconUrl: 'https://maps.google.com/mapfiles/ms/icons/orange-dot.png',
-  iconSize: [40,40],
-  iconAnchor: [20,40]
-});
-
-var suspendedIcon = new L.Icon({
-  iconUrl: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
-  iconSize: [40,40],
-  iconAnchor: [20,40]
-});
-
-var map = L.map('map').setView([6.5244,3.3792],12);
-
-L.tileLayer(
-'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-{ attribution:'© OpenStreetMap' }
-).addTo(map);
-
-var riders = ${JSON.stringify(
-  filteredRiders
-    .filter(r => r.current_latitude && r.current_longitude && !r.is_suspended)
-.map(r => ({
-  id: r.id,
-  name: r.name,
-  lat: r.current_latitude,
-  lng: r.current_longitude,
-  vehicle: r.vehicle_type,
-  deliveries: r.total_deliveries,
-  rating: r.rating,
-  phone: r.phone,
-  suspended: r.is_suspended,
-  busy: r.is_busy
-}))
-)};
-
-var bounds = [];
-
-riders.forEach(function(r){
-
-var icon;
-
-if(r.suspended){
-  icon = suspendedIcon;
-}
-else if(r.busy){
-  icon = busyIcon;
-}
-else{
-  icon = availableIcon;
-}
-
-var marker = L.marker(
-  [r.lat,r.lng],
-  {icon: icon}
-).addTo(map);
-
-
-
-var status = r.suspended
-  ? "Suspended"
-  : r.busy
-  ? "Busy"
-  : "Available";
-
-marker.bindPopup(
-"<b>"+r.name+"</b><br>"+
-"Status: "+status+"<br>"+
-"Vehicle: "+(r.vehicle || "N/A")+"<br>"+
-"Deliveries: "+r.deliveries+"<br>"+
-"Rating: "+(r.rating || 0)
-);
-
-
-
-marker.bindPopup(
-"<b>"+r.name+"</b><br>"+
-"Vehicle: "+(r.vehicle || "N/A")+"<br>"+
-"Deliveries: "+r.deliveries+"<br>"+
-"Rating: "+(r.rating || 0)
-);
-
-bounds.push([r.lat,r.lng]);
-
-});
-
-if(bounds.length>0){
-map.fitBounds(bounds);
-}
-
-</script>
-
-</body>
-</html>
-`
-  }}
-/>
-
-         
-
-          {/* Map Legend */}
-          <View style={styles.mapLegend}>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#10b981' }]} />
-              <Text style={styles.legendText}>Available</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#f59e0b' }]} />
-              <Text style={styles.legendText}>Busy</Text>
-            </View>
-          </View>
-
-          {/* Map Status */}
-          <View style={styles.mapStatus}>
-            <Text style={styles.mapStatusText}>
-              {filteredRiders.filter(r => r.current_latitude && r.current_longitude && !r.is_suspended).length} active riders on map
-            </Text>
-          </View>
-
-          {/* No Location Overlay */}
-          {filteredRiders.filter(r => r.current_latitude && r.current_longitude && !r.is_suspended).length === 0 && (
-            <View style={styles.noLocationOverlay}>
-              <View style={styles.noLocationCard}>
-                <Feather name="map-pin" size={40} color="#f97316" />
-                <Text style={styles.noLocationTitle}>No Rider Locations</Text>
-                <Text style={styles.noLocationText}>
-                  Riders need to share their location to appear on the map.
-                </Text>
-                <TouchableOpacity 
-                  style={styles.refreshLocationButton}
-                  onPress={fetchRiders}
-                >
-                  <Feather name="refresh-cw" size={16} color="#fff" />
-                  <Text style={styles.refreshLocationText}>Refresh</Text>
-                </TouchableOpacity>
+     {/* Map View - Mapbox Version */}
+{showMap ? (
+  <View style={styles.mapContainer}>
+    <Mapbox.MapView
+      style={styles.map}
+      styleURL="mapbox://styles/mapbox/streets-v12"
+      onDidFinishLoadingMap={() => setMapReady(true)}
+      logoEnabled={false}
+      attributionEnabled={false}
+    >
+      <Mapbox.Camera
+        ref={mapRef}
+        centerCoordinate={[mapRegion.longitude, mapRegion.latitude]}
+        zoomLevel={12}
+      />
+      
+      {/* Rider Markers */}
+      {filteredRiders
+        .filter(rider => rider.current_latitude && rider.current_longitude && !rider.is_suspended)
+        .map(rider => {
+          const isBusy = rider.active_order_count && rider.active_order_count > 0;
+          const markerColor = rider.is_suspended ? '#ef4444' : isBusy ? '#f59e0b' : '#10b981';
+          
+          return (
+            <Mapbox.PointAnnotation
+              key={rider.id}
+              id={rider.id}
+              coordinate={[rider.current_longitude!, rider.current_latitude!]}
+              title={rider.name}
+            >
+              <View style={[styles.markerContainer, { backgroundColor: markerColor }]}>
+                <Feather name={getMarkerIcon(rider.vehicle_type)} size={18} color="#fff" />
               </View>
-            </View>
-          )}
+            </Mapbox.PointAnnotation>
+          );
+        })}
+    </Mapbox.MapView>
+
+    {/* Map Legend */}
+    <View style={styles.mapLegend}>
+      <View style={styles.legendItem}>
+        <View style={[styles.legendDot, { backgroundColor: '#10b981' }]} />
+        <Text style={styles.legendText}>Available</Text>
+      </View>
+      <View style={styles.legendItem}>
+        <View style={[styles.legendDot, { backgroundColor: '#f59e0b' }]} />
+        <Text style={styles.legendText}>Busy</Text>
+      </View>
+      <View style={styles.legendItem}>
+        <View style={[styles.legendDot, { backgroundColor: '#ef4444' }]} />
+        <Text style={styles.legendText}>Suspended</Text>
+      </View>
+    </View>
+
+    {/* Map Status */}
+    <View style={styles.mapStatus}>
+      <Text style={styles.mapStatusText}>
+        {filteredRiders.filter(r => r.current_latitude && r.current_longitude && !r.is_suspended).length} active riders on map
+      </Text>
+    </View>
+
+    {/* No Location Overlay */}
+    {filteredRiders.filter(r => r.current_latitude && r.current_longitude && !r.is_suspended).length === 0 && (
+      <View style={styles.noLocationOverlay}>
+        <View style={styles.noLocationCard}>
+          <Feather name="map-pin" size={40} color="#f97316" />
+          <Text style={styles.noLocationTitle}>No Rider Locations</Text>
+          <Text style={styles.noLocationText}>
+            Riders need to share their location to appear on the map.
+          </Text>
+          <TouchableOpacity 
+            style={styles.refreshLocationButton}
+            onPress={fetchRiders}
+          >
+            <Feather name="refresh-cw" size={16} color="#fff" />
+            <Text style={styles.refreshLocationText}>Refresh</Text>
+          </TouchableOpacity>
         </View>
-      ) : (
+      </View>
+    )}
+  </View>
+) : (
         /* List View */
         <ScrollView
           style={styles.content}
@@ -1182,20 +1105,7 @@ const styles = StyleSheet.create({
   map: {
     flex: 1,
   },
-  markerContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
+
   calloutContainer: {
     width: 240,
     backgroundColor: '#1a1a1a',
@@ -1204,6 +1114,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
   },
+  // Add or update these styles
+markerContainer: {
+  width: 36,
+  height: 36,
+  borderRadius: 18,
+  justifyContent: 'center',
+  alignItems: 'center',
+  borderWidth: 2,
+  borderColor: '#fff',
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.3,
+  shadowRadius: 4,
+  elevation: 5,
+},
   calloutHeader: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -20,6 +20,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../lib/supabase';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
+import ReuseLocationPicker from '../components/ReuseLocationPicker';
 
 type RegistrationStep = 'auth' | 'details' | 'success';
 
@@ -31,6 +32,9 @@ interface FormData {
   phone: string;
   address?: string;
   apartment?: string;
+    latitude: number | null;
+  longitude: number | null;
+  locationAddress: string;
 }
 
 export function CustomerSignupScreen() {
@@ -51,7 +55,7 @@ const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>(
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
   const [maskedEmail, setMaskedEmail] = useState('');
   const otpInputs = useRef<Array<TextInput | null>>([]);
-
+const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     email: '',
     password: '',
@@ -60,6 +64,9 @@ const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>(
     phone: '',
     address: '',
     apartment: '',
+     latitude: null,
+  longitude: null,
+  locationAddress: '',
   });
 
   // Countdown timer for OTP resend
@@ -76,7 +83,7 @@ const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>(
     return () => clearTimeout(timer);
   }, [canResend, countdown]);
 
-  const updateField = (field: keyof FormData, value: string) => {
+  const updateField = (field: keyof FormData, value: string | number | null) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -296,6 +303,8 @@ useEffect(() => {
               area: formData.apartment || 'Default Area',
               phone: formData.phone,
               is_default: true,
+              latitude: formData.latitude,
+            longitude: formData.longitude,
             },
           ]);
 
@@ -437,67 +446,120 @@ useEffect(() => {
           </View>
         );
 
-      case 'details':
-        return (
-          <View style={styles.stepContainer}>
-            <View style={styles.headerContainer}>
-              <Text style={styles.title}>Delivery Details</Text>
-              <Text style={styles.subtitle}>
-                Add your delivery address (optional for now)
-              </Text>
-            </View>
+     case 'details':
+  return (
+    <View style={styles.stepContainer}>
+      <View style={styles.headerContainer}>
+        <Text style={styles.title}>Delivery Details</Text>
+        <Text style={styles.subtitle}>
+          Add your delivery address for accurate delivery estimates
+        </Text>
+      </View>
 
-            {error ? (
-              <View style={styles.errorContainer}>
-                <Feather name="alert-circle" size={20} color="#ef4444" />
-                <Text style={styles.errorText}>{error}</Text>
-              </View>
-            ) : null}
+      {error ? (
+        <View style={styles.errorContainer}>
+          <Feather name="alert-circle" size={20} color="#ef4444" />
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      ) : null}
 
-            <View style={styles.form}>
-              {/* Street Address */}
-              <View style={styles.fieldContainer}>
-                <Text style={styles.label}>Street Address</Text>
-                <View style={styles.inputWrapper}>
-                  <Feather name="map-pin" size={20} color="#666" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    value={formData.address}
-                    onChangeText={(text) => updateField('address', text)}
-                    placeholder="e.g., 123 Main Street"
-                    placeholderTextColor="#666"
-                  />
-                </View>
-              </View>
+      <View style={styles.form}>
+        {/* ✅ NEW: Map Location Picker Button */}
+        <View style={styles.fieldContainer}>
+          <Text style={styles.label}>Delivery Location on Map *</Text>
+          <TouchableOpacity
+            style={styles.locationPickerButton}
+            onPress={() => setShowLocationPicker(true)}
+          >
+            <Feather name="map" size={20} color="#f97316" />
+            <Text style={styles.locationPickerText}>
+              {formData.latitude !== null && formData.longitude !== null
+                ? `📍 Location selected: ${formData.latitude.toFixed(6)}, ${formData.longitude.toFixed(6)}`
+                : 'Tap to set your delivery location on map'}
+            </Text>
+            <Feather name="chevron-right" size={20} color="#666" />
+          </TouchableOpacity>
+          {formData.latitude !== null && formData.longitude !== null && (
+            <Text style={styles.locationCoordsText}>
+              📍 Coordinates: {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}
+            </Text>
+          )}
+        </View>
 
-              {/* Apartment */}
-              <View style={styles.fieldContainer}>
-                <Text style={styles.label}>Apartment/Suite (Optional)</Text>
-                <View style={styles.inputWrapper}>
-                  <Feather name="home" size={20} color="#666" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    value={formData.apartment}
-                    onChangeText={(text) => updateField('apartment', text)}
-                    placeholder="e.g., Apartment 4B"
-                    placeholderTextColor="#666"
-                  />
-                </View>
-              </View>
-
-              {/* Info Box */}
-              <View style={styles.infoBox}>
-                <Feather name="info" size={20} color="#f97316" />
-                <View style={styles.infoTextContainer}>
-                  <Text style={styles.infoTitle}>Email Verification Required</Text>
-                  <Text style={styles.infoText}>
-                    After creating your account, we'll send a 6-digit verification code to your email. You'll need to enter it to complete registration.
-                  </Text>
-                </View>
-              </View>
-            </View>
+        {/* Street Address (auto-filled from map selection) */}
+        <View style={styles.fieldContainer}>
+          <Text style={styles.label}>Street Address</Text>
+          <View style={styles.inputWrapper}>
+            <Feather name="map-pin" size={20} color="#666" style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              value={formData.address}
+              onChangeText={(text) => updateField('address', text)}
+              placeholder="e.g., 123 Main Street"
+              placeholderTextColor="#666"
+            />
           </View>
-        );
+        </View>
+
+        {/* Apartment */}
+        <View style={styles.fieldContainer}>
+          <Text style={styles.label}>Apartment/Suite (Optional)</Text>
+          <View style={styles.inputWrapper}>
+            <Feather name="home" size={20} color="#666" style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              value={formData.apartment}
+              onChangeText={(text) => updateField('apartment', text)}
+              placeholder="e.g., Apartment 4B"
+              placeholderTextColor="#666"
+            />
+          </View>
+        </View>
+
+        {/* Info Box */}
+        <View style={styles.infoBox}>
+          <Feather name="info" size={20} color="#f97316" />
+          <View style={styles.infoTextContainer}>
+            <Text style={styles.infoTitle}>Why set your location?</Text>
+            <Text style={styles.infoText}>
+              Setting your precise location helps calculate accurate delivery fees and ensures your orders reach you correctly.
+            </Text>
+          </View>
+        </View>
+
+        {/* Email Verification Info */}
+        <View style={styles.infoBox}>
+          <Feather name="mail" size={20} color="#f97316" />
+          <View style={styles.infoTextContainer}>
+            <Text style={styles.infoTitle}>Email Verification Required</Text>
+            <Text style={styles.infoText}>
+              After creating your account, we'll send a 6-digit verification code to your email. You'll need to enter it to complete registration.
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Location Picker Modal */}
+      <ReuseLocationPicker
+        visible={showLocationPicker}
+        onClose={() => setShowLocationPicker(false)}
+        onLocationSelect={(location) => {
+          updateField('latitude', location.latitude);
+          updateField('longitude', location.longitude);
+          updateField('locationAddress', location.address);
+          // Also update the manual address field with the selected address
+          if (location.address) {
+            updateField('address', location.address);
+          }
+        }}
+        initialLocation={
+          formData.latitude !== null && formData.longitude !== null
+            ? { latitude: formData.latitude, longitude: formData.longitude }
+            : undefined
+        }
+      />
+    </View>
+  );
 
  case 'success':
   // Auto-redirect to Login after 3.5 seconds
@@ -863,6 +925,29 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginLeft: 4,
   },
+  // Add to styles
+locationPickerButton: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: '#1a1a1a',
+  borderRadius: 14,
+  paddingHorizontal: 16,
+  paddingVertical: 16,
+  gap: 12,
+  borderWidth: 1,
+  borderColor: '#2a2a2a',
+},
+locationPickerText: {
+  flex: 1,
+  color: '#fff',
+  fontSize: 14,
+},
+locationCoordsText: {
+  fontSize: 11,
+  color: '#666',
+  marginTop: 6,
+  marginLeft: 4,
+},
   infoBox: {
     backgroundColor: '#1a1a1a',
     borderRadius: 14,

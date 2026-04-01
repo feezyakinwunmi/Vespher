@@ -12,6 +12,7 @@ import {
   Alert,
   Linking,
   Dimensions,
+  Platform,
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -79,12 +80,21 @@ export function OrderTrackingScreen() {
     return () => stopTracking();
   }, [orderId]);
 
-  const loadOrder = async () => {
-    setLoading(true);
-    const data = await getOrderById(orderId);
-    setOrder(data);
-    setLoading(false);
-  };
+const loadOrder = async () => {
+  setLoading(true);
+  const data = await getOrderById(orderId);
+  if (data) {
+    setOrder({
+      ...data,
+      delivery_verification_code: (data as any).delivery_verification_code || null,
+      delivery_verification_status: (data as any).delivery_verification_status || 'pending',
+      verification_expires_at: (data as any).verification_expires_at || null,
+    } as Order);
+  } else {
+    setOrder(null);
+  }
+  setLoading(false);
+};
 
 const handleCancelOrder = async () => {
   if (!order) return;
@@ -269,6 +279,50 @@ if (loading) {
     orderStatus={order.status}
   />
 </View>
+
+
+// app/screens/customer/OrderTrackingScreen.tsx
+// Add this after the Map section (around line 250-300)
+
+{/* Delivery Verification Code - Show when rider is on the way */}
+{order.status === 'in_transit' && order.delivery_verification_code && (
+  <View style={styles.verificationCard}>
+    <LinearGradient
+      colors={['#f97316', '#f43f5e']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 0 }}
+      style={styles.verificationGradient}
+    >
+      <View style={styles.verificationHeader}>
+        <Feather name="shield" size={24} color="#fff" />
+        <Text style={styles.verificationTitle}>Delivery Verification Code</Text>
+      </View>
+      
+      <View style={styles.codeContainer}>
+        <Text style={styles.codeLabel}>Give this code to your rider</Text>
+        <Text style={styles.codeValue}>{order.delivery_verification_code}</Text>
+        <Text style={styles.codeNote}>
+          Rider will enter this code to confirm delivery
+        </Text>
+      </View>
+      
+      <View style={styles.verificationFooter}>
+        <Feather name="info" size={14} color="rgba(255,255,255,0.8)" />
+        <Text style={styles.verificationFooterText}>
+          Never share this code before receiving your order
+        </Text>
+      </View>
+    </LinearGradient>
+  </View>
+)}
+
+{/* Show when code has been verified */}
+{order.status === 'delivered' && order.delivery_verification_status === 'verified' && (
+  <View style={styles.verifiedCard}>
+    <Feather name="check-circle" size={20} color="#10b981" />
+    <Text style={styles.verifiedText}>Delivery confirmed with verification code</Text>
+  </View>
+)}
 
         {/* Cancel */}
 
@@ -543,6 +597,80 @@ const styles = StyleSheet.create({
     padding: 10,
     marginTop: 10,
   },
+  // Add to styles
+verificationCard: {
+  margin: 16,
+  marginTop: 0,
+  borderRadius: 12,
+  overflow: 'hidden',
+},
+verificationGradient: {
+  padding: 20,
+},
+verificationHeader: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 12,
+  marginBottom: 16,
+},
+verificationTitle: {
+  fontSize: 18,
+  fontWeight: '700',
+  color: '#fff',
+},
+codeContainer: {
+  alignItems: 'center',
+  marginVertical: 12,
+},
+codeLabel: {
+  fontSize: 14,
+  color: 'rgba(255,255,255,0.8)',
+  marginBottom: 8,
+},
+codeValue: {
+  fontSize: 48,
+  fontWeight: 'bold',
+  color: '#fff',
+  letterSpacing: 8,
+  fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+  marginVertical: 8,
+},
+codeNote: {
+  fontSize: 12,
+  color: 'rgba(255,255,255,0.7)',
+  marginTop: 8,
+},
+verificationFooter: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 8,
+  marginTop: 16,
+  paddingTop: 16,
+  borderTopWidth: 1,
+  borderTopColor: 'rgba(255,255,255,0.2)',
+},
+verificationFooterText: {
+  flex: 1,
+  fontSize: 12,
+  color: 'rgba(255,255,255,0.8)',
+},
+verifiedCard: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 12,
+  backgroundColor: 'rgba(16,185,129,0.1)',
+  margin: 16,
+  marginTop: 0,
+  padding: 16,
+  borderRadius: 12,
+  borderWidth: 1,
+  borderColor: 'rgba(16,185,129,0.3)',
+},
+verifiedText: {
+  flex: 1,
+  fontSize: 14,
+  color: '#10b981',
+},
 
   errorButtonText: { color: "#fff" },
 

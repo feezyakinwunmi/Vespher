@@ -22,6 +22,8 @@ import type { Address } from '../../types';
 import { useLocation } from '../../contexts/LocationContext';
 import { RootStackParamList } from '../../navigation/types';
 import Toast from 'react-native-toast-message';
+import MapAddressPicker from '../../components/MapAddressPicker'; // ✅ Already imported
+
 
 type VendorAddressesScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 

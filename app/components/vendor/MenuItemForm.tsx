@@ -11,17 +11,20 @@ import {
   Alert,
   ActivityIndicator,
   Image,
-   KeyboardAvoidingView,  // Add this
-  Platform,            
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
+import { supabase } from '../../lib/supabase'; // Add this import
+import { useAuth } from '../../contexts/AuthContext'; // Add this if you need vendor ID
 
 interface MenuItemFormProps {
   onClose: () => void;
   onSubmit: (data: any) => Promise<void>;
   initialData?: any;
+  vendorId?: string | null; // Add vendorId prop
 }
 
 const categories = [
@@ -35,7 +38,7 @@ const categories = [
   'Specials',
 ];
 
-export function MenuItemForm({ onClose, onSubmit, initialData }: MenuItemFormProps) {
+export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuItemFormProps) {
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
     description: initialData?.description || '',
@@ -49,8 +52,66 @@ export function MenuItemForm({ onClose, onSubmit, initialData }: MenuItemFormPro
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   console.log('Initial form data:', formData);
+
+  // ✅ NEW: Upload image to Supabase Storage
+  const uploadImageToSupabase = async (imageUri: string): Promise<string | null> => {
+    try {
+      setUploadingImage(true);
+      
+      // Step 1: Fetch the image as a blob
+      const response = await fetch(imageUri);
+      const blob = await response.blob();
+      
+      console.log('📸 Image size:', blob.size, 'bytes');
+      
+      if (blob.size === 0) {
+        throw new Error('Selected image is empty');
+      }
+      
+      // Step 2: Create a unique filename
+      const fileExt = imageUri.split('.').pop() || 'jpg';
+      const fileName = `menu_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
+      
+      // Use vendor ID if available, otherwise use a temp folder
+      const folder = vendorId || 'temp';
+      const filePath = `${folder}/${fileName}`;
+      
+      console.log('📤 Uploading to:', filePath);
+      
+      // Step 3: Upload to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from('product-images')
+        .upload(filePath, blob, {
+          contentType: `image/${fileExt}`,
+          cacheControl: '3600',
+          upsert: false,
+        });
+      
+      if (error) {
+        console.error('Upload error:', error);
+        throw error;
+      }
+      
+      // Step 4: Get the public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(filePath);
+      
+      console.log('✅ Image uploaded successfully:', publicUrl);
+      
+      return publicUrl;
+      
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      Alert.alert('Upload Failed', 'Could not upload image. Please try again.');
+      return null;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   const pickImage = async () => {
     console.log('Opening image picker...');
@@ -64,9 +125,11 @@ export function MenuItemForm({ onClose, onSubmit, initialData }: MenuItemFormPro
     console.log('Image picker result:', result);
 
     if (!result.canceled) {
-      setSelectedImage(result.assets[0].uri);
-      setFormData({ ...formData, image_url: result.assets[0].uri });
-      console.log('Image selected:', result.assets[0].uri);
+      const localUri = result.assets[0].uri;
+      setSelectedImage(localUri);
+      // Store local URI temporarily, will upload on submit
+      setFormData({ ...formData, image_url: localUri });
+      console.log('Image selected (local):', localUri);
     }
   };
 
@@ -74,21 +137,17 @@ export function MenuItemForm({ onClose, onSubmit, initialData }: MenuItemFormPro
     console.log('Validating form...');
     
     if (!formData.name.trim()) {
-      console.log('Validation failed: No name');
       Alert.alert('Error', 'Please enter item name');
       return false;
     }
     if (!formData.price || parseFloat(formData.price) <= 0) {
-      console.log('Validation failed: Invalid price', formData.price);
       Alert.alert('Error', 'Please enter a valid price');
       return false;
     }
     if (!formData.category) {
-      console.log('Validation failed: No category', formData.category);
       Alert.alert('Error', 'Please select a category');
       return false;
     }
-    console.log('Validation passed');
     return true;
   };
 
@@ -96,14 +155,33 @@ export function MenuItemForm({ onClose, onSubmit, initialData }: MenuItemFormPro
     console.log('Submit button pressed');
     
     if (!validateForm()) {
-      console.log('Form validation failed');
       return;
     }
 
-    console.log('Form data before submission:', formData);
-
     setIsSubmitting(true);
+    
     try {
+      let finalImageUrl = initialData?.image_url || null;
+      
+      // ✅ NEW: Upload image if it's a local file (starts with file://)
+      if (formData.image_url && formData.image_url.startsWith('file://')) {
+        console.log('📤 Uploading new image to Supabase...');
+        const uploadedUrl = await uploadImageToSupabase(formData.image_url);
+        
+        if (uploadedUrl) {
+          finalImageUrl = uploadedUrl;
+          console.log('✅ Image uploaded, URL:', finalImageUrl);
+        } else {
+          // If upload fails, keep existing image or use null
+          console.warn('⚠️ Image upload failed, using existing image or null');
+          finalImageUrl = initialData?.image_url || null;
+        }
+      } else if (formData.image_url && formData.image_url.startsWith('http')) {
+        // Already a remote URL, keep it
+        finalImageUrl = formData.image_url;
+        console.log('📸 Using existing remote image URL:', finalImageUrl);
+      }
+      
       const submitData = {
         name: formData.name.trim(),
         description: formData.description.trim(),
@@ -113,10 +191,10 @@ export function MenuItemForm({ onClose, onSubmit, initialData }: MenuItemFormPro
         preparation_time: formData.preparation_time,
         is_popular: formData.is_popular,
         quantity_available: formData.quantity_available ? parseInt(formData.quantity_available) : null,
-        image_url: formData.image_url || null,
+        image_url: finalImageUrl, // ✅ This is now the public Supabase URL
       };
       
-      console.log('Submitting data:', submitData);
+      console.log('Submitting data with image URL:', submitData.image_url);
       
       await onSubmit(submitData);
       console.log('Submit successful');
@@ -126,7 +204,6 @@ export function MenuItemForm({ onClose, onSubmit, initialData }: MenuItemFormPro
       Alert.alert('Error', 'Failed to save menu item');
     } finally {
       setIsSubmitting(false);
-      console.log('Submit finished');
     }
   };
 
@@ -142,180 +219,181 @@ export function MenuItemForm({ onClose, onSubmit, initialData }: MenuItemFormPro
         <View style={styles.headerRight} />
       </View>
 
-<KeyboardAvoidingView 
-  behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-  style={{ flex: 1 }}
->
-  <ScrollView 
-    style={styles.content} 
-    showsVerticalScrollIndicator={false}
-    keyboardShouldPersistTaps="handled"
-  >       
-  
-        <TouchableOpacity onPress={pickImage} style={styles.imageUpload}>
-          {formData.image_url ? (
-            <Image source={{ uri: formData.image_url }} style={styles.imagePreview} />
-          ) : (
-            <View style={styles.imagePlaceholder}>
-              <Feather name="camera" size={32} color="#666" />
-              <Text style={styles.imageUploadText}>Upload Image</Text>
-            </View>
-          )}
-        </TouchableOpacity>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <ScrollView 
+          style={styles.content} 
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >       
+          {/* Image Upload Section */}
+          <TouchableOpacity 
+            onPress={pickImage} 
+            style={styles.imageUpload}
+            disabled={uploadingImage}
+          >
+            {uploadingImage ? (
+              <View style={styles.imagePlaceholder}>
+                <ActivityIndicator size="large" color="#f97316" />
+                <Text style={styles.imageUploadText}>Uploading...</Text>
+              </View>
+            ) : formData.image_url ? (
+              <Image source={{ uri: formData.image_url }} style={styles.imagePreview} />
+            ) : (
+              <View style={styles.imagePlaceholder}>
+                <Feather name="camera" size={32} color="#666" />
+                <Text style={styles.imageUploadText}>Upload Image</Text>
+              </View>
+            )}
+          </TouchableOpacity>
 
-        {/* Basic Info */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Item Name *</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.name}
-            onChangeText={(text) => {
-              console.log('Name changed:', text);
-              setFormData({ ...formData, name: text });
-            }}
-            placeholder="e.g., Jollof Rice"
-            placeholderTextColor="#666"
-          />
-
-          <Text style={styles.label}>Description</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            value={formData.description}
-            onChangeText={(text) => {
-              console.log('Description changed:', text);
-              setFormData({ ...formData, description: text });
-            }}
-            placeholder="Describe your dish..."
-            placeholderTextColor="#666"
-            multiline
-            numberOfLines={3}
-            textAlignVertical="top"
-          />
-        </View>
-
-        {/* Pricing */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Price (₦) *</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.price}
-            onChangeText={(text) => {
-              console.log('Price changed:', text);
-              setFormData({ ...formData, price: text });
-            }}
-            placeholder="0"
-            placeholderTextColor="#666"
-            keyboardType="numeric"
-          />
-
-          <Text style={styles.label}>Original Price (Optional)</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.original_price}
-            onChangeText={(text) => {
-              console.log('Original price changed:', text);
-              setFormData({ ...formData, original_price: text });
-            }}
-            placeholder="0"
-            placeholderTextColor="#666"
-            keyboardType="numeric"
-          />
-        </View>
-
-        {/* Category */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Category *</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.categoryContainer}>
-              {categories.map((cat) => (
-                <TouchableOpacity
-                  key={cat}
-                  onPress={() => {
-                    console.log('Category selected:', cat);
-                    setFormData({ ...formData, category: cat });
-                  }}
-                  style={[
-                    styles.categoryChip,
-                    formData.category === cat && styles.categoryChipSelected,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.categoryText,
-                      formData.category === cat && styles.categoryTextSelected,
-                    ]}
-                  >
-                    {cat}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </ScrollView>
-        </View>
-
-        {/* Additional Options */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Preparation Time</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.preparation_time}
-            onChangeText={(text) => {
-              console.log('Prep time changed:', text);
-              setFormData({ ...formData, preparation_time: text });
-            }}
-            placeholder="e.g., 20-30 min"
-            placeholderTextColor="#666"
-          />
-
-          <View style={styles.switchContainer}>
-            <Text style={styles.label}>Mark as Popular</Text>
-            <Switch
-              value={formData.is_popular}
-              onValueChange={(value) => {
-                console.log('Popular switch:', value);
-                setFormData({ ...formData, is_popular: value });
+          {/* Basic Info */}
+          <View style={styles.section}>
+            <Text style={styles.label}>Item Name *</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.name}
+              onChangeText={(text) => {
+                setFormData({ ...formData, name: text });
               }}
-              trackColor={{ false: '#2a2a2a', true: '#f97316' }}
-              thumbColor="#fff"
+              placeholder="e.g., Jollof Rice"
+              placeholderTextColor="#666"
+            />
+
+            <Text style={styles.label}>Description</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              value={formData.description}
+              onChangeText={(text) => {
+                setFormData({ ...formData, description: text });
+              }}
+              placeholder="Describe your dish..."
+              placeholderTextColor="#666"
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
             />
           </View>
 
-          <Text style={styles.label}>Available Quantity (Optional)</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.quantity_available}
-            onChangeText={(text) => {
-              console.log('Quantity changed:', text);
-              setFormData({ ...formData, quantity_available: text });
-            }}
-            placeholder="Leave empty for unlimited"
-            placeholderTextColor="#666"
-            keyboardType="numeric"
-          />
-        </View>
+          {/* Pricing */}
+          <View style={styles.section}>
+            <Text style={styles.label}>Price (₦) *</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.price}
+              onChangeText={(text) => {
+                setFormData({ ...formData, price: text });
+              }}
+              placeholder="0"
+              placeholderTextColor="#666"
+              keyboardType="numeric"
+            />
 
-        {/* Info Note */}
-        <View style={styles.noteContainer}>
-          <Feather name="info" size={16} color="#f97316" />
-          <Text style={styles.noteText}>
-            New items will require admin approval before appearing to customers
-          </Text>
-        </View>
-      </ScrollView>
+            <Text style={styles.label}>Original Price (Optional)</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.original_price}
+              onChangeText={(text) => {
+                setFormData({ ...formData, original_price: text });
+              }}
+              placeholder="0"
+              placeholderTextColor="#666"
+              keyboardType="numeric"
+            />
+          </View>
+
+          {/* Category */}
+          <View style={styles.section}>
+            <Text style={styles.label}>Category *</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={styles.categoryContainer}>
+                {categories.map((cat) => (
+                  <TouchableOpacity
+                    key={cat}
+                    onPress={() => {
+                      setFormData({ ...formData, category: cat });
+                    }}
+                    style={[
+                      styles.categoryChip,
+                      formData.category === cat && styles.categoryChipSelected,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.categoryText,
+                        formData.category === cat && styles.categoryTextSelected,
+                      ]}
+                    >
+                      {cat}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+
+          {/* Additional Options */}
+          <View style={styles.section}>
+            <Text style={styles.label}>Preparation Time</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.preparation_time}
+              onChangeText={(text) => {
+                setFormData({ ...formData, preparation_time: text });
+              }}
+              placeholder="e.g., 20-30 min"
+              placeholderTextColor="#666"
+            />
+
+            <View style={styles.switchContainer}>
+              <Text style={styles.label}>Mark as Popular</Text>
+              <Switch
+                value={formData.is_popular}
+                onValueChange={(value) => {
+                  setFormData({ ...formData, is_popular: value });
+                }}
+                trackColor={{ false: '#2a2a2a', true: '#f97316' }}
+                thumbColor="#fff"
+              />
+            </View>
+
+            <Text style={styles.label}>Available Quantity (Optional)</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.quantity_available}
+              onChangeText={(text) => {
+                setFormData({ ...formData, quantity_available: text });
+              }}
+              placeholder="Leave empty for unlimited"
+              placeholderTextColor="#666"
+              keyboardType="numeric"
+            />
+          </View>
+
+          {/* Info Note */}
+          <View style={styles.noteContainer}>
+            <Feather name="info" size={16} color="#f97316" />
+            <Text style={styles.noteText}>
+              New items will require admin approval before appearing to customers
+            </Text>
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
 
       {/* Submit Button */}
       <View style={styles.footer}>
         <TouchableOpacity
           onPress={handleSubmit}
-          disabled={isSubmitting}
+          disabled={isSubmitting || uploadingImage}
           style={styles.submitButton}
         >
           <LinearGradient
             colors={['#f97316', '#f43f5e']}
             style={styles.submitGradient}
           >
-            {isSubmitting ? (
+            {isSubmitting || uploadingImage ? (
               <ActivityIndicator color="#fff" />
             ) : (
               <Text style={styles.submitText}>
@@ -329,6 +407,7 @@ export function MenuItemForm({ onClose, onSubmit, initialData }: MenuItemFormPro
   );
 }
 
+// Styles remain the same...
 const styles = StyleSheet.create({
   container: {
     flex: 1,

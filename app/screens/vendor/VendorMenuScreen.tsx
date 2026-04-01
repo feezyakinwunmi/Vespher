@@ -25,6 +25,8 @@ export function VendorMenuScreen() {
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved'>('all');
+  const { vendorId } = useVendorMenu(); // or wherever you get vendor info
+
 
   const { 
     items, 
@@ -226,6 +228,8 @@ export function VendorMenuScreen() {
           }}
           onSubmit={handleFormSubmit}
           initialData={editingItem}
+          vendorId={vendorId} // ✅ Pass vendor ID
+
         />
       </Modal>
     </SafeAreaView>

@@ -210,6 +210,8 @@ export interface OrderItemDB {
 }
 // Order Types - Updated to match database schema
 export interface Order {
+  delivery_verification_code: boolean;
+  delivery_verification_status: string;
   id: string;
   order_number?: string;
   customer_id: string;
@@ -269,6 +271,7 @@ export interface Order {
   promotion_id?: string;
   promotion_details?: any; // JSONB data
 
+  verification_expires_at?: string;
   flutterwave_fee?: number;
   flutterwave_fee_percentage?: number;
   platform_commission?: number;
