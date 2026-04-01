@@ -55,7 +55,7 @@ export default {
         {
           // ✅ Use process.env here - it works in .js file!
           RNMapboxMapsDownloadToken: process.env.EXPO_PUBLIC_MAPBOX_TOKEN,
-          RNMapboxMapsVersion: "11.0.0"
+          RNMapboxMapsVersion: "10.16.4"
         }
       ]
     ],
