@@ -1,4 +1,3 @@
-// app.config.js
 export default {
   expo: {
     name: "Vesphe",
@@ -14,6 +13,10 @@ export default {
     },
     ios: {
       supportsTablet: true,
+      bundleIdentifier: "com.femi-ceo.Vespher", // ✅ Must match your Apple Developer account
+      config: {
+        googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
+      },
       infoPlist: {
         NSLocationWhenInUseUsageDescription: "Vesphe needs your location to show nearby deliveries and track rides",
         NSLocationAlwaysAndWhenInUseUsageDescription: "Vesphe needs your location to track deliveries in real-time",
@@ -33,8 +36,16 @@ export default {
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
         "ACCESS_BACKGROUND_LOCATION",
-        "FOREGROUND_SERVICE"
-      ]
+        "FOREGROUND_SERVICE",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "WAKE_LOCK"
+      ],
+      config: {
+        googleMaps: {
+          apiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
+        }
+      }
     },
     web: {
       favicon: "./assets/favicon.png"
@@ -50,12 +61,15 @@ export default {
           isAndroidBackgroundLocationEnabled: true
         }
       ],
+      // ✅ Push notifications plugin (works for both iOS and Android)
       [
-        "@rnmapbox/maps",
+        "expo-notifications",
         {
-          // ✅ Use process.env here - it works in .js file!
-          RNMapboxMapsDownloadToken: process.env.EXPO_PUBLIC_MAPBOX_TOKEN,
-          RNMapboxMapsVersion: "10.16.4"
+          icon: "./assets/notification-icon.png",
+          color: "#f97316",
+          sounds: ["./assets/notification.wav"],
+          androidMode: "default",
+          androidCollapsible: true
         }
       ]
     ],

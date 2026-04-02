@@ -28,7 +28,7 @@ import { RootStackParamList } from "../../navigation/types";
 import { useTracking } from "../../contexts/TrackingContext";
 import type { Order, OrderStatus } from "../../types";
 import { useOrderTimer } from "../../hooks/useOrderTimer";
-import MapboxTrackingMap from '../../components/MapboxTrackingMap';
+import GoogleTrackingMap from '../../components/GoogleTrackingMap';
 
 
 import Toast from "react-native-toast-message";
@@ -269,7 +269,7 @@ if (loading) {
 
       <ScrollView showsVerticalScrollIndicator={false}>
       <View style={styles.mapContainer}>
-  <MapboxTrackingMap
+  <GoogleTrackingMap
     vendorLat={vendorLat}
     vendorLng={vendorLng}
     deliveryLat={deliveryLat}
@@ -281,41 +281,27 @@ if (loading) {
 </View>
 
 
-// app/screens/customer/OrderTrackingScreen.tsx
-// Add this after the Map section (around line 250-300)
-
 {/* Delivery Verification Code - Show when rider is on the way */}
 {order.status === 'in_transit' && order.delivery_verification_code && (
   <View style={styles.verificationCard}>
-    <LinearGradient
-      colors={['#f97316', '#f43f5e']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 0 }}
-      style={styles.verificationGradient}
-    >
-      <View style={styles.verificationHeader}>
-        <Feather name="shield" size={24} color="#fff" />
-        <Text style={styles.verificationTitle}>Delivery Verification Code</Text>
-      </View>
-      
-      <View style={styles.codeContainer}>
-        <Text style={styles.codeLabel}>Give this code to your rider</Text>
-        <Text style={styles.codeValue}>{order.delivery_verification_code}</Text>
-        <Text style={styles.codeNote}>
-          Rider will enter this code to confirm delivery
-        </Text>
-      </View>
-      
-      <View style={styles.verificationFooter}>
-        <Feather name="info" size={14} color="rgba(255,255,255,0.8)" />
-        <Text style={styles.verificationFooterText}>
-          Never share this code before receiving your order
-        </Text>
-      </View>
-    </LinearGradient>
+    <View style={styles.verificationHeader}>
+      <Feather name="shield" size={20} color="#f97316" />
+      <Text style={styles.verificationTitle}>Delivery Code</Text>
+    </View>
+    
+    <View style={styles.codeContainer}>
+      <Text style={styles.codeValue}>{order.delivery_verification_code}</Text>
+      <Text style={styles.codeLabel}>Give this code to your rider</Text>
+    </View>
+    
+    <View style={styles.verificationFooter}>
+      <Feather name="info" size={12} color="#666" />
+      <Text style={styles.verificationFooterText}>
+        Never share this code before receiving your order
+      </Text>
+    </View>
   </View>
 )}
-
 {/* Show when code has been verified */}
 {order.status === 'delivered' && order.delivery_verification_status === 'verified' && (
   <View style={styles.verifiedCard}>
@@ -599,61 +585,59 @@ const styles = StyleSheet.create({
   },
   // Add to styles
 verificationCard: {
-  margin: 16,
-  marginTop: 0,
+  backgroundColor: '#1a1a1a',
+  marginHorizontal: 16,
+  marginTop: 8,
+  marginBottom: 16,
   borderRadius: 12,
-  overflow: 'hidden',
-},
-verificationGradient: {
-  padding: 20,
+  padding: 16,
+  borderWidth: 1,
+  borderColor: 'rgba(249,115,22,0.3)',
 },
 verificationHeader: {
   flexDirection: 'row',
   alignItems: 'center',
-  gap: 12,
-  marginBottom: 16,
+  gap: 8,
+  marginBottom: 12,
 },
 verificationTitle: {
-  fontSize: 18,
-  fontWeight: '700',
-  color: '#fff',
+  fontSize: 14,
+  fontWeight: '600',
+  color: '#f97316',
 },
 codeContainer: {
   alignItems: 'center',
-  marginVertical: 12,
-},
-codeLabel: {
-  fontSize: 14,
-  color: 'rgba(255,255,255,0.8)',
-  marginBottom: 8,
+  backgroundColor: '#0a0a0a',
+  borderRadius: 12,
+  paddingVertical: 16,
+  marginBottom: 12,
 },
 codeValue: {
-  fontSize: 48,
+  fontSize: 32,
   fontWeight: 'bold',
-  color: '#fff',
-  letterSpacing: 8,
+  color: '#f97316',
   fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-  marginVertical: 8,
+  letterSpacing: 4,
+  marginBottom: 8,
 },
-codeNote: {
+codeLabel: {
   fontSize: 12,
-  color: 'rgba(255,255,255,0.7)',
-  marginTop: 8,
+  color: '#666',
 },
 verificationFooter: {
   flexDirection: 'row',
   alignItems: 'center',
-  gap: 8,
-  marginTop: 16,
-  paddingTop: 16,
+  gap: 6,
+  paddingTop: 8,
   borderTopWidth: 1,
-  borderTopColor: 'rgba(255,255,255,0.2)',
+  borderTopColor: 'rgba(255,255,255,0.05)',
 },
 verificationFooterText: {
   flex: 1,
-  fontSize: 12,
-  color: 'rgba(255,255,255,0.8)',
+  fontSize: 11,
+  color: '#666',
 },
+
 verifiedCard: {
   flexDirection: 'row',
   alignItems: 'center',

@@ -149,6 +149,12 @@ export function CartScreen() {
   // Calculate delivery fee when vendor and selected address are available
   useEffect(() => {
     const calculateFee = async () => {
+      console.log('🔍 Calculating delivery fee...');
+    console.log('Vendor coordinates:', vendor?.latitude, vendor?.longitude);
+    console.log('Selected address:', selectedAddress);
+    console.log('Address coordinates:', selectedAddress?.latitude, selectedAddress?.longitude);
+    
+
       if (vendor?.latitude && vendor?.longitude && selectedAddress?.latitude && selectedAddress?.longitude) {
         setIsCalculatingFee(true);
         try {
@@ -166,6 +172,8 @@ export function CartScreen() {
           setIsCalculatingFee(false);
         }
       } else {
+              console.log('⚠️ Missing coordinates for distance calculation');
+
         setCalculatedDeliveryFee(null);
       }
     };

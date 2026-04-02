@@ -1,4 +1,4 @@
-// app/components/VendorLocationPicker.tsx
+// app/components/ReuseLocationPicker.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -12,12 +12,24 @@ import {
   FlatList,
   Keyboard,
 } from 'react-native';
-import Mapbox from '@rnmapbox/maps';
+import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { geocodingService, DEFAULT_CENTER, SEARCH_COUNTRIES, extractAddressComponents, isMapboxConfigured } from '../config/mapbox';
+import * as Location from 'expo-location';
 
 const { width, height } = Dimensions.get('window');
+
+// Use LocationIQ (free, no credit card needed)
+// Get your key from locationiq.com
+const LOCATIONIQ_KEY = 'pk.0af27b1ba256a5946cc3366d07bc90d7'; // Replace with your key
+
+// Default center (Lagos, Nigeria)
+const DEFAULT_CENTER = {
+  latitude: 6.5244,
+  longitude: 3.3792,
+  latitudeDelta: 0.02,
+  longitudeDelta: 0.02,
+};
 
 interface ReuseLocationPickerProps {
   visible: boolean;
@@ -28,13 +40,15 @@ interface ReuseLocationPickerProps {
     address: string;
   }) => void;
   initialLocation?: { latitude: number; longitude: number };
+  title?: string;
 }
 
-export default function VendorLocationPicker({
+export default function ReuseLocationPicker({
   visible,
   onClose,
   onLocationSelect,
   initialLocation,
+  title = "Set Your Location"
 }: ReuseLocationPickerProps) {
   const [searchText, setSearchText] = useState('');
   const [predictions, setPredictions] = useState<any[]>([]);
@@ -45,14 +59,18 @@ export default function VendorLocationPicker({
   const [loading, setLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState('');
-  const cameraRef = useRef<Mapbox.Camera>(null);
-  const mapRef = useRef<Mapbox.MapView>(null);
+  const mapRef = useRef<MapView>(null);
   const [mapReady, setMapReady] = useState(false);
+  const [region, setRegion] = useState<Region>(
+    initialLocation 
+      ? { ...initialLocation, latitudeDelta: 0.01, longitudeDelta: 0.01 }
+      : DEFAULT_CENTER
+  );
 
-  // Debounced search
+  // Debounced search using LocationIQ
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-      if (searchText.length >= 2) {
+      if (searchText.length >= 3) {
         searchAddress(searchText);
       } else {
         setPredictions([]);
@@ -63,20 +81,21 @@ export default function VendorLocationPicker({
     return () => clearTimeout(delayDebounceFn);
   }, [searchText]);
 
+  // Search using LocationIQ Autocomplete API (free)
   const searchAddress = async (query: string) => {
     setLoading(true);
     try {
-      const response = await geocodingService
-        .forwardGeocode({
-          query: query,
-          limit: 8,
-          countries: SEARCH_COUNTRIES,
-          types: ['address', 'place', 'locality', 'neighborhood']
-        })
-        .send();
-
-      setPredictions(response.body.features);
-      setShowSuggestions(true);
+      const response = await fetch(
+        `https://api.locationiq.com/v1/autocomplete?key=${LOCATIONIQ_KEY}&q=${encodeURIComponent(query)}&limit=5&countrycodes=ng&dedupe=1`
+      );
+      const data = await response.json();
+      
+      if (Array.isArray(data) && data.length > 0) {
+        setPredictions(data);
+        setShowSuggestions(true);
+      } else {
+        setPredictions([]);
+      }
     } catch (error) {
       console.error('Search error:', error);
     } finally {
@@ -84,57 +103,96 @@ export default function VendorLocationPicker({
     }
   };
 
-  const selectAddress = (place: any) => {
-    const [longitude, latitude] = place.center;
+  // Get place details and reverse geocode
+  const getLocationDetails = async (lat: number, lon: number, description?: string) => {
+    try {
+      const response = await fetch(
+        `https://api.locationiq.com/v1/reverse?key=${LOCATIONIQ_KEY}&lat=${lat}&lon=${lon}&format=json`
+      );
+      const data = await response.json();
+      
+      let street = '';
+      let area = '';
+      let city = '';
+      
+      if (data.address) {
+        street = data.address.road || data.address.pedestrian || '';
+        area = data.address.suburb || data.address.city_district || '';
+        city = data.address.city || data.address.town || data.address.village || '';
+      }
+      
+      const formattedAddress = data.display_name || description || `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+      const streetAddress = street || formattedAddress.split(',')[0] || '';
+      const areaName = area || city || 'Selected Location';
+      
+      setSelectedAddress(formattedAddress);
+      setSearchText(formattedAddress);
+      
+      return { formattedAddress, street: streetAddress, area: areaName };
+    } catch (error) {
+      console.error('Reverse geocode error:', error);
+      return { 
+        formattedAddress: `${lat.toFixed(6)}, ${lon.toFixed(6)}`,
+        street: `${lat.toFixed(6)}, ${lon.toFixed(6)}`,
+        area: 'Selected Location'
+      };
+    }
+  };
+
+  // Handle map tap - user drops a pin
+  const handleMapPress = async (event: any) => {
+    const { latitude, longitude } = event.nativeEvent.coordinate;
+    
     setSelectedLocation({ latitude, longitude });
-    setSelectedAddress(place.place_name);
-    setSearchText(place.place_name);
+    setRegion({
+      latitude,
+      longitude,
+      latitudeDelta: 0.01,
+      longitudeDelta: 0.01,
+    });
+    
+    setLoading(true);
+    const details = await getLocationDetails(latitude, longitude);
+    setLoading(false);
+  };
+
+  // Handle search selection
+  const selectAddress = async (prediction: any) => {
+    setLoading(true);
+    const lat = parseFloat(prediction.lat);
+    const lon = parseFloat(prediction.lon);
+    
+    setSelectedLocation({ latitude: lat, longitude: lon });
+    setRegion({
+      latitude: lat,
+      longitude: lon,
+      latitudeDelta: 0.01,
+      longitudeDelta: 0.01,
+    });
+    
+    // Animate map to selected location
+    mapRef.current?.animateToRegion({
+      latitude: lat,
+      longitude: lon,
+      latitudeDelta: 0.01,
+      longitudeDelta: 0.01,
+    }, 500);
+    
+    await getLocationDetails(lat, lon, prediction.display_name);
+    
     setPredictions([]);
     setShowSuggestions(false);
     Keyboard.dismiss();
-
-    // Animate camera to selected location
-    if (cameraRef.current && mapReady) {
-      cameraRef.current.setCamera({
-        centerCoordinate: [longitude, latitude],
-        zoomLevel: 16,
-        animationDuration: 500,
-      });
-    }
-  };
-
-  const handleMapPress = (event: any) => {
-    const { geometry } = event.features[0];
-    const { coordinates } = geometry;
-    const [longitude, latitude] = coordinates;
-    
-    setSelectedLocation({ latitude, longitude });
-    
-    // Reverse geocode to get address
-    reverseGeocode(latitude, longitude);
-  };
-
-  const reverseGeocode = async (latitude: number, longitude: number) => {
-    try {
-      const response = await geocodingService
-        .reverseGeocode({
-          query: [longitude, latitude],
-          limit: 1
-        })
-        .send();
-
-      if (response.body.features.length > 0) {
-        const place = response.body.features[0];
-        setSelectedAddress(place.place_name);
-        setSearchText(place.place_name);
-      }
-    } catch (error) {
-      console.error('Reverse geocode error:', error);
-    }
+    setLoading(false);
   };
 
   const confirmLocation = () => {
-    if (selectedLocation) {
+    if (selectedLocation && selectedAddress) {
+      // Extract street and area from selected address
+      const addressParts = selectedAddress.split(',');
+      const street = addressParts[0] || '';
+      const area = addressParts[1]?.trim() || '';
+      
       onLocationSelect({
         latitude: selectedLocation.latitude,
         longitude: selectedLocation.longitude,
@@ -144,27 +202,34 @@ export default function VendorLocationPicker({
     }
   };
 
-  const getInitialCenter = () => {
+  const getInitialRegion = () => {
     if (selectedLocation) {
-      return [selectedLocation.longitude, selectedLocation.latitude];
+      return {
+        latitude: selectedLocation.latitude,
+        longitude: selectedLocation.longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      };
     }
-    return DEFAULT_CENTER.longitude ? [DEFAULT_CENTER.longitude, DEFAULT_CENTER.latitude] : [8.6753, 9.0820];
+    return DEFAULT_CENTER;
   };
+
+  if (!visible) return null;
 
   return (
     <Modal
       visible={visible}
       animationType="slide"
-      presentationStyle="fullScreen"
+      transparent={false}
       onRequestClose={onClose}
     >
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Feather name="x" size={24} color="#fff" />
+            <Feather name="arrow-left" size={24} color="#fff" />
           </TouchableOpacity>
-          <Text style={styles.title}>Set Business Location</Text>
+          <Text style={styles.title}>{title}</Text>
           <TouchableOpacity onPress={confirmLocation} style={styles.confirmButton}>
             <LinearGradient
               colors={['#f97316', '#f43f5e']}
@@ -183,14 +248,14 @@ export default function VendorLocationPicker({
             <Feather name="search" size={20} color="#666" style={styles.searchIcon} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Search business location..."
+              placeholder="Search address, street, or city..."
               placeholderTextColor="#666"
               value={searchText}
               onChangeText={(text) => {
                 setSearchText(text);
                 setShowSuggestions(true);
               }}
-              onFocus={() => searchText.length >= 2 && setShowSuggestions(true)}
+              autoFocus={true}
             />
             {loading && (
               <ActivityIndicator style={styles.loader} color="#f97316" />
@@ -203,7 +268,7 @@ export default function VendorLocationPicker({
           <View style={styles.suggestionsContainer}>
             <FlatList
               data={predictions}
-              keyExtractor={(item) => item.id}
+              keyExtractor={(item) => item.place_id?.toString() || Math.random().toString()}
               keyboardShouldPersistTaps="handled"
               renderItem={({ item }) => (
                 <TouchableOpacity
@@ -211,58 +276,78 @@ export default function VendorLocationPicker({
                   onPress={() => selectAddress(item)}
                 >
                   <Feather name="map-pin" size={16} color="#f97316" />
-                  <Text style={styles.suggestionText}>{item.place_name}</Text>
+                  <View style={styles.suggestionTextContainer}>
+                    <Text style={styles.suggestionMainText} numberOfLines={1}>
+                      {item.display_name?.split(',')[0] || item.display_place || 'Address'}
+                    </Text>
+                    <Text style={styles.suggestionSecondaryText} numberOfLines={1}>
+                      {item.display_name?.split(',').slice(1, 3).join(',') || ''}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               )}
             />
           </View>
         )}
 
-        {/* Map */}
-        <Mapbox.MapView
-          ref={mapRef}
-          style={styles.map}
-          styleURL="mapbox://styles/mapbox/streets-v12"
-          onDidFinishLoadingMap={() => setMapReady(true)}
-          logoEnabled={false}
-          attributionEnabled={false}
-          onPress={handleMapPress}
-        >
-          <Mapbox.Camera
-            ref={cameraRef}
-            centerCoordinate={getInitialCenter()}
-            zoomLevel={15}
-            animationDuration={1000}
-          />
+        {/* Map View */}
+        <View style={styles.mapContainer}>
+          <MapView
+            ref={mapRef}
+            style={styles.map}
+            provider={PROVIDER_GOOGLE}
+            initialRegion={getInitialRegion()}
+            region={region}
+            onPress={handleMapPress}
+            showsUserLocation={true}
+            showsMyLocationButton={true}
+            onMapReady={() => setMapReady(true)}
+            zoomControlEnabled={true}
+          >
+            {selectedLocation && (
+              <Marker
+                coordinate={selectedLocation}
+                draggable
+                onDragEnd={async (e) => {
+                  const { latitude, longitude } = e.nativeEvent.coordinate;
+                  setSelectedLocation({ latitude, longitude });
+                  setRegion({
+                    latitude,
+                    longitude,
+                    latitudeDelta: 0.01,
+                    longitudeDelta: 0.01,
+                  });
+                  setLoading(true);
+                  await getLocationDetails(latitude, longitude);
+                  setLoading(false);
+                }}
+              >
+                <View style={styles.markerPin}>
+                  <Feather name="map-pin" size={28} color="#f97316" />
+                </View>
+              </Marker>
+            )}
+          </MapView>
           
-          {selectedLocation && (
-            <Mapbox.PointAnnotation
-              id="vendor-location"
-              coordinate={[selectedLocation.longitude, selectedLocation.latitude]}
-              title="Your Business Location"
-            >
-              <View style={styles.vendorMarker}>
-                <Feather name="coffee" size={20} color="#fff" />
-                <View style={styles.vendorPulse} />
-              </View>
-            </Mapbox.PointAnnotation>
-          )}
-        </Mapbox.MapView>
-
-        {/* Instruction Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            💡 Tap on map or search to set your business location
-          </Text>
+          {/* Map Hint */}
+          <View style={styles.mapHint}>
+            <Feather name="info" size={14} color="#fff" />
+            <Text style={styles.mapHintText}>
+              Tap anywhere on map to drop a pin
+            </Text>
+          </View>
         </View>
 
         {/* Selected Address Info */}
         {selectedAddress && (
-          <View style={styles.addressInfo}>
-            <Feather name="map-pin" size={14} color="#f97316" />
-            <Text style={styles.addressText} numberOfLines={2}>
-              {selectedAddress}
-            </Text>
+          <View style={styles.addressCard}>
+            <Feather name="check-circle" size={18} color="#10b981" />
+            <View style={styles.addressTextContainer}>
+              <Text style={styles.addressLabel}>Selected Location</Text>
+              <Text style={styles.addressValue} numberOfLines={2}>
+                {selectedAddress}
+              </Text>
+            </View>
           </View>
         )}
       </View>
@@ -273,12 +358,12 @@ export default function VendorLocationPicker({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#0a0a0a',
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingTop: 60,
     paddingBottom: 16,
     paddingHorizontal: 20,
@@ -292,8 +377,12 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   closeButton: {
-    padding: 8,
-    marginLeft: -8,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#2a2a2a',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   confirmButton: {
     borderRadius: 8,
@@ -310,30 +399,23 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   searchContainer: {
-    position: 'absolute',
-    top: 120,
-    left: 16,
-    right: 16,
-    zIndex: 1,
-    backgroundColor: '#2a2a2a',
-    borderRadius: 12,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    padding: 16,
+    backgroundColor: '#0a0a0a',
   },
   searchInputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#2a2a2a',
+    borderRadius: 12,
     paddingHorizontal: 16,
+    height: 52,
+    gap: 12,
   },
   searchIcon: {
     marginRight: 12,
   },
   searchInput: {
     flex: 1,
-    height: 52,
     fontSize: 16,
     color: '#fff',
   },
@@ -341,19 +423,11 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   suggestionsContainer: {
-    position: 'absolute',
-    top: 180,
-    left: 16,
-    right: 16,
     backgroundColor: '#2a2a2a',
     borderRadius: 12,
-    elevation: 5,
+    marginHorizontal: 16,
     maxHeight: 250,
     zIndex: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
   },
   suggestionItem: {
     flexDirection: 'row',
@@ -363,66 +437,72 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(255,255,255,0.05)',
     gap: 12,
   },
-  suggestionText: {
+  suggestionTextContainer: {
     flex: 1,
+  },
+  suggestionMainText: {
     fontSize: 14,
+    fontWeight: '500',
     color: '#fff',
+    marginBottom: 2,
+  },
+  suggestionSecondaryText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  mapContainer: {
+    flex: 1,
+    margin: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
+    position: 'relative',
   },
   map: {
     flex: 1,
   },
-  vendorMarker: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f97316',
+  markerPin: {
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
   },
-  vendorPulse: {
+  mapHint: {
     position: 'absolute',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'rgba(249,115,22,0.3)',
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 20,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-  },
-  footerText: {
+    bottom: 12,
+    left: 12,
+    right: 12,
     backgroundColor: 'rgba(0,0,0,0.7)',
-    color: 'white',
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
-    fontSize: 12,
-  },
-  addressInfo: {
-    position: 'absolute',
-    bottom: 80,
-    left: 16,
-    right: 16,
-    backgroundColor: 'rgba(0,0,0,0.85)',
-    borderRadius: 12,
-    padding: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'center',
+    gap: 6,
   },
-  addressText: {
+  mapHintText: {
+    fontSize: 11,
+    color: '#fff',
+  },
+  addressCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(16,185,129,0.1)',
+    margin: 16,
+    padding: 12,
+    borderRadius: 12,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(16,185,129,0.3)',
+  },
+  addressTextContainer: {
     flex: 1,
-    fontSize: 12,
+  },
+  addressLabel: {
+    fontSize: 11,
+    color: '#10b981',
+    marginBottom: 2,
+  },
+  addressValue: {
+    fontSize: 13,
     color: '#fff',
   },
 });

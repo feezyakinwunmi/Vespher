@@ -17,16 +17,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { WebView } from 'react-native-webview';
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import { supabase } from '../../lib/supabase';
 import Toast from 'react-native-toast-message';
-import Mapbox from '@rnmapbox/maps'; // ✅ Add Mapbox import
-
 
 const { width } = Dimensions.get('window');
 
 type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'ready' | 'picked_up' | 'in_transit' | 'delivered' | 'cancelled';
-
 // ✅ Add interface for fee breakdown
 interface FeeBreakdown {
   subtotal: number;
@@ -61,9 +58,14 @@ export function VendorOrderDetailsScreen() {
   const [platformSettings, setPlatformSettings] = useState<any>(null);
   const [feeBreakdown, setFeeBreakdown] = useState<any>(null);
   const [mapReady, setMapReady] = useState(false);
+  const [region, setRegion] = useState<Region>({
+    latitude: 6.5244,
+    longitude: 3.3792,
+    latitudeDelta: 0.0922,
+    longitudeDelta: 0.0421,
+  });
   
-  const mapRef = useRef<Mapbox.MapView>(null);
-  const cameraRef = useRef<Mapbox.Camera>(null);
+  const mapRef = useRef<MapView>(null);
   const subscriptionRef = useRef<any>(null);
 
   useEffect(() => {
@@ -215,52 +217,56 @@ export function VendorOrderDetailsScreen() {
     };
   }, [riderId]);
 
-  const centerMap = () => {
-    if (!cameraRef.current) return;
+ const centerMap = () => {
+    if (!mapRef.current) return;
     
-    const points: [number, number][] = [];
+    const points: { latitude: number; longitude: number }[] = [];
     
     if (order?.vendor?.latitude && order?.vendor?.longitude) {
-      points.push([order.vendor.longitude, order.vendor.latitude]);
+      points.push({ latitude: order.vendor.latitude, longitude: order.vendor.longitude });
     }
     
     if (order?.delivery_address?.latitude && order?.delivery_address?.longitude) {
-      points.push([order.delivery_address.longitude, order.delivery_address.latitude]);
+      points.push({ latitude: order.delivery_address.latitude, longitude: order.delivery_address.longitude });
     }
     
     if (riderLocation) {
-      points.push([riderLocation.longitude, riderLocation.latitude]);
+      points.push({ latitude: riderLocation.latitude, longitude: riderLocation.longitude });
     }
     
     if (points.length === 0) return;
     
     if (points.length === 1) {
-      cameraRef.current.setCamera({
-        centerCoordinate: points[0],
-        zoomLevel: 14,
-        animationDuration: 500,
-      });
+      mapRef.current.animateToRegion({
+        latitude: points[0].latitude,
+        longitude: points[0].longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      }, 500);
       return;
     }
     
     // Calculate bounds
-    let minLng = points[0][0], maxLng = points[0][0];
-    let minLat = points[0][1], maxLat = points[0][1];
+    let minLat = points[0].latitude, maxLat = points[0].latitude;
+    let minLng = points[0].longitude, maxLng = points[0].longitude;
     
-    points.forEach(([lng, lat]) => {
-      minLng = Math.min(minLng, lng);
-      maxLng = Math.max(maxLng, lng);
-      minLat = Math.min(minLat, lat);
-      maxLat = Math.max(maxLat, lat);
+    points.forEach(point => {
+      minLat = Math.min(minLat, point.latitude);
+      maxLat = Math.max(maxLat, point.latitude);
+      minLng = Math.min(minLng, point.longitude);
+      maxLng = Math.max(maxLng, point.longitude);
     });
     
     const padding = 0.02;
-    cameraRef.current.fitBounds(
-      [maxLng + padding, maxLat + padding],
-      [minLng - padding, minLat - padding],
-      [50, 50, 50, 50],
-      500
-    );
+    const newRegion = {
+      latitude: (minLat + maxLat) / 2,
+      longitude: (minLng + maxLng) / 2,
+      latitudeDelta: (maxLat - minLat) + padding,
+      longitudeDelta: (maxLng - minLng) + padding,
+    };
+    
+    mapRef.current.animateToRegion(newRegion, 500);
+    setRegion(newRegion);
   };
 
   const updateOrderStatus = async (newStatus: OrderStatus) => {
@@ -615,93 +621,74 @@ const renderScheduledDetails = () => {
             </View>
           )}
           
-          <Mapbox.MapView
+             <MapView
             ref={mapRef}
             style={styles.map}
-            styleURL="mapbox://styles/mapbox/streets-v12"
-            onDidFinishLoadingMap={() => setMapReady(true)}
-            logoEnabled={false}
-            attributionEnabled={false}
+            provider={PROVIDER_GOOGLE}
+            initialRegion={region}
+            region={region}
+            onMapReady={() => setMapReady(true)}
+            showsUserLocation={true}
+            showsMyLocationButton={false}
           >
-            <Mapbox.Camera
-              ref={cameraRef}
-              centerCoordinate={[
-                order?.vendor?.longitude || 3.3792,
-                order?.vendor?.latitude || 6.5244
-              ]}
-              zoomLevel={12}
-              animationDuration={500}
-            />
-            
             {/* Vendor Marker */}
             {order?.vendor?.latitude && order?.vendor?.longitude && (
-              <Mapbox.PointAnnotation
-                id="vendor"
-                coordinate={[order.vendor.longitude, order.vendor.latitude]}
+              <Marker
+                coordinate={{
+                  latitude: order.vendor.latitude,
+                  longitude: order.vendor.longitude,
+                }}
                 title="Restaurant"
               >
                 <View style={[styles.marker, { backgroundColor: '#f97316' }]}>
                   <Feather name="coffee" size={18} color="#fff" />
                 </View>
-              </Mapbox.PointAnnotation>
+              </Marker>
             )}
             
             {/* Delivery Location Marker */}
             {order?.delivery_address?.latitude && order?.delivery_address?.longitude && (
-              <Mapbox.PointAnnotation
-                id="delivery"
-                coordinate={[order.delivery_address.longitude, order.delivery_address.latitude]}
+              <Marker
+                coordinate={{
+                  latitude: order.delivery_address.latitude,
+                  longitude: order.delivery_address.longitude,
+                }}
                 title="Delivery Location"
               >
                 <View style={[styles.marker, { backgroundColor: '#10b981' }]}>
                   <Feather name="home" size={18} color="#fff" />
                 </View>
-              </Mapbox.PointAnnotation>
+              </Marker>
             )}
             
             {/* Rider Marker */}
             {riderLocation && (
-              <Mapbox.PointAnnotation
-                id="rider"
-                coordinate={[riderLocation.longitude, riderLocation.latitude]}
+              <Marker
+                coordinate={{
+                  latitude: riderLocation.latitude,
+                  longitude: riderLocation.longitude,
+                }}
                 title="Rider"
               >
                 <View style={[styles.marker, { backgroundColor: '#3b82f6' }]}>
                   <Feather name="truck" size={18} color="#fff" />
                 </View>
-              </Mapbox.PointAnnotation>
+              </Marker>
             )}
             
-            {/* Route Line between points */}
+            {/* Route Line between vendor and delivery */}
             {order?.vendor?.latitude && order?.vendor?.longitude && 
              order?.delivery_address?.latitude && order?.delivery_address?.longitude && (
-              <Mapbox.ShapeSource
-                id="route"
-                shape={{
-                  type: 'Feature',
-                  geometry: {
-                    type: 'LineString',
-                    coordinates: [
-                      [order.vendor.longitude, order.vendor.latitude],
-                      [order.delivery_address.longitude, order.delivery_address.latitude],
-                    ],
-                  },
-                  properties: {},
-                }}
-              >
-                <Mapbox.LineLayer
-                  id="routeLayer"
-                  style={{
-                    lineColor: '#f97316',
-                    lineWidth: 4,
-                    lineCap: 'round',
-                    lineJoin: 'round',
-                    lineOpacity: 0.8,
-                  }}
-                />
-              </Mapbox.ShapeSource>
+              <Polyline
+                coordinates={[
+                  { latitude: order.vendor.latitude, longitude: order.vendor.longitude },
+                  { latitude: order.delivery_address.latitude, longitude: order.delivery_address.longitude },
+                ]}
+                strokeColor="#f97316"
+                strokeWidth={4}
+              />
             )}
-          </Mapbox.MapView>
+          </MapView>
 
           {/* Map Legend */}
           <View style={styles.mapLegend}>
@@ -1149,6 +1136,7 @@ comboFreeText: {
     shadowRadius: 4,
     elevation: 5,
   },
+
   mapLegend: {
     position: 'absolute',
     bottom: 60,

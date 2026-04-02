@@ -51,10 +51,15 @@ export function VendorMenuScreen() {
     setShowForm(true);
   };
 
-  const handleEditItem = (item: any) => {
-    setEditingItem(item);
-    setShowForm(true);
-  };
+const handleEditItem = (item: any) => {
+  console.log('✏️ Editing item:', {
+    id: item.id,
+    name: item.name,
+    image_url: item.image_url
+  });
+  setEditingItem(item); // This should contain the image_url
+  setShowForm(true);
+};
 
   const handleDeleteItem = (id: string) => {
     Alert.alert(

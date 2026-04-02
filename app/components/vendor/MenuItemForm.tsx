@@ -1,5 +1,5 @@
 // app/components/vendor/MenuItemForm.tsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -17,14 +17,13 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
-import { supabase } from '../../lib/supabase'; // Add this import
-import { useAuth } from '../../contexts/AuthContext'; // Add this if you need vendor ID
+import { supabase } from '../../lib/supabase';
 
 interface MenuItemFormProps {
   onClose: () => void;
   onSubmit: (data: any) => Promise<void>;
   initialData?: any;
-  vendorId?: string | null; // Add vendorId prop
+  vendorId?: string | null;
 }
 
 const categories = [
@@ -51,17 +50,35 @@ export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuI
     image_url: initialData?.image_url || '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
 
-  console.log('Initial form data:', formData);
 
-  // ✅ NEW: Upload image to Supabase Storage
-  const uploadImageToSupabase = async (imageUri: string): Promise<string | null> => {
+
+  // In MenuItemForm, add this debug
+useEffect(() => {
+  console.log('📸 MenuItemForm initialData:', {
+    hasImage: !!initialData?.image_url,
+    image_url: initialData?.image_url,
+    formDataImage: formData.image_url
+  });
+  
+  // If initialData has image_url, set it in formData
+  if (initialData?.image_url && !formData.image_url) {
+    setFormData(prev => ({ ...prev, image_url: initialData.image_url }));
+  }
+}, [initialData]);
+
+  // ✅ FIXED: Using the SAME upload method as promotions (works!)
+  const uploadImage = async (imageUri: string): Promise<string | null> => {
+    if (!imageUri) return null;
+    
+    setUploadingImage(true);
     try {
-      setUploadingImage(true);
+      // Create unique filename
+      const fileName = `menu_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.jpg`;
+      const filePath = `${vendorId}/${fileName}`;
       
-      // Step 1: Fetch the image as a blob
+      // Fetch the image
       const response = await fetch(imageUri);
       const blob = await response.blob();
       
@@ -71,23 +88,33 @@ export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuI
         throw new Error('Selected image is empty');
       }
       
-      // Step 2: Create a unique filename
-      const fileExt = imageUri.split('.').pop() || 'jpg';
-      const fileName = `menu_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
+      // Convert blob to base64 (like promotion does)
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
       
-      // Use vendor ID if available, otherwise use a temp folder
-      const folder = vendorId || 'temp';
-      const filePath = `${folder}/${fileName}`;
+      // Extract base64 data
+      const base64Data = base64.split(',')[1];
       
-      console.log('📤 Uploading to:', filePath);
+      // Convert base64 to ArrayBuffer
+      const binaryString = atob(base64Data);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
       
-      // Step 3: Upload to Supabase Storage
+      console.log('📦 Image bytes length:', bytes.length);
+      
+      // Upload using Uint8Array (same as promotion)
       const { data, error } = await supabase.storage
         .from('product-images')
-        .upload(filePath, blob, {
-          contentType: `image/${fileExt}`,
+        .upload(filePath, bytes, {
+          contentType: 'image/jpeg',
           cacheControl: '3600',
-          upsert: false,
+          upsert: true,
         });
       
       if (error) {
@@ -95,7 +122,6 @@ export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuI
         throw error;
       }
       
-      // Step 4: Get the public URL
       const { data: { publicUrl } } = supabase.storage
         .from('product-images')
         .getPublicUrl(filePath);
@@ -103,10 +129,9 @@ export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuI
       console.log('✅ Image uploaded successfully:', publicUrl);
       
       return publicUrl;
-      
     } catch (error) {
       console.error('Error uploading image:', error);
-      Alert.alert('Upload Failed', 'Could not upload image. Please try again.');
+      Alert.alert('Upload Failed', `Could not upload image: ${error}`);
       return null;
     } finally {
       setUploadingImage(false);
@@ -114,28 +139,38 @@ export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuI
   };
 
   const pickImage = async () => {
-    console.log('Opening image picker...');
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Please allow access to your photos');
+      return;
+    }
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.8,
+      quality: 1,
     });
 
-    console.log('Image picker result:', result);
-
     if (!result.canceled) {
-      const localUri = result.assets[0].uri;
-      setSelectedImage(localUri);
-      // Store local URI temporarily, will upload on submit
-      setFormData({ ...formData, image_url: localUri });
-      console.log('Image selected (local):', localUri);
+      const uri = result.assets[0].uri;
+      console.log('📸 Selected image URI:', uri);
+      
+      // Verify file size
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      console.log('📸 Image file size:', blob.size, 'bytes');
+      
+      if (blob.size === 0) {
+        Alert.alert('Error', 'Selected image appears to be empty. Please try another image.');
+        return;
+      }
+      
+      setFormData({ ...formData, image_url: uri });
     }
   };
 
   const validateForm = () => {
-    console.log('Validating form...');
-    
     if (!formData.name.trim()) {
       Alert.alert('Error', 'Please enter item name');
       return false;
@@ -152,34 +187,27 @@ export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuI
   };
 
   const handleSubmit = async () => {
-    console.log('Submit button pressed');
-    
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     setIsSubmitting(true);
     
     try {
       let finalImageUrl = initialData?.image_url || null;
       
-      // ✅ NEW: Upload image if it's a local file (starts with file://)
+      // Upload new image if selected
       if (formData.image_url && formData.image_url.startsWith('file://')) {
-        console.log('📤 Uploading new image to Supabase...');
-        const uploadedUrl = await uploadImageToSupabase(formData.image_url);
+        console.log('📤 Uploading new image...');
+        const uploadedUrl = await uploadImage(formData.image_url);
         
         if (uploadedUrl) {
           finalImageUrl = uploadedUrl;
           console.log('✅ Image uploaded, URL:', finalImageUrl);
         } else {
-          // If upload fails, keep existing image or use null
-          console.warn('⚠️ Image upload failed, using existing image or null');
+          console.warn('⚠️ Image upload failed');
           finalImageUrl = initialData?.image_url || null;
         }
       } else if (formData.image_url && formData.image_url.startsWith('http')) {
-        // Already a remote URL, keep it
         finalImageUrl = formData.image_url;
-        console.log('📸 Using existing remote image URL:', finalImageUrl);
       }
       
       const submitData = {
@@ -191,13 +219,12 @@ export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuI
         preparation_time: formData.preparation_time,
         is_popular: formData.is_popular,
         quantity_available: formData.quantity_available ? parseInt(formData.quantity_available) : null,
-        image_url: finalImageUrl, // ✅ This is now the public Supabase URL
+        image_url: finalImageUrl,
       };
       
       console.log('Submitting data with image URL:', submitData.image_url);
       
       await onSubmit(submitData);
-      console.log('Submit successful');
       onClose();
     } catch (error) {
       console.error('Submit error:', error);
@@ -228,26 +255,31 @@ export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuI
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >       
-          {/* Image Upload Section */}
-          <TouchableOpacity 
-            onPress={pickImage} 
-            style={styles.imageUpload}
-            disabled={uploadingImage}
-          >
-            {uploadingImage ? (
-              <View style={styles.imagePlaceholder}>
-                <ActivityIndicator size="large" color="#f97316" />
-                <Text style={styles.imageUploadText}>Uploading...</Text>
-              </View>
-            ) : formData.image_url ? (
-              <Image source={{ uri: formData.image_url }} style={styles.imagePreview} />
-            ) : (
-              <View style={styles.imagePlaceholder}>
-                <Feather name="camera" size={32} color="#666" />
-                <Text style={styles.imageUploadText}>Upload Image</Text>
-              </View>
-            )}
-          </TouchableOpacity>
+        {/* Image Upload Section */}
+<TouchableOpacity 
+  onPress={pickImage} 
+  style={styles.imageUpload}
+  disabled={uploadingImage}
+>
+  {uploadingImage ? (
+    <View style={styles.imagePlaceholder}>
+      <ActivityIndicator size="large" color="#f97316" />
+      <Text style={styles.imageUploadText}>Uploading...</Text>
+    </View>
+  ) : formData.image_url ? (
+    <Image 
+      source={{ uri: formData.image_url }} 
+      style={styles.imagePreview}
+      onError={() => console.log('❌ Failed to load image:', formData.image_url)}
+      onLoad={() => console.log('✅ Image loaded:', formData.image_url)}
+    />
+  ) : (
+    <View style={styles.imagePlaceholder}>
+      <Feather name="camera" size={32} color="#666" />
+      <Text style={styles.imageUploadText}>Upload Image</Text>
+    </View>
+  )}
+</TouchableOpacity>
 
           {/* Basic Info */}
           <View style={styles.section}>
@@ -255,9 +287,7 @@ export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuI
             <TextInput
               style={styles.input}
               value={formData.name}
-              onChangeText={(text) => {
-                setFormData({ ...formData, name: text });
-              }}
+              onChangeText={(text) => setFormData({ ...formData, name: text })}
               placeholder="e.g., Jollof Rice"
               placeholderTextColor="#666"
             />
@@ -266,9 +296,7 @@ export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuI
             <TextInput
               style={[styles.input, styles.textArea]}
               value={formData.description}
-              onChangeText={(text) => {
-                setFormData({ ...formData, description: text });
-              }}
+              onChangeText={(text) => setFormData({ ...formData, description: text })}
               placeholder="Describe your dish..."
               placeholderTextColor="#666"
               multiline
@@ -283,9 +311,7 @@ export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuI
             <TextInput
               style={styles.input}
               value={formData.price}
-              onChangeText={(text) => {
-                setFormData({ ...formData, price: text });
-              }}
+              onChangeText={(text) => setFormData({ ...formData, price: text })}
               placeholder="0"
               placeholderTextColor="#666"
               keyboardType="numeric"
@@ -295,9 +321,7 @@ export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuI
             <TextInput
               style={styles.input}
               value={formData.original_price}
-              onChangeText={(text) => {
-                setFormData({ ...formData, original_price: text });
-              }}
+              onChangeText={(text) => setFormData({ ...formData, original_price: text })}
               placeholder="0"
               placeholderTextColor="#666"
               keyboardType="numeric"
@@ -312,9 +336,7 @@ export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuI
                 {categories.map((cat) => (
                   <TouchableOpacity
                     key={cat}
-                    onPress={() => {
-                      setFormData({ ...formData, category: cat });
-                    }}
+                    onPress={() => setFormData({ ...formData, category: cat })}
                     style={[
                       styles.categoryChip,
                       formData.category === cat && styles.categoryChipSelected,
@@ -340,9 +362,7 @@ export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuI
             <TextInput
               style={styles.input}
               value={formData.preparation_time}
-              onChangeText={(text) => {
-                setFormData({ ...formData, preparation_time: text });
-              }}
+              onChangeText={(text) => setFormData({ ...formData, preparation_time: text })}
               placeholder="e.g., 20-30 min"
               placeholderTextColor="#666"
             />
@@ -351,9 +371,7 @@ export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuI
               <Text style={styles.label}>Mark as Popular</Text>
               <Switch
                 value={formData.is_popular}
-                onValueChange={(value) => {
-                  setFormData({ ...formData, is_popular: value });
-                }}
+                onValueChange={(value) => setFormData({ ...formData, is_popular: value })}
                 trackColor={{ false: '#2a2a2a', true: '#f97316' }}
                 thumbColor="#fff"
               />
@@ -363,9 +381,7 @@ export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuI
             <TextInput
               style={styles.input}
               value={formData.quantity_available}
-              onChangeText={(text) => {
-                setFormData({ ...formData, quantity_available: text });
-              }}
+              onChangeText={(text) => setFormData({ ...formData, quantity_available: text })}
               placeholder="Leave empty for unlimited"
               placeholderTextColor="#666"
               keyboardType="numeric"

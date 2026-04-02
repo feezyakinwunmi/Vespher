@@ -1,4 +1,5 @@
 // app/screens/admin/AdminLogisticsScreen.tsx
+// app/screens/admin/AdminLogisticsScreen.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -23,15 +24,13 @@ import { supabase } from './supabase';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import Toast from 'react-native-toast-message';
-import Mapbox from '@rnmapbox/maps'; // ✅ Add Mapbox import
+import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 
-import { WebView } from 'react-native-webview';
 type AdminLogisticsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const { width, height } = Dimensions.get('window');
 
 type RiderStatus = 'all' | 'available' | 'busy' | 'suspended';
-
 // Types for Supabase real-time payloads
 interface RealtimePayload<T> {
   new: T;
@@ -89,7 +88,7 @@ interface Rider {
 
 export function AdminLogisticsScreen() {
   const navigation = useNavigation<AdminLogisticsScreenNavigationProp>();
-const mapRef = useRef<Mapbox.Camera>(null);
+  const mapRef = useRef<MapView>(null);
   const [riders, setRiders] = useState<Rider[]>([]);
   const [filteredRiders, setFilteredRiders] = useState<Rider[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -101,7 +100,15 @@ const mapRef = useRef<Mapbox.Camera>(null);
   const [selectedRider, setSelectedRider] = useState<Rider | null>(null);
   const [showActionsModal, setShowActionsModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-   const showToast = (message: string) => {
+  const [mapReady, setMapReady] = useState(false);
+  const [mapRegion, setMapRegion] = useState<Region>({
+    latitude: 6.5244,
+    longitude: 3.3792,
+    latitudeDelta: 0.0922,
+    longitudeDelta: 0.0421,
+  });
+
+  const showToast = (message: string) => {
     Toast.show({
       type: 'success',
       text1: message,
@@ -113,13 +120,6 @@ const mapRef = useRef<Mapbox.Camera>(null);
     type: 'suspend' | 'unsuspend' | 'delete';
     rider: Rider;
   } | null>(null);
-  const [mapReady, setMapReady] = useState(false);
-  const [mapRegion, setMapRegion] = useState({
-    latitude: 6.5244,
-    longitude: 3.3792,
-    latitudeDelta: 0.0922,
-    longitudeDelta: 0.0421,
-  });
 
   const vehicleTypes = ['all', 'motorcycle', 'bicycle', 'car', 'van', 'truck'];
 
@@ -299,39 +299,59 @@ const mapRef = useRef<Mapbox.Camera>(null);
     };
   };
 
- const fitMapToRiders = (ridersToFit: Rider[]) => {
-  const ridersWithCoords = ridersToFit.filter(
-    r => r.current_latitude && r.current_longitude && !r.is_suspended
-  );
-  
-  if (ridersWithCoords.length === 0 || !mapRef.current) return;
-  
-  // Calculate bounds
-  let minLng = Infinity, maxLng = -Infinity;
-  let minLat = Infinity, maxLat = -Infinity;
-  
-  ridersWithCoords.forEach(rider => {
-    minLng = Math.min(minLng, rider.current_longitude!);
-    maxLng = Math.max(maxLng, rider.current_longitude!);
-    minLat = Math.min(minLat, rider.current_latitude!);
-    maxLat = Math.max(maxLat, rider.current_latitude!);
-  });
-  
-  const padding = 0.05;
-  const bounds = {
-    ne: [maxLng + padding, maxLat + padding],
-    sw: [minLng - padding, minLat - padding],
+  const fitMapToRiders = (ridersToFit: Rider[]) => {
+    const ridersWithCoords = ridersToFit.filter(
+      r => r.current_latitude && r.current_longitude && !r.is_suspended
+    );
+    
+    if (ridersWithCoords.length === 0 || !mapRef.current) return;
+    
+    // Calculate bounds
+    let minLng = Infinity, maxLng = -Infinity;
+    let minLat = Infinity, maxLat = -Infinity;
+    
+    ridersWithCoords.forEach(rider => {
+      minLng = Math.min(minLng, rider.current_longitude!);
+      maxLng = Math.max(maxLng, rider.current_longitude!);
+      minLat = Math.min(minLat, rider.current_latitude!);
+      maxLat = Math.max(maxLat, rider.current_latitude!);
+    });
+    
+    const padding = 0.05;
+    const newRegion = {
+      latitude: (minLat + maxLat) / 2,
+      longitude: (minLng + maxLng) / 2,
+      latitudeDelta: (maxLat - minLat) + padding,
+      longitudeDelta: (maxLng - minLng) + padding,
+    };
+    
+    mapRef.current?.animateToRegion(newRegion, 500);
+    setMapRegion(newRegion);
   };
-  
-  mapRef.current?.fitBounds(bounds.ne, bounds.sw, 50, 500);
-};
 
-useEffect(() => {
-  if (showMap && mapReady && filteredRiders.length > 0) {
-    setTimeout(() => fitMapToRiders(filteredRiders), 500);
-  }
-}, [showMap, mapReady, filteredRiders]);
+  // ✅ Converted centerOnRider function (optional)
+  const centerOnRider = (rider: Rider) => {
+    if (rider.current_latitude && rider.current_longitude) {
+      mapRef.current?.animateToRegion({
+        latitude: rider.current_latitude,
+        longitude: rider.current_longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      }, 500);
+    }
+  };
 
+  // ✅ Update useEffect to use converted fitMapToRiders
+  useEffect(() => {
+    if (showMap && mapReady && filteredRiders.length > 0) {
+      const ridersWithLocation = filteredRiders.filter(
+        r => r.current_latitude && r.current_longitude && !r.is_suspended
+      );
+      if (ridersWithLocation.length > 0) {
+        setTimeout(() => fitMapToRiders(ridersWithLocation), 500);
+      }
+    }
+  }, [showMap, mapReady, filteredRiders]);
 
   const filterRiders = () => {
     let filtered = [...riders];
@@ -619,88 +639,94 @@ useEffect(() => {
         </Text>
       </View>
 
-     {/* Map View - Mapbox Version */}
-{showMap ? (
-  <View style={styles.mapContainer}>
-    <Mapbox.MapView
-      style={styles.map}
-      styleURL="mapbox://styles/mapbox/streets-v12"
-      onDidFinishLoadingMap={() => setMapReady(true)}
-      logoEnabled={false}
-      attributionEnabled={false}
-    >
-      <Mapbox.Camera
-        ref={mapRef}
-        centerCoordinate={[mapRegion.longitude, mapRegion.latitude]}
-        zoomLevel={12}
-      />
-      
-      {/* Rider Markers */}
-      {filteredRiders
-        .filter(rider => rider.current_latitude && rider.current_longitude && !rider.is_suspended)
-        .map(rider => {
-          const isBusy = rider.active_order_count && rider.active_order_count > 0;
-          const markerColor = rider.is_suspended ? '#ef4444' : isBusy ? '#f59e0b' : '#10b981';
+      {showMap ? (
+        <View style={styles.mapContainer}>
+          {!mapReady && (
+            <View style={styles.loadingOverlay}>
+              <ActivityIndicator size="large" color="#f97316" />
+            </View>
+          )}
           
-          return (
-            <Mapbox.PointAnnotation
-              key={rider.id}
-              id={rider.id}
-              coordinate={[rider.current_longitude!, rider.current_latitude!]}
-              title={rider.name}
-            >
-              <View style={[styles.markerContainer, { backgroundColor: markerColor }]}>
-                <Feather name={getMarkerIcon(rider.vehicle_type)} size={18} color="#fff" />
-              </View>
-            </Mapbox.PointAnnotation>
-          );
-        })}
-    </Mapbox.MapView>
-
-    {/* Map Legend */}
-    <View style={styles.mapLegend}>
-      <View style={styles.legendItem}>
-        <View style={[styles.legendDot, { backgroundColor: '#10b981' }]} />
-        <Text style={styles.legendText}>Available</Text>
-      </View>
-      <View style={styles.legendItem}>
-        <View style={[styles.legendDot, { backgroundColor: '#f59e0b' }]} />
-        <Text style={styles.legendText}>Busy</Text>
-      </View>
-      <View style={styles.legendItem}>
-        <View style={[styles.legendDot, { backgroundColor: '#ef4444' }]} />
-        <Text style={styles.legendText}>Suspended</Text>
-      </View>
-    </View>
-
-    {/* Map Status */}
-    <View style={styles.mapStatus}>
-      <Text style={styles.mapStatusText}>
-        {filteredRiders.filter(r => r.current_latitude && r.current_longitude && !r.is_suspended).length} active riders on map
-      </Text>
-    </View>
-
-    {/* No Location Overlay */}
-    {filteredRiders.filter(r => r.current_latitude && r.current_longitude && !r.is_suspended).length === 0 && (
-      <View style={styles.noLocationOverlay}>
-        <View style={styles.noLocationCard}>
-          <Feather name="map-pin" size={40} color="#f97316" />
-          <Text style={styles.noLocationTitle}>No Rider Locations</Text>
-          <Text style={styles.noLocationText}>
-            Riders need to share their location to appear on the map.
-          </Text>
-          <TouchableOpacity 
-            style={styles.refreshLocationButton}
-            onPress={fetchRiders}
+          <MapView
+            ref={mapRef}
+            style={styles.map}
+            provider={PROVIDER_GOOGLE}
+            initialRegion={mapRegion}
+            region={mapRegion}
+            onMapReady={() => setMapReady(true)}
+            showsUserLocation={true}
+            showsMyLocationButton={false}
           >
-            <Feather name="refresh-cw" size={16} color="#fff" />
-            <Text style={styles.refreshLocationText}>Refresh</Text>
-          </TouchableOpacity>
+            {/* Rider Markers */}
+            {filteredRiders
+              .filter(rider => rider.current_latitude && rider.current_longitude && !rider.is_suspended)
+              .map(rider => {
+                const isBusy = rider.active_order_count && rider.active_order_count > 0;
+                const markerColor = rider.is_suspended ? '#ef4444' : isBusy ? '#f59e0b' : '#10b981';
+                
+                return (
+                  <Marker
+                    key={rider.id}
+                    coordinate={{
+                      latitude: rider.current_latitude!,
+                      longitude: rider.current_longitude!,
+                    }}
+                    title={rider.name}
+                    description={`${rider.vehicle_type || 'Vehicle'} • ${rider.total_deliveries || 0} deliveries`}
+                    onPress={() => setSelectedRider(rider)}
+                  >
+                    <View style={[styles.markerContainer, { backgroundColor: markerColor }]}>
+                      <Feather name={getMarkerIcon(rider.vehicle_type)} size={18} color="#fff" />
+                    </View>
+                  </Marker>
+                );
+              })}
+          </MapView>
+
+          {/* Map Legend */}
+          <View style={styles.mapLegend}>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: '#10b981' }]} />
+              <Text style={styles.legendText}>Available</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: '#f59e0b' }]} />
+              <Text style={styles.legendText}>Busy</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: '#ef4444' }]} />
+              <Text style={styles.legendText}>Suspended</Text>
+            </View>
+          </View>
+
+          {/* Map Status */}
+          <View style={styles.mapStatus}>
+            <Text style={styles.mapStatusText}>
+              {filteredRiders.filter(r => r.current_latitude && r.current_longitude && !r.is_suspended).length} active riders on map
+            </Text>
+          </View>
+
+          {/* No Location Overlay */}
+          {filteredRiders.filter(r => r.current_latitude && r.current_longitude && !r.is_suspended).length === 0 && (
+            <View style={styles.noLocationOverlay}>
+              <View style={styles.noLocationCard}>
+                <Feather name="map-pin" size={40} color="#f97316" />
+                <Text style={styles.noLocationTitle}>No Rider Locations</Text>
+                <Text style={styles.noLocationText}>
+                  Riders need to share their location to appear on the map.
+                </Text>
+                <TouchableOpacity 
+                  style={styles.refreshLocationButton}
+                  onPress={fetchRiders}
+                >
+                  <Feather name="refresh-cw" size={16} color="#fff" />
+                  <Text style={styles.refreshLocationText}>Refresh</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
         </View>
-      </View>
-    )}
-  </View>
-) : (
+      ) : (
         /* List View */
         <ScrollView
           style={styles.content}
@@ -1114,21 +1140,31 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
   },
-  // Add or update these styles
-markerContainer: {
-  width: 36,
-  height: 36,
-  borderRadius: 18,
-  justifyContent: 'center',
-  alignItems: 'center',
-  borderWidth: 2,
-  borderColor: '#fff',
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.3,
-  shadowRadius: 4,
-  elevation: 5,
-},
+    loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  markerContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
   calloutHeader: {
     flexDirection: 'row',
     alignItems: 'center',

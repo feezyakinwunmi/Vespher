@@ -10,7 +10,7 @@ import { TrackingProvider } from './app/contexts/TrackingContext';
 import Toast from 'react-native-toast-message';
 
 // Import mapbox config to initialize (optional)
-import './app/config/mapbox';
+import './app/config/googleMaps';
 
 // ✅ Import the push notifications hook
 import { usePushNotifications } from './app/hooks/usePushNotifications';

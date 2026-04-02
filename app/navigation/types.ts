@@ -11,7 +11,11 @@ export type RootStackParamList = {
   RoleSelection: undefined;
   ForgotPassword: undefined;
   VendorAddresses: undefined;
-
+  AddressPicker: {
+    onSelectAddress?: (address: any) => void;
+    initialLocation?: { latitude: number; longitude: number };
+    selectedAddress?: any; // Add this
+  };
   //common
   Messaging:undefined;
 

@@ -327,7 +327,14 @@ useEffect(() => {
       <View style={styles.container}>
       
 <View style={styles.header}>
-  <Text style={styles.headerTitle}>Dashboard</Text>
+  <Text style={styles.headerTitle}> Welcome Admin</Text>
+  <TouchableOpacity
+                onPress={() => navigation.navigate('Notifications' as never)}
+                style={styles.iconButton}
+              >
+                <Feather name="bell" size={20} color="#fff" />
+                <View style={styles.notificationDot} />
+              </TouchableOpacity>
   <TouchableOpacity 
     onPress={() => navigation.navigate('Messaging')}
     style={styles.messageButton}
@@ -758,6 +765,15 @@ unreadBadgeText: {
     flexDirection:'row',
     justifyContent:'space-between',
   },
+     notificationDot: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#f97316',
+  },
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
@@ -773,6 +789,15 @@ unreadBadgeText: {
     color: '#666',
     marginTop: 12,
     fontSize: 14,
+  },
+    iconButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#1a1a1a',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
   },
   statsGrid: {
     flexDirection: 'row',

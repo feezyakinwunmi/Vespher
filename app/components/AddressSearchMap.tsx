@@ -24,7 +24,7 @@ import {
   extractAddressComponents,
   isMapboxConfigured,
   AddressComponents
-} from '../config/mapbox';
+} from '../config/googleMaps';
 
 interface Address {
   fullAddress: string;

@@ -5,6 +5,17 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Platform } from 'react-native';
 
+// ✅ Fix: Add all required properties for NotificationBehavior
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+    shouldShowBanner: true,     // iOS only
+    shouldShowList: true,  
+  }),
+});
+
 export function usePushNotifications() {
   const { user } = useAuth();
 
@@ -23,9 +34,9 @@ export function usePushNotifications() {
         // Get token
         const tokenData = await Notifications.getExpoPushTokenAsync();
         const token = tokenData.data;
-        console.log('Push token:', token);
+        console.log('📱 Push token:', token);
         
-        // Set up Android channel
+        // Set up notification channels for Android
         if (Platform.OS === 'android') {
           await Notifications.setNotificationChannelAsync('default', {
             name: 'Default',
@@ -33,9 +44,30 @@ export function usePushNotifications() {
             vibrationPattern: [0, 250, 250, 250],
             lightColor: '#f97316',
           });
+          
+          await Notifications.setNotificationChannelAsync('orders', {
+            name: 'Orders',
+            importance: Notifications.AndroidImportance.HIGH,
+            vibrationPattern: [0, 250, 250, 250],
+            lightColor: '#f97316',
+          });
+          
+          await Notifications.setNotificationChannelAsync('payments', {
+            name: 'Payments',
+            importance: Notifications.AndroidImportance.HIGH,
+            vibrationPattern: [0, 250, 250, 250],
+            lightColor: '#10b981',
+          });
+          
+          await Notifications.setNotificationChannelAsync('alerts', {
+            name: 'Alerts',
+            importance: Notifications.AndroidImportance.HIGH,
+            vibrationPattern: [0, 250, 250, 250],
+            lightColor: '#ef4444',
+          });
         }
         
-        // Save to database
+        // Save token to database
         await supabase
           .from('user_push_tokens')
           .upsert({
@@ -45,7 +77,7 @@ export function usePushNotifications() {
             updated_at: new Date().toISOString(),
           });
           
-        console.log('Push token saved successfully');
+        console.log('✅ Push token saved successfully for', Platform.OS);
         
       } catch (error) {
         console.error('Push notification error:', error);
@@ -54,16 +86,23 @@ export function usePushNotifications() {
     
     setupPushNotifications();
     
-    // Add notification listeners - these return subscription objects
+    // Add notification listeners
     const notificationSubscription = Notifications.addNotificationReceivedListener(notification => {
-      console.log('Notification received:', notification);
+      console.log('🔔 Notification received:', notification);
     });
     
+    // ✅ Fix: Check if data exists before accessing
     const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
-      console.log('Notification tapped:', response.notification.request.content.data);
+      const data = response.notification.request.content.data;
+      if (data) {
+        console.log('👆 Notification tapped:', data);
+        // Handle navigation based on data
+        if (data.actionLink) {
+          // Navigate to appropriate screen
+        }
+      }
     });
     
-    // ✅ Correct cleanup - subscriptions have a .remove() method
     return () => {
       notificationSubscription.remove();
       responseSubscription.remove();

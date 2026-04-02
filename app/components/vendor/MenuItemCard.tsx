@@ -33,6 +33,8 @@ export function MenuItemCard({
   const [showQuantityModal, setShowQuantityModal] = useState(false);
   const [quantity, setQuantity] = useState(item.quantity_available?.toString() || '0');
   const [imageError, setImageError] = useState(false);
+  const [imageLoadAttempt, setImageLoadAttempt] = useState(Date.now());
+
 
   const getStatusColor = () => {
     if (item.approval_status === 'pending') return '#f59e0b';
@@ -64,11 +66,20 @@ export function MenuItemCard({
         {/* Image */}
         <View style={styles.imageContainer}>
           {item.image_url && !imageError ? (
-            <Image
-              source={{ uri: item.image_url }}
-              style={styles.image}
-              onError={() => setImageError(true)}
-            />
+   <Image
+  source={{ 
+    uri: `${item.image_url}?t=${imageLoadAttempt}`, // Add cache buster
+    cache: 'reload'
+  }}
+  style={styles.image}
+  onError={(e) => {
+    console.log('❌ Image failed to load:', item.image_url);
+    setImageError(true);
+  }}
+  onLoad={() => {
+    console.log('✅ Image loaded:', item.image_url);
+  }}
+/>
           ) : (
             <LinearGradient
               colors={['#f97316', '#f43f5e']}

@@ -230,7 +230,17 @@ const renderOverview = () => (
       <Text style={styles.vendorName}>{vendorName || 'Vendor'}</Text>
     </View>
   </View>
+
+  
   <View style={styles.headerRight}>
+     {/* Notifications */}
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Notifications' as never)}
+              style={styles.iconButton}
+            >
+              <Feather name="bell" size={20} color="#fff" />
+              <View style={styles.notificationDot} />
+            </TouchableOpacity>
     <TouchableOpacity 
       onPress={() => navigation.navigate('Messaging')}
       style={styles.messageButton}
@@ -256,6 +266,9 @@ const renderOverview = () => (
     </View>
   </View>
 </View>
+
+
+
 
 {/* Latest Message Preview (if there's a recent message) */}
 {latestMessage && (
@@ -869,6 +882,15 @@ latestMessageText: {
     color: '#fff',
     marginBottom: 4,
   },
+   iconButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#1a1a1a',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
   statLabel: {
     fontSize: 12,
     color: '#666',
@@ -886,6 +908,15 @@ latestMessageText: {
     fontSize: 18,
     fontWeight: '600',
     color: '#fff',
+  },
+    notificationDot: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#f97316',
   },
   seeAllText: {
     color: '#f97316',

@@ -362,7 +362,8 @@ export function ProfileScreen() {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Saved Addresses</Text>
             <TouchableOpacity
-              onPress={() => setShowAddAddress(true)}
+              onPress={() => navigation.navigate('Addresses' as never)}
+
               style={styles.addButton}
             >
               <Feather name="plus" size={16} color="#f97316" />
@@ -515,93 +516,7 @@ export function ProfileScreen() {
         </View>
       </Modal>
 
-      {/* Add Address Modal */}
-      <Modal
-        visible={showAddAddress}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowAddAddress(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, styles.addressModalContent]}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Add New Address</Text>
-              <TouchableOpacity onPress={() => setShowAddAddress(false)} style={styles.modalCloseButton}>
-                <Feather name="x" size={20} color="#fff" />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
-              <View style={styles.modalField}>
-                <Text style={styles.modalFieldLabel}>Label *</Text>
-                <TextInput
-                  style={styles.modalInput}
-                  value={newAddress.label}
-                  onChangeText={(text) => setNewAddress({...newAddress, label: text})}
-                  placeholder="e.g., Home, School, Office"
-                  placeholderTextColor="#666"
-                />
-              </View>
-
-              <View style={styles.modalField}>
-                <Text style={styles.modalFieldLabel}>Street Address *</Text>
-                <TextInput
-                  style={styles.modalInput}
-                  value={newAddress.street}
-                  onChangeText={(text) => setNewAddress({...newAddress, street: text})}
-                  placeholder="Enter street address"
-                  placeholderTextColor="#666"
-                />
-              </View>
-
-              <View style={styles.modalField}>
-                <Text style={styles.modalFieldLabel}>Area *</Text>
-                <TextInput
-                  style={styles.modalInput}
-                  value={newAddress.area}
-                  onChangeText={(text) => setNewAddress({...newAddress, area: text})}
-                  placeholder="e.g., Epe, Ikorodu"
-                  placeholderTextColor="#666"
-                />
-              </View>
-
-              <View style={styles.modalField}>
-                <Text style={styles.modalFieldLabel}>Landmark (Optional)</Text>
-                <TextInput
-                  style={styles.modalInput}
-                  value={newAddress.landmark}
-                  onChangeText={(text) => setNewAddress({...newAddress, landmark: text})}
-                  placeholder="Nearby landmark"
-                  placeholderTextColor="#666"
-                />
-              </View>
-
-              <View style={styles.modalField}>
-                <Text style={styles.modalFieldLabel}>Phone Number *</Text>
-                <TextInput
-                  style={styles.modalInput}
-                  value={newAddress.phone}
-                  onChangeText={(text) => setNewAddress({...newAddress, phone: text})}
-                  placeholder="Contact number for delivery"
-                  placeholderTextColor="#666"
-                  keyboardType="phone-pad"
-                />
-              </View>
-
-              <TouchableOpacity onPress={handleSaveAddress} style={styles.modalButton}>
-                <LinearGradient
-                  colors={['#f97316', '#10b981']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.modalButtonGradient}
-                >
-                  <Text style={styles.modalButtonText}>Save Address</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+     
     </SafeAreaView>
   );
 }

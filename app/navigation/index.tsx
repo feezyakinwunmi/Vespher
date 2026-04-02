@@ -15,6 +15,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../contexts/AuthContext';
 import { RootStackParamList } from './types';
 import { MessagingScreen } from '../screens/MessagingScreen';
+import { AddressPickerScreen } from '../screens/AddressPickerScreen';
+
 // Auth Screens
 import { SplashScreen } from '../screens/SplashScreen';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
@@ -192,6 +194,8 @@ function AppContent() {
           <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
           <Stack.Screen name="AdminSettings" component={AdminSettingsScreen} />
           <Stack.Screen name="Messaging" component={MessagingScreen}/>
+          <Stack.Screen name="AddressPicker" component={AddressPickerScreen} />
+
         </>
       ) : (
         <>
@@ -207,6 +211,7 @@ function AppContent() {
               <Stack.Screen name="Privacy" component={PrivacyScreen} />
               <Stack.Screen name="Cart" component={CartScreen} />
                         <Stack.Screen name="Messaging" component={MessagingScreen}/>
+          <Stack.Screen name="AddressPicker" component={AddressPickerScreen} />
 
             </>
           )}
@@ -222,6 +227,8 @@ function AppContent() {
               <Stack.Screen name="Promotions" component={PromotionsScreen} />
               <Stack.Screen name ="PromotionDetails" component={PromotionDetailsScreen} />
           <Stack.Screen name="Messaging" component={MessagingScreen}/>
+                        <Stack.Screen name="Notifications" component={NotificationsScreen} />
+
 
 
             </>
@@ -242,6 +249,8 @@ function AppContent() {
               <Stack.Screen name="OutstandingPayments" component={OutstandingPaymentsScreen}/>
               <Stack.Screen name="AdminPromotions" component={AdminPromotionsScreen} />
           <Stack.Screen name="Messaging" component={MessagingScreen}/>
+                                  <Stack.Screen name="Notifications" component={NotificationsScreen} />
+
 
             </>
           )}

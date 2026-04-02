@@ -8,21 +8,17 @@ import {
   Linking,
   ActivityIndicator 
 } from 'react-native';
-import Mapbox from '@rnmapbox/maps';
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import { Feather } from '@expo/vector-icons';
 import { useLocation } from '../contexts/LocationContext';
+import { useVendors } from '../hooks/customer/useVendors';
 
 interface VendorMapProps {
-  vendorLocation: {
-    latitude: number;
-    longitude: number;
-    address: string;
-    name: string;
-  };
+  vendorId: string; // ✅ Change: pass vendorId instead of full location
   onDistanceCalculated?: (distance: number, fee: number) => void;
 }
 
-export function VendorMap({ vendorLocation, onDistanceCalculated }: VendorMapProps) {
+export function VendorMap({ vendorId, onDistanceCalculated }: VendorMapProps) {
   const { 
     userLocation, 
     getDistanceFromUser, 
@@ -30,23 +26,48 @@ export function VendorMap({ vendorLocation, onDistanceCalculated }: VendorMapPro
     requestLocation 
   } = useLocation();
   
-  const cameraRef = useRef<Mapbox.Camera>(null);
+  // ✅ Get vendor data from the vendors hook
+  const { vendors } = useVendors();
+  const vendor = vendors.find(v => v.id === vendorId);
+  
+  const mapRef = useRef<MapView>(null);
   
   const [distance, setDistance] = useState<number | null>(null);
   const [deliveryFee, setDeliveryFee] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [mapReady, setMapReady] = useState(false);
+  const [region, setRegion] = useState<Region>({
+    latitude: vendor?.latitude || 6.5244,
+    longitude: vendor?.longitude || 3.3792,
+    latitudeDelta: 0.0922,
+    longitudeDelta: 0.0421,
+  });
+
+  // Update region when vendor loads
+  useEffect(() => {
+    if (vendor?.latitude && vendor?.longitude) {
+      setRegion({
+        latitude: vendor.latitude,
+        longitude: vendor.longitude,
+        latitudeDelta: 0.0922,
+        longitudeDelta: 0.0421,
+      });
+    }
+  }, [vendor]);
 
   useEffect(() => {
-    if (userLocation) {
+    if (userLocation && vendor) {
       calculateVendorDistance();
+      fitToBounds();
     }
-  }, [userLocation]);
+  }, [userLocation, vendor]);
 
   const calculateVendorDistance = async () => {
+    if (!vendor?.latitude || !vendor?.longitude) return;
+    
     const dist = await getDistanceFromUser(
-      vendorLocation.latitude,
-      vendorLocation.longitude
+      vendor.latitude,
+      vendor.longitude
     );
     const fee = calculateDeliveryFeeFromDistance(dist);
     setDistance(dist);
@@ -57,65 +78,94 @@ export function VendorMap({ vendorLocation, onDistanceCalculated }: VendorMapPro
   };
 
   const fitToBounds = () => {
-    if (!userLocation || !vendorLocation || !mapReady) return;
+    if (!userLocation || !vendor?.latitude || !vendor?.longitude || !mapReady) return;
     
     const points = [
-      [vendorLocation.longitude, vendorLocation.latitude],
-      [userLocation.longitude, userLocation.latitude],
+      { latitude: vendor.latitude, longitude: vendor.longitude },
+      { latitude: userLocation.latitude, longitude: userLocation.longitude },
     ];
     
-    let minLng = points[0][0], maxLng = points[0][0];
-    let minLat = points[0][1], maxLat = points[0][1];
+    // Calculate bounds
+    let minLat = points[0].latitude;
+    let maxLat = points[0].latitude;
+    let minLng = points[0].longitude;
+    let maxLng = points[0].longitude;
     
-    points.forEach(([lng, lat]) => {
-      minLng = Math.min(minLng, lng);
-      maxLng = Math.max(maxLng, lng);
-      minLat = Math.min(minLat, lat);
-      maxLat = Math.max(maxLat, lat);
+    points.forEach(point => {
+      minLat = Math.min(minLat, point.latitude);
+      maxLat = Math.max(maxLat, point.latitude);
+      minLng = Math.min(minLng, point.longitude);
+      maxLng = Math.max(maxLng, point.longitude);
     });
     
     const padding = 0.02;
-    cameraRef.current?.fitBounds(
-      [maxLng + padding, maxLat + padding],
-      [minLng - padding, minLat - padding],
-      [50, 50, 50, 50],
-      500
-    );
+    const newRegion = {
+      latitude: (minLat + maxLat) / 2,
+      longitude: (minLng + maxLng) / 2,
+      latitudeDelta: (maxLat - minLat) + padding,
+      longitudeDelta: (maxLng - minLng) + padding,
+    };
+    
+    mapRef.current?.animateToRegion(newRegion, 500);
+    setRegion(newRegion);
   };
 
   const centerOnVendor = () => {
-    if (vendorLocation && cameraRef.current) {
-      cameraRef.current.setCamera({
-        centerCoordinate: [vendorLocation.longitude, vendorLocation.latitude],
-        zoomLevel: 16,
-        animationDuration: 500,
-      });
+    if (vendor?.latitude && vendor?.longitude) {
+      mapRef.current?.animateToRegion({
+        latitude: vendor.latitude,
+        longitude: vendor.longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      }, 500);
     }
   };
 
   const centerOnUser = () => {
-    if (userLocation && cameraRef.current) {
-      cameraRef.current.setCamera({
-        centerCoordinate: [userLocation.longitude, userLocation.latitude],
-        zoomLevel: 16,
-        animationDuration: 500,
-      });
+    if (userLocation) {
+      mapRef.current?.animateToRegion({
+        latitude: userLocation.latitude,
+        longitude: userLocation.longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      }, 500);
     } else {
       requestLocation();
     }
   };
 
   const openMaps = () => {
-    const url = `https://www.google.com/maps/dir/?api=1&destination=${vendorLocation.latitude},${vendorLocation.longitude}`;
-    Linking.openURL(url);
+    if (vendor?.latitude && vendor?.longitude) {
+      const url = `https://www.google.com/maps/dir/?api=1&destination=${vendor.latitude},${vendor.longitude}`;
+      Linking.openURL(url);
+    }
   };
 
-  const getInitialCenter = () => {
+  const getInitialRegion = () => {
     if (userLocation) {
-      return [userLocation.longitude, userLocation.latitude];
+      return {
+        latitude: userLocation.latitude,
+        longitude: userLocation.longitude,
+        latitudeDelta: 0.0922,
+        longitudeDelta: 0.0421,
+      };
     }
-    return [vendorLocation.longitude, vendorLocation.latitude];
+    return {
+      latitude: vendor?.latitude || 6.5244,
+      longitude: vendor?.longitude || 3.3792,
+      latitudeDelta: 0.0922,
+      longitudeDelta: 0.0421,
+    };
   };
+
+  if (!vendor) {
+    return (
+      <View style={styles.locationPrompt}>
+        <ActivityIndicator size="small" color="#f97316" />
+        <Text style={styles.locationPromptText}>Loading vendor...</Text>
+      </View>
+    );
+  }
 
   if (!userLocation) {
     return (
@@ -134,76 +184,62 @@ export function VendorMap({ vendorLocation, onDistanceCalculated }: VendorMapPro
         </View>
       )}
 
-      <Mapbox.MapView
+      <MapView
+        ref={mapRef}
         style={styles.map}
-        styleURL="mapbox://styles/mapbox/streets-v12"
-        onDidFinishLoadingMap={() => {
+        provider={PROVIDER_GOOGLE}
+        initialRegion={getInitialRegion()}
+        region={region}
+        onMapReady={() => {
           setIsLoading(false);
           setMapReady(true);
           setTimeout(fitToBounds, 500);
         }}
-        logoEnabled={false}
-        attributionEnabled={false}
+        showsUserLocation={true}
+        showsMyLocationButton={false}
+        zoomControlEnabled={true}
       >
-        <Mapbox.Camera
-          ref={cameraRef}
-          centerCoordinate={getInitialCenter()}
-          zoomLevel={13}
-          animationDuration={1000}
-        />
-
         {/* Vendor Marker */}
-        <Mapbox.PointAnnotation
-          id="vendor"
-          coordinate={[vendorLocation.longitude, vendorLocation.latitude]}
-          title={vendorLocation.name}
-        >
-          <View style={styles.vendorMarker}>
-            <Feather name="coffee" size={20} color="#fff" />
-          </View>
-        </Mapbox.PointAnnotation>
+        {vendor.latitude && vendor.longitude && (
+          <Marker
+            coordinate={{
+              latitude: vendor.latitude,
+              longitude: vendor.longitude,
+            }}
+            title={vendor.name}
+            description={vendor.address}
+          >
+            <View style={styles.vendorMarker}>
+              <Feather name="coffee" size={20} color="#fff" />
+            </View>
+          </Marker>
+        )}
 
         {/* User Location Marker */}
-        <Mapbox.PointAnnotation
-          id="user"
-          coordinate={[userLocation.longitude, userLocation.latitude]}
-          title="Your Location"
-        >
-          <View style={styles.userMarker}>
-            <Feather name="navigation" size={16} color="#fff" />
-          </View>
-        </Mapbox.PointAnnotation>
-
-        {/* Route Line */}
-        {userLocation && vendorLocation && (
-          <Mapbox.ShapeSource
-            id="routeLine"
-            shape={{
-              type: 'Feature',
-              geometry: {
-                type: 'LineString',
-                coordinates: [
-                  [userLocation.longitude, userLocation.latitude],
-                  [vendorLocation.longitude, vendorLocation.latitude],
-                ],
-              },
-              properties: {},
-            }}
+        {userLocation && (
+          <Marker
+            coordinate={userLocation}
+            title="Your Location"
           >
-            <Mapbox.LineLayer
-              id="routeLineLayer"
-              style={{
-                lineColor: '#f97316',
-                lineWidth: 3,
-                lineCap: 'round',
-                lineJoin: 'round',
-                lineOpacity: 0.8,
-                lineDasharray: [2, 2],
-              }}
-            />
-          </Mapbox.ShapeSource>
+            <View style={styles.userMarker}>
+              <Feather name="navigation" size={16} color="#fff" />
+            </View>
+          </Marker>
         )}
-      </Mapbox.MapView>
+
+        {/* Route Line between user and vendor */}
+        {userLocation && vendor.latitude && vendor.longitude && (
+          <Polyline
+            coordinates={[
+              { latitude: userLocation.latitude, longitude: userLocation.longitude },
+              { latitude: vendor.latitude, longitude: vendor.longitude },
+            ]}
+            strokeColor="#f97316"
+            strokeWidth={3}
+            lineDashPattern={[5, 5]}
+          />
+        )}
+      </MapView>
 
       {/* Control Buttons */}
       <View style={styles.controlButtons}>
@@ -294,6 +330,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
   },
   userMarker: {
     width: 32,
@@ -304,6 +345,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
   },
   controlButtons: {
     position: 'absolute',

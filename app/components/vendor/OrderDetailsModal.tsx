@@ -15,9 +15,6 @@ import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { addOrderToCalendar } from '../../utils/calendar';
 import { Linking } from 'react-native';
-import Mapbox from '@rnmapbox/maps';
-import { MAPBOX_TOKEN } from '../../config/mapbox';
-
 
 interface OrderDetailsModalProps {
   visible: boolean;
@@ -64,73 +61,58 @@ export function OrderDetailsModal({
 
   if (!order) return null;
 
-   console.log('🧾 Order in modal:', {
-    id: order.id,
-    is_scheduled: order.is_scheduled,
-    scheduled_datetime: order.scheduled_datetime,
-    event_type: order.event_type,
-    special_request_category: order.special_request_category,
-    special_request_text: order.special_request_text,
-    status: order.status
-  });
-
   const isScheduled = order.is_scheduled === true;
   const scheduledDateTime = order.scheduled_datetime ? new Date(order.scheduled_datetime) : null;
 
- const handleAction = (action: string) => {
-  switch (action) {
-    case 'accept':
-      onAccept?.(order.id);
-      break;
-      
-    case 'reject':
-      // Check if scheduled order
-      if (order.is_scheduled) {
-        Alert.alert(
-          'Cancel Scheduled Order',
-          'This is a scheduled order. Are you sure you want to cancel it?',
-          [
-            { text: 'No', style: 'cancel' },
-            { text: 'Yes, Cancel', onPress: () => onReject?.(order.id), style: 'destructive' }
-          ]
-        );
-      }
-      // Show refund warning if paid
-      else if (order.payment_method === 'card' && order.payment_status === 'paid') {
-        Alert.alert(
-          'Refund Warning',
-          'This order was already paid. A refund will be processed to the customer. Continue?',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { 
-              text: 'Yes, Reject & Refund', 
-              onPress: () => onReject?.(order.id),
-              style: 'destructive'
-            }
-          ]
-        );
-      } else {
-        onReject?.(order.id);
-      }
-      break;
-      
-    case 'prepare':
-      onPrepare?.(order.id);
-      break;
-      
-    case 'ready':
-      onReady?.(order.id);
-      break;
-  }
-};
-
+  const handleAction = (action: string) => {
+    switch (action) {
+      case 'accept':
+        onAccept?.(order.id);
+        break;
+        
+      case 'reject':
+        if (order.is_scheduled) {
+          Alert.alert(
+            'Cancel Scheduled Order',
+            'This is a scheduled order. Are you sure you want to cancel it?',
+            [
+              { text: 'No', style: 'cancel' },
+              { text: 'Yes, Cancel', onPress: () => onReject?.(order.id), style: 'destructive' }
+            ]
+          );
+        } else if (order.payment_method === 'card' && order.payment_status === 'paid') {
+          Alert.alert(
+            'Refund Warning',
+            'This order was already paid. A refund will be processed to the customer. Continue?',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { 
+                text: 'Yes, Reject & Refund', 
+                onPress: () => onReject?.(order.id),
+                style: 'destructive'
+              }
+            ]
+          );
+        } else {
+          onReject?.(order.id);
+        }
+        break;
+        
+      case 'prepare':
+        onPrepare?.(order.id);
+        break;
+        
+      case 'ready':
+        onReady?.(order.id);
+        break;
+    }
+  };
 
   const handleAddToCalendar = async () => {
-  await addOrderToCalendar(order);
-};
+    await addOrderToCalendar(order);
+  };
 
   const getActionButtons = () => {
-    // For scheduled orders in pending status
     if (isScheduled && order.status === 'pending') {
       return (
         <View style={styles.actionButtonsContainer}>
@@ -208,149 +190,70 @@ export function OrderDetailsModal({
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
-  const getEventTypeLabel = (eventType: string) => {
-    const types: Record<string, string> = {
-      party: 'Party/Celebration',
-      corporate: 'Corporate Event',
-      family: 'Family Gathering',
-      dietary: 'Dietary Restrictions',
-      allergies: 'Allergies',
-      other: 'Other',
-    };
-    return types[eventType] || eventType;
-  };
-
-const DeliveryLocationMap = ({ latitude, longitude, address }: { latitude: number; longitude: number; address: string }) => {
-  const [mapReady, setMapReady] = useState(false);
-
-  if (!latitude || !longitude) {
+  // Render promotion details if order contains promotion items
+  const renderPromotionDetails = () => {
+    if (!order?.items) return null;
+    
+    const hasPromotion = order.items.some((item: any) => item.is_promotion || item.promotion_id);
+    
+    if (!hasPromotion) return null;
+    
     return (
-      <View style={styles.mapPlaceholder}>
-        <Feather name="map-pin" size={24} color="#666" />
-        <Text style={styles.mapPlaceholderText}>No location coordinates available</Text>
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.mapContainer}>
-      {!mapReady && (
-        <View style={styles.mapLoadingOverlay}>
-          <ActivityIndicator size="small" color="#f97316" />
+      <View style={styles.promotionSection}>
+        <View style={styles.promotionHeader}>
+          <Feather name="gift" size={16} color="#f97316" />
+          <Text style={styles.promotionTitle}>Promotion Order</Text>
         </View>
-      )}
-      
-      <Mapbox.MapView
-        style={styles.map}
-        styleURL="mapbox://styles/mapbox/streets-v12"
-        onDidFinishLoadingMap={() => setMapReady(true)}
-        logoEnabled={false}
-        attributionEnabled={false}
-      >
-        <Mapbox.Camera
-          centerCoordinate={[longitude, latitude]}
-          zoomLevel={15}
-          animationDuration={500}
-        />
         
-        <Mapbox.PointAnnotation
-          id="delivery"
-          coordinate={[longitude, latitude]}
-          title="Delivery Location"
-        >
-          <View style={styles.deliveryMarker}>
-            <Feather name="home" size={18} color="#fff" />
-          </View>
-        </Mapbox.PointAnnotation>
-      </Mapbox.MapView>
-      
-      {/* Address Label Overlay */}
-      <View style={styles.mapAddressOverlay}>
-        <Feather name="map-pin" size={12} color="#f97316" />
-        <Text style={styles.mapAddressText} numberOfLines={1}>
-          {address}
-        </Text>
-      </View>
-    </View>
-  );
-};
-
-  // Add this function inside the component, before the return statement:
-
-// Render promotion details if order contains promotion items
-const renderPromotionDetails = () => {
-  if (!order?.items) return null;
-  
-  // Check if any item is from a promotion
-  const hasPromotion = order.items.some((item: any) => item.is_promotion || item.promotion_id);
-  
-  if (!hasPromotion) return null;
-  
-  return (
-    <View style={styles.promotionSection}>
-      <View style={styles.promotionHeader}>
-        <Feather name="gift" size={16} color="#f97316" />
-        <Text style={styles.promotionTitle}>Promotion Order</Text>
-      </View>
-      
-      {order.items.map((item: any, index: number) => {
-        if (item.is_promotion || item.promotion_id) {
-          return (
-            <View key={index} style={styles.promotionItem}>
-              <View style={styles.promotionItemHeader}>
-                <Text style={styles.promotionItemName}>{item.name || item.product?.name}</Text>
-                {item.is_free_item && (
-                  <View style={styles.freeBadge}>
-                    <Text style={styles.freeBadgeText}>FREE</Text>
-                  </View>
+        {order.items.map((item: any, index: number) => {
+          if (item.is_promotion || item.promotion_id) {
+            return (
+              <View key={index} style={styles.promotionItem}>
+                <View style={styles.promotionItemHeader}>
+                  <Text style={styles.promotionItemName}>{item.name || item.product?.name}</Text>
+                  {item.is_free_item && (
+                    <View style={styles.freeBadge}>
+                      <Text style={styles.freeBadgeText}>FREE</Text>
+                    </View>
+                  )}
+                  {item.is_combo_main && !item.is_free_item && (
+                    <View style={styles.comboBadge}>
+                      <Text style={styles.comboBadgeText}>Combo Main</Text>
+                    </View>
+                  )}
+                </View>
+                
+                {item.combo_details && (
+                  <Text style={styles.comboDetailText}>
+                    Buy {item.combo_details.buy_quantity} get {item.combo_details.get_quantity} {item.combo_details.free_product_name} FREE
+                  </Text>
                 )}
-                {item.is_combo_main && !item.is_free_item && (
-                  <View style={styles.comboBadge}>
-                    <Text style={styles.comboBadgeText}>Combo Main</Text>
-                  </View>
+                
+                {item.is_combo_main && !item.combo_details && (
+                  <Text style={styles.comboMainText}>
+                    Main item in combo promotion
+                  </Text>
+                )}
+                
+                {item.is_free_item && (
+                  <Text style={styles.comboFreeText}>
+                    Free gift with combo purchase
+                  </Text>
+                )}
+                
+                {item.promotion_price && !item.is_free_item && (
+                  <Text style={styles.promotionPriceText}>
+                    Promotion price: ₦{item.promotion_price.toLocaleString()}
+                  </Text>
                 )}
               </View>
-              
-              {item.combo_details && (
-                <Text style={styles.comboDetailText}>
-                  Buy {item.combo_details.buy_quantity} get {item.combo_details.get_quantity} {item.combo_details.free_product_name} FREE
-                </Text>
-              )}
-              
-              {item.is_combo_main && !item.combo_details && (
-                <Text style={styles.comboMainText}>
-                  Main item in combo promotion
-                </Text>
-              )}
-              
-              {item.is_free_item && (
-                <Text style={styles.comboFreeText}>
-                  Free gift with combo purchase
-                </Text>
-              )}
-              
-              {item.promotion_price && !item.is_free_item && (
-                <Text style={styles.promotionPriceText}>
-                  Promotion price: ₦{item.promotion_price.toLocaleString()}
-                </Text>
-              )}
-            </View>
-          );
-        }
-        return null;
-      })}
-    </View>
-  );
-};
+            );
+          }
+          return null;
+        })}
+      </View>
+    );
+  };
 
   return (
     <Modal
@@ -387,55 +290,54 @@ const renderPromotionDetails = () => {
               </View>
             </View>
 
-            {/* Scheduled Order Details - Now from orders table */}
-         {/* Scheduled Order Details - Directly from orders table */}
-{order?.is_scheduled && order?.scheduled_datetime && (
-  <View style={[styles.section, styles.scheduledSection]}>
-    <Text style={styles.sectionTitle}>
-      <Feather name="calendar" size={14} color="#8b5cf6" /> Scheduled Order
-    </Text>
-    <View style={styles.scheduledDetail}>
-      <View style={styles.infoRow}>
-        <Feather name="calendar" size={14} color="#f97316" />
-        <Text style={styles.scheduledDetailText}>
-          Date: {new Date(order.scheduled_datetime).toLocaleDateString()}
-        </Text>
-      </View>
-      
-      <View style={styles.infoRow}>
-        <Feather name="clock" size={14} color="#f97316" />
-        <Text style={styles.scheduledDetailText}>
-          Time: {new Date(order.scheduled_datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </Text>
-      </View>
-      
-      {order.event_type && order.event_type !== 'other' && (
-        <View style={styles.infoRow}>
-          <Feather name="tag" size={14} color="#f97316" />
-          <Text style={styles.scheduledDetailText}>
-            Event: {order.event_type.charAt(0).toUpperCase() + order.event_type.slice(1)}
-          </Text>
-        </View>
-      )}
-      
-      {order.special_request_category && (
-        <View style={styles.infoRow}>
-          <Feather name="alert-circle" size={14} color="#f97316" />
-          <Text style={styles.scheduledDetailText}>
-            Category: {order.special_request_category}
-          </Text>
-        </View>
-      )}
-      
-      {order.special_request_text && (
-        <View style={styles.instructionsBox}>
-          <Text style={styles.instructionsLabel}>Special Request:</Text>
-          <Text style={styles.instructionsText}>{order.special_request_text}</Text>
-        </View>
-      )}
-    </View>
-  </View>
-)}
+            {/* Scheduled Order Details */}
+            {order?.is_scheduled && order?.scheduled_datetime && (
+              <View style={[styles.section, styles.scheduledSection]}>
+                <Text style={styles.sectionTitle}>
+                  <Feather name="calendar" size={14} color="#8b5cf6" /> Scheduled Order
+                </Text>
+                <View style={styles.scheduledDetail}>
+                  <View style={styles.infoRow}>
+                    <Feather name="calendar" size={14} color="#f97316" />
+                    <Text style={styles.scheduledDetailText}>
+                      Date: {new Date(order.scheduled_datetime).toLocaleDateString()}
+                    </Text>
+                  </View>
+                  
+                  <View style={styles.infoRow}>
+                    <Feather name="clock" size={14} color="#f97316" />
+                    <Text style={styles.scheduledDetailText}>
+                      Time: {new Date(order.scheduled_datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </Text>
+                  </View>
+                  
+                  {order.event_type && order.event_type !== 'other' && (
+                    <View style={styles.infoRow}>
+                      <Feather name="tag" size={14} color="#f97316" />
+                      <Text style={styles.scheduledDetailText}>
+                        Event: {order.event_type.charAt(0).toUpperCase() + order.event_type.slice(1)}
+                      </Text>
+                    </View>
+                  )}
+                  
+                  {order.special_request_category && (
+                    <View style={styles.infoRow}>
+                      <Feather name="alert-circle" size={14} color="#f97316" />
+                      <Text style={styles.scheduledDetailText}>
+                        Category: {order.special_request_category}
+                      </Text>
+                    </View>
+                  )}
+                  
+                  {order.special_request_text && (
+                    <View style={styles.instructionsBox}>
+                      <Text style={styles.instructionsLabel}>Special Request:</Text>
+                      <Text style={styles.instructionsText}>{order.special_request_text}</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            )}
 
             {/* Customer Info */}
             <View style={styles.section}>
@@ -454,52 +356,43 @@ const renderPromotionDetails = () => {
               </View>
             </View>
 
-           <View style={styles.section}>
-  <Text style={styles.sectionTitle}>Delivery Location</Text>
-  
-  {/* Map View */}
-  <DeliveryLocationMap
-    latitude={order.delivery_address?.latitude}
-    longitude={order.delivery_address?.longitude}
-    address={order.delivery_address?.street || ''}
-  />
-  
-  {/* Address Details */}
-  <View style={styles.addressDetailsContainer}>
-    <View style={styles.addressDetails}>
-      <Feather name="map-pin" size={14} color="#f97316" />
-      <View style={styles.addressTextContainer}>
-        <Text style={styles.addressStreet}>{order.delivery_address?.street}</Text>
-        <Text style={styles.addressArea}>{order.delivery_address?.area}</Text>
-        {order.delivery_address?.landmark && (
-          <Text style={styles.addressLandmark}>
-            Landmark: {order.delivery_address.landmark}
-          </Text>
-        )}
-        {order.delivery_address?.phone && (
-          <Text style={styles.addressPhone}>Phone: {order.delivery_address.phone}</Text>
-        )}
-      </View>
-    </View>
-  </View>
-</View>
+            {/* Delivery Address - No Map, Just Address Details */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Delivery Location</Text>
+              
+              {/* Address Details Card */}
+              <View style={styles.addressCard}>
+                <View style={styles.addressDetails}>
+                  <Feather name="map-pin" size={18} color="#f97316" style={styles.addressIcon} />
+                  <View style={styles.addressTextContainer}>
+                    <Text style={styles.addressStreet}>{order.delivery_address?.street}</Text>
+                    <Text style={styles.addressArea}>{order.delivery_address?.area}</Text>
+                    {order.delivery_address?.landmark && (
+                      <Text style={styles.addressLandmark}>
+                        Landmark: {order.delivery_address.landmark}
+                      </Text>
+                    )}
+                    {order.delivery_address?.phone && (
+                      <Text style={styles.addressPhone}>Phone: {order.delivery_address.phone}</Text>
+                    )}
+                  </View>
+                </View>
+              </View>
 
-// Also add a "Get Directions" button for vendors to open Google Maps
-// Add this after the address section:
-
-{/* Get Directions Button */}
-{order.delivery_address?.latitude && order.delivery_address?.longitude && (
-  <TouchableOpacity
-    style={styles.directionsButton}
-    onPress={() => {
-      const url = `https://www.google.com/maps/dir/?api=1&destination=${order.delivery_address.latitude},${order.delivery_address.longitude}`;
-      Linking.openURL(url);
-    }}
-  >
-    <Feather name="navigation" size={16} color="#f97316" />
-    <Text style={styles.directionsButtonText}>Get Directions</Text>
-  </TouchableOpacity>
-)}
+              {/* Get Directions Button */}
+              {order.delivery_address?.latitude && order.delivery_address?.longitude && (
+                <TouchableOpacity
+                  style={styles.directionsButton}
+                  onPress={() => {
+                    const url = `https://www.google.com/maps/dir/?api=1&destination=${order.delivery_address.latitude},${order.delivery_address.longitude}`;
+                    Linking.openURL(url);
+                  }}
+                >
+                  <Feather name="navigation" size={16} color="#f97316" />
+                  <Text style={styles.directionsButtonText}>Get Directions</Text>
+                </TouchableOpacity>
+              )}
+            </View>
 
             {/* Order Items */}
             <View style={styles.section}>
@@ -533,8 +426,7 @@ const renderPromotionDetails = () => {
                   </Text>
                 </View>
               ))}
-                {renderPromotionDetails()}
-
+              {renderPromotionDetails()}
 
               {/* Order Summary */}
               <View style={styles.summaryContainer}>
@@ -565,10 +457,6 @@ const renderPromotionDetails = () => {
               </View>
             </View>
 
-
-
-            
-
             {/* Payment Info */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Payment Method</Text>
@@ -595,7 +483,6 @@ const renderPromotionDetails = () => {
               </View>
             )}
           </ScrollView>
-     
 
           {/* Action Buttons - Fixed at bottom */}
           <View style={styles.modalFooter}>
@@ -649,21 +536,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
   },
-  calendarButton: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: 8,
-  backgroundColor: '#8b5cf6',
-  padding: 12,
-  borderRadius: 8,
-  marginTop: 12,
-},
-calendarButtonText: {
-  color: '#fff',
-  fontSize: 14,
-  fontWeight: '500',
-},
   modalBody: {
     flex: 1,
     padding: 16,
@@ -721,113 +593,57 @@ calendarButtonText: {
   customerInfo: {
     gap: 8,
   },
-  // Add to styles object
-mapContainer: {
-  height: 160,
-  borderRadius: 12,
-  overflow: 'hidden',
-  marginBottom: 12,
-  position: 'relative',
-},
-map: {
-  flex: 1,
-},
-mapLoadingOverlay: {
-  position: 'absolute',
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  backgroundColor: 'rgba(0,0,0,0.5)',
-  justifyContent: 'center',
-  alignItems: 'center',
-  zIndex: 10,
-},
-mapPlaceholder: {
-  height: 160,
-  backgroundColor: '#2a2a2a',
-  borderRadius: 12,
-  justifyContent: 'center',
-  alignItems: 'center',
-  gap: 8,
-  marginBottom: 12,
-},
-mapPlaceholderText: {
-  fontSize: 12,
-  color: '#666',
-},
-mapAddressOverlay: {
-  position: 'absolute',
-  bottom: 8,
-  left: 8,
-  right: 8,
-  backgroundColor: 'rgba(0,0,0,0.7)',
-  borderRadius: 6,
-  paddingHorizontal: 8,
-  paddingVertical: 4,
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 4,
-},
-mapAddressText: {
-  fontSize: 10,
-  color: '#fff',
-  flex: 1,
-},
-addressDetailsContainer: {
-  marginTop: 8,
-},
-addressDetails: {
-  flexDirection: 'row',
-  gap: 12,
-},
-addressTextContainer: {
-  flex: 1,
-},
-addressStreet: {
-  fontSize: 14,
-  color: '#fff',
-  marginBottom: 2,
-},
-addressArea: {
-  fontSize: 12,
-  color: '#666',
-  marginBottom: 2,
-},
-addressLandmark: {
-  fontSize: 11,
-  color: '#666',
-  marginBottom: 2,
-},
-addressPhone: {
-  fontSize: 11,
-  color: '#666',
-},
-directionsButton: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: 8,
-  backgroundColor: 'rgba(249,115,22,0.1)',
-  paddingVertical: 10,
-  borderRadius: 8,
-  marginTop: 8,
-},
-directionsButtonText: {
-  color: '#f97316',
-  fontSize: 13,
-  fontWeight: '500',
-},
-deliveryMarker: {
-  width: 36,
-  height: 36,
-  borderRadius: 18,
-  backgroundColor: '#10b981',
-  justifyContent: 'center',
-  alignItems: 'center',
-  borderWidth: 2,
-  borderColor: '#fff',
-},
+  // New address styles (no map)
+  addressCard: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  addressDetails: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  addressIcon: {
+    marginTop: 2,
+  },
+  addressTextContainer: {
+    flex: 1,
+  },
+  addressStreet: {
+    fontSize: 14,
+    color: '#fff',
+    marginBottom: 4,
+  },
+  addressArea: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 4,
+  },
+  addressLandmark: {
+    fontSize: 12,
+    color: '#f97316',
+    marginBottom: 4,
+  },
+  addressPhone: {
+    fontSize: 12,
+    color: '#666',
+  },
+  directionsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(249,115,22,0.1)',
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 4,
+  },
+  directionsButtonText: {
+    color: '#f97316',
+    fontSize: 14,
+    fontWeight: '500',
+  },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -837,12 +653,7 @@ deliveryMarker: {
     fontSize: 13,
     color: '#666',
   },
-  addressInfo: {
-    flexDirection: 'row',
-    gap: 8,
-  },
- 
- 
+  // ... keep all your existing styles for itemCard, summary, promotion, etc.
   itemCard: {
     flexDirection: 'row',
     backgroundColor: '#2a2a2a',
@@ -880,7 +691,6 @@ deliveryMarker: {
     fontSize: 11,
     color: '#666',
   },
-  
   itemTotal: {
     fontSize: 13,
     fontWeight: '600',
@@ -906,85 +716,85 @@ deliveryMarker: {
     color: '#fff',
   },
   promotionSection: {
-  marginTop: 12,
-  paddingTop: 12,
-  borderTopWidth: 1,
-  borderTopColor: 'rgba(249,115,22,0.3)',
-},
-promotionHeader: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 8,
-  marginBottom: 10,
-},
-promotionTitle: {
-  fontSize: 14,
-  fontWeight: '600',
-  color: '#f97316',
-},
-promotionItem: {
-  backgroundColor: 'rgba(249,115,22,0.08)',
-  padding: 10,
-  borderRadius: 8,
-  marginBottom: 8,
-  borderWidth: 1,
-  borderColor: 'rgba(249,115,22,0.2)',
-},
-promotionItemHeader: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  marginBottom: 4,
-},
-promotionItemName: {
-  fontSize: 13,
-  fontWeight: '500',
-  color: '#fff',
-  flex: 1,
-},
-freeBadge: {
-  backgroundColor: 'rgba(16,185,129,0.2)',
-  paddingHorizontal: 8,
-  paddingVertical: 2,
-  borderRadius: 4,
-},
-freeBadgeText: {
-  fontSize: 10,
-  color: '#10b981',
-  fontWeight: '600',
-},
-comboBadge: {
-  backgroundColor: 'rgba(249,115,22,0.2)',
-  paddingHorizontal: 8,
-  paddingVertical: 2,
-  borderRadius: 4,
-},
-comboBadgeText: {
-  fontSize: 10,
-  color: '#f97316',
-  fontWeight: '600',
-},
-comboDetailText: {
-  fontSize: 11,
-  color: '#f97316',
-  marginTop: 4,
-},
-comboMainText: {
-  fontSize: 10,
-  color: '#666',
-  marginTop: 2,
-},
-comboFreeText: {
-  fontSize: 10,
-  color: '#10b981',
-  marginTop: 2,
-},
-promotionPriceText: {
-  fontSize: 10,
-  color: '#f97316',
-  marginTop: 2,
-  fontWeight: '500',
-},
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(249,115,22,0.3)',
+  },
+  promotionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+  },
+  promotionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#f97316',
+  },
+  promotionItem: {
+    backgroundColor: 'rgba(249,115,22,0.08)',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(249,115,22,0.2)',
+  },
+  promotionItemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  promotionItemName: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#fff',
+    flex: 1,
+  },
+  freeBadge: {
+    backgroundColor: 'rgba(16,185,129,0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  freeBadgeText: {
+    fontSize: 10,
+    color: '#10b981',
+    fontWeight: '600',
+  },
+  comboBadge: {
+    backgroundColor: 'rgba(249,115,22,0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  comboBadgeText: {
+    fontSize: 10,
+    color: '#f97316',
+    fontWeight: '600',
+  },
+  comboDetailText: {
+    fontSize: 11,
+    color: '#f97316',
+    marginTop: 4,
+  },
+  comboMainText: {
+    fontSize: 10,
+    color: '#666',
+    marginTop: 2,
+  },
+  comboFreeText: {
+    fontSize: 10,
+    color: '#10b981',
+    marginTop: 2,
+  },
+  promotionPriceText: {
+    fontSize: 10,
+    color: '#f97316',
+    marginTop: 2,
+    fontWeight: '500',
+  },
   discountRow: {
     marginBottom: 4,
   },

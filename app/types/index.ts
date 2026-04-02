@@ -210,9 +210,8 @@ export interface OrderItemDB {
 }
 // Order Types - Updated to match database schema
 export interface Order {
-  delivery_verification_code: boolean;
-  delivery_verification_status: string;
-  id: string;
+  delivery_verification_code?: string | null;
+  delivery_verification_status?: 'pending' | 'verified';  id: string;
   order_number?: string;
   customer_id: string;
   vendor_id: string;
@@ -244,6 +243,7 @@ export interface Order {
   notes?: string;
   special_instructions?: string;
   rejection_reason?: string;
+ 
   
   created_at: string;
   updated_at?: string;
@@ -271,7 +271,7 @@ export interface Order {
   promotion_id?: string;
   promotion_details?: any; // JSONB data
 
-  verification_expires_at?: string;
+  verification_expires_at?: string | null;
   flutterwave_fee?: number;
   flutterwave_fee_percentage?: number;
   platform_commission?: number;

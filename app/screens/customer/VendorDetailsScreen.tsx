@@ -306,15 +306,11 @@ const handleDistanceCalculated = (distance: number, fee: number) => {
 
             <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
               <View style={styles.modalSection}>
-                <VendorMap
-  vendorLocation={{
-    latitude: 6.5244, // You'll need to store these in your vendors table
-    longitude: 3.3792,
-    address: vendor.address,
-    name: vendor.name,
-  }}
+<VendorMap
+  vendorId={vendor.id}  // ✅ Pass only the ID
   onDistanceCalculated={handleDistanceCalculated}
 />
+
                 <Text style={styles.modalSectionTitle}>Description</Text>
                 <Text style={styles.modalText}>
                   {vendor.description || 'No description available'}

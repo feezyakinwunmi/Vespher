@@ -169,16 +169,54 @@ const saveCurrentLocationAsAddress = async (): Promise<Address | null> => {
   }
 };
 
+// app/contexts/LocationContext.tsx
+// Add this helper function to get actual road distance
+
+const getRoadDistance = async (
+  originLat: number, 
+  originLng: number, 
+  destLat: number, 
+  destLng: number
+): Promise<number> => {
+  try {
+    const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+    
+    const response = await fetch(
+      `https://maps.googleapis.com/maps/api/directions/json?origin=${originLat},${originLng}&destination=${destLat},${destLng}&key=${GOOGLE_API_KEY}`
+    );
+    
+    const data = await response.json();
+    
+    if (data.status === 'OK' && data.routes && data.routes[0]) {
+      // Get distance in meters, convert to km
+      const distanceInMeters = data.routes[0].legs[0].distance.value;
+      const distanceInKm = distanceInMeters / 1000;
+      console.log(`🚗 Road distance: ${distanceInKm.toFixed(2)} km`);
+      return distanceInKm;
+    } else {
+      console.warn('Directions API error:', data.status);
+      // Fallback to Haversine if Directions fails
+      return calculateHaversineDistance(originLat, originLng, destLat, destLng);
+    }
+  } catch (error) {
+    console.error('Error getting road distance:', error);
+    // Fallback to Haversine
+    return calculateHaversineDistance(originLat, originLng, destLat, destLng);
+  }
+};
+
+// Update calculateDeliveryToVendor to use road distance
 const calculateDeliveryToVendor = async (
   vendorLat: number, 
   vendorLng: number,
   deliveryLat: number,
   deliveryLng: number
 ): Promise<number> => {
-  const distance = calculateHaversineDistance(deliveryLat, deliveryLng, vendorLat, vendorLng);
+  // ✅ Use actual road distance (not straight line)
+  const distance = await getRoadDistance(deliveryLat, deliveryLng, vendorLat, vendorLng);
   setDeliveryDistance(distance);
   
-  const roundedDistance = Math.round(distance * 10) / 10; // Round to 1 decimal
+  const roundedDistance = Math.round(distance * 10) / 10;
   let fee = roundedDistance * (settings?.delivery_fee_per_km ?? 500);
   
   // Apply min/max bounds
@@ -188,19 +226,21 @@ const calculateDeliveryToVendor = async (
   return fee;
 };
 
-  const getDistanceFromUser = async (destLat: number, destLng: number): Promise<number> => {
-    if (!userLocation) {
-      await requestLocation();
-      if (!userLocation) return 0;
-    }
+// Also update getDistanceFromUser for consistency
+const getDistanceFromUser = async (destLat: number, destLng: number): Promise<number> => {
+  if (!userLocation) {
+    await requestLocation();
+    if (!userLocation) return 0;
+  }
 
-    return calculateHaversineDistance(
-      userLocation.latitude,
-      userLocation.longitude,
-      destLat,
-      destLng
-    );
-  };
+  // ✅ Use actual road distance
+  return await getRoadDistance(
+    userLocation.latitude,
+    userLocation.longitude,
+    destLat,
+    destLng
+  );
+};
 
 const calculateDeliveryFeeFromDistance = (distanceKm: number): number => {
   const roundedDistance = Math.round(distanceKm * 10) / 10;
