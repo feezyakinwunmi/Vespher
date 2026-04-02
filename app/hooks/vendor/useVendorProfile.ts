@@ -28,7 +28,7 @@ export interface VendorProfile {
   businessAddress: string;
   businessCategory: string;
   businessLogo?: string;
-  businessCover?: string;
+  cover_image_url: string;
   
   // Settings
   businessHours: BusinessHours;
@@ -110,7 +110,7 @@ export function useVendorProfile() {
           businessAddress: vendorData.address,
           businessCategory: vendorData.category,
           businessLogo: vendorData.image_url,
-          businessCover: vendorData.cover_image_url,
+          cover_image_url: vendorData.cover_image_url,
           businessHours: vendorData.opening_hours || {
             mon: '8:00-22:00',
             tue: '8:00-22:00',
@@ -179,7 +179,7 @@ export function useVendorProfile() {
       if (updates.businessAddress) vendorUpdates.address = updates.businessAddress;
       if (updates.businessCategory) vendorUpdates.category = updates.businessCategory;
       if (updates.businessLogo) vendorUpdates.image_url = updates.businessLogo;
-      if (updates.businessCover) vendorUpdates.cover_image_url = updates.businessCover;
+      if (updates.cover_image_url) vendorUpdates.cover_image_url = updates.cover_image_url;
       if (updates.businessHours) vendorUpdates.opening_hours = updates.businessHours;
       if (updates.deliveryRadius) vendorUpdates.delivery_radius = updates.deliveryRadius;
       if (updates.minOrder) vendorUpdates.min_order = updates.minOrder;

@@ -46,7 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .from('users')
         .select('id, email, name, role, avatar_url, phone, is_suspended')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
@@ -177,7 +177,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .from('users')
         .select('email')
         .eq('email', email)
-        .single();
+        .maybeSingle();
 
       if (userError || !user) {
         Alert.alert('Error', 'No account found with this email');

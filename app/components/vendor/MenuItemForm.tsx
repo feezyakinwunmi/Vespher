@@ -28,6 +28,7 @@ interface MenuItemFormProps {
 
 const categories = [
   'Rice Dishes',
+  'Pasta',
   'Swallow',
   'Soups & Stews',
   'Grilled & Fried',
@@ -35,6 +36,9 @@ const categories = [
   'Beverages',
   'Desserts',
   'Specials',
+  'Drinks',
+  'Snacks',
+  'Bake'
 ];
 
 export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuItemFormProps) {

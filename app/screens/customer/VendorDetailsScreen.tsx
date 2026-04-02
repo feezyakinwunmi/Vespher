@@ -42,20 +42,19 @@ export function VendorDetailsScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showInfo, setShowInfo] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [imageError, setImageError] = useState(false);
+  const [coverImageError, setCoverImageError] = useState(false);
+  const [logoImageError, setLogoImageError] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
   const vendor = vendors.find(v => v.id === vendorId);
-const [dynamicDeliveryFee, setDynamicDeliveryFee] = useState(vendor?.deliveryFee || 500);
+  const [dynamicDeliveryFee, setDynamicDeliveryFee] = useState(vendor?.deliveryFee || 500);
 
-const handleDistanceCalculated = (distance: number, fee: number) => {
-  setDynamicDeliveryFee(fee);
-  // Update cart with new delivery fee
-};
+  const handleDistanceCalculated = (distance: number, fee: number) => {
+    setDynamicDeliveryFee(fee);
+  };
 
   useEffect(() => {
     if (!vendor && vendors.length > 0) {
-      // Vendor not found, go back after a moment
       const timer = setTimeout(() => {
         navigation.goBack();
       }, 2000);
@@ -71,7 +70,15 @@ const handleDistanceCalculated = (distance: number, fee: number) => {
       </View>
     );
   }
-
+// Add this function before your component
+const getCoverImageUrl = (vendorId: string) => {
+  // You can either:
+  // Option 1: Return a default cover
+  return 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800';
+  
+  // Option 2: Try to construct the URL if you know the filename pattern
+  // But since filenames have timestamps, you can't guess it
+};
   const isFav = isFavorite(vendor.id);
   const cartItemCount = items.reduce((sum, item) => sum + item.quantity, 0);
   const cartSubtotal = getSubtotal();
@@ -106,275 +113,272 @@ const handleDistanceCalculated = (distance: number, fee: number) => {
     await toggleFavorite(vendor.id);
   };
 
-  const vendorImage = vendor.coverImage || vendor.image || 'https://via.placeholder.com/400x200';
+  // ✅ Use separate images for cover and logo
+// Replace line 113 with this:
+const coverImage = vendor.coverImage || vendor.businessCover || vendor.coverImage || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800';
+const logoImage = vendor.logo || vendor.image_url || vendor.image || vendor.businessLogo || 'https://via.placeholder.com/80';
 
   return (
-   <SafeAreaView  style={styles.container}>
-    <View style={styles.container}>
-      <ScrollView ref={scrollViewRef} showsVerticalScrollIndicator={false}>
-        {/* Cover Image */}
-        <View style={styles.coverContainer}>
-          <Image 
-            source={{ uri: vendorImage }} 
-            style={styles.coverImage}
-            onError={() => setImageError(true)}
-          />
-          <LinearGradient
-            colors={['transparent', '#0a0a0a']}
-            style={styles.coverGradient}
-          />
-          
-          {/* Back Button */}
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
-            <Feather name="arrow-left" size={24} color="#fff" />
-          </TouchableOpacity>
-
-          {/* Action Buttons */}
-          <View style={styles.actionButtons}>
-            <TouchableOpacity
-              onPress={handleFavoriteClick}
-              style={[styles.actionButton, isFav && styles.favoriteButton]}
-            >
-              <Feather 
-                name="heart" 
-                size={20} 
-                color={isFav ? '#fff' : '#fff'} 
-                style={isFav && styles.favoriteIcon}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton}>
-              <Feather name="share-2" size={20} color="#fff" />
-            </TouchableOpacity>
-          </View>
-
-          {/* Vendor Info Overlay */}
-          <View style={styles.vendorOverlay}>
-            <View style={styles.vendorLogoContainer}>
-             <Image 
-  source={{ uri: vendor.image || 'https://via.placeholder.com/80' }} 
-  style={styles.vendorLogo}
-  onError={() => {}} // Remove the onError that tries to set src
-/>
-            </View>
-            <View style={styles.vendorInfo}>
-              <Text style={styles.vendorName}>{vendor.name}</Text>
-              <Text style={styles.vendorCategory}>{vendor.category}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Stats Bar */}
-        <View style={styles.statsBar}>
-          <View style={styles.statItem}>
-            <Feather name="star" size={16} color="#fbbf24" />
-            <Text style={styles.statText}>{vendor.rating.toFixed(1)}</Text>
-            <Text style={styles.statSubtext}>({vendor.reviewCount})</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Feather name="clock" size={16} color="#666" />
-            <Text style={styles.statText}>{vendor.deliveryTime}</Text>
-          </View>
-          {/* <View style={styles.statDivider} /> */}
-          {/* <View style={styles.statItem}>
-            <Feather name="truck" size={16} color="#666" />
-            <Text style={styles.statText}>₦{vendor.deliveryFee}</Text>
-          </View> */}
-          <TouchableOpacity 
-            onPress={() => setShowInfo(true)}
-            style={styles.infoButton}
-          >
-            <Feather name="info" size={16} color="#f97316" />
-            <Text style={styles.infoButtonText}>More Info</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Search & Categories */}
-        <View style={styles.searchSection}>
-          <View style={styles.searchContainer}>
-            <Feather name="search" size={18} color="#666" style={styles.searchIcon} />
-            <TextInput
-              style={styles.searchInput}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholder="Search menu..."
-              placeholderTextColor="#666"
+    <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
+        <ScrollView ref={scrollViewRef} showsVerticalScrollIndicator={false}>
+          {/* Cover Image */}
+          <View style={styles.coverContainer}>
+            <Image 
+              source={{ uri: coverImage }} 
+              style={styles.coverImage}
+ onError={(e) => {
+    console.log('Cover image failed to load:', coverImage, e.nativeEvent.error);
+    setCoverImageError(true);
+  }}            />
+            <LinearGradient
+              colors={['transparent', '#0a0a0a']}
+              style={styles.coverGradient}
             />
-          </View>
-          
-          {/* Category Tabs */}
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoriesList}
-          >
-            {categories.map(category => (
+            
+            {/* Back Button */}
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={styles.backButton}
+            >
+              <Feather name="arrow-left" size={24} color="#fff" />
+            </TouchableOpacity>
+
+            {/* Action Buttons */}
+            <View style={styles.actionButtons}>
               <TouchableOpacity
-                key={category}
-                onPress={() => setSelectedCategory(category)}
-                style={[
-                  styles.categoryTab,
-                  selectedCategory === category && styles.categoryTabActive,
-                ]}
+                onPress={handleFavoriteClick}
+                style={[styles.actionButton, isFav && styles.favoriteButton]}
               >
-                <Text style={[
-                  styles.categoryTabText,
-                  selectedCategory === category && styles.categoryTabTextActive,
-                ]}>
-                  {category}
-                </Text>
+                <Feather 
+                  name="heart" 
+                  size={20} 
+                  color={isFav ? '#fff' : '#fff'} 
+                  style={isFav && styles.favoriteIcon}
+                />
               </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
-        {/* Menu */}
-        <View style={styles.menuSection}>
-          {Object.entries(groupedProducts).map(([category, products]) => (
-            <View key={category} style={styles.categoryGroup}>
-              <Text style={styles.categoryTitle}>{category}</Text>
-              <View style={styles.productsGrid}>
-                {products.map(product => (
-                  <ProductCard 
-                    key={product.id} 
-                    product={product} 
-                    variant="horizontal"
-                    onPress={() => {}} // Navigate to product details if needed
-                  />
-                ))}
-              </View>
-            </View>
-          ))}
-
-          {filteredProducts.length === 0 && (
-            <View style={styles.emptyContainer}>
-              <Feather name="search" size={48} color="#666" />
-              <Text style={styles.emptyTitle}>No items found</Text>
-              <Text style={styles.emptyText}>
-                Try a different search term or category
-              </Text>
-            </View>
-          )}
-        </View>
-        <View style={styles.bottomPadding} />
-      </ScrollView>
-
-      {/* Cart Floating Button */}
-      {cartItemCount > 0 && cartVendorId === vendor.id && (
-        <TouchableOpacity 
-          onPress={() => navigation.navigate('Cart')}
-          style={styles.cartButton}
-        >
-          <LinearGradient
-            colors={['#f97316', '#10b981']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.cartGradient}
-          >
-            <View style={styles.cartLeft}>
-              <View style={styles.cartCount}>
-                <Text style={styles.cartCountText}>{cartItemCount}</Text>
-              </View>
-              <Text style={styles.cartText}>View Cart</Text>
-            </View>
-            <View style={styles.cartRight}>
-              <Text style={styles.cartTotal}>₦{cartSubtotal.toLocaleString()}</Text>
-              <Feather name="chevron-up" size={20} color="#fff" />
-            </View>
-          </LinearGradient>
-        </TouchableOpacity>
-      )}
-
-      {/* Info Modal */}
-      <Modal
-        visible={showInfo}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowInfo(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>About {vendor.name}</Text>
-              <TouchableOpacity onPress={() => setShowInfo(false)} style={styles.modalCloseButton}>
-                <Feather name="x" size={20} color="#fff" />
+              <TouchableOpacity style={styles.actionButton}>
+                <Feather name="share-2" size={20} color="#fff" />
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
-              <View style={styles.modalSection}>
-<VendorMap
-  vendorId={vendor.id}  // ✅ Pass only the ID
-  onDistanceCalculated={handleDistanceCalculated}
-/>
-
-                <Text style={styles.modalSectionTitle}>Description</Text>
-                <Text style={styles.modalText}>
-                  {vendor.description || 'No description available'}
-                </Text>
+            {/* Vendor Info Overlay - Now shows logo image */}
+            <View style={styles.vendorOverlay}>
+              <View style={styles.vendorLogoContainer}>
+                <Image 
+                  source={{ uri: logoImage }} 
+                  style={styles.vendorLogo}
+                  onError={() => setLogoImageError(true)}
+                />
               </View>
+              <View style={styles.vendorInfo}>
+                <Text style={styles.vendorName}>{vendor.name}</Text>
+                <Text style={styles.vendorCategory}>{vendor.category}</Text>
+              </View>
+            </View>
+          </View>
 
-              <View style={styles.modalSection}>
-                <Text style={styles.modalSectionTitle}>Address</Text>
-                <View style={styles.modalAddress}>
-                  <Feather name="map-pin" size={16} color="#f97316" />
-                  <Text style={styles.modalText}>{vendor.address}</Text>
+          {/* Stats Bar */}
+          <View style={styles.statsBar}>
+            <View style={styles.statItem}>
+              <Feather name="star" size={16} color="#fbbf24" />
+              <Text style={styles.statText}>{vendor.rating?.toFixed(1) || '0.0'}</Text>
+              <Text style={styles.statSubtext}>({vendor.reviewCount || 0})</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Feather name="clock" size={16} color="#666" />
+              <Text style={styles.statText}>{vendor.deliveryTime || '30-45 min'}</Text>
+            </View>
+            <TouchableOpacity 
+              onPress={() => setShowInfo(true)}
+              style={styles.infoButton}
+            >
+              <Feather name="info" size={16} color="#f97316" />
+              <Text style={styles.infoButtonText}>More Info</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Search & Categories */}
+          <View style={styles.searchSection}>
+            <View style={styles.searchContainer}>
+              <Feather name="search" size={18} color="#666" style={styles.searchIcon} />
+              <TextInput
+                style={styles.searchInput}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholder="Search menu..."
+                placeholderTextColor="#666"
+              />
+            </View>
+            
+            {/* Category Tabs */}
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.categoriesList}
+            >
+              {categories.map(category => (
+                <TouchableOpacity
+                  key={category}
+                  onPress={() => setSelectedCategory(category)}
+                  style={[
+                    styles.categoryTab,
+                    selectedCategory === category && styles.categoryTabActive,
+                  ]}
+                >
+                  <Text style={[
+                    styles.categoryTabText,
+                    selectedCategory === category && styles.categoryTabTextActive,
+                  ]}>
+                    {category}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+
+          {/* Menu */}
+          <View style={styles.menuSection}>
+            {Object.entries(groupedProducts).map(([category, products]) => (
+              <View key={category} style={styles.categoryGroup}>
+                <Text style={styles.categoryTitle}>{category}</Text>
+                <View style={styles.productsGrid}>
+                  {products.map(product => (
+                    <ProductCard 
+                      key={product.id} 
+                      product={product} 
+                      variant="horizontal"
+                      onPress={() => {}}
+                    />
+                  ))}
                 </View>
               </View>
+            ))}
 
-              <View style={styles.modalSection}>
-                <Text style={styles.modalSectionTitle}>Contact</Text>
-                <TouchableOpacity style={styles.modalContact}>
-                  <Feather name="phone" size={16} color="#f97316" />
-                  <Text style={styles.modalContactText}>{vendor.phone}</Text>
+            {filteredProducts.length === 0 && (
+              <View style={styles.emptyContainer}>
+                <Feather name="search" size={48} color="#666" />
+                <Text style={styles.emptyTitle}>No items found</Text>
+                <Text style={styles.emptyText}>
+                  Try a different search term or category
+                </Text>
+              </View>
+            )}
+          </View>
+          <View style={styles.bottomPadding} />
+        </ScrollView>
+
+        {/* Cart Floating Button */}
+        {cartItemCount > 0 && cartVendorId === vendor.id && (
+          <TouchableOpacity 
+            onPress={() => navigation.navigate('Cart')}
+            style={styles.cartButton}
+          >
+            <LinearGradient
+              colors={['#f97316', '#10b981']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.cartGradient}
+            >
+              <View style={styles.cartLeft}>
+                <View style={styles.cartCount}>
+                  <Text style={styles.cartCountText}>{cartItemCount}</Text>
+                </View>
+                <Text style={styles.cartText}>View Cart</Text>
+              </View>
+              <View style={styles.cartRight}>
+                <Text style={styles.cartTotal}>₦{cartSubtotal.toLocaleString()}</Text>
+                <Feather name="chevron-up" size={20} color="#fff" />
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
+
+        {/* Info Modal */}
+        <Modal
+          visible={showInfo}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowInfo(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>About {vendor.name}</Text>
+                <TouchableOpacity onPress={() => setShowInfo(false)} style={styles.modalCloseButton}>
+                  <Feather name="x" size={20} color="#fff" />
                 </TouchableOpacity>
               </View>
 
-              <View style={styles.modalSection}>
-                <Text style={styles.modalSectionTitle}>Delivery Information</Text>
-                <View style={styles.modalInfoRow}>
-                  <Text style={styles.modalInfoLabel}>Delivery Time</Text>
-                  <Text style={styles.modalInfoValue}>{vendor.deliveryTime}</Text>
+              <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+                <View style={styles.modalSection}>
+                  <VendorMap
+                    vendorId={vendor.id}
+                    onDistanceCalculated={handleDistanceCalculated}
+                  />
+                  <Text style={styles.modalSectionTitle}>Description</Text>
+                  <Text style={styles.modalText}>
+                    {vendor.description || 'No description available'}
+                  </Text>
                 </View>
-                <View style={styles.modalInfoRow}>
-                  <Text style={styles.modalInfoLabel}>Delivery Fee</Text>
-                  <Text style={styles.modalInfoValue}>₦{vendor.deliveryFee}</Text>
-                </View>
-                <View style={styles.modalInfoRow}>
-                  <Text style={styles.modalInfoLabel}>Minimum Order</Text>
-                  <Text style={styles.modalInfoValue}>₦{vendor.minOrder}</Text>
-                </View>
-              </View>
 
-              <View style={styles.modalSection}>
-                <Text style={styles.modalSectionTitle}>Opening Hours</Text>
-                <View style={styles.modalInfoRow}>
-                  <Text style={styles.modalInfoLabel}>Monday - Friday</Text>
-                  <Text style={styles.modalInfoValue}>8:00 AM - 10:00 PM</Text>
+                <View style={styles.modalSection}>
+                  <Text style={styles.modalSectionTitle}>Address</Text>
+                  <View style={styles.modalAddress}>
+                    <Feather name="map-pin" size={16} color="#f97316" />
+                    <Text style={styles.modalText}>{vendor.address}</Text>
+                  </View>
                 </View>
-                <View style={styles.modalInfoRow}>
-                  <Text style={styles.modalInfoLabel}>Saturday - Sunday</Text>
-                  <Text style={styles.modalInfoValue}>9:00 AM - 11:00 PM</Text>
+
+                <View style={styles.modalSection}>
+                  <Text style={styles.modalSectionTitle}>Contact</Text>
+                  <TouchableOpacity style={styles.modalContact}>
+                    <Feather name="phone" size={16} color="#f97316" />
+                    <Text style={styles.modalContactText}>{vendor.phone}</Text>
+                  </TouchableOpacity>
                 </View>
-              </View>
-            </ScrollView>
+
+                <View style={styles.modalSection}>
+                  <Text style={styles.modalSectionTitle}>Delivery Information</Text>
+                  <View style={styles.modalInfoRow}>
+                    <Text style={styles.modalInfoLabel}>Delivery Time</Text>
+                    <Text style={styles.modalInfoValue}>{vendor.deliveryTime}</Text>
+                  </View>
+                  <View style={styles.modalInfoRow}>
+                    <Text style={styles.modalInfoLabel}>Delivery Fee</Text>
+                    <Text style={styles.modalInfoValue}>₦{vendor.deliveryFee}</Text>
+                  </View>
+                  <View style={styles.modalInfoRow}>
+                    <Text style={styles.modalInfoLabel}>Minimum Order</Text>
+                    <Text style={styles.modalInfoValue}>₦{vendor.minOrder}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.modalSection}>
+                  <Text style={styles.modalSectionTitle}>Opening Hours</Text>
+                  <View style={styles.modalInfoRow}>
+                    <Text style={styles.modalInfoLabel}>Monday - Friday</Text>
+                    <Text style={styles.modalInfoValue}>8:00 AM - 10:00 PM</Text>
+                  </View>
+                  <View style={styles.modalInfoRow}>
+                    <Text style={styles.modalInfoLabel}>Saturday - Sunday</Text>
+                    <Text style={styles.modalInfoValue}>9:00 AM - 11:00 PM</Text>
+                  </View>
+                </View>
+              </ScrollView>
+            </View>
           </View>
-        </View>
-      </Modal>
-    </View>
+        </Modal>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-
   container: {
     flex: 1,
     backgroundColor: '#0a0a0a',
-
   },
   loadingContainer: {
     flex: 1,
@@ -390,7 +394,6 @@ const styles = StyleSheet.create({
   coverContainer: {
     height: 200,
     position: 'relative',
-
   },
   coverImage: {
     width: '100%',
@@ -706,3 +709,5 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
 });
+
+

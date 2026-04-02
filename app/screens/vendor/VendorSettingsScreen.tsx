@@ -743,7 +743,7 @@ export function VendorSettingsScreen() {
       businessAddress: formData.businessAddress,
       businessDescription: formData.businessDescription,
       businessLogo: formData.businessLogo,
-      businessCover: formData.businessCover,
+      cover_image_url: formData.businessCover,
       avatar_url: formData.avatar_url,
       notifications: formData.notifications,
       businessHours: formData.businessHours,
@@ -771,54 +771,90 @@ export function VendorSettingsScreen() {
     setVerificationError('');
   };
 
-  const pickImage = async (type: 'avatar' | 'logo' | 'cover') => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: type === 'cover' ? [16, 9] : [1, 1],
-      quality: 0.8,
-    });
 
-    if (!result.canceled && result.assets[0]) {
-      setIsUploading(true);
-      try {
-        const file = result.assets[0];
-        const fileName = `${type}-${Date.now()}.jpg`;
-        const filePath = `vendors/${profile.id}/${fileName}`;
 
-        const response = await fetch(file.uri);
-        const blob = await response.blob();
+const pickImage = async (type: 'avatar' | 'cover') => {
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    allowsEditing: true,
+    aspect: type === 'cover' ? [16, 9] : [1, 1],
+    quality: 1,
+    base64: false,
+  });
 
-        const { error: uploadError } = await supabase.storage
-          .from(`vendor-${type}s`)
-          .upload(filePath, blob, {
-            cacheControl: '3600',
-            upsert: true,
-          });
-
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from(`vendor-${type}s`)
-          .getPublicUrl(filePath);
-
-        if (type === 'avatar') {
-          setFormData({ ...formData, avatar_url: publicUrl });
-        } else if (type === 'logo') {
-          setFormData({ ...formData, businessLogo: publicUrl });
-        } else {
-          setFormData({ ...formData, businessCover: publicUrl });
-        }
-
-        showToast('Image uploaded successfully');
-      } catch (error) {
-        console.error('Error uploading image:', error);
-        showToast('Failed to upload image');
-      } finally {
-        setIsUploading(false);
+  if (!result.canceled && result.assets[0]) {
+    setIsUploading(true);
+    try {
+      const uri = result.assets[0].uri;
+      console.log(`📸 Selected ${type} image URI:`, uri);
+      
+      // Verify file size
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      console.log(`📸 Image file size: ${blob.size} bytes`);
+      
+      if (blob.size === 0) {
+        Alert.alert('Error', 'Selected image appears to be empty. Please try another image.');
+        return;
       }
+      
+      const fileName = `${type}_${Date.now()}.jpg`;
+      const filePath = `${profile.id}/${fileName}`;
+      
+      // Convert blob to base64
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+      
+      const base64Data = base64.split(',')[1];
+      const binaryString = atob(base64Data);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      
+      console.log(`📦 ${type} image bytes length:`, bytes.length);
+      
+      // ✅ Use the correct bucket names from your list
+      const bucketName = type === 'avatar' ? 'vendor-avatars' : 'vendor-covers';
+      
+      const { data, error } = await supabase.storage
+        .from(bucketName)
+        .upload(filePath, bytes, {
+          contentType: 'image/jpeg',
+          cacheControl: '3600',
+          upsert: true,
+        });
+      
+      if (error) {
+        console.error('Upload error:', error);
+        throw error;
+      }
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from(bucketName)
+        .getPublicUrl(filePath);
+      
+      console.log(`✅ ${type} image uploaded:`, publicUrl);
+      
+      if (type === 'avatar') {
+        setFormData({ ...formData, avatar_url: publicUrl });
+      } else {
+        setFormData({ ...formData, businessCover: publicUrl });
+      }
+      
+      showToast(`${type === 'avatar' ? 'Profile picture' : 'Cover image'} uploaded successfully`);
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      showToast('Failed to upload image');
+    } finally {
+      setIsUploading(false);
     }
-  };
+  }
+};
 
   const renderSupportTab = () => (
     <View style={styles.tabContent}>
@@ -868,231 +904,215 @@ export function VendorSettingsScreen() {
     </View>
   );
 
-  const renderProfileTab = () => (
-    <View style={styles.tabContent}>
-      <View style={styles.avatarContainer}>
-        <View style={styles.avatar}>
-          {formData.avatar_url || profile.avatar_url ? (
-            <Image 
-              source={{ uri: formData.avatar_url || profile.avatar_url }} 
-              style={styles.avatarImage}
-            />
+const renderProfileTab = () => (
+  <View style={styles.tabContent}>
+    {/* Avatar/Profile Picture - Keep this */}
+    <View style={styles.avatarContainer}>
+      <View style={styles.avatar}>
+        {formData.avatar_url || profile.avatar_url ? (
+          <Image 
+            source={{ uri: formData.avatar_url || profile.avatar_url }} 
+            style={styles.avatarImage}
+          />
+        ) : (
+          <LinearGradient
+            colors={['#f97316', '#f43f5e']}
+            style={styles.avatarPlaceholder}
+          >
+            <Text style={styles.avatarText}>
+              {profile.name?.charAt(0).toUpperCase()}
+            </Text>
+          </LinearGradient>
+        )}
+      </View>
+      {isEditing && (
+        <TouchableOpacity
+          onPress={() => pickImage('avatar')}
+          style={styles.avatarEditButton}
+          disabled={isUploading}
+        >
+          {isUploading ? (
+            <ActivityIndicator size="small" color="#fff" />
           ) : (
-            <LinearGradient
-              colors={['#f97316', '#f43f5e']}
-              style={styles.avatarPlaceholder}
-            >
-              <Text style={styles.avatarText}>
-                {profile.name?.charAt(0).toUpperCase()}
-              </Text>
-            </LinearGradient>
+            <Feather name="camera" size={16} color="#fff" />
           )}
+        </TouchableOpacity>
+      )}
+    </View>
+
+    {/* Remove the Logo section completely */}
+    
+    {/* Rest of profile tab */}
+    <View style={styles.formGroup}>
+      <Text style={styles.label}>Full Name</Text>
+      {isEditing ? (
+        <TextInput
+          style={styles.input}
+          value={formData.name || ''}
+          onChangeText={(text) => setFormData({ ...formData, name: text })}
+          placeholder="Your name"
+          placeholderTextColor="#666"
+        />
+      ) : (
+        <Text style={styles.value}>{profile.name}</Text>
+      )}
+    </View>
+
+    <View style={styles.formGroup}>
+      <Text style={styles.label}>Email</Text>
+      <Text style={styles.value}>{profile.email}</Text>
+    </View>
+
+    <View style={styles.formGroup}>
+      <Text style={styles.label}>Phone Number</Text>
+      {isEditing ? (
+        <TextInput
+          style={styles.input}
+          value={formData.phone || ''}
+          onChangeText={(text) => setFormData({ ...formData, phone: text })}
+          placeholder="Phone number"
+          placeholderTextColor="#666"
+          keyboardType="phone-pad"
+        />
+      ) : (
+        <Text style={styles.value}>{profile.phone || 'Not provided'}</Text>
+      )}
+    </View>
+
+    <View style={styles.settingsCard}>
+      <TouchableOpacity
+        onPress={() => navigation.navigate('VendorAddresses')}
+        style={styles.menuItem}
+      >
+        <View style={styles.menuItemLeft}>
+          <Feather name="map-pin" size={20} color="#f97316" />
+          <View>
+            <Text style={styles.menuItemTitle}>Business Addresses</Text>
+            <Text style={styles.menuItemSubtitle}>Manage your pickup and delivery locations</Text>
+          </View>
         </View>
+        <Feather name="chevron-right" size={20} color="#666" />
+      </TouchableOpacity>
+    </View>
+  </View>
+);
+
+const renderBusinessTab = () => (
+  <View style={styles.tabContent}>
+    {/* Cover Image Only - Remove Logo section */}
+    <View style={styles.formGroup}>
+      <Text style={styles.label}>Cover Image</Text>
+      <View style={styles.coverContainer}>
+        {formData.businessCover || profile.cover_image_url ? (
+          <Image 
+            source={{ uri: formData.businessCover || profile.cover_image_url }} 
+            style={styles.coverImage}
+          />
+        ) : (
+          <View style={styles.coverPlaceholder}>
+            <Feather name="image" size={32} color="#666" />
+            <Text style={styles.coverPlaceholderText}>No cover image</Text>
+          </View>
+        )}
         {isEditing && (
           <TouchableOpacity
-            onPress={() => pickImage('avatar')}
-            style={styles.avatarEditButton}
+            onPress={() => pickImage('cover')}
+            style={styles.coverEditButton}
             disabled={isUploading}
           >
-            <Feather name="camera" size={16} color="#fff" />
+            {isUploading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <>
+                <Feather name="camera" size={14} color="#fff" />
+                <Text style={styles.coverEditText}>Change Cover</Text>
+              </>
+            )}
           </TouchableOpacity>
         )}
       </View>
-
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Full Name</Text>
-        {isEditing ? (
-          <TextInput
-            style={styles.input}
-            value={formData.name || ''}
-            onChangeText={(text) => setFormData({ ...formData, name: text })}
-            placeholder="Your name"
-            placeholderTextColor="#666"
-          />
-        ) : (
-          <Text style={styles.value}>{profile.name}</Text>
-        )}
-      </View>
-
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Email</Text>
-        <Text style={styles.value}>{profile.email}</Text>
-      </View>
-
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Phone Number</Text>
-        {isEditing ? (
-          <TextInput
-            style={styles.input}
-            value={formData.phone || ''}
-            onChangeText={(text) => setFormData({ ...formData, phone: text })}
-            placeholder="Phone number"
-            placeholderTextColor="#666"
-            keyboardType="phone-pad"
-          />
-        ) : (
-          <Text style={styles.value}>{profile.phone || 'Not provided'}</Text>
-        )}
-      </View>
-
-      <View style={styles.settingsCard}>
-        <TouchableOpacity
-          onPress={() => navigation.navigate('VendorAddresses')}
-          style={styles.menuItem}
-        >
-          <View style={styles.menuItemLeft}>
-            <Feather name="map-pin" size={20} color="#f97316" />
-            <View>
-              <Text style={styles.menuItemTitle}>Business Addresses</Text>
-              <Text style={styles.menuItemSubtitle}>Manage your pickup and delivery locations</Text>
-            </View>
-          </View>
-          <Feather name="chevron-right" size={20} color="#666" />
-        </TouchableOpacity>
-      </View>
     </View>
-  );
 
-  const renderBusinessTab = () => (
-    <View style={styles.tabContent}>
-      {/* Logo Upload */}
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Business Logo</Text>
-        <View style={styles.logoContainer}>
-          <View style={styles.logo}>
-            {formData.businessLogo || profile.businessLogo ? (
-              <Image 
-                source={{ uri: formData.businessLogo || profile.businessLogo }} 
-                style={styles.logoImage}
-              />
-            ) : (
-              <View style={styles.logoPlaceholder}>
-                <Feather name="image" size={24} color="#666" />
-              </View>
-            )}
-          </View>
-          {isEditing && (
+    {/* Business Details */}
+    <View style={styles.formGroup}>
+      <Text style={styles.label}>Business Name</Text>
+      {isEditing ? (
+        <TextInput
+          style={styles.input}
+          value={formData.businessName || ''}
+          onChangeText={(text) => setFormData({ ...formData, businessName: text })}
+          placeholder="Business name"
+          placeholderTextColor="#666"
+        />
+      ) : (
+        <Text style={styles.value}>{profile.businessName}</Text>
+      )}
+    </View>
+
+    <View style={styles.formGroup}>
+      <Text style={styles.label}>Category</Text>
+      {isEditing ? (
+        <View style={styles.pickerContainer}>
+          {businessCategories.map((cat) => (
             <TouchableOpacity
-              onPress={() => pickImage('logo')}
-              style={styles.uploadButton}
-              disabled={isUploading}
+              key={cat.value}
+              onPress={() => setFormData({ ...formData, businessCategory: cat.value })}
+              style={[
+                styles.categoryChip,
+                formData.businessCategory === cat.value && styles.categoryChipSelected,
+              ]}
             >
-              <Text style={styles.uploadButtonText}>
-                {isUploading ? 'Uploading...' : 'Upload Logo'}
+              <Text style={[
+                styles.categoryChipText,
+                formData.businessCategory === cat.value && styles.categoryChipTextSelected,
+              ]}>
+                {cat.label}
               </Text>
             </TouchableOpacity>
-          )}
+          ))}
         </View>
-      </View>
-
-      {/* Cover Image */}
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Cover Image</Text>
-        <View style={styles.coverContainer}>
-          {formData.businessCover || profile.businessCover ? (
-            <Image 
-              source={{ uri: formData.businessCover || profile.businessCover }} 
-              style={styles.coverImage}
-            />
-          ) : (
-            <View style={styles.coverPlaceholder}>
-              <Feather name="image" size={32} color="#666" />
-            </View>
-          )}
-          {isEditing && (
-            <TouchableOpacity
-              onPress={() => pickImage('cover')}
-              style={styles.coverEditButton}
-              disabled={isUploading}
-            >
-              <Text style={styles.coverEditText}>
-                {isUploading ? 'Uploading...' : 'Change Cover'}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
-      {/* Business Details */}
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Business Name</Text>
-        {isEditing ? (
-          <TextInput
-            style={styles.input}
-            value={formData.businessName || ''}
-            onChangeText={(text) => setFormData({ ...formData, businessName: text })}
-            placeholder="Business name"
-            placeholderTextColor="#666"
-          />
-        ) : (
-          <Text style={styles.value}>{profile.businessName}</Text>
-        )}
-      </View>
-
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Category</Text>
-        {isEditing ? (
-          <View style={styles.pickerContainer}>
-            {businessCategories.map((cat) => (
-              <TouchableOpacity
-                key={cat.value}
-                onPress={() => setFormData({ ...formData, businessCategory: cat.value })}
-                style={[
-                  styles.categoryChip,
-                  formData.businessCategory === cat.value && styles.categoryChipSelected,
-                ]}
-              >
-                <Text style={[
-                  styles.categoryChipText,
-                  formData.businessCategory === cat.value && styles.categoryChipTextSelected,
-                ]}>
-                  {cat.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        ) : (
-          <Text style={styles.value}>
-            {businessCategories.find(c => c.value === profile.businessCategory)?.label || profile.businessCategory || 'Not set'}
-          </Text>
-        )}
-      </View>
-
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Business Address</Text>
-        {isEditing ? (
-          <TextInput
-            style={styles.input}
-            value={formData.businessAddress || ''}
-            onChangeText={(text) => setFormData({ ...formData, businessAddress: text })}
-            placeholder="Business address"
-            placeholderTextColor="#666"
-            multiline
-          />
-        ) : (
-          <Text style={styles.value}>{profile.businessAddress}</Text>
-        )}
-      </View>
-
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Description</Text>
-        {isEditing ? (
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            value={formData.businessDescription || ''}
-            onChangeText={(text) => setFormData({ ...formData, businessDescription: text })}
-            placeholder="Describe your business..."
-            placeholderTextColor="#666"
-            multiline
-            numberOfLines={4}
-            textAlignVertical="top"
-          />
-        ) : (
-          <Text style={styles.value}>{profile.businessDescription || 'No description'}</Text>
-        )}
-      </View>
+      ) : (
+        <Text style={styles.value}>
+          {businessCategories.find(c => c.value === profile.businessCategory)?.label || profile.businessCategory || 'Not set'}
+        </Text>
+      )}
     </View>
-  );
+
+    <View style={styles.formGroup}>
+      <Text style={styles.label}>Business Address</Text>
+      {isEditing ? (
+        <TextInput
+          style={styles.input}
+          value={formData.businessAddress || ''}
+          onChangeText={(text) => setFormData({ ...formData, businessAddress: text })}
+          placeholder="Business address"
+          placeholderTextColor="#666"
+          multiline
+        />
+      ) : (
+        <Text style={styles.value}>{profile.businessAddress}</Text>
+      )}
+    </View>
+
+    <View style={styles.formGroup}>
+      <Text style={styles.label}>Description</Text>
+      {isEditing ? (
+        <TextInput
+          style={[styles.input, styles.textArea]}
+          value={formData.businessDescription || ''}
+          onChangeText={(text) => setFormData({ ...formData, businessDescription: text })}
+          placeholder="Describe your business..."
+          placeholderTextColor="#666"
+          multiline
+          numberOfLines={4}
+          textAlignVertical="top"
+        />
+      ) : (
+        <Text style={styles.value}>{profile.businessDescription || 'No description'}</Text>
+      )}
+    </View>
+  </View>
+);
 
   const renderBankTab = () => (
     <View style={styles.tabContent}>
@@ -1569,6 +1589,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ef4444',
   },
+  // Add to styles object
+coverPlaceholderText: {
+  color: '#666',
+  marginTop: 8,
+  fontSize: 12,
+},
   cancelButtonText: {
     color: '#ef4444',
     fontSize: 14,

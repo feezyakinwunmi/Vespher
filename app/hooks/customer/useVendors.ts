@@ -23,13 +23,14 @@ export interface Product {
 }
 
 export interface Vendor {
+  
   id: string;
   name: string;
   description: string;
   category: string;
   logo: string;
   image: string;
-  coverImage: string;
+  coverImage: string; // This will now receive cover_image_url
   rating: number;
   reviewCount: number;
   deliveryTime: string;
@@ -45,6 +46,11 @@ export interface Vendor {
   latitude?: number;
   longitude?: number;
   products: Product[];
+  // Add these to fix the TypeScript error
+  image_url?: string;
+  cover_image_url?: string;
+  businessCover?: string;
+  businessLogo?: any;
 }
 
 export function useVendors() {
@@ -85,8 +91,8 @@ export function useVendors() {
         description: v.description || '',
         category: v.category || 'Restaurant',
         logo: v.logo_url || v.users?.avatar_url || '',
-        image: v.image_url || v.users?.avatar_url || '',
-        coverImage: v.cover_image || v.image_url || v.users?.avatar_url || '',
+        image: v.avatars_url || v.users?.avatar_url || '',
+coverImage: v.cover_image_url || v.image_url || v.users?.avatar_url || '',
         rating: v.rating || 0,
         reviewCount: v.review_count || 0,
         deliveryTime: v.delivery_time || '30-45 min',

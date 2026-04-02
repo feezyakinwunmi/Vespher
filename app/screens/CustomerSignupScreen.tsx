@@ -32,19 +32,19 @@ interface FormData {
   phone: string;
   address?: string;
   apartment?: string;
-    latitude: number | null;
+  latitude: number | null;
   longitude: number | null;
   locationAddress: string;
 }
 
 export function CustomerSignupScreen() {
-const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>(); 
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [step, setStep] = useState<RegistrationStep>('auth');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
+
   // OTP State
   const [showOTPModal, setShowOTPModal] = useState(false);
   const [otpCode, setOtpCode] = useState(['', '', '', '', '', '']);
@@ -55,7 +55,8 @@ const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>(
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
   const [maskedEmail, setMaskedEmail] = useState('');
   const otpInputs = useRef<Array<TextInput | null>>([]);
-const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+
   const [formData, setFormData] = useState<FormData>({
     email: '',
     password: '',
@@ -64,10 +65,23 @@ const [showLocationPicker, setShowLocationPicker] = useState(false);
     phone: '',
     address: '',
     apartment: '',
-     latitude: null,
-  longitude: null,
-  locationAddress: '',
+    latitude: null,
+    longitude: null,
+    locationAddress: '',
   });
+
+  // ✅ FIX: Move success navigation to component level
+  useEffect(() => {
+    if (step === 'success') {
+      const timer = setTimeout(() => {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Login' }],
+        });
+      }, 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [step, navigation]);
 
   // Countdown timer for OTP resend
   useEffect(() => {
@@ -83,22 +97,26 @@ const [showLocationPicker, setShowLocationPicker] = useState(false);
     return () => clearTimeout(timer);
   }, [canResend, countdown]);
 
+  // Auto-verify OTP when 6 digits entered
+  useEffect(() => {
+    const otpString = otpCode.join('');
+    if (otpString.length === 6 && !isVerifyingOTP) {
+      handleVerifyOTP();
+    }
+  }, [otpCode]);
+
   const updateField = (field: keyof FormData, value: string | number | null) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const validateEmail = (email: string) => {
-    return email.includes('@') && email.includes('.');
-  };
+  const validateEmail = (email: string) => email.includes('@') && email.includes('.');
 
   const maskEmail = (email: string) => {
     const [localPart, domain] = email.split('@');
     if (!localPart || !domain) return email;
-    
     const firstTwo = localPart.slice(0, 2);
     const lastTwo = localPart.slice(-2);
     const maskedLocal = firstTwo + '*'.repeat(Math.max(0, localPart.length - 4)) + lastTwo;
-    
     return `${maskedLocal}@${domain}`;
   };
 
@@ -142,6 +160,32 @@ const [showLocationPicker, setShowLocationPicker] = useState(false);
     setError('');
 
     try {
+      // ✅ Check if email already exists in users table
+      const { data: existingUser, error: checkError } = await supabase
+        .from('users')
+        .select('email')
+        .eq('email', formData.email)
+        .maybeSingle();
+
+      if (existingUser) {
+        setError('An account with this email already exists. Please login instead.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // ✅ Check if phone already exists
+      const { data: existingPhone, error: phoneCheckError } = await supabase
+        .from('users')
+        .select('phone')
+        .eq('phone', formData.phone)
+        .maybeSingle();
+
+      if (existingPhone) {
+        setError('This phone number is already registered. Please use a different number.');
+        setIsSubmitting(false);
+        return;
+      }
+
       // Create auth user
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: formData.email,
@@ -151,7 +195,6 @@ const [showLocationPicker, setShowLocationPicker] = useState(false);
             name: formData.fullName,
             role: 'customer'
           },
-          // Don't automatically sign in - wait for OTP verification
           emailRedirectTo: undefined
         }
       });
@@ -167,14 +210,11 @@ const [showLocationPicker, setShowLocationPicker] = useState(false);
         throw new Error('Failed to create user account');
       }
 
-      // Store the user ID and show OTP modal
       setPendingUserId(authData.user.id);
       setMaskedEmail(maskEmail(formData.email));
-      
-      // Show OTP verification modal
       setShowOTPModal(true);
       setCanResend(false);
-      
+
     } catch (err: any) {
       setError(err.message || 'Failed to create account. Please try again.');
     } finally {
@@ -182,40 +222,18 @@ const [showLocationPicker, setShowLocationPicker] = useState(false);
     }
   };
 
- // Replace your existing handleOTPChange
-const handleOTPChange = (text: string, index: number) => {
-  // Only allow one digit
-  if (text.length > 1) text = text.slice(-1);
-  if (!/^\d?$/.test(text)) return; // only digits or empty
-
-  const newOtp = [...otpCode];
-  newOtp[index] = text;
-  setOtpCode(newOtp);
-  setOtpError('');
-
-  // Auto-focus next
-  if (text && index < 5) {
-    otpInputs.current[index + 1]?.focus();
-  }
-
-  // Auto-focus previous on backspace (when field becomes empty)
-  if (!text && index > 0) {
-    otpInputs.current[index - 1]?.focus();
-  }
-};
-
-// ADD THIS NEW useEffect right after your existing useEffects
-useEffect(() => {
-  const otpString = otpCode.join('');
-
-  // Auto-verify only when we have exactly 6 digits and not already verifying
-  if (otpString.length === 6 && !isVerifyingOTP) {
-    handleVerifyOTP();
-  }
-}, [otpCode, isVerifyingOTP]);
+  const handleOTPChange = (text: string, index: number) => {
+    if (text.length > 1) text = text.slice(-1);
+    if (!/^\d?$/.test(text)) return;
+    const newOtp = [...otpCode];
+    newOtp[index] = text;
+    setOtpCode(newOtp);
+    setOtpError('');
+    if (text && index < 5) otpInputs.current[index + 1]?.focus();
+    if (!text && index > 0) otpInputs.current[index - 1]?.focus();
+  };
 
   const handleKeyPress = (e: any, index: number) => {
-    // Handle backspace to focus previous input
     if (e.nativeEvent.key === 'Backspace' && !otpCode[index] && index > 0) {
       otpInputs.current[index - 1]?.focus();
     }
@@ -229,9 +247,8 @@ useEffect(() => {
     }
 
     setIsVerifyingOTP(true);
-    
+
     try {
-      // Verify OTP
       const { error } = await supabase.auth.verifyOtp({
         email: formData.email,
         token: otpString,
@@ -240,12 +257,11 @@ useEffect(() => {
 
       if (error) throw error;
 
-      // OTP verified successfully - now create the user profile
+      await new Promise(resolve => setTimeout(resolve, 500));
       await completeUserRegistration();
-      
+
     } catch (error: any) {
       setOtpError(error.message || 'Invalid OTP. Please try again.');
-      // Clear OTP fields on error
       setOtpCode(['', '', '', '', '', '']);
       otpInputs.current[0]?.focus();
     } finally {
@@ -255,19 +271,17 @@ useEffect(() => {
 
   const handleResendOTP = async () => {
     if (!canResend) return;
-    
+
     try {
-      // Resend OTP
       const { error } = await supabase.auth.resend({
         type: 'signup',
         email: formData.email,
       });
 
       if (error) throw error;
-      
       setCanResend(false);
       Alert.alert('Success', 'A new verification code has been sent to your email');
-      
+
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to resend code');
     }
@@ -278,16 +292,14 @@ useEffect(() => {
       // Create user profile
       const { error: profileError } = await supabase
         .from('users')
-        .insert([
-          {
-            id: pendingUserId,
-            email: formData.email,
-            name: formData.fullName,
-            phone: formData.phone,
-            role: 'customer',
-            created_at: new Date().toISOString(),
-          },
-        ]);
+        .insert({
+          id: pendingUserId,
+          email: formData.email,
+          name: formData.fullName,
+          phone: formData.phone,
+          role: 'customer',
+          created_at: new Date().toISOString(),
+        });
 
       if (profileError) throw profileError;
 
@@ -295,40 +307,45 @@ useEffect(() => {
       if (formData.address) {
         const { error: addressError } = await supabase
           .from('addresses')
-          .insert([
-            {
-              user_id: pendingUserId,
-              label: 'Home',
-              street: formData.address,
-              area: formData.apartment || 'Default Area',
-              phone: formData.phone,
-              is_default: true,
-              latitude: formData.latitude,
+          .insert({
+            user_id: pendingUserId,
+            label: 'Home',
+            street: formData.address,
+            area: formData.apartment || 'Default Area',
+            phone: formData.phone,
+            is_default: true,
+            latitude: formData.latitude,
             longitude: formData.longitude,
-            },
-          ]);
+          });
 
         if (addressError) throw addressError;
       }
 
-      // Close OTP modal and show success
       setShowOTPModal(false);
       setStep('success');
-      
+
     } catch (err: any) {
-      Alert.alert('Error', 'Failed to complete registration. Please contact support.');
-      console.error(err);
+      console.error('Registration error:', err);
+      Alert.alert('Error', err.message || 'Failed to complete registration. Please contact support.');
     }
+  };
+
+  const handleBack = () => {
+    if (step === 'auth') {
+      navigation.goBack();
+    } else {
+      setStep('auth');
+    }
+  };
+
+  const getCurrentStepIndex = () => {
+    return steps.findIndex(s => s.key === step);
   };
 
   const steps = [
     { key: 'auth', label: 'Account' },
     { key: 'details', label: 'Details' },
   ];
-
-  const getCurrentStepIndex = () => {
-    return steps.findIndex(s => s.key === step);
-  };
 
   const renderStep = () => {
     switch (step) {
@@ -350,7 +367,6 @@ useEffect(() => {
             ) : null}
 
             <View style={styles.form}>
-              {/* Full Name */}
               <View style={styles.fieldContainer}>
                 <Text style={styles.label}>Full Name *</Text>
                 <View style={styles.inputWrapper}>
@@ -365,7 +381,6 @@ useEffect(() => {
                 </View>
               </View>
 
-              {/* Email */}
               <View style={styles.fieldContainer}>
                 <Text style={styles.label}>Email Address *</Text>
                 <View style={styles.inputWrapper}>
@@ -382,7 +397,6 @@ useEffect(() => {
                 </View>
               </View>
 
-              {/* Phone */}
               <View style={styles.fieldContainer}>
                 <Text style={styles.label}>Phone Number *</Text>
                 <View style={styles.inputWrapper}>
@@ -398,7 +412,6 @@ useEffect(() => {
                 </View>
               </View>
 
-              {/* Password */}
               <View style={styles.fieldContainer}>
                 <Text style={styles.label}>Password *</Text>
                 <View style={styles.inputWrapper}>
@@ -411,17 +424,13 @@ useEffect(() => {
                     placeholderTextColor="#666"
                     secureTextEntry={!showPassword}
                   />
-                  <TouchableOpacity
-                    onPress={() => setShowPassword(!showPassword)}
-                    style={styles.eyeIcon}
-                  >
+                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
                     <Feather name={showPassword ? 'eye-off' : 'eye'} size={20} color="#666" />
                   </TouchableOpacity>
                 </View>
                 <Text style={styles.hint}>Must be at least 6 characters</Text>
               </View>
 
-              {/* Confirm Password */}
               <View style={styles.fieldContainer}>
                 <Text style={styles.label}>Confirm Password *</Text>
                 <View style={styles.inputWrapper}>
@@ -434,10 +443,7 @@ useEffect(() => {
                     placeholderTextColor="#666"
                     secureTextEntry={!showConfirmPassword}
                   />
-                  <TouchableOpacity
-                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                    style={styles.eyeIcon}
-                  >
+                  <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon}>
                     <Feather name={showConfirmPassword ? 'eye-off' : 'eye'} size={20} color="#666" />
                   </TouchableOpacity>
                 </View>
@@ -446,179 +452,137 @@ useEffect(() => {
           </View>
         );
 
-     case 'details':
-  return (
-    <View style={styles.stepContainer}>
-      <View style={styles.headerContainer}>
-        <Text style={styles.title}>Delivery Details</Text>
-        <Text style={styles.subtitle}>
-          Add your delivery address for accurate delivery estimates
-        </Text>
-      </View>
+      case 'details':
+        return (
+          <View style={styles.stepContainer}>
+            <View style={styles.headerContainer}>
+              <Text style={styles.title}>Delivery Details</Text>
+              <Text style={styles.subtitle}>
+                Add your delivery address for accurate delivery estimates
+              </Text>
+            </View>
 
-      {error ? (
-        <View style={styles.errorContainer}>
-          <Feather name="alert-circle" size={20} color="#ef4444" />
-          <Text style={styles.errorText}>{error}</Text>
-        </View>
-      ) : null}
+            {error ? (
+              <View style={styles.errorContainer}>
+                <Feather name="alert-circle" size={20} color="#ef4444" />
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            ) : null}
 
-      <View style={styles.form}>
-        {/* ✅ NEW: Map Location Picker Button */}
-        <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Delivery Location on Map *</Text>
-          <TouchableOpacity
-            style={styles.locationPickerButton}
-            onPress={() => setShowLocationPicker(true)}
-          >
-            <Feather name="map" size={20} color="#f97316" />
-            <Text style={styles.locationPickerText}>
-              {formData.latitude !== null && formData.longitude !== null
-                ? `📍 Location selected: ${formData.latitude.toFixed(6)}, ${formData.longitude.toFixed(6)}`
-                : 'Tap to set your delivery location on map'}
-            </Text>
-            <Feather name="chevron-right" size={20} color="#666" />
-          </TouchableOpacity>
-          {formData.latitude !== null && formData.longitude !== null && (
-            <Text style={styles.locationCoordsText}>
-              📍 Coordinates: {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}
-            </Text>
-          )}
-        </View>
+            <View style={styles.form}>
+              <View style={styles.fieldContainer}>
+                <Text style={styles.label}>Delivery Location on Map *</Text>
+                <TouchableOpacity
+                  style={styles.locationPickerButton}
+                  onPress={() => setShowLocationPicker(true)}
+                >
+                  <Feather name="map" size={20} color="#f97316" />
+                  <Text style={styles.locationPickerText}>
+                    {formData.latitude !== null && formData.longitude !== null
+                      ? `📍 Location selected: ${formData.latitude.toFixed(6)}, ${formData.longitude.toFixed(6)}`
+                      : 'Tap to set your delivery location on map'}
+                  </Text>
+                  <Feather name="chevron-right" size={20} color="#666" />
+                </TouchableOpacity>
+                {formData.latitude !== null && formData.longitude !== null && (
+                  <Text style={styles.locationCoordsText}>
+                    📍 Coordinates: {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}
+                  </Text>
+                )}
+              </View>
 
-        {/* Street Address (auto-filled from map selection) */}
-        <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Street Address</Text>
-          <View style={styles.inputWrapper}>
-            <Feather name="map-pin" size={20} color="#666" style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              value={formData.address}
-              onChangeText={(text) => updateField('address', text)}
-              placeholder="e.g., 123 Main Street"
-              placeholderTextColor="#666"
+              <View style={styles.fieldContainer}>
+                <Text style={styles.label}>Street Address</Text>
+                <View style={styles.inputWrapper}>
+                  <Feather name="map-pin" size={20} color="#666" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    value={formData.address}
+                    onChangeText={(text) => updateField('address', text)}
+                    placeholder="e.g., 123 Main Street"
+                    placeholderTextColor="#666"
+                  />
+                </View>
+              </View>
+
+              <View style={styles.fieldContainer}>
+                <Text style={styles.label}>Apartment/Suite (Optional)</Text>
+                <View style={styles.inputWrapper}>
+                  <Feather name="home" size={20} color="#666" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    value={formData.apartment}
+                    onChangeText={(text) => updateField('apartment', text)}
+                    placeholder="e.g., Apartment 4B"
+                    placeholderTextColor="#666"
+                  />
+                </View>
+              </View>
+
+              <View style={styles.infoBox}>
+                <Feather name="info" size={20} color="#f97316" />
+                <View style={styles.infoTextContainer}>
+                  <Text style={styles.infoTitle}>Why set your location?</Text>
+                  <Text style={styles.infoText}>
+                    Setting your precise location helps calculate accurate delivery fees and ensures your orders reach you correctly.
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.infoBox}>
+                <Feather name="mail" size={20} color="#f97316" />
+                <View style={styles.infoTextContainer}>
+                  <Text style={styles.infoTitle}>Email Verification Required</Text>
+                  <Text style={styles.infoText}>
+                    After creating your account, we'll send a 6-digit verification code to your email. You'll need to enter it to complete registration.
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <ReuseLocationPicker
+              visible={showLocationPicker}
+              onClose={() => setShowLocationPicker(false)}
+              onLocationSelect={(location) => {
+                updateField('latitude', location.latitude);
+                updateField('longitude', location.longitude);
+                updateField('locationAddress', location.address);
+                if (location.address) {
+                  updateField('address', location.address);
+                }
+              }}
+              initialLocation={
+                formData.latitude !== null && formData.longitude !== null
+                  ? { latitude: formData.latitude, longitude: formData.longitude }
+                  : undefined
+              }
             />
           </View>
-        </View>
+        );
 
-        {/* Apartment */}
-        <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Apartment/Suite (Optional)</Text>
-          <View style={styles.inputWrapper}>
-            <Feather name="home" size={20} color="#666" style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              value={formData.apartment}
-              onChangeText={(text) => updateField('apartment', text)}
-              placeholder="e.g., Apartment 4B"
-              placeholderTextColor="#666"
-            />
-          </View>
-        </View>
-
-        {/* Info Box */}
-        <View style={styles.infoBox}>
-          <Feather name="info" size={20} color="#f97316" />
-          <View style={styles.infoTextContainer}>
-            <Text style={styles.infoTitle}>Why set your location?</Text>
-            <Text style={styles.infoText}>
-              Setting your precise location helps calculate accurate delivery fees and ensures your orders reach you correctly.
+      case 'success':
+        return (
+          <View style={styles.successContainer}>
+            <View style={styles.successIcon}>
+              <Feather name="check-circle" size={64} color="#10b981" />
+            </View>
+            <Text style={styles.successTitle}>Account Created! 🎉</Text>
+            <Text style={styles.successText}>
+              Your account is now ready. Start exploring great food and vendors!
             </Text>
+            <Text style={styles.successSubText}>Redirecting to login page in a few seconds...</Text>
+            <ActivityIndicator size="small" color="#f97316" style={{ marginTop: 32 }} />
           </View>
-        </View>
-
-        {/* Email Verification Info */}
-        <View style={styles.infoBox}>
-          <Feather name="mail" size={20} color="#f97316" />
-          <View style={styles.infoTextContainer}>
-            <Text style={styles.infoTitle}>Email Verification Required</Text>
-            <Text style={styles.infoText}>
-              After creating your account, we'll send a 6-digit verification code to your email. You'll need to enter it to complete registration.
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Location Picker Modal */}
-      <ReuseLocationPicker
-        visible={showLocationPicker}
-        onClose={() => setShowLocationPicker(false)}
-        onLocationSelect={(location) => {
-          updateField('latitude', location.latitude);
-          updateField('longitude', location.longitude);
-          updateField('locationAddress', location.address);
-          // Also update the manual address field with the selected address
-          if (location.address) {
-            updateField('address', location.address);
-          }
-        }}
-        initialLocation={
-          formData.latitude !== null && formData.longitude !== null
-            ? { latitude: formData.latitude, longitude: formData.longitude }
-            : undefined
-        }
-      />
-    </View>
-  );
-
- case 'success':
-  // Auto-redirect to Login after 3.5 seconds
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      navigation.navigate('Login');
-    }, 3500); // 3.5 seconds - feels natural, gives time to read the message
-
-    return () => clearTimeout(timer);
-  }, [navigation]);
-
-  return (
-    <View style={styles.successContainer}>
-      <View style={styles.successIcon}>
-        <Feather name="check-circle" size={64} color="#10b981" />
-      </View>
-
-      <Text style={styles.successTitle}>Account Created! 🎉</Text>
-
-      <Text style={styles.successText}>
-        Your account is now ready. Start exploring great food and vendors! 
-        <Text>Redirecting to Login....</Text>
-      </Text>
-
-      
-
-      {/* Small loading indicator to show something is happening */}
-      <ActivityIndicator
-        size="small"
-        color="#f97316"
-        style={{ marginTop: 32 }}
-      />
-    </View>
-  );  }
+        );
+    }
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
-        <ScrollView 
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Header with Back */}
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardView}>
+        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
-            <TouchableOpacity
-              onPress={() => {
-                if (step === 'auth') {
-                  navigation.goBack();
-                } else {
-                  setStep('auth');
-                }
-              }}
-              style={styles.backButton}
-            >
+            <TouchableOpacity onPress={handleBack} style={styles.backButton}>
               <Feather name="arrow-left" size={24} color="#fff" />
             </TouchableOpacity>
             <View style={styles.headerText}>
@@ -631,40 +595,22 @@ useEffect(() => {
             </View>
           </View>
 
-          {/* Progress Bar - Hide on success */}
           {step !== 'success' && (
             <View style={styles.progressContainer}>
               {steps.map((s, index) => (
-                <View
-                  key={s.key}
-                  style={[
-                    styles.progressBar,
-                    index <= getCurrentStepIndex() ? styles.progressActive : styles.progressInactive,
-                  ]}
-                />
+                <View key={s.key} style={[styles.progressBar, index <= getCurrentStepIndex() ? styles.progressActive : styles.progressInactive]} />
               ))}
             </View>
           )}
 
-          {/* Content */}
           <View style={styles.content}>
             {renderStep()}
           </View>
 
-          {/* Footer */}
           {step !== 'success' && (
             <View style={styles.footer}>
-              <TouchableOpacity
-                onPress={handleNext}
-                disabled={isSubmitting}
-                activeOpacity={0.8}
-              >
-                <LinearGradient
-                  colors={['#f97316', '#f43f5e']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.footerButton}
-                >
+              <TouchableOpacity onPress={handleNext} disabled={isSubmitting} activeOpacity={0.8}>
+                <LinearGradient colors={['#f97316', '#f43f5e']} style={styles.footerButton}>
                   {isSubmitting ? (
                     <View style={styles.buttonContent}>
                       <ActivityIndicator color="#fff" />
@@ -694,13 +640,7 @@ useEffect(() => {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* OTP Verification Modal */}
-      <Modal
-        visible={showOTPModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowOTPModal(false)}
-      >
+      <Modal visible={showOTPModal} animationType="slide" transparent onRequestClose={() => setShowOTPModal(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
@@ -709,27 +649,15 @@ useEffect(() => {
                 <Feather name="x" size={20} color="#fff" />
               </TouchableOpacity>
             </View>
-
             <View style={styles.modalBody}>
-              <Text style={styles.otpDescription}>
-                Enter the 6-digit verification code sent to:
-              </Text>
+              <Text style={styles.otpDescription}>Enter the 6-digit verification code sent to:</Text>
               <Text style={styles.maskedEmail}>{maskedEmail}</Text>
-
-              {/* OTP Input Boxes */}
               <View style={styles.otpContainer}>
                 {otpCode.map((digit, index) => (
                   <TextInput
                     key={index}
-                    ref={(ref) => {
-                      if (ref) {
-                        otpInputs.current[index] = ref;
-                      }
-                    }}
-                    style={[
-                      styles.otpInput,
-                      otpError ? styles.otpInputError : null
-                    ]}
+                    ref={(ref) => { if (ref) otpInputs.current[index] = ref; }}
+                    style={[styles.otpInput, otpError && styles.otpInputError]}
                     value={digit}
                     onChangeText={(text) => handleOTPChange(text, index)}
                     onKeyPress={(e) => handleKeyPress(e, index)}
@@ -740,41 +668,18 @@ useEffect(() => {
                   />
                 ))}
               </View>
-
-              {otpError ? (
-                <Text style={styles.otpErrorText}>{otpError}</Text>
-              ) : null}
-
-              {/* Resend Code */}
+              {otpError && <Text style={styles.otpErrorText}>{otpError}</Text>}
               <View style={styles.resendContainer}>
                 <Text style={styles.resendInfo}>Didn't receive the code? </Text>
-                <TouchableOpacity 
-                  onPress={handleResendOTP}
-                  disabled={!canResend}
-                >
-                  <Text style={[
-                    styles.resendLink,
-                    !canResend && styles.resendLinkDisabled
-                  ]}>
+                <TouchableOpacity onPress={handleResendOTP} disabled={!canResend}>
+                  <Text style={[styles.resendLink, !canResend && styles.resendLinkDisabled]}>
                     {canResend ? 'Resend' : `Resend in ${countdown}s`}
                   </Text>
                 </TouchableOpacity>
               </View>
-
-              <TouchableOpacity
-                onPress={handleVerifyOTP}
-                disabled={isVerifyingOTP || otpCode.some(d => d === '')}
-                style={styles.modalButton}
-              >
-                <LinearGradient
-                  colors={['#f97316', '#f43f5e']}
-                  style={styles.submitGradient}
-                >
-                  {isVerifyingOTP ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text style={styles.submitText}>Verify Email</Text>
-                  )}
+              <TouchableOpacity onPress={handleVerifyOTP} disabled={isVerifyingOTP || otpCode.some(d => d === '')} style={styles.modalButton}>
+                <LinearGradient colors={['#f97316', '#f43f5e']} style={styles.submitGradient}>
+                  {isVerifyingOTP ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Verify Email</Text>}
                 </LinearGradient>
               </TouchableOpacity>
             </View>
@@ -785,392 +690,71 @@ useEffect(() => {
   );
 }
 
+// Keep all your existing styles - they remain the same
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0a0a0a',
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-  },
-  header: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    padding: 20,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#1a1a1a',
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-    marginRight: 12,
-  },
-  headerText: {
-    flex: 1,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  headerStep: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 2,
-  },
-  progressContainer: {
-    flexDirection: 'row' as const,
-    gap: 8,
-    paddingHorizontal: 20,
-    paddingTop: 12,
-  },
-  progressBar: {
-    height: 4,
-    flex: 1,
-    borderRadius: 2,
-  },
-  progressActive: {
-    backgroundColor: '#f97316',
-  },
-  progressInactive: {
-    backgroundColor: '#1a1a1a',
-  },
-  content: {
-    flex: 1,
-    padding: 20,
-  },
-  stepContainer: {
-    flex: 1,
-  },
-  headerContainer: {
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#666',
-  },
-  errorContainer: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.2)',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 24,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: 12,
-  },
-  errorText: {
-    color: '#ef4444',
-    fontSize: 14,
-    flex: 1,
-  },
-  form: {
-    gap: 20,
-  },
-  fieldContainer: {
-    gap: 8,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#fff',
-    marginLeft: 4,
-  },
-  inputWrapper: {
-    position: 'relative',
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-  },
-  inputIcon: {
-    position: 'absolute' as const,
-    left: 16,
-    zIndex: 1,
-  },
-  input: {
-    flex: 1,
-    height: 56,
-    backgroundColor: '#1a1a1a',
-    borderWidth: 1,
-    borderColor: '#2a2a2a',
-    borderRadius: 14,
-    paddingLeft: 48,
-    paddingRight: 48,
-    fontSize: 16,
-    color: '#fff',
-  },
-  eyeIcon: {
-    position: 'absolute' as const,
-    right: 16,
-    zIndex: 1,
-    padding: 4,
-  },
-  hint: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
-    marginLeft: 4,
-  },
-  // Add to styles
-locationPickerButton: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  backgroundColor: '#1a1a1a',
-  borderRadius: 14,
-  paddingHorizontal: 16,
-  paddingVertical: 16,
-  gap: 12,
-  borderWidth: 1,
-  borderColor: '#2a2a2a',
-},
-locationPickerText: {
-  flex: 1,
-  color: '#fff',
-  fontSize: 14,
-},
-locationCoordsText: {
-  fontSize: 11,
-  color: '#666',
-  marginTop: 6,
-  marginLeft: 4,
-},
-  infoBox: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 14,
-    padding: 16,
-    flexDirection: 'row' as const,
-    gap: 12,
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(249, 115, 22, 0.2)',
-  },
-  infoTextContainer: {
-    flex: 1,
-  },
-  infoTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#fff',
-    marginBottom: 4,
-  },
-  infoText: {
-    fontSize: 12,
-    color: '#666',
-    lineHeight: 18,
-  },
-  successContainer: {
-    flex: 1,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-    paddingHorizontal: 20,
-  },
-  successIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(16, 185, 129, 0.2)',
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-    marginBottom: 24,
-  },
-  successTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#fff',
-    textAlign: 'center' as const,
-    marginBottom: 12,
-  },
-  successText: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center' as const,
-    marginBottom: 32,
-  },
-  successButtons: {
-    width: '100%',
-    gap: 12,
-  },
-  primaryButton: {
-    height: 56,
-    borderRadius: 14,
-    overflow: 'hidden' as const,
-  },
-  primaryGradient: {
-    flex: 1,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    gap: 8,
-  },
-  primaryButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  secondaryButton: {
-    height: 56,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-  },
-  secondaryButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  footer: {
-    padding: 20,
-    paddingTop: 0,
-  },
-  footerButton: {
-    height: 56,
-    borderRadius: 14,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-  },
-  buttonContent: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    gap: 8,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  loginContainer: {
-    flexDirection: 'row' as const,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-    marginTop: 16,
-  },
-  loginText: {
-    color: '#666',
-    fontSize: 14,
-  },
-  loginLink: {
-    color: '#f97316',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  // Modal and OTP styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-  },
-  modalContent: {
-    width: '90%',
-    backgroundColor: '#1a1a1a',
-    borderRadius: 20,
-    overflow: 'hidden' as const,
-  },
-  modalHeader: {
-    flexDirection: 'row' as const,
-    justifyContent: 'space-between' as const,
-    alignItems: 'center' as const,
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  modalBody: {
-    padding: 16,
-  },
-  otpDescription: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center' as const,
-    marginBottom: 8,
-  },
-  maskedEmail: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#f97316',
-    textAlign: 'center' as const,
-    marginBottom: 24,
-  },
-  otpContainer: {
-    flexDirection: 'row' as const,
-    justifyContent: 'space-between' as const,
-    paddingHorizontal: 10,
-    marginBottom: 16,
-  },
-  otpInput: {
-    width: 45,
-    height: 45,
-    backgroundColor: '#2a2a2a',
-    borderRadius: 8,
-    textAlign: 'center' as const,
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  otpInputError: {
-    borderColor: '#ef4444',
-  },
-  otpErrorText: {
-    color: '#ef4444',
-    fontSize: 12,
-    textAlign: 'center' as const,
-    marginBottom: 16,
-  },
-  resendContainer: {
-    flexDirection: 'row' as const,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-    marginTop: 8,
-    marginBottom: 20,
-  },
-  resendInfo: {
-    color: '#666',
-    fontSize: 14,
-  },
-  resendLink: {
-    color: '#f97316',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  resendLinkDisabled: {
-    color: '#666',
-  },
-  modalButton: {
-    height: 48,
-    borderRadius: 8,
-    overflow: 'hidden' as const,
-  },
-  submitGradient: {
-    flex: 1,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-  },
-  submitText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  // ... your existing styles (same as before)
+  container: { flex: 1, backgroundColor: '#0a0a0a' },
+  keyboardView: { flex: 1 },
+  scrollContent: { flexGrow: 1 },
+  header: { flexDirection: 'row', alignItems: 'center', padding: 20, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
+  backButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#1a1a1a', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+  headerText: { flex: 1 },
+  headerTitle: { fontSize: 18, fontWeight: '600', color: '#fff' },
+  headerStep: { fontSize: 12, color: '#666', marginTop: 2 },
+  progressContainer: { flexDirection: 'row', gap: 8, paddingHorizontal: 20, paddingTop: 12 },
+  progressBar: { height: 4, flex: 1, borderRadius: 2 },
+  progressActive: { backgroundColor: '#f97316' },
+  progressInactive: { backgroundColor: '#1a1a1a' },
+  content: { flex: 1, padding: 20 },
+  stepContainer: { flex: 1 },
+  headerContainer: { marginBottom: 24 },
+  title: { fontSize: 24, fontWeight: '700', color: '#fff', marginBottom: 8 },
+  subtitle: { fontSize: 14, color: '#666' },
+  errorContainer: { backgroundColor: 'rgba(239,68,68,0.1)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.2)', borderRadius: 12, padding: 16, marginBottom: 24, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  errorText: { color: '#ef4444', fontSize: 14, flex: 1 },
+  form: { gap: 20 },
+  fieldContainer: { gap: 8 },
+  label: { fontSize: 14, fontWeight: '500', color: '#fff', marginLeft: 4 },
+  inputWrapper: { position: 'relative', flexDirection: 'row', alignItems: 'center' },
+  inputIcon: { position: 'absolute', left: 16, zIndex: 1 },
+  input: { flex: 1, height: 56, backgroundColor: '#1a1a1a', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 14, paddingLeft: 48, paddingRight: 48, fontSize: 16, color: '#fff' },
+  eyeIcon: { position: 'absolute', right: 16, zIndex: 1, padding: 4 },
+  hint: { fontSize: 12, color: '#666', marginTop: 4, marginLeft: 4 },
+  locationPickerButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1a1a1a', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 16, gap: 12, borderWidth: 1, borderColor: '#2a2a2a' },
+  locationPickerText: { flex: 1, color: '#fff', fontSize: 14 },
+  locationCoordsText: { fontSize: 11, color: '#666', marginTop: 6, marginLeft: 4 },
+  infoBox: { backgroundColor: '#1a1a1a', borderRadius: 14, padding: 16, flexDirection: 'row', gap: 12, marginTop: 8, borderWidth: 1, borderColor: 'rgba(249,115,22,0.2)' },
+  infoTextContainer: { flex: 1 },
+  infoTitle: { fontSize: 14, fontWeight: '600', color: '#fff', marginBottom: 4 },
+  infoText: { fontSize: 12, color: '#666', lineHeight: 18 },
+  successContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 },
+  successIcon: { width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(16,185,129,0.2)', justifyContent: 'center', alignItems: 'center', marginBottom: 24 },
+  successTitle: { fontSize: 24, fontWeight: '700', color: '#fff', textAlign: 'center', marginBottom: 12 },
+  successText: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 8 },
+  successSubText: { fontSize: 12, color: '#666', textAlign: 'center', marginBottom: 32 },
+  footer: { padding: 20, paddingTop: 0 },
+  footerButton: { height: 56, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+  buttonContent: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  loginContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 16 },
+  loginText: { color: '#666', fontSize: 14 },
+  loginLink: { color: '#f97316', fontSize: 14, fontWeight: '600' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center' },
+  modalContent: { width: '90%', backgroundColor: '#1a1a1a', borderRadius: 20, overflow: 'hidden' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
+  modalTitle: { fontSize: 18, fontWeight: '600', color: '#fff' },
+  modalBody: { padding: 16 },
+  otpDescription: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 8 },
+  maskedEmail: { fontSize: 16, fontWeight: '600', color: '#f97316', textAlign: 'center', marginBottom: 24 },
+  otpContainer: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 10, marginBottom: 16 },
+  otpInput: { width: 45, height: 45, backgroundColor: '#2a2a2a', borderRadius: 8, textAlign: 'center', color: '#fff', fontSize: 18, fontWeight: '600', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+  otpInputError: { borderColor: '#ef4444' },
+  otpErrorText: { color: '#ef4444', fontSize: 12, textAlign: 'center', marginBottom: 16 },
+  resendContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 8, marginBottom: 20 },
+  resendInfo: { color: '#666', fontSize: 14 },
+  resendLink: { color: '#f97316', fontSize: 14, fontWeight: '500' },
+  resendLinkDisabled: { color: '#666' },
+  modalButton: { height: 48, borderRadius: 8, overflow: 'hidden' },
+  submitGradient: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  submitText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 });
