@@ -13,7 +13,7 @@ export default {
     },
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "com.femi-ceo.Vespher", // ✅ Must match your Apple Developer account
+      bundleIdentifier: "com.femi-ceo.Vespher",
       config: {
         googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
       },
@@ -61,16 +61,8 @@ export default {
           isAndroidBackgroundLocationEnabled: true
         }
       ],
-      // ✅ Push notifications plugin (works for both iOS and Android)
-      [
-        "expo-notifications",
-        {
-          icon: "./assets/notification-icon.png",
-          color: "#f97316",
-          androidMode: "default",
-          androidCollapsible: true
-        }
-      ]
+      // ✅ Simplified expo-notifications plugin - uses defaults, no custom icon/sound required
+      "expo-notifications"
     ],
     extra: {
       eas: {
