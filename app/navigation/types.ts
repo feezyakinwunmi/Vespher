@@ -38,6 +38,8 @@ export type RootStackParamList = {
   Notifications: undefined;
   Support: undefined;
   Privacy: undefined;
+    AllVendorsMap: undefined
+
     TestWebView: undefined;
   Search: undefined;
   Addresses: { selectMode?: boolean; selectedAddress?: Address } | undefined;
@@ -58,6 +60,10 @@ export type RootStackParamList = {
     CreatePromotion: undefined;
     Promotions:undefined;
   PromotionDetails: { promotionId: string };
+  VendorDashboard: undefined;
+  vendorAddresses: undefined;
+    VendorSettings: undefined;
+
 
 
     //admin screens
@@ -102,6 +108,7 @@ export type CustomerTabParamList = {
   Cart: undefined;
   Profile: undefined;
   TestWebView: undefined;
+  AllVendorsMap: undefined
 };
 
 export type VendorTabParamList = {
@@ -116,8 +123,9 @@ export type VendorTabParamList = {
   VendorMenu: undefined;
   VendorHistory: undefined;
   VendorEarnings: undefined;
-  VendorSettings: undefined;
   VendorAnalytics: undefined;
   vendorAddresses: undefined;
+    VendorDashboard: undefined;
+  VendorSettings: undefined;
 
 };

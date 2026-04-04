@@ -65,13 +65,11 @@ export function CustomerHeader({
             style={styles.locationButton}
           >
             <View style={styles.locationIcon}>
-<Image
-              source={require('../../assets/logo.png')}
-              style={{ width: 53, height: 40 }}
-            />
-            
-
-</View>
+              <Image
+                source={require('../../assets/logo.png')}
+                style={{ width: 53, height: 40 }}
+              />
+            </View>
             <View style={styles.locationTextContainer}>
               <Text style={styles.locationLabel}>Deliver to</Text>
               <View style={styles.locationRow}>
@@ -85,10 +83,16 @@ export function CustomerHeader({
         )}
       </View>
 
-    
-
       {/* Right Section - Actions */}
       <View style={styles.rightSection}>
+        {/* Map Button - NEW */}
+        <TouchableOpacity
+          onPress={() => navigation.navigate('AllVendorsMap' as never)}
+          style={styles.iconButton}
+        >
+          <Feather name="map" size={20} color="#fff" />
+        </TouchableOpacity>
+
         {/* Cart */}
         <TouchableOpacity
           onPress={() => navigation.navigate('Cart' as never)}
@@ -144,9 +148,9 @@ export function CustomerHeader({
 
   return (
     <SafeAreaView edges={['top']} style={{ backgroundColor: 'transparent' }}>
-    <BlurView intensity={80} tint="dark" style={styles.blurContainer}>
-      <HeaderContent />
-    </BlurView>
+      <BlurView intensity={80} tint="dark" style={styles.blurContainer}>
+        <HeaderContent />
+      </BlurView>
     </SafeAreaView>
   );
 }

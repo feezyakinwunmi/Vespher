@@ -33,6 +33,7 @@ interface FormData {
   vehicleType: string;
   vehicleNumber: string;
   licenseNumber: string;
+  vehicleOwnership: string; // NEW: 'company' or 'personal'
   
   // Document fields
   bankName: string;
@@ -51,6 +52,12 @@ const banks = [
   'Kuda Bank', 'OPay', 'PalmPay', 'Moniepoint'
 ];
 
+// NEW: Vehicle ownership options
+const vehicleOwnershipOptions = [
+  { label: 'Company Vehicle', value: 'company', description: 'Rider uses company-provided vehicle (50% earnings)', icon: 'briefcase' },
+  { label: 'Personal Vehicle', value: 'personal', description: 'Rider uses their own vehicle (80% earnings)', icon: 'user' },
+];
+
 export function AdminCreateLogisticScreen() {
   const navigation = useNavigation();
   const [step, setStep] = useState<Step>('auth');
@@ -67,6 +74,7 @@ export function AdminCreateLogisticScreen() {
     vehicleType: '',
     vehicleNumber: '',
     licenseNumber: '',
+    vehicleOwnership: 'personal', // NEW: Default to personal
     bankName: '',
     accountNumber: '',
     accountName: '',
@@ -137,6 +145,10 @@ export function AdminCreateLogisticScreen() {
     else if (step === 'vehicle') {
       if (!formData.vehicleType || !formData.vehicleNumber || !formData.licenseNumber) {
         setError('Please fill in all vehicle details');
+        return false;
+      }
+      if (!formData.vehicleOwnership) {
+        setError('Please select vehicle ownership type');
         return false;
       }
     }
@@ -250,6 +262,7 @@ export function AdminCreateLogisticScreen() {
           vehicle_type: formData.vehicleType.toLowerCase(),
           vehicle_number: formData.vehicleNumber,
           license_number: formData.licenseNumber,
+          vehicle_ownership: formData.vehicleOwnership, // NEW: Add vehicle ownership
           is_available: true,
           is_suspended: false,
           total_deliveries: 0,
@@ -271,6 +284,7 @@ export function AdminCreateLogisticScreen() {
           vehicle_type: formData.vehicleType.toLowerCase(),
           vehicle_number: formData.vehicleNumber,
           license_number: formData.licenseNumber,
+          vehicle_ownership: formData.vehicleOwnership, // NEW: Add vehicle ownership
           license_photo_url: licensePhotoUrl,
           id_card_url: idCardUrl,
           bank_name: formData.bankName,
@@ -285,7 +299,7 @@ export function AdminCreateLogisticScreen() {
       // Success!
       Alert.alert(
         'Success',
-        `Rider ${formData.fullName} created successfully!`,
+        `Rider ${formData.fullName} created successfully with ${formData.vehicleOwnership === 'company' ? 'company' : 'personal'} vehicle!`,
         [
           {
             text: 'OK',
@@ -512,6 +526,45 @@ export function AdminCreateLogisticScreen() {
                 </View>
               </View>
 
+              {/* NEW: Vehicle Ownership Selection */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Vehicle Ownership *</Text>
+                <View style={styles.ownershipContainer}>
+                  {vehicleOwnershipOptions.map((option) => (
+                    <TouchableOpacity
+                      key={option.value}
+                      style={[
+                        styles.ownershipOption,
+                        formData.vehicleOwnership === option.value && styles.ownershipOptionActive,
+                      ]}
+                      onPress={() => updateField('vehicleOwnership', option.value)}
+                    >
+                      <Feather 
+                        name={option.icon as any} 
+                        size={24} 
+                        color={formData.vehicleOwnership === option.value ? '#f97316' : '#666'} 
+                      />
+                      <View style={styles.ownershipTextContainer}>
+                        <Text style={[
+                          styles.ownershipLabel,
+                          formData.vehicleOwnership === option.value && styles.ownershipLabelActive,
+                        ]}>
+                          {option.label}
+                        </Text>
+                        <Text style={styles.ownershipDescription}>
+                          {option.description}
+                        </Text>
+                      </View>
+                      {formData.vehicleOwnership === option.value && (
+                        <View style={styles.ownershipCheck}>
+                          <Feather name="check-circle" size={20} color="#f97316" />
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Vehicle Number *</Text>
                 <View style={styles.inputContainer}>
@@ -688,8 +741,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0a0a0a',
-        paddingBottom:25,
-
+    paddingBottom: 25,
   },
   header: {
     flexDirection: 'row',
@@ -863,6 +915,47 @@ const styles = StyleSheet.create({
   },
   vehicleOptionTextActive: {
     color: '#f97316',
+  },
+  // NEW: Ownership styles
+  ownershipContainer: {
+    gap: 12,
+  },
+  ownershipOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1a1a1a',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+    gap: 12,
+  },
+  ownershipOptionActive: {
+    borderColor: '#f97316',
+    backgroundColor: 'rgba(249,115,22,0.1)',
+  },
+  ownershipTextContainer: {
+    flex: 1,
+  },
+  ownershipLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 2,
+  },
+  ownershipLabelActive: {
+    color: '#f97316',
+  },
+  ownershipDescription: {
+    fontSize: 11,
+    color: '#666',
+  },
+  ownershipCheck: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   documentUpload: {
     backgroundColor: '#1a1a1a',

@@ -46,8 +46,6 @@ const statusConfig: Record<OrderStatus, { label: string; color: string; icon: ke
   scheduled: { label: 'Scheduled', color: '#8b5cf6', icon: 'calendar' },
 };
 
-
-
 // Rating Modal Component
 function RatingModal({ 
   isOpen, 
@@ -68,7 +66,7 @@ function RatingModal({
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   
- const showToast = (message: string) => {
+  const showToast = (message: string) => {
     Toast.show({
       type: 'success',
       text1: message,
@@ -76,9 +74,10 @@ function RatingModal({
       visibilityTime: 2000,
     });
   };
+  
   const handleSubmit = async () => {
     if (rating === 0) {
-      showToast( 'Please select a rating');
+      showToast('Please select a rating');
       return;
     }
 
@@ -96,7 +95,7 @@ function RatingModal({
 
       if (error) throw error;
 
-      showToast( 'Thank you for your review!');
+      showToast('Thank you for your review!');
       onClose();
     } catch (error) {
       console.error('Error submitting review:', error);
@@ -182,7 +181,7 @@ function RatingModal({
   );
 }
 
-function OrderCard({ order, onPress }: { order: Order; onPress: () => void }) {
+function OrderCard({ order, onPress, onOrderUpdated }: { order: Order; onPress: () => void; onOrderUpdated?: () => void }) {
   
   const showToast = (message: string) => {
     Toast.show({
@@ -196,60 +195,57 @@ function OrderCard({ order, onPress }: { order: Order; onPress: () => void }) {
   const { addItem } = useCart();
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
   
   const status = statusConfig[order.status];
   const isActive = ['pending', 'confirmed', 'preparing', 'ready', 'picked_up', 'in_transit'].includes(order.status);
+  // Cancel button only shows for pending or confirmed orders
+  const canCancel = order.status === 'pending' || order.status === 'confirmed';
 
   const vendorName = order.vendor?.name || 'Vendor';
 
-const [itemImage, setItemImage] = useState('https://via.placeholder.com/100');
+  const [itemImage, setItemImage] = useState('https://via.placeholder.com/100');
 
   // Get the first item's image
-const parsedItems = Array.isArray(order.items)
-  ? order.items
-  : typeof order.items === 'string'
-    ? JSON.parse(order.items)
-    : [];
-const firstItem = parsedItems[0] || null;    
-    console.log("first item is", firstItem);
+  const parsedItems = Array.isArray(order.items)
+    ? order.items
+    : typeof order.items === 'string'
+      ? JSON.parse(order.items)
+      : [];
+  const firstItem = parsedItems[0] || null;    
 
+  React.useEffect(() => {
+    async function fetchImage() {
+      const parsedItems = Array.isArray(order.items)
+        ? order.items
+        : typeof order.items === 'string'
+          ? JSON.parse(order.items)
+          : [];
 
+      const firstItem = parsedItems[0];
+      if (!firstItem?.product_id) return;
 
+      try {
+        const { data, error } = await supabase
+          .from('products')
+          .select('image_url')
+          .eq('id', firstItem.product_id)
+          .single();
 
-React.useEffect(() => {
-  async function fetchImage() {
-    // Safely parse items
-    const parsedItems = Array.isArray(order.items)
-      ? order.items
-      : typeof order.items === 'string'
-        ? JSON.parse(order.items)
-        : [];
+        if (error || !data?.image_url) {
+          setItemImage('https://via.placeholder.com/100');
+          return;
+        }
 
-    const firstItem = parsedItems[0];
-    if (!firstItem?.product_id) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('image_url')
-        .eq('id', firstItem.product_id)
-        .single();
-
-      if (error || !data?.image_url) {
+        setItemImage(data.image_url);
+      } catch (err) {
+        console.log('Error fetching product image:', err);
         setItemImage('https://via.placeholder.com/100');
-        return;
       }
-
-      setItemImage(data.image_url);
-    } catch (err) {
-      console.log('Error fetching product image:', err);
-      setItemImage('https://via.placeholder.com/100');
     }
-  }
 
-  fetchImage();
-}, [order.items]);
-
+    fetchImage();
+  }, [order.items]);
 
   const handleReorder = async (e: any) => {
     e.stopPropagation();
@@ -269,6 +265,99 @@ React.useEffect(() => {
     }
   };
 
+  // Restore product stock function
+  const restoreProductStock = async (orderItems: any[]) => {
+    try {
+      for (const item of orderItems) {
+        const { data: product, error: fetchError } = await supabase
+          .from('products')
+          .select('track_stock, stock_quantity')
+          .eq('id', item.product_id)
+          .single();
+
+        if (fetchError) {
+          console.error('Error fetching product stock:', fetchError);
+          continue;
+        }
+
+        if (product?.track_stock) {
+          const newStock = (product.stock_quantity || 0) + item.quantity;
+          
+          const { error: updateError } = await supabase
+            .from('products')
+            .update({ 
+              stock_quantity: newStock,
+              quantity_available: newStock
+            })
+            .eq('id', item.product_id);
+
+          if (updateError) {
+            console.error('Error restoring stock:', updateError);
+          } else {
+            console.log(`✅ Stock restored for product: +${item.quantity}, new stock: ${newStock}`);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error in restoreProductStock:', error);
+    }
+  };
+
+  const handleCancelOrder = async (e: any) => {
+    e.stopPropagation();
+    
+    Alert.alert(
+      'Cancel Order',
+      'Are you sure you want to cancel this order? Stock will be restored.',
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Yes, Cancel',
+          style: 'destructive',
+          onPress: async () => {
+            setIsCancelling(true);
+            try {
+              // Parse items
+              const parsedItems = Array.isArray(order.items)
+                ? order.items
+                : typeof order.items === 'string'
+                  ? JSON.parse(order.items)
+                  : [];
+              
+              // Restore stock
+              await restoreProductStock(parsedItems);
+              
+              // Update order status
+              const { error } = await supabase
+                .from('orders')
+                .update({
+                  status: 'cancelled',
+                  cancelled_at: new Date().toISOString(),
+                  cancelled_by: 'customer'
+                })
+                .eq('id', order.id);
+              
+              if (error) throw error;
+              
+              showToast('Order cancelled successfully');
+              
+              // Refresh orders list
+              if (onOrderUpdated) {
+                onOrderUpdated();
+              }
+              
+            } catch (error) {
+              console.error('Error cancelling order:', error);
+              showToast('Failed to cancel order');
+            } finally {
+              setIsCancelling(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   return (
     <>
       <TouchableOpacity onPress={onPress} style={styles.orderCard}>
@@ -276,11 +365,11 @@ React.useEffect(() => {
         <View style={styles.orderHeader}>
           <View style={styles.vendorInfo}>
             <View style={styles.itemImageContainer}>
-            <Image 
-  source={{ uri: itemImage }} 
-  style={styles.itemImage}
-  onError={() => setImageError(true)}
-/>
+              <Image 
+                source={{ uri: itemImage }} 
+                style={styles.itemImage}
+                onError={() => setImageError(true)}
+              />
               {imageError && (
                 <View style={styles.itemImageFallback}>
                   <Feather name="image" size={20} color="#666" />
@@ -328,7 +417,27 @@ React.useEffect(() => {
           </View>
         </View>
 
-        {/* Action Buttons for Active Orders */}
+        {/* Cancel Button - ONLY for pending or confirmed orders */}
+        {canCancel && (
+          <View style={styles.actionButtons}>
+            <TouchableOpacity 
+              onPress={handleCancelOrder}
+              disabled={isCancelling}
+              style={[styles.actionButtonSecondary, { borderColor: '#ef4444', borderWidth: 1 }]}
+            >
+              {isCancelling ? (
+                <ActivityIndicator size="small" color="#ef4444" />
+              ) : (
+                <>
+                  <Feather name="x-circle" size={16} color="#ef4444" />
+                  <Text style={[styles.actionButtonSecondaryText, { color: '#ef4444' }]}>Cancel Order</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Action Buttons for Active Orders - Track & Call Rider */}
         {isActive && order.status === 'in_transit' && order.rider && (
           <View style={styles.actionButtons}>
             <TouchableOpacity 
@@ -466,6 +575,7 @@ export function OrdersScreen() {
                 key={order.id} 
                 order={order} 
                 onPress={() => handleOrderPress(order.id)}
+                onOrderUpdated={onRefresh}
               />
             ))}
           </View>

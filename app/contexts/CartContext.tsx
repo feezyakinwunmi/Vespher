@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useReducer, useCallback } from 'react';
 import { Alert } from 'react-native';
 import type { CartItem, Product, SelectedOption } from '../types';
+import { supabase } from '../lib/supabase';
 
 interface ComboGroup {
   id: string; // The promotion_id
@@ -27,7 +28,7 @@ type CartAction =
 interface CartContextType {
   items: CartItem[];
   vendorId: string | null;
-  addItem: (product: Product, quantity: number, selectedOptions?: SelectedOption[]) => void;
+addItem: (product: Product, quantity: number, selectedOptions?: SelectedOption[]) => Promise<void>;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
@@ -41,6 +42,47 @@ interface CartContextType {
 
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
+
+// Helper function to check product stock
+const checkProductStock = async (productId: string, requestedQuantity: number): Promise<{ available: boolean; stockQuantity: number }> => {
+  try {
+    console.log('🔍 Checking stock for product:', productId);
+    console.log('Requested quantity:', requestedQuantity);
+    
+    const { data, error } = await supabase
+      .from('products')
+      .select('stock_quantity, track_stock')
+      .eq('id', productId)
+      .single();
+    
+    if (error) {
+      console.error('❌ Error fetching stock:', error);
+      throw error;
+    }
+    
+    console.log('📦 Product data:', data);
+    
+    // If stock tracking is disabled, always return available
+    if (!data.track_stock) {
+      console.log('⚠️ Stock tracking disabled for this product');
+      return { available: true, stockQuantity: Infinity };
+    }
+    
+    const availableStock = data.stock_quantity || 0;
+    const available = requestedQuantity <= availableStock;
+    
+    console.log(`📊 Stock: ${availableStock}, Requested: ${requestedQuantity}, Available: ${available}`);
+    
+    return { 
+      available, 
+      stockQuantity: availableStock 
+    };
+  } catch (error) {
+    console.error('❌ Error checking stock:', error);
+    // If error, assume available (fail open)
+    return { available: true, stockQuantity: Infinity };
+  }
+};
 
 function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
@@ -256,10 +298,29 @@ const [state, dispatch] = useReducer(cartReducer, {
   comboGroups: [] 
 });
 // Update the addItem function to accept promotion details
-const addItem = useCallback((product: Product, quantity: number, selectedOptions?: SelectedOption[]) => {
-  // Validate promo item quantity before adding
+const addItem = useCallback(async (product: Product, quantity: number, selectedOptions?: SelectedOption[]) => {
+  console.log('🛒 Adding item:', product.name, 'Quantity:', quantity);
+  
+  // Find if this product is already in cart
+  const existingItem = state.items.find(item => item.product.id === product.id);
+  const currentQuantityInCart = existingItem?.quantity || 0;
+  const totalRequestedQuantity = currentQuantityInCart + quantity;
+  
+  console.log('📊 Current in cart:', currentQuantityInCart, 'Total requested:', totalRequestedQuantity);
+  
+  // FIRST: Check stock against total requested (cart + new)
+  const { available, stockQuantity } = await checkProductStock(product.id, totalRequestedQuantity);
+  
+  console.log('📊 Stock check result - Available:', available, 'Stock:', stockQuantity);
+  
+  if (!available) {
+    Alert.alert('Out of Stock', `Only ${stockQuantity} left in stock. You already have ${currentQuantityInCart} in cart.`);
+    return;
+  }
+  
+  // SECOND: Check promo max quantity (existing logic)
   const maxQuantity = (product as any).max_quantity || (product as any).promotion_max_quantity;
-  if (maxQuantity && quantity > maxQuantity) {
+  if (maxQuantity && totalRequestedQuantity > maxQuantity) {
     Alert.alert('Limit Reached', `You can only order ${maxQuantity} of this promotional item.`);
     return;
   }
@@ -276,16 +337,35 @@ const addItem = useCallback((product: Product, quantity: number, selectedOptions
   };
   
   dispatch({ type: 'ADD_ITEM', payload: { product: itemWithPromo, quantity, selectedOptions } });
-}, []);
+}, [state.items]);
 
   const removeItem = useCallback((productId: string) => {
     dispatch({ type: 'REMOVE_ITEM', payload: productId });
   }, []);
 
-  const updateQuantity = useCallback((productId: string, quantity: number) => {
-    if (quantity < 0) return;
-    dispatch({ type: 'UPDATE_QUANTITY', payload: { productId, quantity } });
-  }, []);
+const updateQuantity = useCallback(async (productId: string, quantity: number) => {
+  if (quantity < 0) return;
+  
+  // Find the item to get its product
+  const item = state.items.find(item => item.product.id === productId);
+  if (!item) return;
+  
+  console.log('🔄 Updating quantity for:', item.product.name, 'to:', quantity);
+  
+  // Check stock if increasing quantity
+  if (quantity > item.quantity) {
+    const { available, stockQuantity } = await checkProductStock(productId, quantity);
+    console.log('📊 Update stock check - Available:', available, 'Stock:', stockQuantity);
+    if (!available) {
+      Alert.alert('Out of Stock', `Only ${stockQuantity} left in stock.`);
+      return;
+    }
+  }
+  
+  dispatch({ type: 'UPDATE_QUANTITY', payload: { productId, quantity } });
+}, [state.items]);
+
+
 
   const clearCart = useCallback(() => {
     dispatch({ type: 'CLEAR_CART' });

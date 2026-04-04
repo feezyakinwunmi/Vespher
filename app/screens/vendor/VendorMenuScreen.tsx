@@ -24,9 +24,8 @@ export function VendorMenuScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
-  const [filter, setFilter] = useState<'all' | 'pending' | 'approved'>('all');
-  const { vendorId } = useVendorMenu(); // or wherever you get vendor info
-
+  const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'out_of_stock'>('all');
+  const { vendorId } = useVendorMenu();
 
   const { 
     items, 
@@ -51,15 +50,15 @@ export function VendorMenuScreen() {
     setShowForm(true);
   };
 
-const handleEditItem = (item: any) => {
-  console.log('✏️ Editing item:', {
-    id: item.id,
-    name: item.name,
-    image_url: item.image_url
-  });
-  setEditingItem(item); // This should contain the image_url
-  setShowForm(true);
-};
+  const handleEditItem = (item: any) => {
+    console.log('✏️ Editing item:', {
+      id: item.id,
+      name: item.name,
+      image_url: item.image_url
+    });
+    setEditingItem(item);
+    setShowForm(true);
+  };
 
   const handleDeleteItem = (id: string) => {
     Alert.alert(
@@ -94,10 +93,19 @@ const handleEditItem = (item: any) => {
     setEditingItem(null);
   };
 
+  // Calculate counts for filters
+  const approvedCount = items.filter(i => i.approval_status === 'approved').length;
+  const outOfStockCount = items.filter(i => 
+    i.track_stock && (i.stock_quantity || i.quantity_available || 0) <= 0
+  ).length;
+
   const filteredItems = items.filter(item => {
     if (filter === 'all') return true;
     if (filter === 'pending') return item.approval_status === 'pending';
     if (filter === 'approved') return item.approval_status === 'approved';
+    if (filter === 'out_of_stock') {
+      return item.track_stock && (item.stock_quantity || item.quantity_available || 0) <= 0;
+    }
     return true;
   });
 
@@ -132,9 +140,9 @@ const handleEditItem = (item: any) => {
           <Text style={[styles.statNumber, { color: '#f59e0b' }]}>{pendingCount}</Text>
           <Text style={styles.statLabel}>Pending</Text>
         </View>
-        <View style={styles.statCard}>
-          <Text style={[styles.statNumber, { color: '#10b981' }]}>
-            {items.filter(i => i.quantity_available === 0).length}
+        <View style={[styles.statCard, outOfStockCount > 0 && { backgroundColor: '#ef444420' }]}>
+          <Text style={[styles.statNumber, { color: outOfStockCount > 0 ? '#ef4444' : '#666' }]}>
+            {outOfStockCount}
           </Text>
           <Text style={styles.statLabel}>Out of Stock</Text>
         </View>
@@ -152,6 +160,7 @@ const handleEditItem = (item: any) => {
                 All ({items.length})
               </Text>
             </TouchableOpacity>
+            
             <TouchableOpacity
               onPress={() => setFilter('pending')}
               style={[styles.filterTab, filter === 'pending' && styles.activeFilterTab]}
@@ -160,12 +169,36 @@ const handleEditItem = (item: any) => {
                 Pending ({pendingCount})
               </Text>
             </TouchableOpacity>
+            
             <TouchableOpacity
               onPress={() => setFilter('approved')}
               style={[styles.filterTab, filter === 'approved' && styles.activeFilterTab]}
             >
               <Text style={[styles.filterText, filter === 'approved' && styles.activeFilterText]}>
-                Approved ({items.filter(i => i.approval_status === 'approved').length})
+                Approved ({approvedCount})
+              </Text>
+            </TouchableOpacity>
+            
+            {/* NEW: Out of Stock Filter Tab */}
+            <TouchableOpacity
+              onPress={() => setFilter('out_of_stock')}
+              style={[
+                styles.filterTab, 
+                filter === 'out_of_stock' && styles.activeFilterTab,
+                outOfStockCount > 0 && styles.outOfStockTab
+              ]}
+            >
+              <Feather 
+                name="alert-triangle" 
+                size={12} 
+                color={filter === 'out_of_stock' ? '#fff' : outOfStockCount > 0 ? '#ef4444' : '#666'} 
+              />
+              <Text style={[
+                styles.filterText, 
+                filter === 'out_of_stock' && styles.activeFilterText,
+                outOfStockCount > 0 && !(filter === 'out_of_stock') && { color: '#ef4444' }
+              ]}>
+                Out of Stock ({outOfStockCount})
               </Text>
             </TouchableOpacity>
           </View>
@@ -191,6 +224,8 @@ const handleEditItem = (item: any) => {
                 ? 'No items pending approval' 
                 : filter === 'approved'
                 ? 'No approved items yet'
+                : filter === 'out_of_stock'
+                ? 'No out of stock items'
                 : 'Add your first menu item to get started'}
             </Text>
             <TouchableOpacity onPress={handleAddItem} style={styles.emptyButton}>
@@ -233,8 +268,7 @@ const handleEditItem = (item: any) => {
           }}
           onSubmit={handleFormSubmit}
           initialData={editingItem}
-          vendorId={vendorId} // ✅ Pass vendor ID
-
+          vendorId={vendorId}
         />
       </Modal>
     </SafeAreaView>
@@ -245,8 +279,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0a0a0a',
-        paddingBottom:60,
-
+    paddingBottom: 60,
   },
   loadingContainer: {
     flex: 1,
@@ -315,14 +348,21 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   filterTab: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
     backgroundColor: '#1a1a1a',
     borderRadius: 20,
     marginRight: 8,
+    gap: 6,
   },
   activeFilterTab: {
     backgroundColor: '#f97316',
+  },
+  outOfStockTab: {
+    borderWidth: 1,
+    borderColor: '#ef4444',
   },
   filterText: {
     fontSize: 13,

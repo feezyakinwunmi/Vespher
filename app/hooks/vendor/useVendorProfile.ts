@@ -15,6 +15,7 @@ export type BusinessHours = {
 };
 
 export interface VendorProfile {
+
   id: string;
   // User table fields
   name: string;
@@ -42,6 +43,8 @@ export interface VendorProfile {
   accountNumber: string;
   accountName: string;
 
+    latitude: any;  // or latitude?: number;
+  longitude: any;
   
   // Notification settings - ADD THIS
   notifications: {
@@ -82,6 +85,8 @@ export function useVendorProfile() {
           account_number,
           account_name,
           notification_settings,
+          latitude,
+          longitude,
           users!owner_id (
             name,
             email,
@@ -126,11 +131,14 @@ export function useVendorProfile() {
           bankName: vendorData.bank_name || '',
           accountNumber: vendorData.account_number || '',
           accountName: vendorData.account_name || '',
+          latitude: vendorData.latitude,
+longitude: vendorData.longitude,
           notifications: vendorData.notification_settings || {
             newOrders: true,
             orderUpdates: true,
             payments: true,
           },
+          
         });
       }
     } catch (err: any) {
@@ -188,6 +196,8 @@ export function useVendorProfile() {
       if (updates.accountNumber) vendorUpdates.account_number = updates.accountNumber;
       if (updates.accountName) vendorUpdates.account_name = updates.accountName;
       if (updates.notifications) vendorUpdates.notification_settings = updates.notifications;
+vendorUpdates.latitude = updates.latitude;
+vendorUpdates.longitude = updates.longitude;
 
       if (Object.keys(vendorUpdates).length > 0) {
         const { error: vendorError } = await supabase

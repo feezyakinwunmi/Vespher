@@ -25,7 +25,10 @@ interface PlatformSettings {
   min_delivery_fee: number;
   max_delivery_fee: number;
   weight_rate_per_kg: number;
-  promotion_cost_per_day: number; // Added
+  promotion_cost_per_day: number;
+  // NEW: Rider percentage settings
+  company_vehicle_rider_percentage: number;
+  personal_vehicle_rider_percentage: number;
   updated_at: string;
   updated_by: string | null;
 }
@@ -51,7 +54,10 @@ export function AdminSettingsScreen() {
   const [minDeliveryFee, setMinDeliveryFee] = useState('');
   const [maxDeliveryFee, setMaxDeliveryFee] = useState('');
   const [weightRatePerKg, setWeightRatePerKg] = useState('');
-  const [promotionCostPerDay, setPromotionCostPerDay] = useState(''); // Added
+  const [promotionCostPerDay, setPromotionCostPerDay] = useState('');
+  // NEW: Rider percentage state
+  const [companyVehicleRiderPercent, setCompanyVehicleRiderPercent] = useState('');
+  const [personalVehicleRiderPercent, setPersonalVehicleRiderPercent] = useState('');
 
   useEffect(() => {
     fetchSettings();
@@ -77,7 +83,10 @@ export function AdminSettingsScreen() {
       setMinDeliveryFee(data.min_delivery_fee.toString());
       setMaxDeliveryFee(data.max_delivery_fee.toString());
       setWeightRatePerKg(data.weight_rate_per_kg?.toString() || '100');
-      setPromotionCostPerDay(data.promotion_cost_per_day?.toString() || '300'); // Added
+      setPromotionCostPerDay(data.promotion_cost_per_day?.toString() || '300');
+      // NEW: Set rider percentage values
+      setCompanyVehicleRiderPercent(data.company_vehicle_rider_percentage?.toString() || '50');
+      setPersonalVehicleRiderPercent(data.personal_vehicle_rider_percentage?.toString() || '80');
       
     } catch (error) {
       console.error('Error fetching settings:', error);
@@ -130,6 +139,19 @@ export function AdminSettingsScreen() {
       return false;
     }
 
+    // NEW: Rider percentage validation
+    const companyPercent = parseFloat(companyVehicleRiderPercent);
+    if (isNaN(companyPercent) || companyPercent < 0 || companyPercent > 100) {
+      showToast('Company vehicle rider percentage must be between 0 and 100', 'error');
+      return false;
+    }
+
+    const personalPercent = parseFloat(personalVehicleRiderPercent);
+    if (isNaN(personalPercent) || personalPercent < 0 || personalPercent > 100) {
+      showToast('Personal vehicle rider percentage must be between 0 and 100', 'error');
+      return false;
+    }
+
     return true;
   };
 
@@ -154,7 +176,10 @@ export function AdminSettingsScreen() {
           min_delivery_fee: parseInt(minDeliveryFee),
           max_delivery_fee: parseInt(maxDeliveryFee),
           weight_rate_per_kg: parseInt(weightRatePerKg),
-          promotion_cost_per_day: parseInt(promotionCostPerDay), // Added
+          promotion_cost_per_day: parseInt(promotionCostPerDay),
+          // NEW: Save rider percentages
+          company_vehicle_rider_percentage: parseFloat(companyVehicleRiderPercent),
+          personal_vehicle_rider_percentage: parseFloat(personalVehicleRiderPercent),
           updated_by: user.id,
           updated_at: new Date().toISOString(),
         })
@@ -215,6 +240,7 @@ export function AdminSettingsScreen() {
   const exampleWeight = 2; // 2kg
   const exampleOrderAmount = 10000; // ₦10,000
   const examplePromotionDays = 7; // 7 days
+  const exampleDeliveryFee = 1500; // Example delivery fee for rider calculation
 
   const calculatedDeliveryFee = (parseInt(deliveryFeePerKm || '0') * exampleDistance) + 
                                 (parseInt(weightRatePerKg || '0') * exampleWeight);
@@ -224,6 +250,12 @@ export function AdminSettingsScreen() {
   // Promotion cost calculation
   const promotionCostPerDayNum = parseInt(promotionCostPerDay || '0');
   const totalPromotionCost = promotionCostPerDayNum * examplePromotionDays;
+
+  // NEW: Rider earnings example
+  const companyRiderEarnings = exampleDeliveryFee * (parseFloat(companyVehicleRiderPercent || '50') / 100);
+  const personalRiderEarnings = exampleDeliveryFee * (parseFloat(personalVehicleRiderPercent || '80') / 100);
+  const companyPlatformEarnings = exampleDeliveryFee - companyRiderEarnings;
+  const personalPlatformEarnings = exampleDeliveryFee - personalRiderEarnings;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -286,6 +318,92 @@ export function AdminSettingsScreen() {
               <Text style={styles.hint}>
                 Current: {settings?.platform_fee_percentage}% • Range: 0-100%
               </Text>
+            </View>
+          </View>
+
+          {/* NEW: Rider Earnings Section */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Feather name="user" size={20} color="#f97316" />
+              <Feather name="truck" size={20} color="#f97316" />
+              <Text style={styles.sectionTitle}>Rider Earnings</Text>
+            </View>
+            <Text style={styles.sectionDescription}>
+              Percentage of delivery fee that riders earn based on vehicle ownership
+            </Text>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Company Vehicle Rider (%)</Text>
+              <View style={styles.inputContainer}>
+                <TextInput
+                  style={styles.input}
+                  value={companyVehicleRiderPercent}
+                  onChangeText={(text) => setCompanyVehicleRiderPercent(formatCurrency(text))}
+                  placeholder="50"
+                  placeholderTextColor="#666"
+                  keyboardType="number-pad"
+                />
+                <Text style={styles.inputSuffix}>%</Text>
+              </View>
+              <Text style={styles.hint}>
+                Current: {settings?.company_vehicle_rider_percentage || 50}% • Rider gets this % of delivery fee
+              </Text>
+              <View style={styles.exampleRowSmall}>
+                <Text style={styles.exampleLabelSmall}>Example (₦{exampleDeliveryFee.toLocaleString()} fee):</Text>
+                <Text style={styles.exampleValueSmall}>Rider earns ₦{companyRiderEarnings.toLocaleString()}</Text>
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Personal Vehicle Rider (%)</Text>
+              <View style={styles.inputContainer}>
+                <TextInput
+                  style={styles.input}
+                  value={personalVehicleRiderPercent}
+                  onChangeText={(text) => setPersonalVehicleRiderPercent(formatCurrency(text))}
+                  placeholder="80"
+                  placeholderTextColor="#666"
+                  keyboardType="number-pad"
+                />
+                <Text style={styles.inputSuffix}>%</Text>
+              </View>
+              <Text style={styles.hint}>
+                Current: {settings?.personal_vehicle_rider_percentage || 80}% • Rider gets this % of delivery fee
+              </Text>
+              <View style={styles.exampleRowSmall}>
+                <Text style={styles.exampleLabelSmall}>Example (₦{exampleDeliveryFee.toLocaleString()} fee):</Text>
+                <Text style={styles.exampleValueSmall}>Rider earns ₦{personalRiderEarnings.toLocaleString()}</Text>
+              </View>
+            </View>
+
+            {/* Rider Earnings Example Card */}
+            <View style={styles.riderExampleCard}>
+              <Text style={styles.exampleTitle}>Rider Earnings Breakdown</Text>
+              <Text style={styles.exampleSubtitle}>For a ₦{exampleDeliveryFee.toLocaleString()} delivery fee</Text>
+              
+              <View style={styles.exampleDivider} />
+              
+              <Text style={styles.riderTypeTitle}>🏢 Company Vehicle</Text>
+              <View style={styles.exampleRow}>
+                <Text style={styles.exampleLabel}>Rider ({companyVehicleRiderPercent || 50}%):</Text>
+                <Text style={styles.exampleValue}>₦{companyRiderEarnings.toLocaleString()}</Text>
+              </View>
+              <View style={styles.exampleRow}>
+                <Text style={styles.exampleLabel}>Platform ({100 - parseFloat(companyVehicleRiderPercent || '50')}%):</Text>
+                <Text style={styles.exampleValue}>₦{companyPlatformEarnings.toLocaleString()}</Text>
+              </View>
+              
+              <View style={styles.exampleDivider} />
+              
+              <Text style={styles.riderTypeTitle}>🚗 Personal Vehicle</Text>
+              <View style={styles.exampleRow}>
+                <Text style={styles.exampleLabel}>Rider ({personalVehicleRiderPercent || 80}%):</Text>
+                <Text style={styles.exampleValue}>₦{personalRiderEarnings.toLocaleString()}</Text>
+              </View>
+              <View style={styles.exampleRow}>
+                <Text style={styles.exampleLabel}>Platform ({100 - parseFloat(personalVehicleRiderPercent || '80')}%):</Text>
+                <Text style={styles.exampleValue}>₦{personalPlatformEarnings.toLocaleString()}</Text>
+              </View>
             </View>
           </View>
 
@@ -374,7 +492,7 @@ export function AdminSettingsScreen() {
             </View>
           </View>
 
-          {/* NEW: Promotion Settings Section */}
+          {/* Promotion Settings Section */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Feather name="phone" size={20} color="#f97316" />
@@ -661,6 +779,33 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#f97316',
+  },
+  // NEW: Rider example styles
+  riderExampleCard: {
+    backgroundColor: '#0a0a0a',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 8,
+  },
+  riderTypeTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 6,
+  },
+  exampleRowSmall: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 6,
+  },
+  exampleLabelSmall: {
+    fontSize: 10,
+    color: '#666',
+  },
+  exampleValueSmall: {
+    fontSize: 10,
+    color: '#10b981',
+    fontWeight: '500',
   },
   footer: {
     alignItems: 'center',

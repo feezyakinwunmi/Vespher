@@ -5,6 +5,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Alert } from 'react-native';
 
 export interface MenuItem {
+  stock_quantity: number | undefined;
+  track_stock: boolean;
   id: string;
   vendor_id: string;
   name: string;

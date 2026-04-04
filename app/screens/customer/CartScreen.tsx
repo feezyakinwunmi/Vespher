@@ -26,7 +26,7 @@ import { supabase } from '../../lib/supabase';
 import { RootStackParamList } from '../../navigation/types';
 import { FlutterwavePayment } from '../../components/FlutterwavePayment';
 import { useLocation } from '../../contexts/LocationContext';
-import type { Address } from '../../types';
+import type { Address, CartItem } from '../../types';
 import Toast from 'react-native-toast-message';
 
 type CartScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -324,6 +324,72 @@ export function CartScreen() {
     }
   };
 
+  // Function to decrease product stock after order is placed
+const decreaseProductStock = async (items: CartItem[]) => {
+  try {
+    // Loop through each item in the order
+    for (const item of items) {
+      // First check if product tracks stock
+      const { data: product, error: fetchError } = await supabase
+        .from('products')
+        .select('track_stock, stock_quantity')
+        .eq('id', item.product.id)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching product stock:', fetchError);
+        continue;
+      }
+
+      // Only decrease if stock tracking is enabled
+      if (product.track_stock) {
+        const newStock = (product.stock_quantity || 0) - item.quantity;
+        
+        // Ensure stock doesn't go negative
+        if (newStock >= 0) {
+          const { error: updateError } = await supabase
+            .from('products')
+            .update({ 
+              stock_quantity: newStock,
+              quantity_available: newStock // Update both fields
+            })
+            .eq('id', item.product.id);
+
+          if (updateError) {
+            console.error('Error updating stock:', updateError);
+          } else {
+            console.log(`✅ Stock updated for ${item.product.name}: ${newStock} left`);
+          }
+        } else {
+          console.warn(`⚠️ Stock would go negative for ${item.product.name}`);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error in decreaseProductStock:', error);
+  }
+};
+
+  const restoreProductStock = async (items: CartItem[]) => {
+  for (const item of items) {
+    const { data: product } = await supabase
+      .from('products')
+      .select('track_stock, stock_quantity')
+      .eq('id', item.product.id)
+      .single();
+    
+    if (product?.track_stock) {
+      await supabase
+        .from('products')
+        .update({ stock_quantity: (product.stock_quantity || 0) + item.quantity })
+        .eq('id', item.product.id);
+    }
+  }
+};
+
+
+
+
 const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
   setIsPlacingOrder(true);
 
@@ -371,10 +437,9 @@ const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
       deliveryFeeForDB = actualDeliveryFee;
     }
     
-    // Calculate rider earnings (50% of actual delivery fee)
-    const riderEarnings = Math.round(actualDeliveryFee * 0.5);
-    const platformDeliveryEarnings = actualDeliveryFee - riderEarnings;
-    
+   // Don't calculate rider earnings at order creation - will be set when rider accepts
+const riderEarnings = 0;
+const platformDeliveryEarnings = 0;
     // Calculate vendor payout - based on ORIGINAL subtotal (platform absorbs first order discount)
     const vendorPayout = Math.round(subtotal * ((100 - platformFeePercentage) / 100));
     
@@ -512,6 +577,8 @@ promotion_id: items.some(item => (item.product as any).promotion_id)
     }
 
     console.log('✅ Order inserted successfully:', order.id);
+    await decreaseProductStock(items);
+console.log('✅ Product stock updated');
 
     // Record first order discount if applied
     if (isFirstOrder && firstOrderDiscount > 0) {

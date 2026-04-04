@@ -31,15 +31,35 @@ export function MenuItemCard({
 }: MenuItemCardProps) {
   const [showActions, setShowActions] = useState(false);
   const [showQuantityModal, setShowQuantityModal] = useState(false);
-  const [quantity, setQuantity] = useState(item.quantity_available?.toString() || '0');
+  const [quantity, setQuantity] = useState(item.quantity_available?.toString() || item.stock_quantity?.toString() || '0');
   const [imageError, setImageError] = useState(false);
   const [imageLoadAttempt, setImageLoadAttempt] = useState(Date.now());
 
+  // Check if product is out of stock (track_stock true and stock_quantity <= 0)
+  const isOutOfStock = item.track_stock && (item.stock_quantity || item.quantity_available || 0) <= 0;
+  
+  // Get stock display text
+  const getStockDisplay = () => {
+    if (!item.track_stock) return 'Unlimited';
+    const stock = item.stock_quantity || item.quantity_available || 0;
+    if (stock <= 0) return 'Out of Stock';
+    if (stock <= 5) return `Only ${stock} left`;
+    return `${stock} in stock`;
+  };
+
+  const getStockColor = () => {
+    if (!item.track_stock) return '#666';
+    const stock = item.stock_quantity || item.quantity_available || 0;
+    if (stock <= 0) return '#ef4444';
+    if (stock <= 5) return '#f59e0b';
+    return '#10b981';
+  };
 
   const getStatusColor = () => {
     if (item.approval_status === 'pending') return '#f59e0b';
     if (item.approval_status === 'rejected') return '#ef4444';
     if (!item.is_available) return '#666';
+    if (isOutOfStock) return '#ef4444';
     return '#10b981';
   };
 
@@ -47,6 +67,7 @@ export function MenuItemCard({
     if (item.approval_status === 'pending') return 'Pending Approval';
     if (item.approval_status === 'rejected') return 'Rejected';
     if (!item.is_available) return 'Unavailable';
+    if (isOutOfStock) return 'Out of Stock';
     return 'Approved';
   };
 
@@ -62,24 +83,24 @@ export function MenuItemCard({
 
   return (
     <>
-      <View style={styles.card}>
+      <View style={[styles.card, (isOutOfStock || !item.is_available) && styles.disabledCard]}>
         {/* Image */}
         <View style={styles.imageContainer}>
           {item.image_url && !imageError ? (
-   <Image
-  source={{ 
-    uri: `${item.image_url}?t=${imageLoadAttempt}`, // Add cache buster
-    cache: 'reload'
-  }}
-  style={styles.image}
-  onError={(e) => {
-    console.log('❌ Image failed to load:', item.image_url);
-    setImageError(true);
-  }}
-  onLoad={() => {
-    console.log('✅ Image loaded:', item.image_url);
-  }}
-/>
+            <Image
+              source={{ 
+                uri: `${item.image_url}?t=${imageLoadAttempt}`,
+                cache: 'reload'
+              }}
+              style={styles.image}
+              onError={(e) => {
+                console.log('❌ Image failed to load:', item.image_url);
+                setImageError(true);
+              }}
+              onLoad={() => {
+                console.log('✅ Image loaded:', item.image_url);
+              }}
+            />
           ) : (
             <LinearGradient
               colors={['#f97316', '#f43f5e']}
@@ -88,13 +109,22 @@ export function MenuItemCard({
               <Feather name="image" size={24} color="#fff" />
             </LinearGradient>
           )}
+          
+          {/* Out of Stock Overlay */}
+          {isOutOfStock && (
+            <View style={styles.outOfStockOverlay}>
+              <Text style={styles.outOfStockOverlayText}>OUT</Text>
+            </View>
+          )}
         </View>
 
         {/* Content */}
         <View style={styles.content}>
           <View style={styles.header}>
             <View style={styles.titleContainer}>
-              <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
+              <Text style={[styles.name, isOutOfStock && styles.disabledText]} numberOfLines={1}>
+                {item.name}
+              </Text>
               <View style={styles.badgeContainer}>
                 <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor()}20` }]}>
                   <Text style={[styles.statusText, { color: getStatusColor() }]}>
@@ -119,14 +149,16 @@ export function MenuItemCard({
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.description} numberOfLines={2}>
+          <Text style={[styles.description, isOutOfStock && styles.disabledText]} numberOfLines={2}>
             {item.description || 'No description'}
           </Text>
 
           {/* Price and Quantity */}
           <View style={styles.details}>
             <View style={styles.priceContainer}>
-              <Text style={styles.price}>₦{item.price.toLocaleString()}</Text>
+              <Text style={[styles.price, isOutOfStock && styles.disabledText]}>
+                ₦{item.price.toLocaleString()}
+              </Text>
               {item.original_price && (
                 <Text style={styles.originalPrice}>
                   ₦{item.original_price.toLocaleString()}
@@ -136,11 +168,11 @@ export function MenuItemCard({
             
             <TouchableOpacity
               onPress={() => setShowQuantityModal(true)}
-              style={styles.quantityBadge}
+              style={[styles.quantityBadge, { backgroundColor: `${getStockColor()}20` }]}
             >
-              <Feather name="package" size={12} color="#f97316" />
-              <Text style={styles.quantityText}>
-                Qty: {item.quantity_available ?? '∞'}
+              <Feather name="package" size={12} color={getStockColor()} />
+              <Text style={[styles.quantityText, { color: getStockColor() }]}>
+                {getStockDisplay()}
               </Text>
             </TouchableOpacity>
           </View>
@@ -215,7 +247,7 @@ export function MenuItemCard({
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Update Quantity</Text>
+            <Text style={styles.modalTitle}>Update Stock Quantity</Text>
             <Text style={styles.modalSubtitle}>
               Set available quantity (0 = out of stock, leave empty for unlimited)
             </Text>
@@ -265,12 +297,20 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.05)',
     position: 'relative',
   },
+  disabledCard: {
+    opacity: 0.6,
+    backgroundColor: '#0a0a0a',
+  },
+  disabledText: {
+    color: '#666',
+  },
   imageContainer: {
     width: 80,
     height: 80,
     borderRadius: 8,
     overflow: 'hidden',
     marginRight: 12,
+    position: 'relative',
   },
   image: {
     width: '100%',
@@ -281,6 +321,26 @@ const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  outOfStockOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  outOfStockOverlayText: {
+    color: '#ef4444',
+    fontSize: 14,
+    fontWeight: 'bold',
+    backgroundColor: 'rgba(239,68,68,0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    overflow: 'hidden',
   },
   content: {
     flex: 1,
@@ -361,7 +421,6 @@ const styles = StyleSheet.create({
   quantityBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2a2a2a',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
@@ -369,7 +428,7 @@ const styles = StyleSheet.create({
   },
   quantityText: {
     fontSize: 11,
-    color: '#f97316',
+    fontWeight: '500',
   },
   prepTime: {
     flexDirection: 'row',

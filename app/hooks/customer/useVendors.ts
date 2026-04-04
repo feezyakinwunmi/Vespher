@@ -20,6 +20,9 @@ export interface Product {
   preparationTime?: number;
   preparation_time?: number;
   created_at?: string;
+  // Add stock fields
+  stock_quantity?: number;
+  track_stock?: boolean;
 }
 
 export interface Vendor {
@@ -30,7 +33,7 @@ export interface Vendor {
   category: string;
   logo: string;
   image: string;
-  coverImage: string; // This will now receive cover_image_url
+  coverImage: string;
   rating: number;
   reviewCount: number;
   deliveryTime: string;
@@ -46,7 +49,6 @@ export interface Vendor {
   latitude?: number;
   longitude?: number;
   products: Product[];
-  // Add these to fix the TypeScript error
   image_url?: string;
   cover_image_url?: string;
   businessCover?: string;
@@ -73,8 +75,8 @@ export function useVendors() {
             avatar_url
           )
         `)
-        .eq('is_approved', true)              // Still require approval
-        .eq('is_suspended', false)            // ← NEW: Exclude suspended vendors
+        .eq('is_approved', true)
+        .eq('is_suspended', false)
         .order('rating', { ascending: false, nullsFirst: false });
 
       if (error) throw error;
@@ -84,7 +86,7 @@ export function useVendors() {
         return;
       }
 
-      // Transform data + filter only approved products
+      // Transform data + filter only approved products and products in stock
       const transformedVendors: Vendor[] = data.map(v => ({
         id: v.id,
         name: v.name || 'Unnamed Vendor',
@@ -92,7 +94,7 @@ export function useVendors() {
         category: v.category || 'Restaurant',
         logo: v.logo_url || v.users?.avatar_url || '',
         image: v.avatars_url || v.users?.avatar_url || '',
-coverImage: v.cover_image_url || v.image_url || v.users?.avatar_url || '',
+        coverImage: v.cover_image_url || v.image_url || v.users?.avatar_url || '',
         rating: v.rating || 0,
         reviewCount: v.review_count || 0,
         deliveryTime: v.delivery_time || '30-45 min',
@@ -107,9 +109,21 @@ coverImage: v.cover_image_url || v.image_url || v.users?.avatar_url || '',
         is_approved: v.is_approved,
         owner_id: v.owner_id,
         created_at: v.created_at,
-        // Only include approved products
+        // Only include approved products that are in stock
         products: (v.products || [])
-          .filter((p: any) => p.approval_status === 'approved')
+          .filter((p: any) => {
+            // First, only approved products
+            if (p.approval_status !== 'approved') return false;
+            
+            // Then, check stock if tracking is enabled
+            if (p.track_stock === true) {
+              // Only show if stock_quantity > 0
+              return (p.stock_quantity || 0) > 0;
+            }
+            
+            // If stock tracking is disabled, always show
+            return true;
+          })
           .map((p: any) => ({
             id: p.id,
             vendorId: p.vendor_id,
@@ -127,6 +141,9 @@ coverImage: v.cover_image_url || v.image_url || v.users?.avatar_url || '',
             preparationTime: p.preparation_time,
             preparation_time: p.preparation_time,
             created_at: p.created_at,
+            // Include stock fields for UI display
+            stock_quantity: p.stock_quantity,
+            track_stock: p.track_stock,
           })),
       }));
 

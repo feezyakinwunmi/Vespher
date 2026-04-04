@@ -54,6 +54,7 @@ import { VendorAddressesScreen } from '../screens/vendor/VendorAddressesScreen';
 import {CreatePromotionScreen} from '../screens/vendor/CreatePromotionScreen';
 import { PromotionsScreen } from '../screens/vendor/PromotionsScreen';
 import { PromotionDetailsScreen } from '../screens/vendor/PromotionDetailsScreen';
+import { VendorDashboardScreen } from '../screens/vendor/VendorDashboardScreen';
 
 // Admin Screens
 import { AdminOrderDetailsScreen } from '../screens/admin/AdminOrderDetailsScreen';
@@ -69,6 +70,10 @@ import { AdminUsersScreen } from '../screens/admin/AdminUsersScreen';
 import { AdminAnalyticsScreen } from '../screens/admin/AdminAnalyticsScreen';
 import { AdminPromotionsScreen } from '../screens/admin/AdminPromotionsScreen';
 import { OutstandingPaymentsScreen } from '../screens/admin/OutstandingPaymentsScreen';
+import { AllVendorsMapScreen } from '../screens/customer/AllVendorsMapScreen';
+import { VendorsScreen } from '../screens/customer/VendorScreen';
+import { VendorSettingsScreen } from '../screens/vendor/VendorSettingsScreen';
+import { HomeScreen } from '../screens/customer/HomeScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -202,6 +207,8 @@ function AppContent() {
           {user.role === 'customer' && (
             <>
               <Stack.Screen name="CustomerTabs" component={CustomerTabs} />
+                 <Stack.Screen name="Home" component={HomeScreen} />
+
               <Stack.Screen name="VendorDetails" component={VendorDetailsScreen} />
               <Stack.Screen name="OrderTracking" component={OrderTrackingScreen} />
               <Stack.Screen name="Addresses" component={AddressesScreen} />
@@ -210,14 +217,22 @@ function AppContent() {
               <Stack.Screen name="Support" component={SupportScreen} />
               <Stack.Screen name="Privacy" component={PrivacyScreen} />
               <Stack.Screen name="Cart" component={CartScreen} />
-                        <Stack.Screen name="Messaging" component={MessagingScreen}/>
+              <Stack.Screen name="Vendors" component={VendorsScreen} />
+              <Stack.Screen name="Messaging" component={MessagingScreen}/>
           <Stack.Screen name="AddressPicker" component={AddressPickerScreen} />
+          <Stack.Screen name="AllVendorsMap" component={AllVendorsMapScreen} /> 
+                        <Stack.Screen name="Splash" component={SplashScreen} />
+
 
             </>
           )}
           {user.role === 'vendor' && (
             <>
-              <Stack.Screen name="VendorTabs" component={VendorTabs} />
+              <Stack.Screen name="VendorTabs" component={VendorTabs} />     
+              <Stack.Screen name="VendorDashboard" component={VendorDashboardScreen} />
+              <Stack.Screen name="VendorSettings" component={VendorSettingsScreen} />
+              <Stack.Screen name="Splash" component={SplashScreen} />
+
               <Stack.Screen name="VendorMenu" component={VendorMenuScreen} />
               <Stack.Screen name="VendorOrders" component={VendorOrdersScreen} />
               <Stack.Screen name="VendorOrderDetails" component={VendorOrderDetailsScreen} />
@@ -236,6 +251,7 @@ function AppContent() {
           {user.role === 'admin' && (
             <>
               <Stack.Screen name="AdminTabs" component={AdminTabs} />
+              <Stack.Screen name="AdminDashboard" component={AdminSettingsScreen} />
               <Stack.Screen name="AdminOrderDetails" component={AdminOrderDetailsScreen} />
               <Stack.Screen name="AdminVendors" component={AdminVendorsScreen} />
               <Stack.Screen name="AdminWithdrawals" component={AdminWithdrawalsScreen} />
@@ -248,6 +264,8 @@ function AppContent() {
               <Stack.Screen name="AdminAllOrders" component={AdminAllOrdersScreen} />
               <Stack.Screen name="OutstandingPayments" component={OutstandingPaymentsScreen}/>
               <Stack.Screen name="AdminPromotions" component={AdminPromotionsScreen} />
+                            <Stack.Screen name="Splash" component={SplashScreen} />
+
           <Stack.Screen name="Messaging" component={MessagingScreen}/>
                                   <Stack.Screen name="Notifications" component={NotificationsScreen} />
 

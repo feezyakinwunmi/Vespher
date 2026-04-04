@@ -27,6 +27,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import Toast from 'react-native-toast-message';
 import { verifyBankAccount } from '../../utils/flutterwave';
+import ReuseLocationPicker from '../../components/ReuseLocationPicker';
 
 type VendorScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type SettingsTab = 'profile' | 'business' | 'bank' | 'preferences' | 'promos' | 'support' ; // ✅ Added 'payouts'
@@ -610,7 +611,7 @@ export function VendorSettingsScreen() {
   const navigation = useNavigation<VendorScreenNavigationProp>();
   const { signOut } = useAuth();
   const { profile, isLoading, updateProfile } = useVendorProfile();
-  
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<any>({});
@@ -732,10 +733,15 @@ export function VendorSettingsScreen() {
     setIsEditing(true);
   };
 
- const handleSave = async () => {
+const handleSave = async () => {
+  console.log('💾 Saving profile with:', {
+    businessAddress: formData.businessAddress,
+    latitude: formData.latitude,
+    longitude: formData.longitude,
+  });
+  
   try {
-
-      const profileData: Partial<VendorProfile> = {
+    const profileData: Partial<VendorProfile> = {
       name: formData.name,
       phone: formData.phone,
       businessName: formData.businessName,
@@ -747,23 +753,23 @@ export function VendorSettingsScreen() {
       avatar_url: formData.avatar_url,
       notifications: formData.notifications,
       businessHours: formData.businessHours,
-      // Bank fields that exist in VendorProfile
       bankName: formData.bankName,
       accountNumber: formData.accountNumber,
       accountName: formData.accountName,
+      latitude: formData.latitude,
+      longitude: formData.longitude,
     };
-    // Update profile with new data
-    await updateProfile(  profileData );
     
+    console.log('📤 Sending to updateProfile:', profileData);
+    
+    await updateProfile(profileData);
     setIsEditing(false);
     showToast('Profile updated successfully');
-    
   } catch (error) {
     console.error('Error saving:', error);
     showToast('Failed to update profile');
   }
 };
-
   const handleCancel = () => {
     setIsEditing(false);
     setFormData({});
@@ -906,7 +912,7 @@ const pickImage = async (type: 'avatar' | 'cover') => {
 
 const renderProfileTab = () => (
   <View style={styles.tabContent}>
-    {/* Avatar/Profile Picture - Keep this */}
+    {/* Avatar/Profile Picture */}
     <View style={styles.avatarContainer}>
       <View style={styles.avatar}>
         {formData.avatar_url || profile.avatar_url ? (
@@ -940,9 +946,6 @@ const renderProfileTab = () => (
       )}
     </View>
 
-    {/* Remove the Logo section completely */}
-    
-    {/* Rest of profile tab */}
     <View style={styles.formGroup}>
       <Text style={styles.label}>Full Name</Text>
       {isEditing ? (
@@ -979,27 +982,19 @@ const renderProfileTab = () => (
       )}
     </View>
 
-    <View style={styles.settingsCard}>
-      <TouchableOpacity
-        onPress={() => navigation.navigate('VendorAddresses')}
-        style={styles.menuItem}
-      >
-        <View style={styles.menuItemLeft}>
-          <Feather name="map-pin" size={20} color="#f97316" />
-          <View>
-            <Text style={styles.menuItemTitle}>Business Addresses</Text>
-            <Text style={styles.menuItemSubtitle}>Manage your pickup and delivery locations</Text>
-          </View>
-        </View>
-        <Feather name="chevron-right" size={20} color="#666" />
-      </TouchableOpacity>
+    {/* Business Address - Fixed to show from vendor profile */}
+    <View style={styles.formGroup}>
+      <Text style={styles.label}>Business Address</Text>
+      <Text style={styles.value}>{profile.businessAddress || 'Not provided'}</Text>
     </View>
+
+    {/* Removed the navigation to VendorAddresses since address is here */}
   </View>
 );
 
 const renderBusinessTab = () => (
   <View style={styles.tabContent}>
-    {/* Cover Image Only - Remove Logo section */}
+    {/* Cover Image */}
     <View style={styles.formGroup}>
       <Text style={styles.label}>Cover Image</Text>
       <View style={styles.coverContainer}>
@@ -1033,7 +1028,7 @@ const renderBusinessTab = () => (
       </View>
     </View>
 
-    {/* Business Details */}
+    {/* Business Name */}
     <View style={styles.formGroup}>
       <Text style={styles.label}>Business Name</Text>
       {isEditing ? (
@@ -1049,6 +1044,7 @@ const renderBusinessTab = () => (
       )}
     </View>
 
+    {/* Category */}
     <View style={styles.formGroup}>
       <Text style={styles.label}>Category</Text>
       {isEditing ? (
@@ -1078,22 +1074,52 @@ const renderBusinessTab = () => (
       )}
     </View>
 
+    {/* Business Address - with Map Picker */}
     <View style={styles.formGroup}>
       <Text style={styles.label}>Business Address</Text>
       {isEditing ? (
-        <TextInput
-          style={styles.input}
-          value={formData.businessAddress || ''}
-          onChangeText={(text) => setFormData({ ...formData, businessAddress: text })}
-          placeholder="Business address"
-          placeholderTextColor="#666"
-          multiline
-        />
+        <>
+          <TextInput
+            style={[styles.input, styles.textArea]}
+            value={formData.businessAddress || ''}
+            onChangeText={(text) => setFormData({ ...formData, businessAddress: text })}
+            placeholder="Business address"
+            placeholderTextColor="#666"
+            multiline
+            numberOfLines={2}
+            textAlignVertical="top"
+          />
+          <TouchableOpacity
+            style={styles.mapPickerButton}
+            onPress={() => setShowLocationPicker(true)}
+          >
+            <Feather name="map" size={20} color="#f97316" />
+            <Text style={styles.mapPickerText}>
+              {formData.latitude && formData.longitude 
+                ? `📍 Location selected: ${formData.latitude.toFixed(6)}, ${formData.longitude.toFixed(6)}`
+                : 'Tap to set business location on map'}
+            </Text>
+            <Feather name="chevron-right" size={20} color="#666" />
+          </TouchableOpacity>
+          {formData.latitude && formData.longitude && (
+            <Text style={styles.locationCoordsText}>
+              Coordinates: {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}
+            </Text>
+          )}
+        </>
       ) : (
-        <Text style={styles.value}>{profile.businessAddress}</Text>
+        <>
+          <Text style={styles.value}>{profile.businessAddress || 'Not provided'}</Text>
+          {profile.latitude && profile.longitude && (
+            <Text style={styles.coordsText}>
+              📍 {profile.latitude.toFixed(6)}, {profile.longitude.toFixed(6)}
+            </Text>
+          )}
+        </>
       )}
     </View>
 
+    {/* Description */}
     <View style={styles.formGroup}>
       <Text style={styles.label}>Description</Text>
       {isEditing ? (
@@ -1111,6 +1137,31 @@ const renderBusinessTab = () => (
         <Text style={styles.value}>{profile.businessDescription || 'No description'}</Text>
       )}
     </View>
+
+  <ReuseLocationPicker
+  visible={showLocationPicker}
+  onClose={() => setShowLocationPicker(false)}
+  onLocationSelect={(location) => {
+    console.log('📍 Map picker returned location:', location);
+    console.log('📍 Latitude:', location.latitude);
+    console.log('📍 Longitude:', location.longitude);
+    console.log('📍 Address:', location.address);
+    
+    setFormData((prev: any) => ({
+      ...prev,
+      latitude: location.latitude,
+      longitude: location.longitude,
+      businessAddress: location.address || prev.businessAddress,
+    }));
+    
+    console.log('✅ Updated formData with new coordinates');
+    setShowLocationPicker(false);
+  }}
+  initialLocation={formData.latitude && formData.longitude ? { 
+    latitude: formData.latitude, 
+    longitude: formData.longitude 
+  } : undefined}
+/>
   </View>
 );
 
@@ -1635,6 +1686,37 @@ coverPlaceholderText: {
     position: 'relative',
     marginBottom: 20,
   },
+  mapPickerButton: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: '#2a2a2a',
+  borderRadius: 8,
+  paddingHorizontal: 16,
+  paddingVertical: 12,
+  marginTop: 8,
+  gap: 12,
+},
+mapPickerText: {
+  flex: 1,
+  color: '#fff',
+  fontSize: 13,
+},
+coordsText: {
+  fontSize: 12,
+  color: '#666',
+  marginTop: 4,
+},
+locationCoordsText: {
+  fontSize: 11,
+  color: '#666',
+  marginTop: 6,
+  marginLeft: 4,
+},
+hint: {
+  fontSize: 11,
+  color: '#666',
+  marginTop: 4,
+},
   avatar: {
     width: 100,
     height: 100,
