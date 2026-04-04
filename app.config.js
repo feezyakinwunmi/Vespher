@@ -67,7 +67,6 @@ export default {
         {
           icon: "./assets/notification-icon.png",
           color: "#f97316",
-          sounds: ["./assets/notification.wav"],
           androidMode: "default",
           androidCollapsible: true
         }
