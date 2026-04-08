@@ -79,31 +79,34 @@ export class PushNotificationService {
   }
   
   // Send push via Expo
-  private static async sendPush(payload: PushPayload, pushToken: string) {
-    try {
-      const message = {
-        to: pushToken,
-        sound: 'default',
-        title: payload.title,
-        body: payload.body,
-        data: payload.data,
-      };
-      
-      await fetch('https://exp.host/--/api/v2/push/send', {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Accept-Encoding': 'gzip, deflate',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(message),
-      });
-      
-      console.log(`Push sent to: ${pushToken.substring(0, 10)}...`);
-    } catch (error) {
-      console.error('Error sending push:', error);
-    }
+private static async sendPush(payload: PushPayload, pushToken: string) {
+  try {
+    const message = {
+      to: pushToken,
+      sound: 'default',
+      title: payload.title,
+      body: payload.body,
+      priority: 'high',           // Important for heads-up
+      channelId: 'default',       // Use your main channel
+      data: payload.data,
+    };
+
+    const response = await fetch('https://exp.host/--/api/v2/push/send', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Accept-Encoding': 'gzip, deflate',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(message),
+    });
+
+    const result = await response.json();
+    console.log(`Push sent successfully:`, result);
+  } catch (error) {
+    console.error('Error sending push:', error);
   }
+}
   
   // Save in-app notification
   private static async saveInAppNotification(payload: NotificationPayload) {

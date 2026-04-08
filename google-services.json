@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1021889277795",
+    "project_id": "vesphe-push-notifications",
+    "storage_bucket": "vesphe-push-notifications.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1021889277795:android:13ebdae6306551f0c22d56",
+        "android_client_info": {
+          "package_name": "com.femi_ceo.Vespher"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDKlmv0Xc5SBlD89uNvji3lDr82yhsAExY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

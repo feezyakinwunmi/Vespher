@@ -292,6 +292,24 @@ export function AdminSettingsScreen() {
             </Text>
           </View>
 
+          <TouchableOpacity 
+                   style={styles.menuCard}
+                   onPress={() => navigation.navigate('AdminAnnouncements' as never)}
+                 >
+                   <LinearGradient
+                     colors={['#8b5cf6', '#f97316']}
+                     style={styles.menuIcon}
+                   >
+                     <Feather name="mic" size={24} color="#fff" />
+                   </LinearGradient>
+                   <View style={styles.menuInfo}>
+                     <Text style={styles.menuTitle}>Create Announcement</Text>
+                     <Text style={styles.menuDescription}>
+Send Announcements to all users or targeted users                     </Text>
+                   </View>
+                   <Feather name="chevron-right" size={20} color="#666" />
+                 </TouchableOpacity>
+
           {/* Platform Fee Section */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
@@ -661,6 +679,39 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#fff',
     lineHeight: 18,
+  },
+   menuCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1a1a1a',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+    marginHorizontal: 16,
+    marginBottom: 16,
+  },
+  menuIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  menuInfo: {
+    flex: 1,
+  },
+  menuTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 4,
+  },
+  menuDescription: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 8,
   },
   section: {
     backgroundColor: '#1a1a1a',

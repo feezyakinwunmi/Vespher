@@ -25,7 +25,7 @@ type NotificationsScreenNavigationProp = NativeStackNavigationProp<RootStackPara
 const notificationIcons = {
   order: 'package' as const,
   payout: 'dollar-sign' as const,
-  system: 'info' as const,
+  system: 'bell' as const,
   alert: 'alert-circle' as const
 };
 
@@ -63,24 +63,55 @@ export function NotificationsScreen() {
     ? notifications 
     : notifications.filter(n => !n.read);
 
-  const handleNotificationClick = async (notification: any) => {
-    if (!notification.read) {
-      await markAsRead(notification.id);
+ const handleNotificationClick = async (notification: any) => {
+  if (!notification.read) {
+    await markAsRead(notification.id);
+  }
+  
+  // Check if it's an announcement (has announcement_id in data)
+  if (notification.data?.announcement_id) {
+    navigation.navigate('AnnouncementDetails', { announcementId: notification.data.announcement_id });
+    return;
+  }
+  
+  // Check if it's a message notification
+  if (notification.type === 'message' && notification.data?.conversation_id) {
+    navigation.navigate('Messaging');
+    return;
+  }
+  
+  // Handle action_link navigation
+  if (notification.action_link) {
+    if (notification.action_link.startsWith('/order/')) {
+      const orderId = notification.action_link.split('/').pop();
+      navigation.navigate('OrderTracking', { orderId });
+    } 
+    else if (notification.action_link === '/orders') {
+      navigation.navigate('Orders');
     }
-    
-    if (notification.action_link) {
-      // Navigate based on the action link
-      if (notification.action_link.startsWith('/order/')) {
-        const orderId = notification.action_link.split('/').pop();
-        navigation.navigate('OrderTracking', { orderId });
-      } else if (notification.action_link === '/orders') {
-        navigation.navigate('Orders');
-      } else if (notification.action_link === '/vendor/orders') {
-        // For vendor, you'd navigate to vendor orders
-        // navigation.navigate('VendorOrders');
+    else if (notification.action_link === '/vendor/orders') {
+      navigation.navigate('VendorOrders' as never);
+    }
+    else if (notification.action_link === '/vendor/menu') {
+      navigation.navigate('VendorMenu');
+    }
+    else if (notification.action_link === '/home') {
+      navigation.navigate('Home');
+    }
+    else if (notification.action_link === '/announcements') {
+      // If action_link is announcements but we have announcement_id
+      if (notification.data?.announcement_id) {
+        navigation.navigate('AnnouncementDetails', { announcementId: notification.data.announcement_id });
+      } else {
+        navigation.navigate('Notifications');
       }
     }
-  };
+    else {
+      // Default fallback
+      navigation.navigate('Notifications');
+    }
+  }
+};
 
   const onRefresh = async () => {
     setRefreshing(true);

@@ -247,16 +247,52 @@ function OrderCard({ order, onPress, onOrderUpdated }: { order: Order; onPress: 
     fetchImage();
   }, [order.items]);
 
-  const handleReorder = async (e: any) => {
-    e.stopPropagation();
-    order.items.forEach((item: any) => {
-      if (item.product) {
-        addItem(item.product, item.quantity);
+const handleReorder = async (e: any) => {
+  e.stopPropagation();
+  
+  try {
+    // Fetch full product details for each item
+    for (const item of order.items) {
+      const { data: product, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('id', item.product_id)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching product:', error);
+        continue;
       }
-    });
+      
+      if (product) {
+        // Map the product to the format expected by addItem
+        const mappedProduct = {
+          id: product.id,
+          vendorId: product.vendor_id,
+          name: product.name,
+          description: product.description,
+          price: product.price,
+          original_price: product.original_price,
+          image: product.image_url,
+          image_url: product.image_url,
+          category: product.category,
+          isAvailable: product.is_available,
+          is_popular: product.is_popular,
+          stock_quantity: product.stock_quantity,
+          track_stock: product.track_stock,
+        };
+        
+        await addItem(mappedProduct, item.quantity);
+      }
+    }
+    
     showToast('Items added to cart');
     navigation.navigate('Cart' as never);
-  };
+  } catch (error) {
+    console.error('Error reordering:', error);
+    showToast('Failed to add items to cart');
+  }
+};
 
   const handleCallRider = (e: any) => {
     e.stopPropagation();

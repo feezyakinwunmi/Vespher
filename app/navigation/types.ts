@@ -18,7 +18,8 @@ export type RootStackParamList = {
   };
   //common
   Messaging:undefined;
-
+  Conversation: { conversationId: string; vendorId?: string; customerId?: string };
+AnnouncementDetails: { announcementId: string };
   // Main Tabs
   CustomerTabs: undefined;
   VendorTabs: undefined;
@@ -83,7 +84,7 @@ AdminAllOrders: undefined;
   AdminAnalytics: undefined;
   OutstandingPayments:undefined;
   AdminPromotions:undefined;
-
+AdminAnnouncements:undefined;
 
 };
 export type AdminTabParamList = {
@@ -97,6 +98,7 @@ export type AdminTabParamList = {
   AdminCreateLogistic: undefined;
   AdminOrderDetails: { orderId: string };
   AdminBusinessRequests: undefined;
+AdminAnnouncements:undefined;
 
 };
 

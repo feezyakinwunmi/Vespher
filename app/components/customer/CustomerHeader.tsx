@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: Platform.OS === 'ios' ? 12 : 8,
-    height: Platform.OS === 'ios' ? 90 : 70,
+    height: Platform.OS === 'ios' ? 55 : 55,
   },
   transparent: {
     backgroundColor: 'transparent',

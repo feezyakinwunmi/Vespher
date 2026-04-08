@@ -33,7 +33,7 @@ import { SuspendedScreen } from '../screens/SuspendedScreen';
 import { CustomerTabs } from './CustomerTabs';
 import { VendorTabs } from './VendorTabs';
 import { AdminTabs } from './AdminTabs';
-
+import { AnnouncementDetailsScreen } from '../screens/AnnouncementDetailsScreen';
 
 // Customer Screens
 import { VendorDetailsScreen } from '../screens/customer/VendorDetailsScreen';
@@ -74,7 +74,8 @@ import { AllVendorsMapScreen } from '../screens/customer/AllVendorsMapScreen';
 import { VendorsScreen } from '../screens/customer/VendorScreen';
 import { VendorSettingsScreen } from '../screens/vendor/VendorSettingsScreen';
 import { HomeScreen } from '../screens/customer/HomeScreen';
-
+import { navigationRef, onNavigationReady } from './RootNavigation';
+import { AdminAnnouncementsScreen } from '../screens/admin/AdminAnnouncementsScreen';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 // Warning Modal for Rider/Business users
@@ -200,7 +201,7 @@ function AppContent() {
           <Stack.Screen name="AdminSettings" component={AdminSettingsScreen} />
           <Stack.Screen name="Messaging" component={MessagingScreen}/>
           <Stack.Screen name="AddressPicker" component={AddressPickerScreen} />
-
+<Stack.Screen name="AnnouncementDetails" component={AnnouncementDetailsScreen} />
         </>
       ) : (
         <>
@@ -222,6 +223,7 @@ function AppContent() {
           <Stack.Screen name="AddressPicker" component={AddressPickerScreen} />
           <Stack.Screen name="AllVendorsMap" component={AllVendorsMapScreen} /> 
                         <Stack.Screen name="Splash" component={SplashScreen} />
+<Stack.Screen name="AnnouncementDetails" component={AnnouncementDetailsScreen} />
 
 
             </>
@@ -244,6 +246,7 @@ function AppContent() {
           <Stack.Screen name="Messaging" component={MessagingScreen}/>
                         <Stack.Screen name="Notifications" component={NotificationsScreen} />
 
+<Stack.Screen name="AnnouncementDetails" component={AnnouncementDetailsScreen} />
 
 
             </>
@@ -268,6 +271,8 @@ function AppContent() {
 
           <Stack.Screen name="Messaging" component={MessagingScreen}/>
                                   <Stack.Screen name="Notifications" component={NotificationsScreen} />
+<Stack.Screen name="AnnouncementDetails" component={AnnouncementDetailsScreen} />
+<Stack.Screen name="AdminAnnouncements" component={AdminAnnouncementsScreen} />
 
 
             </>
@@ -282,7 +287,10 @@ export function AppNavigator() {
   const { isReady } = useAuth();
 
   return (
-    <NavigationContainer>
+    <NavigationContainer 
+      ref={navigationRef}
+      onReady={onNavigationReady}
+    >
       {isReady ? <AppContent /> : <SplashScreen />}
     </NavigationContainer>
   );

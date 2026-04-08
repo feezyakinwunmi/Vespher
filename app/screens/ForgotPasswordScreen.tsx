@@ -66,7 +66,7 @@ const [passwordStrength, setPasswordStrength] = useState<{
 
   // Countdown timer for OTP resend
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    let timer: ReturnType<typeof setTimeout>;
     if (!canResend && countdown > 0) {
       timer = setTimeout(() => {
         setCountdown(countdown - 1);
