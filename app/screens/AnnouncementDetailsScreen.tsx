@@ -76,7 +76,7 @@ export function AnnouncementDetailsScreen({ navigation, route }: any) {
     // Customer navigation
     if (link === '/home') navigation.navigate('Home');
     else if (link === '/orders') navigation.navigate('Orders');
-    else if (link === '/promotions') navigation.navigate('Promotions');
+    else if (link === '/vendors') navigation.navigate('Promotions');
     else if (link === '/vendor/menu') navigation.navigate('VendorMenu');
     else if (link === '/vendor/orders') navigation.navigate('VendorOrders');
     else if (link === '/deliveries') navigation.navigate('AvailableDeliveries');
