@@ -76,6 +76,7 @@ import { VendorSettingsScreen } from '../screens/vendor/VendorSettingsScreen';
 import { HomeScreen } from '../screens/customer/HomeScreen';
 import { navigationRef, onNavigationReady } from './RootNavigation';
 import { AdminAnnouncementsScreen } from '../screens/admin/AdminAnnouncementsScreen';
+import { OrdersScreen } from '../screens/customer/OrdersScreen';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 // Warning Modal for Rider/Business users
@@ -225,6 +226,7 @@ function AppContent() {
                         <Stack.Screen name="Splash" component={SplashScreen} />
 <Stack.Screen name="AnnouncementDetails" component={AnnouncementDetailsScreen} />
       <Stack.Screen name="Rewards" component={RewardsScreen} />
+      <Stack.Screen name="Orders" component={OrdersScreen} />
 
 
             </>

@@ -507,7 +507,7 @@ const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
       finalWalletUsedAmount = Math.min(walletBalance, subtotal + finalDeliveryFeeAmount - finalDiscount);
     }
     
-    // Calculate final total after all rewards
+    // Calculate final total after all rewards (what customer actually pays)
     const finalTotalAmount = subtotal + finalDeliveryFeeAmount - finalDiscount - finalWalletUsedAmount;
     
     // Check if free delivery applies (first order bonus)
@@ -517,47 +517,51 @@ const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
     const firstOrderDiscount = isFirstOrder ? Math.round(subtotal * 0.1) : 0;
     const totalDiscount = Math.max(discount, firstOrderDiscount);
     
+    // ✅ FIX: For database constraint, include referral bonus in discount
+    const totalDiscountForDB = totalDiscount + finalWalletUsedAmount;
+    
     // What customer pays for delivery (0 if free from first order bonus)
     const customerDeliveryFee = freeDeliveryEligible ? 0 : finalDeliveryFeeAmount;
     
-    // Total customer pays (including reward deductions)
-    const discountedSubtotal = subtotal - totalDiscount;
-    const totalAmount = discountedSubtotal + customerDeliveryFee - finalWalletUsedAmount;
+    // Total for Flutterwave payment
+    const flutterwaveTotal = subtotal - totalDiscount + customerDeliveryFee;
     
-    // ✅ Calculate Flutterwave fee ONLY if not provided in response
+    // ✅ Calculate Flutterwave fee
     let flutterwaveFee = gatewayResponse?.fee || gatewayResponse?.flutterwave_fee || 0;
     let flutterwaveFeePercentage = 1.4;
     
     if (flutterwaveFee === 0) {
-      flutterwaveFee = Math.round(totalAmount * (flutterwaveFeePercentage / 100));
+      flutterwaveFee = Math.round(flutterwaveTotal * (flutterwaveFeePercentage / 100));
       console.log('💰 Flutterwave fee calculated manually:', flutterwaveFee);
     } else {
       console.log('💰 Flutterwave fee from gateway:', flutterwaveFee);
     }
     
-    // CRITICAL FIX: For database constraint, we need to store delivery_fee as actual fee
-    // and add free delivery amount to discount to satisfy total = subtotal + delivery_fee - discount
-    let discountForDB = totalDiscount;
+    // ✅ For database constraint: total must equal subtotal + delivery_fee - discount
+    let discountForDB = totalDiscountForDB;
     let deliveryFeeForDB = actualDeliveryFee;
     
     // If free delivery applies (first order bonus), add the delivery fee to discount
     if (freeDeliveryEligible) {
-      discountForDB = totalDiscount + actualDeliveryFee;
+      discountForDB = totalDiscountForDB + actualDeliveryFee;
       deliveryFeeForDB = actualDeliveryFee;
     }
+    
+    // Calculate the total for database
+    const dbTotal = subtotal + deliveryFeeForDB - discountForDB;
     
     // Don't calculate rider earnings at order creation - will be set when rider accepts
     const riderEarnings = 0;
     const platformDeliveryEarnings = 0;
     
-    // Calculate vendor payout - based on ORIGINAL subtotal (platform absorbs first order discount)
+    // Calculate vendor payout - based on ORIGINAL subtotal
     const vendorPayout = Math.round(subtotal * ((100 - platformFeePercentage) / 100));
     
     // Calculate platform commission (based on original subtotal)
     const platformCommission = subtotal - vendorPayout;
     
     // Stamp duty (₦50 for transactions ₦10,000 and above)
-    const stampDuty = totalAmount >= 10000 ? 50 : 0;
+    const stampDuty = flutterwaveTotal >= 10000 ? 50 : 0;
     
     // Platform net earnings
     const platformNetEarnings = platformCommission + platformDeliveryEarnings - firstOrderDiscount - discount - flutterwaveFee - stampDuty;
@@ -568,11 +572,13 @@ const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
       finalDeliveryFeeAmount,
       finalWalletUsedAmount,
       finalTotalAmount,
+      dbTotal,
       freeDeliveryEligible,
       totalDiscount,
+      totalDiscountForDB,
       discountForDB,
       deliveryFeeForDB,
-      totalAmount,
+      flutterwaveTotal,
       flutterwaveFee,
       vendorPayout,
       riderEarnings,
@@ -638,7 +644,7 @@ const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
         subtotal: subtotal,
         delivery_fee: deliveryFeeForDB,
         discount: discountForDB,
-        total: totalAmount,
+        total: dbTotal,
         payment_method: paymentMethod,
         payment_status: paymentStatus,
         payment_reference: paymentRef,

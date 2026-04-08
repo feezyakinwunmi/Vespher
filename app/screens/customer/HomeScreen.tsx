@@ -120,7 +120,7 @@ const verticalPromoSlides = [
     title: '🏪 New Vendors',
     subtitle: 'Discover amazing restaurants near you!',
     buttonText: 'Explore',
-    icon: 'store',
+    icon: 'home',
     gradientColors: ['#3b82f6', '#1d4ed8'],
     action: 'Vendors',
     backgroundColor: 'rgba(59,130,246,0.15)',
