@@ -45,7 +45,7 @@ AnnouncementDetails: { announcementId: string };
   Search: undefined;
   Addresses: { selectMode?: boolean; selectedAddress?: Address } | undefined;
   Cart: { selectedAddress?: Address } | undefined;
-
+Rewards:undefined;
 
 
 
@@ -110,7 +110,8 @@ export type CustomerTabParamList = {
   Cart: undefined;
   Profile: undefined;
   TestWebView: undefined;
-  AllVendorsMap: undefined
+  AllVendorsMap: undefined;
+  Rewards:undefined;
 };
 
 export type VendorTabParamList = {

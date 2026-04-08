@@ -44,7 +44,7 @@ import { FavoritesScreen } from '../screens/customer/FavoritesScreen';
 import { SupportScreen } from '../screens/customer/SupportScreen';
 import { PrivacyScreen } from '../screens/customer/PrivacyScreen';
 import { CartScreen } from '../screens/customer/CartScreen';
-
+import { RewardsScreen } from '../screens/customer/RewardsScreen';
 // Vendor Screens
 import { VendorMenuScreen } from '../screens/vendor/VendorMenuScreen';
 import { VendorOrdersScreen } from '../screens/vendor/VendorOrdersScreen';
@@ -224,6 +224,7 @@ function AppContent() {
           <Stack.Screen name="AllVendorsMap" component={AllVendorsMapScreen} /> 
                         <Stack.Screen name="Splash" component={SplashScreen} />
 <Stack.Screen name="AnnouncementDetails" component={AnnouncementDetailsScreen} />
+      <Stack.Screen name="Rewards" component={RewardsScreen} />
 
 
             </>

@@ -35,9 +35,10 @@ interface FormData {
   latitude: number | null;
   longitude: number | null;
   locationAddress: string;
+  referralCode?: string; // ✅ Add this
 }
 
-export function CustomerSignupScreen() {
+export  function CustomerSignupScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [step, setStep] = useState<RegistrationStep>('auth');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -68,6 +69,8 @@ export function CustomerSignupScreen() {
     latitude: null,
     longitude: null,
     locationAddress: '',
+      referralCode: '', // ✅ Add this
+
   });
 
   // ✅ FIX: Move success navigation to component level
@@ -287,48 +290,103 @@ export function CustomerSignupScreen() {
     }
   };
 
-  const completeUserRegistration = async () => {
-    try {
-      // Create user profile
-      const { error: profileError } = await supabase
-        .from('users')
+const completeUserRegistration = async () => {
+  try {
+    // Create user profile
+    const { error: profileError } = await supabase
+      .from('users')
+      .insert({
+        id: pendingUserId,
+        email: formData.email,
+        name: formData.fullName,
+        phone: formData.phone,
+        role: 'customer',
+        created_at: new Date().toISOString(),
+      });
+
+    if (profileError) throw profileError;
+
+    // ✅ Generate unique referral code for customer
+const generateReferralCode = () => {
+  const name = formData.fullName?.replace(/\s/g, '').toUpperCase().slice(0, 6) || 'USER';
+  const random = Math.floor(100 + Math.random() * 900);
+  return `VSP-${name}-${random}`;
+};
+// Example: VSP-JOHNDOE-456
+
+    const referralCode = generateReferralCode();
+
+    // ✅ Initialize customer rewards
+    const { error: rewardsError } = await supabase
+      .from('customer_rewards')
+      .insert({
+        customer_id: pendingUserId,
+        total_orders: 0,
+        free_delivery_earned: 0,
+        free_delivery_used: 0,
+        referral_code: referralCode,
+        referral_count: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+
+    if (rewardsError) {
+      console.error('Error creating customer rewards:', rewardsError);
+      // Don't throw - this shouldn't block registration
+    }
+
+    // ✅ Process referral if code was entered
+    if (formData.referralCode) {
+      // Find the referrer by referral code
+      const { data: referrer, error: referrerError } = await supabase
+        .from('customer_rewards')
+        .select('customer_id')
+        .eq('referral_code', formData.referralCode.toUpperCase())
+        .maybeSingle(); // Use maybeSingle to avoid errors
+
+      if (referrer && !referrerError) {
+        // Create referral record
+        await supabase
+          .from('referrals')
+          .insert({
+            referrer_id: referrer.customer_id,
+            referred_id: pendingUserId,
+            status: 'pending',
+            created_at: new Date().toISOString(),
+          });
+        
+        console.log('✅ Referral recorded for:', referrer.customer_id);
+      }
+    }
+
+    // Add address if provided
+    if (formData.address) {
+      const { error: addressError } = await supabase
+        .from('addresses')
         .insert({
-          id: pendingUserId,
-          email: formData.email,
-          name: formData.fullName,
+          user_id: pendingUserId,
+          label: 'Home',
+          street: formData.address,
+          area: formData.apartment || 'Default Area',
           phone: formData.phone,
-          role: 'customer',
-          created_at: new Date().toISOString(),
+          is_default: true,
+          latitude: formData.latitude,
+          longitude: formData.longitude,
         });
 
-      if (profileError) throw profileError;
-
-      // Add address if provided
-      if (formData.address) {
-        const { error: addressError } = await supabase
-          .from('addresses')
-          .insert({
-            user_id: pendingUserId,
-            label: 'Home',
-            street: formData.address,
-            area: formData.apartment || 'Default Area',
-            phone: formData.phone,
-            is_default: true,
-            latitude: formData.latitude,
-            longitude: formData.longitude,
-          });
-
-        if (addressError) throw addressError;
-      }
-
-      setShowOTPModal(false);
-      setStep('success');
-
-    } catch (err: any) {
-      console.error('Registration error:', err);
-      Alert.alert('Error', err.message || 'Failed to complete registration. Please contact support.');
+      if (addressError) throw addressError;
     }
-  };
+
+    setShowOTPModal(false);
+    setStep('success');
+
+  } catch (err: any) {
+    console.error('Registration error:', err);
+    Alert.alert('Error', err.message || 'Failed to complete registration. Please contact support.');
+  }
+};
+
+
 
   const handleBack = () => {
     if (step === 'auth') {
@@ -468,6 +526,23 @@ export function CustomerSignupScreen() {
                 <Text style={styles.errorText}>{error}</Text>
               </View>
             ) : null}
+
+            {/* Referral Code (Optional) */}
+<View style={styles.fieldContainer}>
+  <Text style={styles.label}>Referral Code (Optional)</Text>
+  <View style={styles.inputWrapper}>
+    <Feather name="gift" size={20} color="#666" style={styles.inputIcon} />
+    <TextInput
+      style={styles.input}
+      value={formData.referralCode}
+      onChangeText={(text) => updateField('referralCode', text)}
+      placeholder="Enter referral code (if you have one)"
+      placeholderTextColor="#666"
+      autoCapitalize="characters"
+    />
+  </View>
+  <Text style={styles.hint}>Enter a friend's referral code to get ₦500 off your first order!</Text>
+</View>
 
             <View style={styles.form}>
               <View style={styles.fieldContainer}>

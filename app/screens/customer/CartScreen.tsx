@@ -89,7 +89,13 @@ export function CartScreen() {
   const [flutterwaveResponse, setFlutterwaveResponse] = useState<any>(null);
   const [platformSettings, setPlatformSettings] = useState<{ platform_fee_percentage: number } | null>(null);
   const [loadingSettings, setLoadingSettings] = useState(true);
-  
+const [customerRewards, setCustomerRewards] = useState<any>(null);
+const [applyFreeDelivery, setApplyFreeDelivery] = useState(false);
+const [applyReferralBonus, setApplyReferralBonus] = useState(false);
+const [walletBalance, setWalletBalance] = useState(0);
+const [applyWallet, setApplyWallet] = useState(false);
+
+
   const showToast = (message: string) => {
     Toast.show({
       type: 'success',
@@ -115,7 +121,24 @@ export function CartScreen() {
   const effectiveDeliveryFee = freeDeliveryEligible ? 0 : (calculatedDeliveryFee || 0);
   const total = subtotal + effectiveDeliveryFee - finalDiscount;
 
-  // Fetch platform settings for commission percentage
+
+// Calculate final totals with rewards
+let finalDeliveryFeeAmount = effectiveDeliveryFee;
+let finalWalletUsedAmount = 0;
+let finalDiscountAmount = finalDiscount;
+
+if (applyFreeDelivery && customerRewards?.availableFreeDelivery) {
+  finalDeliveryFeeAmount = 0;
+}
+
+if (applyWallet && walletBalance > 0) {
+  finalWalletUsedAmount = Math.min(walletBalance, subtotal + finalDeliveryFeeAmount - finalDiscountAmount);
+}
+
+const finalTotal = subtotal + finalDeliveryFeeAmount - finalDiscountAmount - finalWalletUsedAmount;
+  
+
+// Fetch platform settings for commission percentage
   useEffect(() => {
     const fetchPlatformSettings = async () => {
       try {
@@ -197,11 +220,14 @@ export function CartScreen() {
     checkFirstOrder();
   }, [user]);
 
+
+
   // Fetch addresses when checkout opens
-  useEffect(() => {
-    if (!showCheckout || !user) return;
-    fetchAddresses();
-  }, [showCheckout, user]);
+useEffect(() => {
+  if (!showCheckout || !user) return;
+  fetchAddresses();
+  fetchCustomerRewards(); // ✅ Add this line
+}, [showCheckout, user]);
 
   const fetchAddresses = async () => {
     if (!user) return;
@@ -387,39 +413,122 @@ const decreaseProductStock = async (items: CartItem[]) => {
   }
 };
 
-
+// Fetch customer rewards (free delivery, referral bonus)
+const fetchCustomerRewards = async () => {
+  if (!user?.id) return;
+  
+  try {
+    // Fetch rewards
+    const { data: rewards, error: rewardsError } = await supabase
+      .from('customer_rewards')
+      .select('*')
+      .eq('customer_id', user.id)
+      .maybeSingle();
+    
+    if (rewardsError) throw rewardsError;
+    
+    if (rewards) {
+      // Check if free delivery has expired
+      const hasExpired = rewards.free_delivery_expires_at 
+        ? new Date(rewards.free_delivery_expires_at) < new Date()
+        : false;
+      
+      const earned = rewards.free_delivery_earned || 0;
+      const used = rewards.free_delivery_used || 0;
+      let available = earned - used;
+      
+      // If expired, available is 0
+      if (hasExpired) {
+        available = 0;
+      }
+      
+      setCustomerRewards({
+        ...rewards,
+        availableFreeDelivery: available > 0,
+        freeDeliveryCount: available,
+        freeDeliveryExpiresAt: rewards.free_delivery_expires_at,
+        hasExpired: hasExpired
+      });
+    }
+    
+    // Fetch referral bonus (only non-expired ones)
+    const { data: referrals, error: referralError } = await supabase
+      .from('referrals')
+      .select('*')
+      .eq('referrer_id', user.id)
+      .eq('status', 'completed')
+      .eq('referrer_reward_claimed', false);
+    
+    if (!referralError && referrals && referrals.length > 0) {
+      // Check if referral bonus has expiration
+      let totalBonus = 0;
+      for (const referral of referrals) {
+        const hasReferralExpired = referral.bonus_expires_at 
+          ? new Date(referral.bonus_expires_at) < new Date()
+          : false;
+        
+        if (!hasReferralExpired) {
+          totalBonus += 500;
+        }
+      }
+      setWalletBalance(Math.min(totalBonus, 2000));
+    }
+    
+  } catch (error) {
+    console.error('Error fetching rewards:', error);
+  }
+};
 
 
 const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
   setIsPlacingOrder(true);
 
   try {
+    // Check if user exists
+    if (!user?.id) {
+      throw new Error('User information is missing');
+    }
+
     // Get platform fee percentage from settings (default to 10 if not loaded)
     const platformFeePercentage = platformSettings?.platform_fee_percentage || 10;
     
     // Get actual delivery fee
     const actualDeliveryFee = calculatedDeliveryFee || 0;
     
-    // Check if free delivery applies
+    // Calculate delivery fee after rewards
+    let finalDeliveryFeeAmount = actualDeliveryFee;
+    if (applyFreeDelivery && customerRewards?.availableFreeDelivery) {
+      finalDeliveryFeeAmount = 0;
+    }
+    
+    // Calculate wallet usage
+    let finalWalletUsedAmount = 0;
+    if (applyWallet && walletBalance > 0) {
+      finalWalletUsedAmount = Math.min(walletBalance, subtotal + finalDeliveryFeeAmount - finalDiscount);
+    }
+    
+    // Calculate final total after all rewards
+    const finalTotalAmount = subtotal + finalDeliveryFeeAmount - finalDiscount - finalWalletUsedAmount;
+    
+    // Check if free delivery applies (first order bonus)
     const freeDeliveryEligible = isFirstOrder && subtotal > 10000;
     
     // Calculate first order discount (10%)
     const firstOrderDiscount = isFirstOrder ? Math.round(subtotal * 0.1) : 0;
     const totalDiscount = Math.max(discount, firstOrderDiscount);
     
-    // What customer pays for delivery (0 if free)
-    const customerDeliveryFee = freeDeliveryEligible ? 0 : actualDeliveryFee;
+    // What customer pays for delivery (0 if free from first order bonus)
+    const customerDeliveryFee = freeDeliveryEligible ? 0 : finalDeliveryFeeAmount;
     
-    // Total customer pays
+    // Total customer pays (including reward deductions)
     const discountedSubtotal = subtotal - totalDiscount;
-    const totalAmount = discountedSubtotal + customerDeliveryFee;
+    const totalAmount = discountedSubtotal + customerDeliveryFee - finalWalletUsedAmount;
     
     // ✅ Calculate Flutterwave fee ONLY if not provided in response
     let flutterwaveFee = gatewayResponse?.fee || gatewayResponse?.flutterwave_fee || 0;
     let flutterwaveFeePercentage = 1.4;
     
     if (flutterwaveFee === 0) {
-      // Manual calculation (1.4% for Nigerian transactions)
       flutterwaveFee = Math.round(totalAmount * (flutterwaveFeePercentage / 100));
       console.log('💰 Flutterwave fee calculated manually:', flutterwaveFee);
     } else {
@@ -431,15 +540,16 @@ const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
     let discountForDB = totalDiscount;
     let deliveryFeeForDB = actualDeliveryFee;
     
-    // If free delivery applies, add the delivery fee to discount
+    // If free delivery applies (first order bonus), add the delivery fee to discount
     if (freeDeliveryEligible) {
       discountForDB = totalDiscount + actualDeliveryFee;
       deliveryFeeForDB = actualDeliveryFee;
     }
     
-   // Don't calculate rider earnings at order creation - will be set when rider accepts
-const riderEarnings = 0;
-const platformDeliveryEarnings = 0;
+    // Don't calculate rider earnings at order creation - will be set when rider accepts
+    const riderEarnings = 0;
+    const platformDeliveryEarnings = 0;
+    
     // Calculate vendor payout - based on ORIGINAL subtotal (platform absorbs first order discount)
     const vendorPayout = Math.round(subtotal * ((100 - platformFeePercentage) / 100));
     
@@ -449,21 +559,21 @@ const platformDeliveryEarnings = 0;
     // Stamp duty (₦50 for transactions ₦10,000 and above)
     const stampDuty = totalAmount >= 10000 ? 50 : 0;
     
-    // Platform net earnings = commission + delivery earnings - first order discount - promo discount - flutterwave fee - stamp duty
+    // Platform net earnings
     const platformNetEarnings = platformCommission + platformDeliveryEarnings - firstOrderDiscount - discount - flutterwaveFee - stampDuty;
 
     console.log('💰 Payment breakdown:', {
       subtotal,
       actualDeliveryFee,
-      customerDeliveryFee,
+      finalDeliveryFeeAmount,
+      finalWalletUsedAmount,
+      finalTotalAmount,
       freeDeliveryEligible,
       totalDiscount,
       discountForDB,
       deliveryFeeForDB,
       totalAmount,
       flutterwaveFee,
-      flutterwaveFeePercentage,
-      feeSource: gatewayResponse?.fee ? 'from_gateway' : 'calculated',
       vendorPayout,
       riderEarnings,
       platformNetEarnings,
@@ -499,77 +609,69 @@ const platformDeliveryEarnings = 0;
       paymentStatus = 'pending';
     }
 
-    // Insert into orders table
-  // In processOrder, when creating the order, add:
-const { data: order, error: orderError } = await supabase
-  .from('orders')
-  .insert({
-    customer_id: user?.id,
-    vendor_id: vendorId,
-    items: items.map(item => ({
-      product_id: item.product.id,
-      name: item.product.name,
-      quantity: item.quantity,
-      price: item.product.price,
-      options: item.selectedOptions || [],
-      // Add promotion fields to each item
-      promotion_id: (item.product as any).promotion_id || null,
-      is_promotion: (item.product as any).is_promotion || false,
-      is_free_item: (item.product as any).is_free_item || false,
-      is_combo_main: (item.product as any).is_combo_main || false,
-      combo_details: (item.product as any).combo_details || null,
-      promotion_price: (item.product as any).promotion_price || null,
-    })),
-    status: 'pending',
-    is_scheduled: orderType === 'schedule',
-    scheduled_datetime: scheduledDateTime,
-    event_type: eventType,
-    guest_count: null,
-    special_request_category: selectedRequestCategory,
-    special_request_text: specialRequest,
-    subtotal: subtotal,
-    delivery_fee: deliveryFeeForDB,
-    discount: discountForDB,
-    total: totalAmount,
-    payment_method: paymentMethod,
-    payment_status: paymentStatus,
-    payment_reference: paymentRef,
-    delivery_address: selectedAddress,
-    created_at: new Date().toISOString(),
-    auto_cancel_at: autoCancelAt?.toISOString() || null,
-    
-    // Add promotion tracking to the order
-   // Fixed version
-// In the order insertion, add the promotion_id
-promotion_id: items.some(item => (item.product as any).promotion_id) 
-  ? items.find(item => (item.product as any).promotion_id)?.product.promotion_id 
-  : null,
-    promotion_details: items.filter(item => (item.product as any).is_promotion).map(item => ({
-      product_id: item.product.id,
-      product_name: item.product.name,
-      promotion_id: (item.product as any).promotion_id,
-      is_free_item: (item.product as any).is_free_item,
-      is_combo_main: (item.product as any).is_combo_main,
-      combo_details: (item.product as any).combo_details,
-      promotion_price: (item.product as any).promotion_price,
-      original_price: (item.product as any).original_price,
-      quantity: item.quantity,
-    })),
-    
-    // Financial fields
-    stamp_duty: stampDuty,
-    flutterwave_fee: flutterwaveFee,
-    flutterwave_fee_percentage: flutterwaveFeePercentage,
-    platform_commission: platformCommission,
-    platform_commission_percentage: platformFeePercentage,
-    platform_delivery_earnings: platformDeliveryEarnings,
-    platform_net_earnings: platformNetEarnings,
-    vendor_payout: vendorPayout,
-    payment_gateway_response: gatewayResponse,
-    rider_earnings: riderEarnings,
-  })
-  .select()
-  .single();
+    // Insert order
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .insert({
+        customer_id: user.id,
+        vendor_id: vendorId,
+        items: items.map(item => ({
+          product_id: item.product.id,
+          name: item.product.name,
+          quantity: item.quantity,
+          price: item.product.price,
+          options: item.selectedOptions || [],
+          promotion_id: (item.product as any).promotion_id || null,
+          is_promotion: (item.product as any).is_promotion || false,
+          is_free_item: (item.product as any).is_free_item || false,
+          is_combo_main: (item.product as any).is_combo_main || false,
+          combo_details: (item.product as any).combo_details || null,
+          promotion_price: (item.product as any).promotion_price || null,
+        })),
+        status: 'pending',
+        is_scheduled: orderType === 'schedule',
+        scheduled_datetime: scheduledDateTime,
+        event_type: eventType,
+        guest_count: null,
+        special_request_category: selectedRequestCategory,
+        special_request_text: specialRequest,
+        subtotal: subtotal,
+        delivery_fee: deliveryFeeForDB,
+        discount: discountForDB,
+        total: totalAmount,
+        payment_method: paymentMethod,
+        payment_status: paymentStatus,
+        payment_reference: paymentRef,
+        delivery_address: selectedAddress,
+        created_at: new Date().toISOString(),
+        auto_cancel_at: autoCancelAt?.toISOString() || null,
+        promotion_id: items.some(item => (item.product as any).promotion_id) 
+          ? items.find(item => (item.product as any).promotion_id)?.product.promotion_id 
+          : null,
+        promotion_details: items.filter(item => (item.product as any).is_promotion).map(item => ({
+          product_id: item.product.id,
+          product_name: item.product.name,
+          promotion_id: (item.product as any).promotion_id,
+          is_free_item: (item.product as any).is_free_item,
+          is_combo_main: (item.product as any).is_combo_main,
+          combo_details: (item.product as any).combo_details,
+          promotion_price: (item.product as any).promotion_price,
+          original_price: (item.product as any).original_price,
+          quantity: item.quantity,
+        })),
+        stamp_duty: stampDuty,
+        flutterwave_fee: flutterwaveFee,
+        flutterwave_fee_percentage: flutterwaveFeePercentage,
+        platform_commission: platformCommission,
+        platform_commission_percentage: platformFeePercentage,
+        platform_delivery_earnings: platformDeliveryEarnings,
+        platform_net_earnings: platformNetEarnings,
+        vendor_payout: vendorPayout,
+        payment_gateway_response: gatewayResponse,
+        rider_earnings: riderEarnings,
+      })
+      .select()
+      .single();
 
     if (orderError) {
       console.error('Order insert error:', orderError);
@@ -578,12 +680,12 @@ promotion_id: items.some(item => (item.product as any).promotion_id)
 
     console.log('✅ Order inserted successfully:', order.id);
     await decreaseProductStock(items);
-console.log('✅ Product stock updated');
+    console.log('✅ Product stock updated');
 
     // Record first order discount if applied
     if (isFirstOrder && firstOrderDiscount > 0) {
       await supabase.from('first_order_discounts').insert({
-        user_id: user?.id,
+        user_id: user.id,
         order_id: order.id,
         discount_amount: firstOrderDiscount,
         free_delivery_applied: freeDeliveryEligible,
@@ -595,7 +697,7 @@ console.log('✅ Product stock updated');
     if (appliedPromoData) {
       await supabase.from('promo_code_usage').insert({
         promo_code_id: appliedPromoData.id,
-        user_id: user?.id,
+        user_id: user.id,
         order_id: order.id,
         discount_amount: discount,
         used_at: new Date().toISOString(),
@@ -616,6 +718,46 @@ console.log('✅ Product stock updated');
       created_at: new Date().toISOString(),
     });
 
+    // Record reward usage if any
+    if (applyFreeDelivery && customerRewards?.availableFreeDelivery) {
+      await supabase
+        .from('customer_rewards')
+        .update({ 
+          free_delivery_used: (customerRewards.free_delivery_used || 0) + 1,
+          updated_at: new Date().toISOString()
+        })
+        .eq('customer_id', user.id);
+      
+      await supabase
+        .from('reward_redemptions')
+        .insert({
+          customer_id: user.id,
+          order_id: order.id,
+          reward_type: 'free_delivery',
+          amount_saved: actualDeliveryFee,
+          created_at: new Date().toISOString()
+        });
+    }
+
+    if (applyWallet && finalWalletUsedAmount > 0) {
+      await supabase
+        .from('reward_redemptions')
+        .insert({
+          customer_id: user.id,
+          order_id: order.id,
+          reward_type: 'referral_bonus',
+          amount_saved: finalWalletUsedAmount,
+          created_at: new Date().toISOString()
+        });
+      
+      await supabase
+        .from('referrals')
+        .update({ referrer_reward_claimed: true })
+        .eq('referrer_id', user.id)
+        .eq('status', 'completed')
+        .eq('referrer_reward_claimed', false);
+    }
+
     console.log('✅ Platform fees recorded, clearing cart now...');
     
     clearCart();
@@ -625,7 +767,7 @@ console.log('✅ Product stock updated');
       : 'Order placed successfully!';
     
     showToast(successMessage);
-  navigation.navigate('Orders')
+    navigation.navigate('Orders');
     
   } catch (error: any) {
     console.error('❌ Error placing order:', error);
@@ -695,7 +837,7 @@ console.log('✅ Product stock updated');
     }
 
     // Validate Cash on Delivery restriction
-    if (paymentMethod === 'cash' && total >= 10000) {
+if (paymentMethod === 'cash' && finalTotal >= 10000) {
       showToast('Cash on delivery is only available for orders below ₦10,000. Please select card payment.');
       return;
     }
@@ -916,68 +1058,89 @@ console.log('✅ Product stock updated');
           </Text>
         )}
 
-        {/* Order Summary */}
-        <View style={styles.summaryContainer}>
-          <Text style={styles.summaryTitle}>Order Summary</Text>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Subtotal</Text>
-            <Text style={styles.summaryValue}>₦{subtotal.toLocaleString()}</Text>
+{/* Order Summary */}
+<View style={styles.modalSection}>
+  <Text style={styles.modalSectionTitle}>Order Summary</Text>
+  <View style={styles.modalSummary}>
+    <View style={styles.modalSummaryRow}>
+      <Text style={styles.modalSummaryLabel}>Items ({items.length})</Text>
+      <Text style={styles.modalSummaryValue}>₦{subtotal.toLocaleString()}</Text>
+    </View>
+    
+    {/* Delivery Fee */}
+    {isCalculatingFee ? (
+      <View style={styles.modalSummaryRow}>
+        <Text style={styles.modalSummaryLabel}>Calculating delivery...</Text>
+        <ActivityIndicator size="small" color="#f97316" />
+      </View>
+    ) : calculatedDeliveryFee ? (
+      <>
+        {deliveryDistance && (
+          <View style={styles.modalSummaryRow}>
+            <Text style={styles.modalSummaryLabel}>Distance</Text>
+            <Text style={styles.modalSummaryValue}>
+              {deliveryDistance < 1 
+                ? `${Math.round(deliveryDistance * 1000)}m` 
+                : `${deliveryDistance.toFixed(1)}km`}
+            </Text>
           </View>
-          
-          {isCalculatingFee ? (
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Calculating delivery...</Text>
-              <ActivityIndicator size="small" color="#f97316" />
-            </View>
-          ) : calculatedDeliveryFee ? (
-            <>
-              {deliveryDistance && (
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Distance</Text>
-                  <Text style={styles.summaryValue}>
-                    {deliveryDistance < 1 
-                      ? `${Math.round(deliveryDistance * 1000)}m` 
-                      : `${deliveryDistance.toFixed(1)}km`}
-                  </Text>
-                </View>
-              )}
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Delivery Fee</Text>
-                <Text style={[
-                  styles.summaryValue,
-                  freeDeliveryEligible && styles.discountValue
-                ]}>
-                  {freeDeliveryEligible ? 'FREE' : `₦${calculatedDeliveryFee.toLocaleString()}`}
-                </Text>
-              </View>
-            </>
-          ) : (
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Delivery Fee</Text>
-              <Text style={styles.summaryValue}>Select address to calculate</Text>
-            </View>
-          )}
-
-          {firstOrderDiscount > 0 && !promoApplied && (
-            <View style={[styles.summaryRow, styles.discountRow]}>
-              <Text style={styles.discountLabel}>First Order Discount (10%)</Text>
-              <Text style={styles.discountValue}>-₦{firstOrderDiscount.toLocaleString()}</Text>
-            </View>
-          )}
-          {discount > 0 && (
-            <View style={[styles.summaryRow, styles.discountRow]}>
-              <Text style={styles.discountLabel}>Promo Discount</Text>
-              <Text style={styles.discountValue}>-₦{discount.toLocaleString()}</Text>
-            </View>
-          )}
-          <View style={[styles.summaryRow, styles.totalRow]}>
-            <Text style={styles.totalLabel}>Total</Text>
-            <Text style={styles.totalValue}>₦{total.toLocaleString()}</Text>
-          </View>
-          {freeDeliveryEligible && (
-            <Text style={styles.freeDeliveryNotice}>✨ Free delivery applied to this order!</Text>
-          )}
+        )}
+        <View style={styles.modalSummaryRow}>
+          <Text style={styles.modalSummaryLabel}>Delivery Fee</Text>
+          <Text style={[
+            styles.modalSummaryValue,
+            (freeDeliveryEligible || applyFreeDelivery) && styles.modalDiscountValue
+          ]}>
+            {freeDeliveryEligible || applyFreeDelivery ? 'FREE' : `₦${calculatedDeliveryFee.toLocaleString()}`}
+          </Text>
         </View>
+      </>
+    ) : (
+      <View style={styles.modalSummaryRow}>
+        <Text style={styles.modalSummaryLabel}>Delivery Fee</Text>
+        <Text style={styles.modalSummaryValue}>Select address to calculate</Text>
+      </View>
+    )}
+
+    {/* First Order Discount */}
+    {firstOrderDiscount > 0 && !promoApplied && (
+      <View style={[styles.modalSummaryRow, styles.modalDiscountRow]}>
+        <Text style={styles.modalDiscountLabel}>First Order Discount (10%)</Text>
+        <Text style={styles.modalDiscountValue}>-₦{firstOrderDiscount.toLocaleString()}</Text>
+      </View>
+    )}
+    
+    {/* Promo Discount */}
+    {discount > 0 && (
+      <View style={[styles.modalSummaryRow, styles.modalDiscountRow]}>
+        <Text style={styles.modalDiscountLabel}>Promo Discount</Text>
+        <Text style={styles.modalDiscountValue}>-₦{discount.toLocaleString()}</Text>
+      </View>
+    )}
+    
+    {/* Referral Bonus Applied */}
+    {applyWallet && finalWalletUsedAmount > 0 && (
+      <View style={[styles.modalSummaryRow, styles.modalDiscountRow]}>
+        <Text style={styles.modalDiscountLabel}>Referral Bonus</Text>
+        <Text style={styles.modalDiscountValue}>-₦{finalWalletUsedAmount.toLocaleString()}</Text>
+      </View>
+    )}
+    
+    {/* Total */}
+    <View style={[styles.modalSummaryRow, styles.modalTotalRow]}>
+      <Text style={styles.modalTotalLabel}>Total</Text>
+      <Text style={styles.modalTotalValue}>₦{finalTotal.toLocaleString()}</Text>
+    </View>
+    
+    {/* Notices */}
+    {(freeDeliveryEligible || applyFreeDelivery) && (
+      <Text style={styles.modalFreeDeliveryNotice}>✨ Free delivery applied to this order!</Text>
+    )}
+    {applyWallet && finalWalletUsedAmount > 0 && (
+      <Text style={styles.modalReferralNotice}>🎁 Referral bonus saved you ₦{finalWalletUsedAmount.toLocaleString()}</Text>
+    )}
+  </View>
+</View>
       </ScrollView>
 
       {/* Footer */}
@@ -1270,70 +1433,157 @@ console.log('✅ Product stock updated');
                 )}
               </View>
 
-              {/* Order Summary */}
-              <View style={styles.modalSection}>
-                <Text style={styles.modalSectionTitle}>Order Summary</Text>
-                <View style={styles.modalSummary}>
-                  <View style={styles.modalSummaryRow}>
-                    <Text style={styles.modalSummaryLabel}>Items ({items.length})</Text>
-                    <Text style={styles.modalSummaryValue}>₦{subtotal.toLocaleString()}</Text>
-                  </View>
-                  
-                  {isCalculatingFee ? (
-                    <View style={styles.modalSummaryRow}>
-                      <Text style={styles.modalSummaryLabel}>Calculating delivery...</Text>
-                      <ActivityIndicator size="small" color="#f97316" />
-                    </View>
-                  ) : calculatedDeliveryFee ? (
-                    <>
-                      {deliveryDistance && (
-                        <View style={styles.modalSummaryRow}>
-                          <Text style={styles.modalSummaryLabel}>Distance</Text>
-                          <Text style={styles.modalSummaryValue}>
-                            {deliveryDistance < 1 
-                              ? `${Math.round(deliveryDistance * 1000)}m` 
-                              : `${deliveryDistance.toFixed(1)}km`}
-                          </Text>
-                        </View>
-                      )}
-                      <View style={styles.modalSummaryRow}>
-                        <Text style={styles.modalSummaryLabel}>Delivery Fee</Text>
-                        <Text style={[
-                          styles.modalSummaryValue,
-                          freeDeliveryEligible && styles.modalDiscountValue
-                        ]}>
-                          {freeDeliveryEligible ? 'FREE' : `₦${calculatedDeliveryFee.toLocaleString()}`}
-                        </Text>
-                      </View>
-                    </>
-                  ) : (
-                    <View style={styles.modalSummaryRow}>
-                      <Text style={styles.modalSummaryLabel}>Delivery Fee</Text>
-                      <Text style={styles.modalSummaryValue}>Select address to calculate</Text>
-                    </View>
-                  )}
+              {/* Rewards Section */}
+{(customerRewards?.availableFreeDelivery || walletBalance > 0) && (
+  <View style={styles.modalSection}>
+    <Text style={styles.modalSectionTitle}>Available Rewards</Text>
+    
+   {/* Free Delivery Reward with expiration */}
+{customerRewards?.availableFreeDelivery && (
+  <TouchableOpacity
+    onPress={() => setApplyFreeDelivery(!applyFreeDelivery)}
+    style={[
+      styles.rewardCard,
+      applyFreeDelivery && styles.rewardCardSelected
+    ]}
+  >
+    <View style={styles.rewardCardContent}>
+      <View style={styles.rewardIcon}>
+        <Feather name="truck" size={20} color="#10b981" />
+      </View>
+      <View style={styles.rewardInfo}>
+        <Text style={styles.rewardTitle}>Free Delivery</Text>
+        <Text style={styles.rewardDescription}>
+          Use your free delivery reward on this order
+        </Text>
+        {customerRewards.freeDeliveryExpiresAt && (
+          <Text style={styles.rewardExpiry}>
+            ⏰ Expires {new Date(customerRewards.freeDeliveryExpiresAt).toLocaleDateString()}
+          </Text>
+        )}
+      </View>
+      {applyFreeDelivery && (
+        <View style={styles.rewardCheck}>
+          <Feather name="check-circle" size={20} color="#10b981" />
+        </View>
+      )}
+    </View>
+  </TouchableOpacity>
+)}
+    
+    {/* Wallet/Bonus Reward */}
+    {walletBalance > 0 && (
+      <TouchableOpacity
+        onPress={() => setApplyWallet(!applyWallet)}
+        style={[
+          styles.rewardCard,
+          applyWallet && styles.rewardCardSelected
+        ]}
+      >
+        <View style={styles.rewardCardContent}>
+          <View style={styles.rewardIcon}>
+            <Feather name="gift" size={20} color="#f97316" />
+          </View>
+          <View style={styles.rewardInfo}>
+            <Text style={styles.rewardTitle}>Referral Bonus</Text>
+            <Text style={styles.rewardDescription}>
+              ₦{walletBalance.toLocaleString()} available from referrals
+            </Text>
+          </View>
+          {applyWallet && (
+            <View style={styles.rewardCheck}>
+              <Feather name="check-circle" size={20} color="#f97316" />
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
+    )}
+  </View>
+)}
 
-                  {firstOrderDiscount > 0 && !promoApplied && (
-                    <View style={[styles.modalSummaryRow, styles.modalDiscountRow]}>
-                      <Text style={styles.modalDiscountLabel}>First Order Discount (10%)</Text>
-                      <Text style={styles.modalDiscountValue}>-₦{firstOrderDiscount.toLocaleString()}</Text>
-                    </View>
-                  )}
-                  {discount > 0 && (
-                    <View style={[styles.modalSummaryRow, styles.modalDiscountRow]}>
-                      <Text style={styles.modalDiscountLabel}>Promo Discount</Text>
-                      <Text style={styles.modalDiscountValue}>-₦{discount.toLocaleString()}</Text>
-                    </View>
-                  )}
-                  <View style={[styles.modalSummaryRow, styles.modalTotalRow]}>
-                    <Text style={styles.modalTotalLabel}>Total</Text>
-                    <Text style={styles.modalTotalValue}>₦{total.toLocaleString()}</Text>
-                  </View>
-                  {freeDeliveryEligible && (
-                    <Text style={styles.modalFreeDeliveryNotice}>✨ Free delivery applied!</Text>
-                  )}
-                </View>
-              </View>
+ {/* Order Summary */}
+<View style={styles.modalSection}>
+  <Text style={styles.modalSectionTitle}>Order Summary</Text>
+  <View style={styles.modalSummary}>
+    <View style={styles.modalSummaryRow}>
+      <Text style={styles.modalSummaryLabel}>Items ({items.length})</Text>
+      <Text style={styles.modalSummaryValue}>₦{subtotal.toLocaleString()}</Text>
+    </View>
+    
+    {/* Delivery Fee */}
+    {isCalculatingFee ? (
+      <View style={styles.modalSummaryRow}>
+        <Text style={styles.modalSummaryLabel}>Calculating delivery...</Text>
+        <ActivityIndicator size="small" color="#f97316" />
+      </View>
+    ) : calculatedDeliveryFee ? (
+      <>
+        {deliveryDistance && (
+          <View style={styles.modalSummaryRow}>
+            <Text style={styles.modalSummaryLabel}>Distance</Text>
+            <Text style={styles.modalSummaryValue}>
+              {deliveryDistance < 1 
+                ? `${Math.round(deliveryDistance * 1000)}m` 
+                : `${deliveryDistance.toFixed(1)}km`}
+            </Text>
+          </View>
+        )}
+        <View style={styles.modalSummaryRow}>
+          <Text style={styles.modalSummaryLabel}>Delivery Fee</Text>
+          <Text style={[
+            styles.modalSummaryValue,
+            (freeDeliveryEligible || applyFreeDelivery) && styles.modalDiscountValue
+          ]}>
+            {freeDeliveryEligible || applyFreeDelivery ? 'FREE' : `₦${calculatedDeliveryFee.toLocaleString()}`}
+          </Text>
+        </View>
+      </>
+    ) : (
+      <View style={styles.modalSummaryRow}>
+        <Text style={styles.modalSummaryLabel}>Delivery Fee</Text>
+        <Text style={styles.modalSummaryValue}>Select address to calculate</Text>
+      </View>
+    )}
+
+    {/* First Order Discount */}
+    {firstOrderDiscount > 0 && !promoApplied && (
+      <View style={[styles.modalSummaryRow, styles.modalDiscountRow]}>
+        <Text style={styles.modalDiscountLabel}>First Order Discount (10%)</Text>
+        <Text style={styles.modalDiscountValue}>-₦{firstOrderDiscount.toLocaleString()}</Text>
+      </View>
+    )}
+    
+    {/* Promo Discount */}
+    {discount > 0 && (
+      <View style={[styles.modalSummaryRow, styles.modalDiscountRow]}>
+        <Text style={styles.modalDiscountLabel}>Promo Discount</Text>
+        <Text style={styles.modalDiscountValue}>-₦{discount.toLocaleString()}</Text>
+      </View>
+    )}
+    
+    {/* Referral Bonus Applied */}
+    {applyWallet && finalWalletUsedAmount > 0 && (
+      <View style={[styles.modalSummaryRow, styles.modalDiscountRow]}>
+        <Text style={styles.modalDiscountLabel}>Referral Bonus</Text>
+        <Text style={styles.modalDiscountValue}>-₦{finalWalletUsedAmount.toLocaleString()}</Text>
+      </View>
+    )}
+    
+    {/* Total */}
+    <View style={[styles.modalSummaryRow, styles.modalTotalRow]}>
+      <Text style={styles.modalTotalLabel}>Total</Text>
+      <Text style={styles.modalTotalValue}>₦{finalTotal.toLocaleString()}</Text>
+    </View>
+    
+    {/* Notices */}
+    {(freeDeliveryEligible || applyFreeDelivery) && (
+      <Text style={styles.modalFreeDeliveryNotice}>✨ Free delivery applied to this order!</Text>
+    )}
+    {applyWallet && finalWalletUsedAmount > 0 && (
+      <Text style={styles.modalReferralNotice}>🎁 Referral bonus saved you ₦{finalWalletUsedAmount.toLocaleString()}</Text>
+    )}
+  </View>
+</View>
             </ScrollView>
 
             {/* Modal Footer */}
@@ -1365,9 +1615,9 @@ console.log('✅ Product stock updated');
                       <Text style={styles.placeOrderText}>Calculating Fee...</Text>
                     </View>
                   ) : (
-                    <Text style={styles.placeOrderText}>
-                      {orderType === 'schedule' ? 'Schedule Order' : 'Place Order'} • ₦{total.toLocaleString()}
-                    </Text>
+                   <Text style={styles.placeOrderText}>
+  {orderType === 'schedule' ? 'Schedule Order' : 'Place Order'} • ₦{finalTotal.toLocaleString()}
+</Text>
                   )}
                 </LinearGradient>
               </TouchableOpacity>
@@ -1401,7 +1651,7 @@ console.log('✅ Product stock updated');
 {showFlutterwave && (
   <FlutterwavePayment
     visible={showFlutterwave}
-    amount={total}
+  amount={finalTotal}  // Change from {total} to {finalTotal}
     email={user?.email || ''}
     reference={paymentReference}
     customerName={user?.name}
@@ -1501,6 +1751,51 @@ const styles = StyleSheet.create({
   justifyContent: 'space-between',
   marginBottom: 2,
 },
+rewardCard: {
+  backgroundColor: '#2a2a2a',
+  borderRadius: 12,
+  padding: 12,
+  marginBottom: 8,
+  borderWidth: 1,
+  borderColor: 'transparent',
+},
+rewardCardSelected: {
+  borderColor: '#f97316',
+  backgroundColor: 'rgba(249,115,22,0.1)',
+},
+rewardCardContent: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 12,
+},
+rewardIcon: {
+  width: 40,
+  height: 40,
+  borderRadius: 20,
+  backgroundColor: 'rgba(16,185,129,0.1)',
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+rewardInfo: {
+  flex: 1,
+},
+rewardTitle: {
+  fontSize: 14,
+  fontWeight: '600',
+  color: '#fff',
+  marginBottom: 2,
+},
+rewardDescription: {
+  fontSize: 12,
+  color: '#666',
+},
+rewardCheck: {
+  width: 24,
+  height: 24,
+  borderRadius: 12,
+  justifyContent: 'center',
+  alignItems: 'center',
+},
 promoBadge: {
   flexDirection: 'row',
   alignItems: 'center',
@@ -1530,6 +1825,11 @@ disabledButton: {
     height: 60,
     borderRadius: 8,
   },
+  rewardExpiry: {
+  fontSize: 10,
+  color: '#f59e0b',
+  marginTop: 2,
+},
   itemInfo: {
     flex: 1,
     justifyContent: 'space-between',
@@ -1568,6 +1868,18 @@ disabledButton: {
     justifyContent: 'center',
     alignItems: 'center',
   },
+  modalStrikethrough: {
+  fontSize: 11,
+  color: '#666',
+  textDecorationLine: 'line-through',
+  marginLeft: 4,
+},
+modalReferralNotice: {
+  fontSize: 11,
+  color: '#f97316',
+  textAlign: 'center',
+  marginTop: 8,
+},
   primaryButton: {
     backgroundColor: '#f97316',
   },

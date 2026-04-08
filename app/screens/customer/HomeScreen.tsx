@@ -73,6 +73,65 @@ const [isFirstOrder, setIsFirstOrder] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const [unreadCount, setUnreadCount] = useState(0);
 
+  // Promotional slides data for the slider
+const verticalPromoSlides = [
+  {
+    id: 'promo_1',
+    title: '🎁 Refer & Earn',
+    subtitle: 'Refer a friend and you both get ₦500 off!',
+    buttonText: 'Invite Now',
+    icon: 'users',
+    gradientColors: ['#f97316', '#f43f5e'],
+    action: 'referral',
+    backgroundColor: 'rgba(249,115,22,0.15)',
+  },
+  {
+    id: 'promo_2',
+    title: '🚚 Free Delivery',
+    subtitle: 'Order 5 times and get free delivery on your next order!',
+    buttonText: 'View Rewards',
+    icon: 'truck',
+    gradientColors: ['#10b981', '#059669'],
+    action: 'rewards',
+    backgroundColor: 'rgba(16,185,129,0.15)',
+  },
+  {
+    id: 'promo_3',
+    title: '💰 Earn Cashback',
+    subtitle: 'Get cashback on every order. Save more!',
+    buttonText: 'Learn More',
+    icon: 'dollar-sign',
+    gradientColors: ['#8b5cf6', '#6d28d9'],
+    action: 'rewards',
+    backgroundColor: 'rgba(139,92,246,0.15)',
+  },
+  {
+    id: 'promo_4',
+    title: '⭐ Loyalty Rewards',
+    subtitle: 'Every 5th order = Free delivery. Keep ordering!',
+    buttonText: 'Check Status',
+    icon: 'star',
+    gradientColors: ['#f59e0b', '#d97706'],
+    action: 'rewards',
+    backgroundColor: 'rgba(245,158,11,0.15)',
+  },
+  {
+    id: 'promo_5',
+    title: '🏪 New Vendors',
+    subtitle: 'Discover amazing restaurants near you!',
+    buttonText: 'Explore',
+    icon: 'store',
+    gradientColors: ['#3b82f6', '#1d4ed8'],
+    action: 'Vendors',
+    backgroundColor: 'rgba(59,130,246,0.15)',
+  },
+];
+
+// Add this state
+const [currentPromoIndex, setCurrentPromoIndex] = useState(0);
+const [currentVerticalIndex, setCurrentVerticalIndex] = useState(0);
+
+const promoFlatListRef = useRef<FlatList>(null);
 // First order promotion object
 const firstOrderPromotion = {
   id: 'first-order',
@@ -255,6 +314,21 @@ useEffect(() => {
     return () => clearInterval(interval);
   }, [currentSlide, promotions.length]);
 
+
+// Auto-scroll for vertical promo slider
+useEffect(() => {
+  if (verticalPromoSlides.length <= 1) return;
+  
+  const interval = setInterval(() => {
+    let nextIndex = currentVerticalIndex + 1;
+    if (nextIndex >= verticalPromoSlides.length) {
+      nextIndex = 0;
+    }
+    setCurrentVerticalIndex(nextIndex);
+  }, 5000); // Change every 5 seconds
+  
+  return () => clearInterval(interval);
+}, [currentVerticalIndex]);
 
 
   // Fetch unread messages on mount
@@ -566,40 +640,72 @@ const addComboToCart = async (promotion: Promotion) => {
     </TouchableOpacity>
         </View>
 
-        {/* Quick Actions */}
-        <View style={styles.quickActions}>
-          <TouchableOpacity 
-            style={styles.quickActionCard}
-            onPress={() => navigation.navigate('Vendors')}
-          >
-            <LinearGradient
-              colors={['rgba(249,115,22,0.2)', 'rgba(249,115,22,0.05)']}
-              style={styles.quickActionGradient}
-            >
-              <View style={[styles.quickActionIcon, { backgroundColor: 'rgba(249,115,22,0.2)' }]}>
-                <Feather name="zap" size={20} color="#f97316" />
-              </View>
-              <Text style={styles.quickActionTitle}>Order Food</Text>
-              <Text style={styles.quickActionSubtitle}>From {vendors.length}+ vendors</Text>
-            </LinearGradient>
-          </TouchableOpacity>
+       {/* Quick Actions */}
+<View style={styles.quickActions}>
+  {/* Left Card - Order Food */}
+  <TouchableOpacity 
+    style={styles.quickActionCard}
+    onPress={() => navigation.navigate('Vendors')}
+  >
+    <LinearGradient
+      colors={['rgba(249,115,22,0.2)', 'rgba(249,115,22,0.05)']}
+      style={styles.quickActionGradient}
+    >
+      <View style={[styles.quickActionIcon, { backgroundColor: 'rgba(249,115,22,0.2)' }]}>
+        <Feather name="zap" size={20} color="#f97316" />
+      </View>
+      <Text style={styles.quickActionTitle}>Order Food</Text>
+      <Text style={styles.quickActionSubtitle}>From {vendors.length}+ vendors</Text>
+    </LinearGradient>
+  </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.quickActionCard}
-            onPress={() => navigation.navigate('Orders')}
-          >
-            <LinearGradient
-              colors={['rgba(244,63,94,0.2)', 'rgba(244,63,94,0.05)']}
-              style={styles.quickActionGradient}
-            >
-              <View style={[styles.quickActionIcon, { backgroundColor: 'rgba(244,63,94,0.2)' }]}>
-                <Feather name="clock" size={20} color="#f43f5e" />
-              </View>
-              <Text style={styles.quickActionTitle}>Track Order</Text>
-              <Text style={styles.quickActionSubtitle}>See live updates</Text>
-            </LinearGradient>
-          </TouchableOpacity>
+  {/* Right Card - Vertical Auto-Scrolling Promo Slider */}
+  <View style={styles.verticalPromoContainer}>
+    <TouchableOpacity 
+      style={styles.verticalPromoCard}
+      onPress={() => {
+        const action = verticalPromoSlides[currentVerticalIndex].action;
+        if (action === 'Vendors') navigation.navigate('Vendors');
+        else navigation.navigate('Rewards');
+      }}
+    >
+      <LinearGradient
+        colors={verticalPromoSlides[currentVerticalIndex].gradientColors as any}
+        style={styles.verticalPromoGradient}
+      >
+        <View style={styles.verticalPromoIconContainer}>
+          <Feather 
+            name={verticalPromoSlides[currentVerticalIndex].icon as any} 
+            size={28} 
+            color="#fff" 
+          />
         </View>
+        <Text style={styles.verticalPromoTitle}>
+          {verticalPromoSlides[currentVerticalIndex].title}
+        </Text>
+        <Text style={styles.verticalPromoSubtitle}>
+          {verticalPromoSlides[currentVerticalIndex].subtitle}
+        </Text>
+        <View style={styles.verticalPromoArrow}>
+          <Feather name="arrow-right" size={14} color="#fff" />
+        </View>
+      </LinearGradient>
+    </TouchableOpacity>
+    
+    {/* Vertical Pagination Dots */}
+    <View style={styles.verticalPaginationContainer}>
+      {verticalPromoSlides.map((_, index) => (
+        <View
+          key={index}
+          style={[
+            styles.verticalPaginationDot,
+            currentVerticalIndex === index && styles.verticalPaginationDotActive,
+          ]}
+        />
+      ))}
+    </View>
+  </View>
+</View>
 
 
 {!loadingPromotions && allSlides.length > 0 && (
@@ -1124,6 +1230,7 @@ comboFreeText: {
     paddingHorizontal: 20,
     gap: 12,
     marginBottom: 24,
+    height: 120,
   },
   quickActionCard: {
     flex: 1,
@@ -1151,6 +1258,87 @@ comboFreeText: {
     fontSize: 11,
     color: '#666',
   },
+  
+
+
+// Vertical Promo Styles
+verticalPromoContainer: {
+  flex: 1,
+  position: 'relative',
+},
+verticalPromoCard: {
+  borderRadius: 16,
+  overflow: 'hidden',
+  height: '100%',
+},
+verticalPromoGradient: {
+  padding: 10,
+  alignItems: 'center',
+  justifyContent: 'center',
+},
+verticalPromoIconContainer: {
+  width: 44,
+  height: 44,
+  borderRadius: 22,
+  backgroundColor: 'rgba(255,255,255,0.2)',
+  justifyContent: 'center',
+  alignItems: 'center',
+  marginBottom: 8,
+},
+verticalPromoTitle: {
+  fontSize: 13,
+  fontWeight: '700',
+  color: '#fff',
+  textAlign: 'center',
+  marginBottom: 2,
+},
+verticalPromoSubtitle: {
+  fontSize: 10,
+  color: 'rgba(255,255,255,0.8)',
+  textAlign: 'center',
+  marginBottom: 6,
+},
+verticalPromoArrow: {
+  width: 24,
+  height: 24,
+  borderRadius: 12,
+  backgroundColor: 'rgba(255,255,255,0.2)',
+  justifyContent: 'center',
+  alignItems: 'center',
+  marginTop: 4,
+},
+verticalPaginationContainer: {
+  flexDirection: 'row',
+  justifyContent: 'center',
+  alignItems: 'center',
+  position: 'absolute',
+  bottom: 8,
+  left: 0,
+  right: 0,
+  gap: 4,
+},
+verticalPaginationDot: {
+  width: 4,
+  height: 4,
+  borderRadius: 2,
+  backgroundColor: 'rgba(255,255,255,0.5)',
+},
+verticalPaginationDotActive: {
+  width: 12,
+  height: 4,
+  borderRadius: 2,
+  backgroundColor: '#fff',
+},
+
+
+
+
+
+
+
+
+
+
   slideBadge: {
     flexDirection: 'row',
     alignItems: 'center',

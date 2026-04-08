@@ -1,4 +1,3 @@
-
 // app/screens/customer/ProfileScreen.tsx
 import React, { useState, useEffect } from 'react';
 import {
@@ -23,7 +22,6 @@ import { supabase } from '../../lib/supabase';
 import { RootStackParamList } from '../../navigation/types';
 import type { Address } from '../../types';
 import Toast from 'react-native-toast-message';
-
 
 type ProfileScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -53,7 +51,8 @@ export function ProfileScreen() {
     rewards: 0
   });
   const [isLoading, setIsLoading] = useState(true);
- const showToast = (message: string) => {
+  
+  const showToast = (message: string) => {
     Toast.show({
       type: 'success',
       text1: message,
@@ -61,6 +60,7 @@ export function ProfileScreen() {
       visibilityTime: 2000,
     });
   };
+  
   // New address form state
   const [newAddress, setNewAddress] = useState({
     label: '',
@@ -108,14 +108,26 @@ export function ProfileScreen() {
 
       if (favoritesError && favoritesError.code !== 'PGRST116') throw favoritesError;
 
+      // Fetch rewards count (available free deliveries)
+      const { data: rewardsData, error: rewardsError } = await supabase
+        .from('customer_rewards')
+        .select('free_delivery_earned, free_delivery_used')
+        .eq('customer_id', user.id)
+        .maybeSingle();
+
+      let rewardsCount = 0;
+      if (rewardsData && !rewardsError) {
+        rewardsCount = (rewardsData.free_delivery_earned || 0) - (rewardsData.free_delivery_used || 0);
+      }
+
       setStats({
         orders: ordersCount || 0,
         favorites: favoritesCount || 0,
-        rewards: 0
+        rewards: rewardsCount
       });
 
     } catch (error) {
-     
+      console.error('Error fetching user data:', error);
     } finally {
       setIsLoading(false);
     }
@@ -134,6 +146,7 @@ export function ProfileScreen() {
             try {
               await signOut();
             } catch (error) {
+              console.error('Logout error:', error);
             }
           },
         },
@@ -152,10 +165,10 @@ export function ProfileScreen() {
 
       if (error) throw error;
 
-      showToast( 'Profile updated successfully');
+      showToast('Profile updated successfully');
       setShowEditProfile(false);
       
-      // Refresh user data (you might want to update the auth context)
+      // Refresh user data
       fetchUserData();
     } catch (error) {
       showToast('Failed to update profile');
@@ -186,7 +199,7 @@ export function ProfileScreen() {
 
       if (error) throw error;
 
-      showToast( 'Address added successfully');
+      showToast('Address added successfully');
       setShowAddAddress(false);
       setNewAddress({ label: '', street: '', area: '', landmark: '', phone: user.phone || '' });
       fetchUserData();
@@ -213,7 +226,7 @@ export function ProfileScreen() {
 
               if (error) throw error;
 
-              showToast( 'Address deleted');
+              showToast('Address deleted');
               fetchUserData();
             } catch (error) {
               showToast('Failed to delete address');
@@ -243,13 +256,26 @@ export function ProfileScreen() {
       showToast('Default address updated');
       fetchUserData();
     } catch (error) {
-      showToast( 'Failed to update default address');
+      showToast('Failed to update default address');
     }
   };
 
   const getUserInitials = () => {
     if (!user?.name) return 'U';
     return user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  // Navigation handlers for stats
+  const handleOrdersPress = () => {
+    navigation.navigate('Orders');
+  };
+
+  const handleFavoritesPress = () => {
+    navigation.navigate('Favorites');
+  };
+
+  const handleRewardsPress = () => {
+    navigation.navigate('Rewards');
   };
 
   if (!user) {
@@ -339,22 +365,22 @@ export function ProfileScreen() {
           </View>
         </View>
 
-        {/* Stats */}
+        {/* Stats - Made Clickable */}
         <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
+          <TouchableOpacity onPress={handleOrdersPress} style={styles.statItem}>
             <Text style={styles.statNumber}>{stats.orders}</Text>
             <Text style={styles.statLabel}>Orders</Text>
-          </View>
+          </TouchableOpacity>
           <View style={styles.statDivider} />
-          <View style={styles.statItem}>
+          <TouchableOpacity onPress={handleFavoritesPress} style={styles.statItem}>
             <Text style={styles.statNumber}>{stats.favorites}</Text>
             <Text style={styles.statLabel}>Favorites</Text>
-          </View>
+          </TouchableOpacity>
           <View style={styles.statDivider} />
-          <View style={styles.statItem}>
+          <TouchableOpacity onPress={handleRewardsPress} style={styles.statItem}>
             <Text style={styles.statNumber}>{stats.rewards}</Text>
             <Text style={styles.statLabel}>Rewards</Text>
-          </View>
+          </TouchableOpacity>
         </View>
 
         {/* Saved Addresses */}
@@ -363,7 +389,6 @@ export function ProfileScreen() {
             <Text style={styles.sectionTitle}>Saved Addresses</Text>
             <TouchableOpacity
               onPress={() => navigation.navigate('Addresses' as never)}
-
               style={styles.addButton}
             >
               <Feather name="plus" size={16} color="#f97316" />
@@ -515,8 +540,6 @@ export function ProfileScreen() {
           </View>
         </View>
       </Modal>
-
-     
     </SafeAreaView>
   );
 }
@@ -525,8 +548,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0a0a0a',
-        paddingBottom:60,
-
+    paddingBottom: 60,
   },
   header: {
     flexDirection: 'row',
