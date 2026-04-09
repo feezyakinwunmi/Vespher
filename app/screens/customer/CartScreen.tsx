@@ -138,6 +138,24 @@ if (applyWallet && walletBalance > 0) {
 const finalTotal = subtotal + finalDeliveryFeeAmount - finalDiscountAmount - finalWalletUsedAmount;
   
 
+// Re-validate promo code when cart items change
+useEffect(() => {
+  if (promoApplied && appliedPromoData) {
+    // Re-validate the promo code with new subtotal
+    const revalidatePromo = async () => {
+      const result = await validatePromoCode(promoCode);
+      if (!result?.valid) {
+        // If promo is no longer valid, remove it
+        setPromoApplied(false);
+        setAppliedPromoData(null);
+        setDiscount(0);
+        showToast(result?.message || 'Promo code no longer valid');
+      }
+    };
+    revalidatePromo();
+  }
+}, [subtotal, items]); // Re-run when subtotal or items change
+
 // Fetch platform settings for commission percentage
   useEffect(() => {
     const fetchPlatformSettings = async () => {
@@ -256,99 +274,107 @@ useEffect(() => {
     }
   };
 
-  const validatePromoCode = async (code: string) => {
-    if (!code) return null;
+ const validatePromoCode = async (code: string) => {
+  if (!code) return null;
 
-    try {
-      const { data: promoData, error: promoError } = await supabase
-        .from('promo_codes')
-        .select('*')
-        .eq('code', code.toUpperCase())
-        .eq('is_active', true)
-        .maybeSingle();
+  try {
+    const { data: promoData, error: promoError } = await supabase
+      .from('promo_codes')
+      .select('*')
+      .eq('code', code.toUpperCase())
+      .eq('is_active', true)
+      .maybeSingle();
 
-      if (promoError) throw promoError;
-      if (!promoData) return { valid: false, message: 'Invalid promo code', discount: 0 };
+    if (promoError) throw promoError;
+    if (!promoData) return { valid: false, message: 'Invalid promo code', discount: 0 };
 
-      if (promoData.end_date && new Date(promoData.end_date) < new Date()) {
-        return { valid: false, message: 'Promo code has expired', discount: 0 };
+    if (promoData.end_date && new Date(promoData.end_date) < new Date()) {
+      return { valid: false, message: 'Promo code has expired', discount: 0 };
+    }
+
+    if (promoData.usage_limit) {
+      const { count } = await supabase
+        .from('promo_code_usage')
+        .select('*', { count: 'exact', head: true })
+        .eq('promo_code_id', promoData.id);
+
+      if (count && count >= promoData.usage_limit) {
+        return { valid: false, message: 'Promo code has reached its usage limit', discount: 0 };
       }
+    }
 
-      if (promoData.usage_limit) {
-        const { count } = await supabase
-          .from('promo_code_usage')
-          .select('*', { count: 'exact', head: true })
-          .eq('promo_code_id', promoData.id);
+    if (user && promoData.usage_per_user) {
+      const { count } = await supabase
+        .from('promo_code_usage')
+        .select('*', { count: 'exact', head: true })
+        .eq('promo_code_id', promoData.id)
+        .eq('user_id', user.id);
 
-        if (count && count >= promoData.usage_limit) {
-          return { valid: false, message: 'Promo code has reached its usage limit', discount: 0 };
-        }
+      if (count && count >= promoData.usage_per_user) {
+        return { valid: false, message: 'You have already used this promo code', discount: 0 };
       }
+    }
 
-      if (user && promoData.usage_per_user) {
-        const { count } = await supabase
-          .from('promo_code_usage')
-          .select('*', { count: 'exact', head: true })
-          .eq('promo_code_id', promoData.id)
-          .eq('user_id', user.id);
+    if (promoData.applies_to === 'vendor_only' && promoData.vendor_id !== vendorId) {
+      return { valid: false, message: 'This promo code is not valid for this vendor', discount: 0 };
+    }
 
-        if (count && count >= promoData.usage_per_user) {
-          return { valid: false, message: 'You have already used this promo code', discount: 0 };
-        }
-      }
-
-      if (promoData.applies_to === 'vendor' && promoData.vendor_id !== vendorId) {
-        return { valid: false, message: 'This promo code is not valid for this vendor', discount: 0 };
-      }
-
-      if (promoData.min_order_amount > subtotal) {
-        return { 
-          valid: false, 
-          message: `Minimum order of ₦${promoData.min_order_amount.toLocaleString()} required`,
-          discount: 0
-        };
-      }
-
-      let discountAmount = 0;
-      if (promoData.discount_type === 'percentage') {
-        discountAmount = Math.round(subtotal * (promoData.discount_value / 100));
-        if (promoData.max_discount_amount) {
-          discountAmount = Math.min(discountAmount, promoData.max_discount_amount);
-        }
-      } else {
-        discountAmount = promoData.discount_value;
-      }
-
-      return {
-        valid: true,
-        code: promoData,
-        discount: discountAmount,
-        message: `Promo code applied! You saved ₦${discountAmount.toLocaleString()}`
+    if (promoData.min_order_amount > subtotal) {
+      return { 
+        valid: false, 
+        message: `Minimum order of ₦${promoData.min_order_amount.toLocaleString()} required`,
+        discount: 0
       };
-
-    } catch (error) {
-      console.error('Error validating promo code:', error);
-      return { valid: false, message: 'Error validating promo code', discount: 0 };
     }
-  };
 
-  const handleApplyPromo = async () => {
-    if (!promoCode) return;
-
-    const result = await validatePromoCode(promoCode);
-    
-    if (result?.valid) {
-      setPromoApplied(true);
-      setAppliedPromoData(result.code);
-      setDiscount(result.discount);
-      showToast(result.message);
+    let discountAmount = 0;
+    if (promoData.discount_type === 'percentage') {
+      discountAmount = Math.round(subtotal * (promoData.discount_value / 100));
+      if (promoData.max_discount_amount) {
+        discountAmount = Math.min(discountAmount, promoData.max_discount_amount);
+      }
     } else {
-      setPromoApplied(false);
-      setAppliedPromoData(null);
-      setDiscount(0);
-      showToast('Invalid promo code');
+      discountAmount = promoData.discount_value;
     }
-  };
+
+    // ✅ Determine if this is a platform/admin created promo
+    // Platform promos have vendor_id = null OR created_by_admin = true
+    const isPlatformPromo = promoData.vendor_id === null || promoData.created_by_admin === true;
+
+    return {
+      valid: true,
+      code: promoData,
+      discount: discountAmount,
+      message: `Promo code applied! You saved ₦${discountAmount.toLocaleString()}`,
+      is_platform_promo: isPlatformPromo,  // ✅ Add this flag
+      vendor_id: promoData.vendor_id,
+      created_by_admin: promoData.created_by_admin,
+    };
+
+  } catch (error) {
+    console.error('Error validating promo code:', error);
+    return { valid: false, message: 'Error validating promo code', discount: 0 };
+  }
+};
+
+ const handleApplyPromo = async () => {
+  if (!promoCode) return;
+
+  const result = await validatePromoCode(promoCode);
+  
+  if (result?.valid) {
+    setPromoApplied(true);
+    setAppliedPromoData(result.code);
+    setDiscount(result.discount);
+    showToast(result.message);
+  } else {
+    setPromoApplied(false);
+    setAppliedPromoData(null);
+    setDiscount(0);
+    // ✅ Show the actual error message from validation
+    showToast(result?.message || 'Invalid promo code');
+  }
+};
 
   // Function to decrease product stock after order is placed
 const decreaseProductStock = async (items: CartItem[]) => {
@@ -481,6 +507,24 @@ const fetchCustomerRewards = async () => {
 
 
 const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
+  console.log('💰 processOrder called with:', {
+    paymentRef,
+    gatewayResponse: gatewayResponse ? {
+      transaction_id: gatewayResponse.transaction_id,
+      flw_ref: gatewayResponse.flw_ref,
+      fee: gatewayResponse.fee,
+      charged_amount: gatewayResponse.charged_amount,
+      status: gatewayResponse.status
+    } : null
+  });
+  
+  // Extract Flutterwave transaction ID
+  const flutterwaveTransactionId = gatewayResponse?.transaction_id 
+    || gatewayResponse?.flw_ref 
+    || gatewayResponse?.id 
+    || null;
+  
+  console.log('💰 Saving Flutterwave transaction ID:', flutterwaveTransactionId);
   setIsPlacingOrder(true);
 
   try {
@@ -517,7 +561,7 @@ const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
     const firstOrderDiscount = isFirstOrder ? Math.round(subtotal * 0.1) : 0;
     const totalDiscount = Math.max(discount, firstOrderDiscount);
     
-    // ✅ FIX: For database constraint, include referral bonus in discount
+    // For database constraint, include referral bonus in discount
     const totalDiscountForDB = totalDiscount + finalWalletUsedAmount;
     
     // What customer pays for delivery (0 if free from first order bonus)
@@ -526,7 +570,7 @@ const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
     // Total for Flutterwave payment
     const flutterwaveTotal = subtotal - totalDiscount + customerDeliveryFee;
     
-    // ✅ Calculate Flutterwave fee
+    // Calculate Flutterwave fee
     let flutterwaveFee = gatewayResponse?.fee || gatewayResponse?.flutterwave_fee || 0;
     let flutterwaveFeePercentage = 1.4;
     
@@ -537,7 +581,7 @@ const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
       console.log('💰 Flutterwave fee from gateway:', flutterwaveFee);
     }
     
-    // ✅ For database constraint: total must equal subtotal + delivery_fee - discount
+    // For database constraint: total must equal subtotal + delivery_fee - discount
     let discountForDB = totalDiscountForDB;
     let deliveryFeeForDB = actualDeliveryFee;
     
@@ -554,35 +598,77 @@ const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
     const riderEarnings = 0;
     const platformDeliveryEarnings = 0;
     
-    // Calculate vendor payout - based on ORIGINAL subtotal
-    const vendorPayout = Math.round(subtotal * ((100 - platformFeePercentage) / 100));
+    // =============================================
+    // ✅ Calculate who bears the discount and commission
+    // Commission is calculated on ORIGINAL subtotal (industry standard)
+    // =============================================
+    let vendorPayout = 0;
+    let platformCommission = 0;
+    let effectiveDiscount = totalDiscount;
     
-    // Calculate platform commission (based on original subtotal)
-    const platformCommission = subtotal - vendorPayout;
+    // Check if this is a platform/admin created promo
+    const isPlatformPromo = appliedPromoData?.is_platform_promo === true;
+    
+    if (isPlatformPromo && discount > 0) {
+      // Platform bears the discount - commission on original subtotal
+      platformCommission = Math.round(subtotal * (platformFeePercentage / 100));
+      vendorPayout = subtotal - platformCommission;
+      console.log('🏢 Platform promo: Platform bears discount of ₦', discount);
+      console.log('   Commission (10% of ₦', subtotal, '): ₦', platformCommission);
+      console.log('   Vendor payout: ₦', vendorPayout);
+      
+    } else if (discount > 0) {
+      // Vendor bears the discount - commission on ORIGINAL subtotal
+      platformCommission = Math.round(subtotal * (platformFeePercentage / 100));
+      vendorPayout = subtotal - discount - platformCommission;
+      console.log('🏪 Vendor promo: Vendor bears discount of ₦', discount);
+      console.log('   Commission (10% of original ₦', subtotal, '): ₦', platformCommission);
+      console.log('   Vendor payout: ₦', vendorPayout);
+      
+    } else {
+      // No discount
+      platformCommission = Math.round(subtotal * (platformFeePercentage / 100));
+      vendorPayout = subtotal - platformCommission;
+      console.log('📦 No discount: Standard commission of ₦', platformCommission);
+    }
+    
+    // Override for first order discount (platform bears it)
+    if (firstOrderDiscount > 0) {
+      platformCommission = Math.round(subtotal * (platformFeePercentage / 100));
+      vendorPayout = subtotal - platformCommission;
+      effectiveDiscount = firstOrderDiscount;
+      console.log('🎁 First order discount: Platform bears discount of ₦', firstOrderDiscount);
+      console.log('   Vendor payout: ₦', vendorPayout);
+    }
     
     // Stamp duty (₦50 for transactions ₦10,000 and above)
     const stampDuty = flutterwaveTotal >= 10000 ? 50 : 0;
     
     // Platform net earnings
-    const platformNetEarnings = platformCommission + platformDeliveryEarnings - firstOrderDiscount - discount - flutterwaveFee - stampDuty;
+// Calculate platform net earnings correctly based on who bears discount
+let platformNetEarnings = 0;
 
-    console.log('💰 Payment breakdown:', {
+if ((isPlatformPromo && discount > 0) || firstOrderDiscount > 0) {
+  // Platform bears the discount
+  platformNetEarnings = platformCommission + platformDeliveryEarnings - effectiveDiscount - flutterwaveFee - stampDuty - finalWalletUsedAmount;
+  console.log('📉 Platform bears discount: Net earnings reduced by ₦', effectiveDiscount);
+} else {
+  // Vendor bears discount - platform keeps full commission
+  platformNetEarnings = platformCommission + platformDeliveryEarnings - flutterwaveFee - stampDuty - finalWalletUsedAmount;
+  console.log('📈 Vendor bears discount: Platform keeps full commission');
+}
+    console.log('💰 Final Payment breakdown:', {
       subtotal,
-      actualDeliveryFee,
-      finalDeliveryFeeAmount,
-      finalWalletUsedAmount,
-      finalTotalAmount,
-      dbTotal,
-      freeDeliveryEligible,
-      totalDiscount,
-      totalDiscountForDB,
-      discountForDB,
-      deliveryFeeForDB,
-      flutterwaveTotal,
-      flutterwaveFee,
-      vendorPayout,
-      riderEarnings,
-      platformNetEarnings,
+      discount: effectiveDiscount,
+      delivery_fee: finalDeliveryFeeAmount,
+      wallet_used: finalWalletUsedAmount,
+      customer_pays: flutterwaveTotal,
+      platform_commission: platformCommission,
+      vendor_payout: vendorPayout,
+      flutterwave_fee: flutterwaveFee,
+      stamp_duty: stampDuty,
+      platform_net: platformNetEarnings,
+      is_platform_promo: isPlatformPromo,
     });
 
     // Determine event type
@@ -668,6 +754,7 @@ const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
         stamp_duty: stampDuty,
         flutterwave_fee: flutterwaveFee,
         flutterwave_fee_percentage: flutterwaveFeePercentage,
+        flutterwave_transaction_id: flutterwaveTransactionId,  // Add this line
         platform_commission: platformCommission,
         platform_commission_percentage: platformFeePercentage,
         platform_delivery_earnings: platformDeliveryEarnings,
@@ -715,7 +802,7 @@ const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
       order_id: order.id,
       vendor_id: vendorId,
       fee_percentage: platformFeePercentage,
-      fee_amount: platformCommission,
+      fee_amount: platformCommission,   
       delivery_earnings: platformDeliveryEarnings,
       stamp_duty: stampDuty,
       flutterwave_fee: flutterwaveFee,
@@ -1653,8 +1740,7 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
         />
       )}
 
-
-{showFlutterwave && (
+{/* {showFlutterwave && (
   <FlutterwavePayment
     visible={showFlutterwave}
   amount={finalTotal}  // Change from {total} to {finalTotal}
@@ -1678,6 +1764,48 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
       
       setShowFlutterwave(false);
       await processOrder(response.tx_ref || paymentReference, response);
+    }}
+    onClose={() => {
+      console.log('❌ Payment closed/cancelled by user');
+      setShowFlutterwave(false);
+      showToast('You cancelled the payment');
+      setShowCheckout(true);
+    }}
+  />
+)} */}
+
+
+
+{showFlutterwave && (
+  <FlutterwavePayment
+    visible={showFlutterwave}
+    amount={finalTotal}
+    email={user?.email || ''}
+    reference={paymentReference}
+    customerName={user?.name}
+    phone={user?.phone}
+    isScheduled={orderType === 'schedule'}
+    onPaymentComplete={(paymentData) => {
+      console.log('💳 Payment Complete Callback - Full Payment Data:', JSON.stringify(paymentData, null, 2));
+      console.log('💰 Fee in paymentData:', paymentData?.fee);
+      console.log('💰 Charged amount in paymentData:', paymentData?.charged_amount);
+      console.log('💰 Transaction ID in paymentData:', paymentData?.transaction_id);
+      setFlutterwaveResponse(paymentData);
+    }}
+    onSuccess={async (response) => {
+      console.log('🎉 Payment Success Callback - Full Response:', JSON.stringify(response, null, 2));
+      console.log('💰 Transaction ID:', response.transaction_id);
+      console.log('💰 Flutterwave Reference:', response.flw_ref);
+      console.log('💰 Fee:', response.fee);
+      console.log('💰 Charged Amount:', response.charged_amount);
+      
+      setShowFlutterwave(false);
+      
+      // Pass the response with transaction_id to processOrder
+      await processOrder(response.tx_ref || paymentReference, {
+        ...response,
+        flutterwave_transaction_id: response.transaction_id || response.id
+      });
     }}
     onClose={() => {
       console.log('❌ Payment closed/cancelled by user');

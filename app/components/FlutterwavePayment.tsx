@@ -105,7 +105,7 @@ export function FlutterwavePayment({
     </head>
     <body>
       <div class="container" id="container">
-        <h2>Vespher Payment</h2>
+        <h2>Vesphe Payment</h2>
         <div class="amount">₦${amount.toLocaleString()}</div>
         <div class="loader"></div>
         <div class="info">Redirecting to payment page...</div>

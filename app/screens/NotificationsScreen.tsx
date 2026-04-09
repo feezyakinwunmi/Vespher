@@ -8,6 +8,8 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
+  Modal,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -18,6 +20,8 @@ import { useNotifications } from '../hooks/useNotifications';
 import { useAuth } from '../contexts/AuthContext';
 import { RootStackParamList } from '../navigation/types';
 import { formatDistanceToNow } from 'date-fns';
+import Toast from 'react-native-toast-message';
+import { supabase } from '../lib/supabase';
 
 type NotificationsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -26,21 +30,27 @@ const notificationIcons = {
   order: 'package' as const,
   payout: 'dollar-sign' as const,
   system: 'bell' as const,
-  alert: 'alert-circle' as const
+  alert: 'alert-circle' as const,
+    promotion: 'tag' as const,  // ← ADD THIS
+
 };
 
 const notificationColors = {
   order: '#f97316',
   payout: '#10b981',
   system: '#6b7280',
-  alert: '#ef4444'
+  alert: '#ef4444',
+    promotion: '#f97316',  // ← ADD THIS (use orange like orders)
+
 };
 
 const notificationBgColors = {
   order: 'rgba(59,130,246,0.1)',
   payout: 'rgba(16,185,129,0.1)',
   system: 'rgba(107,114,128,0.1)',
-  alert: 'rgba(239,68,68,0.1)'
+  alert: 'rgba(239,68,68,0.1)',
+    promotion: 'rgba(249,115,22,0.1)',  // ← ADD THIS (orange tint)
+
 };
 
 export function NotificationsScreen() {
@@ -62,22 +72,38 @@ export function NotificationsScreen() {
   const filteredNotifications = filter === 'all' 
     ? notifications 
     : notifications.filter(n => !n.read);
+const [selectedPromo, setSelectedPromo] = useState<any>(null);
+const [showPromoModal, setShowPromoModal] = useState(false);
+const [copied, setCopied] = useState(false);
 
- const handleNotificationClick = async (notification: any) => {
-  if (!notification.read) {
-    await markAsRead(notification.id);
+
+
+const handleNotificationClick = async (notification: any) => {
+  console.log('🔔 Notification clicked:', notification);
+  
+  // Check if it's a promo code notification (check metadata instead of data)
+  if ((notification.type === 'system' || notification.type === 'promotion') && notification.metadata?.type === 'promo_code') {
+    console.log('🎯 This is a promo code notification!');
+    await handlePromoCodeClick(notification);
+    return;
   }
   
-  // Check if it's an announcement (has announcement_id in data)
-  if (notification.data?.announcement_id) {
-    navigation.navigate('AnnouncementDetails', { announcementId: notification.data.announcement_id });
+  // Check if it's an announcement
+  if (notification.metadata?.announcement_id || notification.data?.announcement_id) {
+    const announcementId = notification.metadata?.announcement_id || notification.data?.announcement_id;
+    navigation.navigate('AnnouncementDetails', { announcementId });
     return;
   }
   
   // Check if it's a message notification
-  if (notification.type === 'message' && notification.data?.conversation_id) {
+  if (notification.type === 'message' && (notification.metadata?.conversation_id || notification.data?.conversation_id)) {
     navigation.navigate('Messaging');
     return;
+  }
+  
+  // Mark as read
+  if (!notification.read) {
+    await markAsRead(notification.id);
   }
   
   // Handle action_link navigation
@@ -98,19 +124,95 @@ export function NotificationsScreen() {
     else if (notification.action_link === '/home') {
       navigation.navigate('Home');
     }
-    else if (notification.action_link === '/announcements') {
-      // If action_link is announcements but we have announcement_id
-      if (notification.data?.announcement_id) {
-        navigation.navigate('AnnouncementDetails', { announcementId: notification.data.announcement_id });
-      } else {
-        navigation.navigate('Notifications');
-      }
-    }
     else {
-      // Default fallback
       navigation.navigate('Notifications');
     }
   }
+};
+
+const handlePromoCodeClick = async (notification: any) => {
+  console.log('🎯 handlePromoCodeClick called');
+  console.log('🎯 Notification metadata:', notification.metadata);
+  
+  if (!notification.read) {
+    await markAsRead(notification.id);
+  }
+  
+  // The promo code info is in metadata, not data
+  const promoCodeId = notification.metadata?.promo_code_id;
+  const promoCode = notification.metadata?.code;
+  const vendorId = notification.metadata?.vendor_id;
+  
+  console.log('🎯 Promo code ID:', promoCodeId);
+  console.log('🎯 Promo code:', promoCode);
+  console.log('🎯 Vendor ID:', vendorId);
+  
+  // If we have the promo code ID, fetch full details
+  if (promoCodeId) {
+    try {
+      console.log('🔍 Fetching promo details for ID:', promoCodeId);
+      
+      const { data, error } = await supabase
+        .from('promo_codes')
+        .select(`
+          *,
+          vendor:vendor_id (name, image_url)
+        `)
+        .eq('id', promoCodeId)
+        .single();
+      
+      if (error) {
+        console.error('❌ Error fetching promo:', error);
+        throw error;
+      }
+      
+      console.log('✅ Promo data fetched:', data);
+      
+      setSelectedPromo({
+        ...data,
+        vendor_name: data.vendor?.name,
+        vendor_image: data.vendor?.image_url,
+      });
+      
+      console.log('🎉 Setting showPromoModal to true');
+      setShowPromoModal(true);
+    } catch (error) {
+      console.error('Error fetching promo details:', error);
+      Toast.show({ type: 'error', text1: 'Failed to load promo details' });
+    }
+  } else {
+    // If no ID, use the data from metadata directly
+    console.log('📱 Using metadata directly (no ID found)');
+    setSelectedPromo({
+      code: notification.metadata?.code,
+      discount_type: notification.metadata?.discount_type,
+      discount_value: notification.metadata?.discount_value,
+      description: notification.metadata?.description,
+      min_order_amount: notification.metadata?.min_order_amount,
+      end_date: notification.metadata?.end_date,
+      vendor_id: notification.metadata?.vendor_id,
+      vendor_name: notification.metadata?.vendor_name,
+      usage_per_user: notification.metadata?.usage_per_user || 1,
+    });
+    setShowPromoModal(true);
+  }
+};
+
+// Add this function to copy promo code
+const copyPromoCode = (code: string) => {
+  // Copy to clipboard
+  console.log('Copied:', code);
+  setCopied(true);
+  setTimeout(() => setCopied(false), 2000);
+  Toast.show({ type: 'success', text1: 'Code copied to clipboard!' });
+};
+
+// Add this function to apply promo code
+const applyPromoCode = (code: string, vendorId: string) => {
+  setShowPromoModal(false);
+  navigation.navigate('Cart');
+  // TODO: Store the promo code in a global state/context to be applied at checkout
+  // e.g., usePromoStore.setPendingPromoCode(code);
 };
 
   const onRefresh = async () => {
@@ -280,6 +382,168 @@ export function NotificationsScreen() {
         )}
         <View style={styles.bottomPadding} />
       </ScrollView>
+
+      {/* Promo Code Details Modal */}
+<Modal
+  visible={showPromoModal}
+  transparent
+  animationType="slide"
+  onRequestClose={() => setShowPromoModal(false)}
+>
+  <View style={styles.modalOverlay}>
+    <View style={styles.promoModalContent}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {selectedPromo && (
+          <>
+            {/* Header */}
+            <View style={styles.promoModalHeader}>
+              <LinearGradient
+                colors={['#f97316', '#f43f5e']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.promoModalGradient}
+              >
+                <TouchableOpacity
+                  onPress={() => setShowPromoModal(false)}
+                  style={styles.promoModalClose}
+                >
+                  <Feather name="x" size={24} color="#fff" />
+                </TouchableOpacity>
+                
+                <View style={styles.promoModalIcon}>
+                  <Feather name="tag" size={48} color="#fff" />
+                </View>
+                
+                <Text style={styles.promoModalCode}>{selectedPromo.code}</Text>
+                
+                <View style={styles.promoModalDiscount}>
+                  <Text style={styles.promoModalDiscountText}>
+                    {selectedPromo.discount_type === 'percentage' 
+                      ? `${selectedPromo.discount_value}% OFF`
+                      : `₦${selectedPromo.discount_value.toLocaleString()} OFF`}
+                  </Text>
+                </View>
+              </LinearGradient>
+            </View>
+
+            {/* Content */}
+            <View style={styles.promoModalBody}>
+              {/* Vendor Info */}
+              <View style={styles.promoModalVendor}>
+                {selectedPromo.vendor_image ? (
+                  <Image source={{ uri: selectedPromo.vendor_image }} style={styles.promoModalVendorImage} />
+                ) : (
+                  <View style={styles.promoModalVendorImagePlaceholder}>
+                    <Feather name="home" size={24} color="#f97316" />
+                  </View>
+                )}
+                <View style={styles.promoModalVendorInfo}>
+                  <Text style={styles.promoModalVendorName}>{selectedPromo.vendor_name}</Text>
+                  <TouchableOpacity onPress={() => {
+                    setShowPromoModal(false);
+                    navigation.navigate('VendorDetails', { vendorId: selectedPromo.vendor_id });
+                  }}>
+                    <Text style={styles.promoModalVendorLink}>View Store →</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Description */}
+              {selectedPromo.description && (
+                <View style={styles.promoModalSection}>
+                  <Text style={styles.promoModalSectionTitle}>📝 Offer Details</Text>
+                  <Text style={styles.promoModalDescription}>{selectedPromo.description}</Text>
+                </View>
+              )}
+
+              {/* Terms */}
+              <View style={styles.promoModalSection}>
+                <Text style={styles.promoModalSectionTitle}>📋 Terms & Conditions</Text>
+                <View style={styles.promoModalTermsList}>
+                  {selectedPromo.min_order_amount > 0 && (
+                    <View style={styles.promoModalTermItem}>
+                      <Feather name="shopping-bag" size={16} color="#f97316" />
+                      <Text style={styles.promoModalTermText}>
+                        Minimum order: ₦{selectedPromo.min_order_amount.toLocaleString()}
+                      </Text>
+                    </View>
+                  )}
+                  <View style={styles.promoModalTermItem}>
+                    <Feather name="users" size={16} color="#f97316" />
+                    <Text style={styles.promoModalTermText}>
+                      Max {selectedPromo.usage_per_user || 1} use{selectedPromo.usage_per_user !== 1 ? 's' : ''} per customer
+                    </Text>
+                  </View>
+                  {selectedPromo.usage_limit && (
+                    <View style={styles.promoModalTermItem}>
+                      <Feather name="hash" size={16} color="#f97316" />
+                      <Text style={styles.promoModalTermText}>
+                        Limited to {selectedPromo.usage_limit} redemptions
+                      </Text>
+                    </View>
+                  )}
+                  <View style={styles.promoModalTermItem}>
+                    <Feather name="calendar" size={16} color="#f97316" />
+                    <Text style={styles.promoModalTermText}>
+                      Valid until: {new Date(selectedPromo.end_date).toLocaleDateString()}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* How to Use */}
+              <View style={styles.promoModalHowTo}>
+                <Text style={styles.promoModalHowToTitle}>✨ How to use:</Text>
+                <View style={styles.promoModalStepItem}>
+                  <View style={styles.promoModalStepNumber}><Text style={styles.promoModalStepNumberText}>1</Text></View>
+                  <Text style={styles.promoModalStepText}>Add items to your cart</Text>
+                </View>
+                <View style={styles.promoModalStepItem}>
+                  <View style={styles.promoModalStepNumber}><Text style={styles.promoModalStepNumberText}>2</Text></View>
+                  <Text style={styles.promoModalStepText}>Go to checkout</Text>
+                </View>
+                <View style={styles.promoModalStepItem}>
+                  <View style={styles.promoModalStepNumber}><Text style={styles.promoModalStepNumberText}>3</Text></View>
+                  <Text style={styles.promoModalStepText}>Enter code: {selectedPromo.code}</Text>
+                </View>
+                <View style={styles.promoModalStepItem}>
+                  <View style={styles.promoModalStepNumber}><Text style={styles.promoModalStepNumberText}>4</Text></View>
+                  <Text style={styles.promoModalStepText}>Discount applied automatically</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Action Buttons */}
+            <View style={styles.promoModalFooter}>
+              <TouchableOpacity
+                style={styles.promoModalShareButton}
+                onPress={() => copyPromoCode(selectedPromo.code)}
+              >
+                <Feather name="share-2" size={20} color="#f97316" />
+                <Text style={styles.promoModalShareButtonText}>Share</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.promoModalApplyButton}
+                onPress={() => applyPromoCode(selectedPromo.code, selectedPromo.vendor_id)}
+              >
+                <LinearGradient
+                  colors={['#f97316', '#f43f5e']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.promoModalApplyGradient}
+                >
+                  <Feather name="check-circle" size={20} color="#fff" />
+                  <Text style={styles.promoModalApplyButtonText}>Apply to Order</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+      </ScrollView>
+    </View>
+  </View>
+</Modal>
     </SafeAreaView>
   );
 }
@@ -346,6 +610,209 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.05)',
   },
+  // Add these to your existing styles
+modalOverlay: {
+  flex: 1,
+  backgroundColor: 'rgba(0,0,0,0.9)',
+  justifyContent: 'flex-end',
+},
+promoModalContent: {
+  backgroundColor: '#0a0a0a',
+  borderTopLeftRadius: 24,
+  borderTopRightRadius: 24,
+  maxHeight: '90%',
+  overflow: 'hidden',
+},
+promoModalHeader: {
+  position: 'relative',
+},
+promoModalGradient: {
+  paddingTop: 40,
+  paddingBottom: 30,
+  alignItems: 'center',
+},
+promoModalClose: {
+  position: 'absolute',
+  top: 16,
+  right: 16,
+  width: 36,
+  height: 36,
+  borderRadius: 18,
+  backgroundColor: 'rgba(255,255,255,0.2)',
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 10,
+},
+promoModalIcon: {
+  width: 80,
+  height: 80,
+  borderRadius: 40,
+  backgroundColor: 'rgba(255,255,255,0.2)',
+  justifyContent: 'center',
+  alignItems: 'center',
+  marginBottom: 16,
+},
+promoModalCode: {
+  fontSize: 28,
+  fontWeight: 'bold',
+  color: '#fff',
+  letterSpacing: 2,
+  marginBottom: 8,
+},
+promoModalDiscount: {
+  backgroundColor: 'rgba(0,0,0,0.3)',
+  paddingHorizontal: 16,
+  paddingVertical: 6,
+  borderRadius: 20,
+},
+promoModalDiscountText: {
+  fontSize: 16,
+  color: '#fff',
+  fontWeight: '600',
+},
+promoModalBody: {
+  padding: 20,
+},
+promoModalVendor: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 12,
+  backgroundColor: '#1a1a1a',
+  padding: 16,
+  borderRadius: 12,
+  marginBottom: 20,
+},
+promoModalVendorImage: {
+  width: 50,
+  height: 50,
+  borderRadius: 25,
+},
+promoModalVendorImagePlaceholder: {
+  width: 50,
+  height: 50,
+  borderRadius: 25,
+  backgroundColor: '#2a2a2a',
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+promoModalVendorInfo: {
+  flex: 1,
+},
+promoModalVendorName: {
+  fontSize: 16,
+  fontWeight: '600',
+  color: '#fff',
+  marginBottom: 4,
+},
+promoModalVendorLink: {
+  fontSize: 13,
+  color: '#f97316',
+},
+promoModalSection: {
+  marginBottom: 20,
+},
+promoModalSectionTitle: {
+  fontSize: 16,
+  fontWeight: '600',
+  color: '#fff',
+  marginBottom: 12,
+},
+promoModalDescription: {
+  fontSize: 14,
+  color: '#ccc',
+  lineHeight: 22,
+},
+promoModalTermsList: {
+  gap: 10,
+},
+promoModalTermItem: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 10,
+},
+promoModalTermText: {
+  flex: 1,
+  fontSize: 13,
+  color: '#666',
+},
+promoModalHowTo: {
+  backgroundColor: '#1a1a1a',
+  padding: 16,
+  borderRadius: 12,
+  marginBottom: 20,
+},
+promoModalHowToTitle: {
+  fontSize: 14,
+  fontWeight: '600',
+  color: '#fff',
+  marginBottom: 12,
+},
+promoModalStepItem: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 12,
+  marginBottom: 10,
+},
+promoModalStepNumber: {
+  width: 24,
+  height: 24,
+  borderRadius: 12,
+  backgroundColor: '#f97316',
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+promoModalStepNumberText: {
+  color: '#fff',
+  fontWeight: 'bold',
+  fontSize: 12,
+},
+promoModalStepText: {
+  flex: 1,
+  fontSize: 13,
+  color: '#ccc',
+},
+promoModalFooter: {
+  flexDirection: 'row',
+  gap: 12,
+  padding: 20,
+  paddingTop: 0,
+  borderTopWidth: 1,
+  borderTopColor: 'rgba(255,255,255,0.05)',
+},
+promoModalShareButton: {
+  flex: 1,
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 8,
+  backgroundColor: '#1a1a1a',
+  paddingVertical: 14,
+  borderRadius: 12,
+  borderWidth: 1,
+  borderColor: '#f97316',
+},
+promoModalShareButtonText: {
+  color: '#f97316',
+  fontSize: 14,
+  fontWeight: '500',
+},
+promoModalApplyButton: {
+  flex: 2,
+  borderRadius: 12,
+  overflow: 'hidden',
+},
+promoModalApplyGradient: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 8,
+  paddingVertical: 14,
+},
+promoModalApplyButtonText: {
+  color: '#fff',
+  fontSize: 14,
+  fontWeight: '600',
+},
   tabBar: {
     flexDirection: 'row',
     backgroundColor: '#1a1a1a',

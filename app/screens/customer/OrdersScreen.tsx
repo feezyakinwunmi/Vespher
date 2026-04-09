@@ -195,12 +195,9 @@ function OrderCard({ order, onPress, onOrderUpdated }: { order: Order; onPress: 
   const { addItem } = useCart();
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const [isCancelling, setIsCancelling] = useState(false);
   
   const status = statusConfig[order.status];
   const isActive = ['pending', 'confirmed', 'preparing', 'ready', 'picked_up', 'in_transit'].includes(order.status);
-  // Cancel button only shows for pending or confirmed orders
-  const canCancel = order.status === 'pending' || order.status === 'confirmed';
 
   const vendorName = order.vendor?.name || 'Vendor';
 
@@ -301,99 +298,6 @@ const handleReorder = async (e: any) => {
     }
   };
 
-  // Restore product stock function
-  const restoreProductStock = async (orderItems: any[]) => {
-    try {
-      for (const item of orderItems) {
-        const { data: product, error: fetchError } = await supabase
-          .from('products')
-          .select('track_stock, stock_quantity')
-          .eq('id', item.product_id)
-          .single();
-
-        if (fetchError) {
-          console.error('Error fetching product stock:', fetchError);
-          continue;
-        }
-
-        if (product?.track_stock) {
-          const newStock = (product.stock_quantity || 0) + item.quantity;
-          
-          const { error: updateError } = await supabase
-            .from('products')
-            .update({ 
-              stock_quantity: newStock,
-              quantity_available: newStock
-            })
-            .eq('id', item.product_id);
-
-          if (updateError) {
-            console.error('Error restoring stock:', updateError);
-          } else {
-            console.log(`✅ Stock restored for product: +${item.quantity}, new stock: ${newStock}`);
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error in restoreProductStock:', error);
-    }
-  };
-
-  const handleCancelOrder = async (e: any) => {
-    e.stopPropagation();
-    
-    Alert.alert(
-      'Cancel Order',
-      'Are you sure you want to cancel this order? Stock will be restored.',
-      [
-        { text: 'No', style: 'cancel' },
-        {
-          text: 'Yes, Cancel',
-          style: 'destructive',
-          onPress: async () => {
-            setIsCancelling(true);
-            try {
-              // Parse items
-              const parsedItems = Array.isArray(order.items)
-                ? order.items
-                : typeof order.items === 'string'
-                  ? JSON.parse(order.items)
-                  : [];
-              
-              // Restore stock
-              await restoreProductStock(parsedItems);
-              
-              // Update order status
-              const { error } = await supabase
-                .from('orders')
-                .update({
-                  status: 'cancelled',
-                  cancelled_at: new Date().toISOString(),
-                  cancelled_by: 'customer'
-                })
-                .eq('id', order.id);
-              
-              if (error) throw error;
-              
-              showToast('Order cancelled successfully');
-              
-              // Refresh orders list
-              if (onOrderUpdated) {
-                onOrderUpdated();
-              }
-              
-            } catch (error) {
-              console.error('Error cancelling order:', error);
-              showToast('Failed to cancel order');
-            } finally {
-              setIsCancelling(false);
-            }
-          }
-        }
-      ]
-    );
-  };
-
   return (
     <>
       <TouchableOpacity onPress={onPress} style={styles.orderCard}>
@@ -452,26 +356,6 @@ const handleReorder = async (e: any) => {
             <Feather name="chevron-right" size={16} color="#666" />
           </View>
         </View>
-
-        {/* Cancel Button - ONLY for pending or confirmed orders */}
-        {canCancel && (
-          <View style={styles.actionButtons}>
-            <TouchableOpacity 
-              onPress={handleCancelOrder}
-              disabled={isCancelling}
-              style={[styles.actionButtonSecondary, { borderColor: '#ef4444', borderWidth: 1 }]}
-            >
-              {isCancelling ? (
-                <ActivityIndicator size="small" color="#ef4444" />
-              ) : (
-                <>
-                  <Feather name="x-circle" size={16} color="#ef4444" />
-                  <Text style={[styles.actionButtonSecondaryText, { color: '#ef4444' }]}>Cancel Order</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
 
         {/* Action Buttons for Active Orders - Track & Call Rider */}
         {isActive && order.status === 'in_transit' && order.rider && (

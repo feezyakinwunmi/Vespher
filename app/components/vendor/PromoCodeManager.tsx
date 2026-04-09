@@ -11,6 +11,7 @@ import {
   Modal,
   TextInput,
   Switch,
+  Image,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -28,7 +29,7 @@ interface PromoCode {
   max_discount_amount: number;
   usage_limit: number | null;
   usage_per_user: number;
-  applies_to: 'vendor' | 'platform';
+  applies_to: 'all' | 'vendor_only';
   end_date: string | null;
   is_active: boolean;
   times_used?: number;
@@ -42,6 +43,8 @@ export function PromoCodeManager() {
   const [editingCode, setEditingCode] = useState<PromoCode | null>(null);
   const [vendorId, setVendorId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showHelpModal, setShowHelpModal] = useState(false);
+  const [showSampleModal, setShowSampleModal] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -54,7 +57,7 @@ export function PromoCodeManager() {
     usage_limit_type: 'unlimited' as 'unlimited' | 'limited' | 'lucky',
     usage_limit_value: '',
     usage_per_user: '1',
-    applies_to: 'vendor' as 'vendor' | 'platform',
+    applies_to: 'vendor_only' as 'all' | 'vendor_only',
     end_date: '',
   });
 
@@ -156,7 +159,12 @@ export function PromoCodeManager() {
   };
 
   const generateCode = () => {
-    const prefix = formData.discount_type === 'percentage' ? 'SAVE' : 'OFF';
+    const prefixes = {
+      percentage: ['SAVE', 'DISCOUNT', 'SPECIAL', 'DEAL', 'OFFER'],
+      fixed: ['CASH', 'MONEY', 'SAVE', 'BONUS']
+    };
+    const prefixList = prefixes[formData.discount_type];
+    const prefix = prefixList[Math.floor(Math.random() * prefixList.length)];
     const random = Math.random().toString(36).substring(2, 8).toUpperCase();
     setFormData({ ...formData, code: `${prefix}${random}` });
   };
@@ -166,6 +174,28 @@ export function PromoCodeManager() {
     Alert.alert('Success', 'Code copied to clipboard');
   };
 
+  const getSampleDescription = () => {
+    if (formData.discount_type === 'percentage') {
+      return `🎉 Special Offer! Get ${formData.discount_value || '20'}% OFF on all orders above ₦${parseInt(formData.min_order_amount || '0').toLocaleString()}. Don't miss out on this amazing deal! Valid for a limited time only. Share with friends and family.`;
+    } else {
+      return `💰 Limited Time Offer! Save ₦${parseInt(formData.discount_value || '1000').toLocaleString()} on your next order when you spend ₦${parseInt(formData.min_order_amount || '5000').toLocaleString()} or more. Perfect for family meals and group orders!`;
+    }
+  };
+
+  const applySample = () => {
+    const discountVal = formData.discount_type === 'percentage' ? '20' : '2000';
+    const minAmount = formData.discount_type === 'percentage' ? '5000' : '15000';
+    
+    setFormData({
+      ...formData,
+      description: getSampleDescription(),
+      discount_value: formData.discount_value || discountVal,
+      min_order_amount: formData.min_order_amount || minAmount,
+    });
+    setShowSampleModal(false);
+    Alert.alert('Sample Applied', 'Sample description and values have been added. You can edit them before creating.');
+  };
+
   const handleSubmit = async () => {
     if (!vendorId && !isAdmin) {
       Alert.alert('Error', 'Vendor information missing');
@@ -173,7 +203,6 @@ export function PromoCodeManager() {
     }
 
     try {
-      // Validate required fields
       if (!formData.code) {
         Alert.alert('Error', 'Please enter a promo code');
         return;
@@ -184,7 +213,6 @@ export function PromoCodeManager() {
         return;
       }
 
-      // Calculate usage limit based on type
       let usageLimit = null;
       if (formData.usage_limit_type === 'limited' || formData.usage_limit_type === 'lucky') {
         usageLimit = parseInt(formData.usage_limit_value);
@@ -194,8 +222,7 @@ export function PromoCodeManager() {
         }
       }
 
-      const promoData = {
-        vendor_id: isAdmin ? 'platform' : vendorId,
+      const promoData: any = {
         code: formData.code.toUpperCase(),
         description: formData.description,
         discount_type: formData.discount_type,
@@ -204,10 +231,24 @@ export function PromoCodeManager() {
         max_discount_amount: parseInt(formData.max_discount_amount) || null,
         usage_limit: usageLimit,
         usage_per_user: parseInt(formData.usage_per_user) || 1,
-        applies_to: isAdmin ? formData.applies_to : 'vendor',
+        applies_to: formData.applies_to,
         end_date: formData.end_date || null,
         is_active: true,
       };
+
+      if (formData.applies_to === 'vendor_only') {
+        if (isAdmin) {
+          if (!vendorId) {
+            Alert.alert('Error', 'Please select a vendor');
+            return;
+          }
+          promoData.vendor_id = vendorId;
+        } else {
+          promoData.vendor_id = vendorId;
+        }
+      } else {
+        promoData.vendor_id = null;
+      }
 
       if (editingCode) {
         const { error } = await supabase
@@ -223,7 +264,7 @@ export function PromoCodeManager() {
           .insert([promoData]);
 
         if (error) throw error;
-        Alert.alert('Success', 'Promo code created');
+        Alert.alert('Success', 'Promo code created! Customers will be notified immediately.');
       }
 
       setShowForm(false);
@@ -291,40 +332,71 @@ export function PromoCodeManager() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <View>
+        <View style={styles.headerLeft}>
           <Text style={styles.title}>Promo Codes</Text>
           <Text style={styles.subtitle}>
             {isAdmin ? 'Manage platform-wide promo codes' : 'Create promotions for your customers'}
           </Text>
         </View>
-        <TouchableOpacity
-          onPress={() => {
-            setEditingCode(null);
-            setFormData({
-              code: '',
-              description: '',
-              discount_type: 'percentage',
-              discount_value: '',
-              min_order_amount: '',
-              max_discount_amount: '',
-              usage_limit_type: 'unlimited',
-              usage_limit_value: '',
-              usage_per_user: '1',
-              applies_to: 'vendor',
-              end_date: '',
-            });
-            setShowForm(true);
-          }}
-          style={styles.createButton}
-        >
-          <LinearGradient
-            colors={['#f97316', '#f43f5e']}
-            style={styles.createButtonGradient}
+        <View style={styles.headerButtons}>
+          <TouchableOpacity
+            onPress={() => setShowHelpModal(true)}
+            style={styles.helpButton}
           >
-            <Feather name="plus" size={16} color="#fff" />
-            <Text style={styles.createButtonText}>Create Promo Code</Text>
-          </LinearGradient>
-        </TouchableOpacity>
+            <Feather name="help-circle" size={22} color="#666" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => {
+              setEditingCode(null);
+              setFormData({
+                code: '',
+                description: '',
+                discount_type: 'percentage',
+                discount_value: '',
+                min_order_amount: '',
+                max_discount_amount: '',
+                usage_limit_type: 'unlimited',
+                usage_limit_value: '',
+                usage_per_user: '1',
+                applies_to: 'vendor_only',
+                end_date: '',
+              });
+              setShowForm(true);
+            }}
+            style={styles.createButton}
+          >
+            <LinearGradient
+              colors={['#f97316', '#f43f5e']}
+              style={styles.createButtonGradient}
+            >
+              <Feather name="plus" size={16} color="#fff" />
+              <Text style={styles.createButtonText}>Create Promo Code</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Stats Summary */}
+      <View style={styles.statsContainer}>
+        <View style={styles.statCard}>
+          <Feather name="tag" size={20} color="#f97316" />
+          <Text style={styles.statNumber}>{promoCodes.length}</Text>
+          <Text style={styles.statLabel}>Total Codes</Text>
+        </View>
+        <View style={styles.statCard}>
+          <Feather name="trending-up" size={20} color="#10b981" />
+          <Text style={styles.statNumber}>
+            {promoCodes.reduce((sum, c) => sum + (c.times_used || 0), 0)}
+          </Text>
+          <Text style={styles.statLabel}>Total Uses</Text>
+        </View>
+        <View style={styles.statCard}>
+          <Feather name="clock" size={20} color="#f59e0b" />
+          <Text style={styles.statNumber}>
+            {promoCodes.filter(c => c.is_active).length}
+          </Text>
+          <Text style={styles.statLabel}>Active</Text>
+        </View>
       </View>
 
       {/* Promo Codes List */}
@@ -332,80 +404,83 @@ export function PromoCodeManager() {
         {promoCodes.length > 0 ? (
           promoCodes.map((code) => (
             <View key={code.id} style={styles.codeCard}>
-              <View style={styles.codeHeader}>
-                <View>
-                  <View style={styles.codeTitleRow}>
-                    <Text style={styles.codeText}>{code.code}</Text>
-                    <TouchableOpacity
-                      onPress={() => copyToClipboard(code.code)}
-                      style={styles.copyButton}
-                    >
-                      <Feather name="copy" size={14} color="#666" />
-                    </TouchableOpacity>
-                  </View>
-                  <View style={styles.badgeRow}>
-                    <View style={[
-                      styles.badge,
-                      code.applies_to === 'platform' ? styles.platformBadge : styles.vendorBadge
-                    ]}>
-                      <Text style={styles.badgeText}>
-                        {code.applies_to === 'platform' ? 'Platform' : 'Vendor'}
-                      </Text>
-                    </View>
-                    <View style={[
-                      styles.badge,
-                      code.is_active ? styles.activeBadge : styles.inactiveBadge
-                    ]}>
-                      <Text style={styles.badgeText}>
-                        {code.is_active ? 'Active' : 'Inactive'}
-                      </Text>
-                    </View>
-                  </View>
-                  {code.description ? (
-                    <Text style={styles.codeDescription}>{code.description}</Text>
-                  ) : null}
-                </View>
-                <View style={styles.actionButtons}>
-                  <TouchableOpacity
-                    onPress={() => toggleActive(code)}
-                    style={styles.actionButton}
-                  >
-                    <Feather 
-                      name={code.is_active ? 'pause-circle' : 'play-circle'} 
-                      size={18} 
-                      color={code.is_active ? '#f59e0b' : '#10b981'} 
-                    />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setEditingCode(code);
-                      setFormData({
-                        code: code.code,
-                        description: code.description || '',
-                        discount_type: code.discount_type,
-                        discount_value: code.discount_value.toString(),
-                        min_order_amount: code.min_order_amount.toString(),
-                        max_discount_amount: code.max_discount_amount?.toString() || '',
-                        usage_limit_type: code.usage_limit === null ? 'unlimited' : 'limited',
-                        usage_limit_value: code.usage_limit?.toString() || '',
-                        usage_per_user: code.usage_per_user.toString(),
-                        applies_to: code.applies_to,
-                        end_date: code.end_date ? new Date(code.end_date).toISOString().slice(0, 16) : '',
-                      });
-                      setShowForm(true);
-                    }}
-                    style={styles.actionButton}
-                  >
-                    <Feather name="edit-2" size={18} color="#666" />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => handleDelete(code.id)}
-                    style={styles.actionButton}
-                  >
-                    <Feather name="trash-2" size={18} color="#ef4444" />
-                  </TouchableOpacity>
-                </View>
-              </View>
+            <View style={styles.codeHeader}>
+  <View style={styles.codeInfo}>
+    <View style={styles.codeTitleRow}>
+      <Text style={styles.codeText}>{code.code}</Text>
+      <TouchableOpacity
+        onPress={() => copyToClipboard(code.code)}
+        style={styles.copyButton}
+      >
+        <Feather name="copy" size={14} color="#666" />
+      </TouchableOpacity>
+    </View>
+    <View style={styles.badgeRow}>
+      <View style={[
+        styles.badge,
+        code.applies_to === 'all' ? styles.platformBadge : styles.vendorBadge
+      ]}>
+        <Text style={styles.badgeText}>
+          {code.applies_to === 'all' ? '🌍 Platform Wide' : '🏪 Store Only'}
+        </Text>
+      </View>
+      <View style={[
+        styles.badge,
+        code.is_active ? styles.activeBadge : styles.inactiveBadge
+      ]}>
+        <Text style={styles.badgeText}>
+          {code.is_active ? '✅ Active' : '⏸ Inactive'}
+        </Text>
+      </View>
+    </View>
+    {code.description ? (
+      <Text style={styles.codeDescription} numberOfLines={2}>
+        {code.description}
+      </Text>
+    ) : null}
+  </View>
+  
+  <View style={styles.actionButtons}>
+    <TouchableOpacity
+      onPress={() => toggleActive(code)}
+      style={styles.actionButton}
+    >
+      <Feather 
+        name={code.is_active ? 'pause-circle' : 'play-circle'} 
+        size={20} 
+        color={code.is_active ? '#f59e0b' : '#10b981'} 
+      />
+    </TouchableOpacity>
+    <TouchableOpacity
+      onPress={() => {
+        setEditingCode(code);
+        setFormData({
+          code: code.code,
+          description: code.description || '',
+          discount_type: code.discount_type,
+          discount_value: code.discount_value.toString(),
+          min_order_amount: code.min_order_amount.toString(),
+          max_discount_amount: code.max_discount_amount?.toString() || '',
+          usage_limit_type: code.usage_limit === null ? 'unlimited' : 'limited',
+          usage_limit_value: code.usage_limit?.toString() || '',
+          usage_per_user: code.usage_per_user.toString(),
+          applies_to: code.applies_to,
+          end_date: code.end_date ? new Date(code.end_date).toISOString().slice(0, 16) : '',
+        });
+        setShowForm(true);
+      }}
+      style={styles.actionButton}
+    >
+      <Feather name="edit-2" size={18} color="#666" />
+    </TouchableOpacity>
+    <TouchableOpacity
+      onPress={() => handleDelete(code.id)}
+      style={styles.actionButton}
+    >
+      <Feather name="trash-2" size={18} color="#ef4444" />
+    </TouchableOpacity>
+  </View>
+</View>
 
               <View style={styles.codeStats}>
                 <View style={styles.stat}>
@@ -441,8 +516,36 @@ export function PromoCodeManager() {
             <Feather name="tag" size={48} color="#666" />
             <Text style={styles.emptyTitle}>No promo codes yet</Text>
             <Text style={styles.emptyText}>
-              Create your first promo code to start offering discounts
+              Create your first promo code to start offering discounts to customers
             </Text>
+            <TouchableOpacity
+              onPress={() => {
+                setEditingCode(null);
+                setFormData({
+                  code: '',
+                  description: '',
+                  discount_type: 'percentage',
+                  discount_value: '',
+                  min_order_amount: '',
+                  max_discount_amount: '',
+                  usage_limit_type: 'unlimited',
+                  usage_limit_value: '',
+                  usage_per_user: '1',
+                  applies_to: 'vendor_only',
+                  end_date: '',
+                });
+                setShowForm(true);
+              }}
+              style={styles.emptyButton}
+            >
+              <LinearGradient
+                colors={['#f97316', '#f43f5e']}
+                style={styles.emptyButtonGradient}
+              >
+                <Feather name="plus" size={16} color="#fff" />
+                <Text style={styles.emptyButtonText}>Create Your First Promo Code</Text>
+              </LinearGradient>
+            </TouchableOpacity>
           </View>
         )}
       </ScrollView>
@@ -460,9 +563,18 @@ export function PromoCodeManager() {
               <Text style={styles.modalTitle}>
                 {editingCode ? 'Edit' : 'Create'} Promo Code
               </Text>
-              <TouchableOpacity onPress={() => setShowForm(false)} style={styles.closeButton}>
-                <Feather name="x" size={20} color="#fff" />
-              </TouchableOpacity>
+              <View style={styles.modalHeaderRight}>
+                <TouchableOpacity
+                  onPress={() => setShowSampleModal(true)}
+                  style={styles.sampleButton}
+                >
+                  <Feather name="eye" size={18} color="#f97316" />
+                  <Text style={styles.sampleButtonText}>Sample</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setShowForm(false)} style={styles.closeButton}>
+                  <Feather name="x" size={20} color="#fff" />
+                </TouchableOpacity>
+              </View>
             </View>
 
             <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
@@ -483,20 +595,30 @@ export function PromoCodeManager() {
                     <Text style={styles.generateButtonText}>Generate</Text>
                   </TouchableOpacity>
                 </View>
+                <Text style={styles.helperText}>
+                  Use a short, memorable code like "SAVE20" or "FREEDELIVERY"
+                </Text>
               </View>
 
+              {/* Description */}
               <View style={styles.formGroup}>
-                <Text style={styles.label}>Description</Text>
+                <Text style={styles.label}>Description *</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, styles.textArea]}
                   value={formData.description}
                   onChangeText={(text) => setFormData({ ...formData, description: text })}
-                  placeholder="20% off on all items"
+                  placeholder="Describe your offer... (this will be shown to customers)"
                   placeholderTextColor="#666"
+                  multiline
+                  numberOfLines={3}
+                  textAlignVertical="top"
                 />
+                <Text style={styles.helperText}>
+                  Customers will see this in their notifications. Make it exciting!
+                </Text>
               </View>
 
-              {/* Discount Type */}
+              {/* Discount Type & Value */}
               <View style={styles.row}>
                 <View style={[styles.formGroup, { flex: 1, marginRight: 8 }]}>
                   <Text style={styles.label}>Discount Type</Text>
@@ -512,7 +634,7 @@ export function PromoCodeManager() {
                         styles.typeButtonText,
                         formData.discount_type === 'percentage' && styles.typeButtonTextActive,
                       ]}>
-                        Percentage (%)
+                        % OFF
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
@@ -526,7 +648,7 @@ export function PromoCodeManager() {
                         styles.typeButtonText,
                         formData.discount_type === 'fixed' && styles.typeButtonTextActive,
                       ]}>
-                        Fixed (₦)
+                        ₦ OFF
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -537,14 +659,14 @@ export function PromoCodeManager() {
                     style={styles.input}
                     value={formData.discount_value}
                     onChangeText={(text) => setFormData({ ...formData, discount_value: text })}
-                    placeholder={formData.discount_type === 'percentage' ? '20' : '1000'}
+                    placeholder={formData.discount_type === 'percentage' ? '20' : '2000'}
                     placeholderTextColor="#666"
                     keyboardType="numeric"
                   />
                 </View>
               </View>
 
-              {/* Limits */}
+              {/* Order Limits */}
               <View style={styles.row}>
                 <View style={[styles.formGroup, { flex: 1, marginRight: 8 }]}>
                   <Text style={styles.label}>Min Order (₦)</Text>
@@ -572,7 +694,7 @@ export function PromoCodeManager() {
 
               {/* Usage Type */}
               <View style={styles.formGroup}>
-                <Text style={styles.label}>Usage Type</Text>
+                <Text style={styles.label}>Usage Limit</Text>
                 <View style={styles.usageTypeGrid}>
                   <TouchableOpacity
                     onPress={() => setFormData({ ...formData, usage_limit_type: 'unlimited', usage_limit_value: '' })}
@@ -581,7 +703,7 @@ export function PromoCodeManager() {
                       formData.usage_limit_type === 'unlimited' && styles.usageTypeCardActive,
                     ]}
                   >
-                    <Feather name="x" size={20} color={formData.usage_limit_type === 'unlimited' ? '#f97316' : '#666'} />
+                    <Feather name="feather" size={20} color={formData.usage_limit_type === 'unlimited' ? '#f97316' : '#666'} />
                     <Text style={[
                       styles.usageTypeText,
                       formData.usage_limit_type === 'unlimited' && styles.usageTypeTextActive,
@@ -620,7 +742,7 @@ export function PromoCodeManager() {
               {(formData.usage_limit_type === 'limited' || formData.usage_limit_type === 'lucky') && (
                 <View style={styles.formGroup}>
                   <Text style={styles.label}>
-                    {formData.usage_limit_type === 'limited' ? 'Number of Uses' : 'Lucky Number'}
+                    {formData.usage_limit_type === 'limited' ? 'Total Uses Allowed' : 'Lucky Number of Uses'}
                   </Text>
                   <TextInput
                     style={styles.input}
@@ -635,7 +757,7 @@ export function PromoCodeManager() {
 
               {/* Per User Limit */}
               <View style={styles.formGroup}>
-                <Text style={styles.label}>Per User Limit</Text>
+                <Text style={styles.label}>Uses Per Customer</Text>
                 <TextInput
                   style={styles.input}
                   value={formData.usage_per_user}
@@ -644,40 +766,8 @@ export function PromoCodeManager() {
                   placeholderTextColor="#666"
                   keyboardType="numeric"
                 />
+                <Text style={styles.helperText}>How many times can one customer use this code?</Text>
               </View>
-
-              {/* Applies To - Only show for admins */}
-              {isAdmin && (
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>Applies To</Text>
-                  <View style={styles.pickerContainer}>
-                    <TouchableOpacity
-                      onPress={() => setFormData({ ...formData, applies_to: 'platform' })}
-                      style={[
-                        styles.typeButton,
-                        formData.applies_to === 'platform' && styles.typeButtonActive,
-                      ]}
-                    >
-                      <Text style={[
-                        styles.typeButtonText,
-                        formData.applies_to === 'platform' && styles.typeButtonTextActive,
-                      ]}>Platform Wide</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => setFormData({ ...formData, applies_to: 'vendor' })}
-                      style={[
-                        styles.typeButton,
-                        formData.applies_to === 'vendor' && styles.typeButtonActive,
-                      ]}
-                    >
-                      <Text style={[
-                        styles.typeButtonText,
-                        formData.applies_to === 'vendor' && styles.typeButtonTextActive,
-                      ]}>Specific Vendor</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              )}
 
               {/* End Date */}
               <View style={styles.formGroup}>
@@ -689,7 +779,70 @@ export function PromoCodeManager() {
                   placeholder="YYYY-MM-DDTHH:MM"
                   placeholderTextColor="#666"
                 />
+                <Text style={styles.helperText}>Leave empty for no expiration date</Text>
               </View>
+
+
+
+{/* Live Preview Section - Inline */}
+<View style={styles.previewSection}>
+  <View style={styles.previewHeader}>
+    <Text style={styles.previewTitle}>📱 Live Preview</Text>
+    <TouchableOpacity
+      onPress={() => {
+        // Apply sample values
+        const discountVal = formData.discount_type === 'percentage' ? '20' : '2000';
+        const minAmount = formData.discount_type === 'percentage' ? '5000' : '15000';
+        
+        setFormData({
+          ...formData,
+          description: formData.discount_type === 'percentage' 
+            ? `🎉 Special Offer! Get ${formData.discount_value || '20'}% OFF on all orders above ₦${parseInt(formData.min_order_amount || '5000').toLocaleString()}. Don't miss out on this amazing deal! Valid for a limited time only.`
+            : `💰 Limited Time Offer! Save ₦${parseInt(formData.discount_value || '2000').toLocaleString()} on your next order when you spend ₦${parseInt(formData.min_order_amount || '15000').toLocaleString()} or more. Perfect for family meals!`,
+          discount_value: formData.discount_value || discountVal,
+          min_order_amount: formData.min_order_amount || minAmount,
+        });
+      }}
+      style={styles.applySampleButton}
+    >
+      <Feather name="zap" size={14} color="#f97316" />
+      <Text style={styles.applySampleButtonText}>Use Sample</Text>
+    </TouchableOpacity>
+  </View>
+  
+  <View style={styles.previewCard}>
+    <View style={styles.previewNotification}>
+      <View style={styles.previewNotificationHeader}>
+        <Feather name="bell" size={14} color="#f97316" />
+        <Text style={styles.previewNotificationText}>Push Notification Preview</Text>
+      </View>
+      <Text style={styles.previewTitleText}>
+        🎉 {formData.code || 'SAVE20'} - {formData.discount_value || '20'}% off
+      </Text>
+      <Text style={styles.previewBodyText}>
+        Your Store: {formData.discount_value || '20'}% off when you spend ₦{parseInt(formData.min_order_amount || '0').toLocaleString()}
+      </Text>
+    </View>
+    
+    <View style={styles.previewDivider} />
+    
+    <View style={styles.previewModal}>
+      <View style={styles.previewModalHeader}>
+        <Feather name="tag" size={14} color="#f97316" />
+        <Text style={styles.previewModalText}>In-App Modal Preview</Text>
+      </View>
+      <Text style={styles.previewModalCode}>{formData.code || 'SAVE20'}</Text>
+      <Text style={styles.previewModalDiscount}>
+        {formData.discount_type === 'percentage' 
+          ? `${formData.discount_value || '20'}% OFF`
+          : `₦${parseInt(formData.discount_value || '2000').toLocaleString()} OFF`}
+      </Text>
+      <Text style={styles.previewModalDesc} numberOfLines={2}>
+        {formData.description || 'Your promo description will appear here'}
+      </Text>
+    </View>
+  </View>
+</View>
             </ScrollView>
 
             <View style={styles.modalFooter}>
@@ -707,6 +860,173 @@ export function PromoCodeManager() {
                 </LinearGradient>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Help Modal */}
+      <Modal
+        visible={showHelpModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowHelpModal(false)}
+      >
+        <View style={styles.helpModalOverlay}>
+          <View style={styles.helpModalContent}>
+            <View style={styles.helpModalHeader}>
+              <Text style={styles.helpModalTitle}>📖 How Promo Codes Work</Text>
+              <TouchableOpacity onPress={() => setShowHelpModal(false)}>
+                <Feather name="x" size={24} color="#fff" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.helpModalBody}>
+              <View style={styles.helpSection}>
+                <Feather name="tag" size={20} color="#f97316" />
+                <Text style={styles.helpSectionTitle}>What are Promo Codes?</Text>
+                <Text style={styles.helpText}>
+                  Promo codes are special codes customers can enter at checkout to get discounts. They're a great way to attract new customers and reward loyal ones!
+                </Text>
+              </View>
+
+              <View style={styles.helpSection}>
+                <Feather name="percent" size={20} color="#f97316" />
+                <Text style={styles.helpSectionTitle}>Discount Types</Text>
+                <Text style={styles.helpSubtitle}>• Percentage (%) OFF</Text>
+                <Text style={styles.helpText}>Give customers a percentage off their total. Example: 20% off</Text>
+                <Text style={styles.helpSubtitle}>• Fixed Amount (₦) OFF</Text>
+                <Text style={styles.helpText}>Give a fixed amount off. Example: ₦2,000 off</Text>
+              </View>
+
+              <View style={styles.helpSection}>
+                <Feather name="settings" size={20} color="#f97316" />
+                <Text style={styles.helpSectionTitle}>Usage Limits</Text>
+                <Text style={styles.helpSubtitle}>• Unlimited</Text>
+                <Text style={styles.helpText}>Anyone can use it any number of times (within per-user limit)</Text>
+                <Text style={styles.helpSubtitle}>• Limited</Text>
+                <Text style={styles.helpText}>Only a certain number of total uses (e.g., 100 total redemptions)</Text>
+                <Text style={styles.helpSubtitle}>• Lucky</Text>
+                <Text style={styles.helpText}>Limited to a specific number (e.g., only 50 customers can use it)</Text>
+              </View>
+
+              <View style={styles.helpSection}>
+                <Feather name="bell" size={20} color="#f97316" />
+                <Text style={styles.helpSectionTitle}>Customer Notifications</Text>
+                <Text style={styles.helpText}>
+                  When you create an active promo code, ALL customers will receive:
+                  • Push notification on their phone
+                  • In-app notification in their notifications list
+                  
+                  This helps drive immediate traffic to your store!
+                </Text>
+              </View>
+
+              <View style={styles.helpSection}>
+                <Feather name="info" size={20} color="#f97316" />
+                <Text style={styles.helpSectionTitle}>Pro Tips</Text>
+                <Text style={styles.helpText}>✨ Use short, memorable codes like "SAVE20" or "WELCOME"</Text>
+                <Text style={styles.helpText}>✨ Set a minimum order amount to increase average order value</Text>
+                <Text style={styles.helpText}>✨ Create urgency with expiration dates</Text>
+                <Text style={styles.helpText}>✨ Limited-time offers drive more conversions</Text>
+                <Text style={styles.helpText}>✨ Track usage to see which promotions work best</Text>
+              </View>
+            </ScrollView>
+            <TouchableOpacity
+              onPress={() => setShowHelpModal(false)}
+              style={styles.helpModalButton}
+            >
+              <LinearGradient
+                colors={['#f97316', '#f43f5e']}
+                style={styles.helpModalButtonGradient}
+              >
+                <Text style={styles.helpModalButtonText}>Got it!</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Sample Modal */}
+      <Modal
+        visible={showSampleModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowSampleModal(false)}
+      >
+        <View style={styles.sampleModalOverlay}>
+          <View style={styles.sampleModalContent}>
+            <View style={styles.sampleModalHeader}>
+              <Text style={styles.sampleModalTitle}>✨ Sample Promo Code</Text>
+              <TouchableOpacity onPress={() => setShowSampleModal(false)}>
+                <Feather name="x" size={24} color="#fff" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.sampleModalBody}>
+              <Text style={styles.sampleModalSubtitle}>Here's what a great promo code looks like:</Text>
+
+              {/* Sample Display */}
+              <View style={styles.sampleDisplay}>
+                <LinearGradient
+                  colors={['#f97316', '#f43f5e']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.sampleDisplayGradient}
+                >
+                  <Feather name="tag" size={32} color="#fff" />
+                  <Text style={styles.sampleDisplayCode}>SAVE20</Text>
+                  <Text style={styles.sampleDisplayDiscount}>20% OFF</Text>
+                </LinearGradient>
+
+                <View style={styles.sampleDisplayContent}>
+                  <Text style={styles.sampleDisplayTitle}>🎉 Special Offer!</Text>
+                  <Text style={styles.sampleDisplayDescription}>
+                    Get 20% OFF on all orders above ₦5,000. Don't miss out on this amazing deal! Valid for a limited time only.
+                  </Text>
+                  
+                  <View style={styles.sampleDisplayTerms}>
+                    <View style={styles.sampleTermItem}>
+                      <Feather name="shopping-bag" size={14} color="#f97316" />
+                      <Text style={styles.sampleTermText}>Min order: ₦5,000</Text>
+                    </View>
+                    <View style={styles.sampleTermItem}>
+                      <Feather name="users" size={14} color="#f97316" />
+                      <Text style={styles.sampleTermText}>1 use per customer</Text>
+                    </View>
+                    <View style={styles.sampleTermItem}>
+                      <Feather name="calendar" size={14} color="#f97316" />
+                      <Text style={styles.sampleTermText}>Valid for 7 days</Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.sampleTipBox}>
+                <Feather name="info" size={20} color="#f59e0b" />
+                <Text style={styles.sampleTipText}>
+                  This is just an example! Your customers will see something similar when you create a promo code. Make your description exciting to encourage orders!
+                </Text>
+              </View>
+
+              <View style={styles.sampleButtons}>
+                <TouchableOpacity
+                  onPress={() => setShowSampleModal(false)}
+                  style={styles.sampleCancelButton}
+                >
+                  <Text style={styles.sampleCancelButtonText}>Close</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={applySample}
+                  style={styles.sampleApplyButton}
+                >
+                  <LinearGradient
+                    colors={['#f97316', '#f43f5e']}
+                    style={styles.sampleApplyGradient}
+                  >
+                    <Feather name="check" size={16} color="#fff" />
+                    <Text style={styles.sampleApplyButtonText}>Use This Sample</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -731,6 +1051,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingHorizontal: 4,
   },
+  headerLeft: {
+    flex: 1,
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   title: {
     fontSize: 18,
     fontWeight: '600',
@@ -740,6 +1068,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     marginTop: 2,
+  },
+  helpButton: {
+    padding: 8,
   },
   createButton: {
     borderRadius: 8,
@@ -757,6 +1088,29 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
   },
+  statsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 20,
+    paddingHorizontal: 4,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+    gap: 6,
+  },
+  statNumber: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  statLabel: {
+    fontSize: 11,
+    color: '#666',
+  },
   list: {
     flex: 1,
   },
@@ -768,11 +1122,29 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.05)',
   },
-  codeHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
+// Replace the existing codeHeader and related styles with these:
+
+codeHeader: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'flex-start', // Changed from 'center' to 'flex-start'
+  marginBottom: 12,
+},
+codeInfo: {
+  flex: 1,
+  marginRight: 12, // Add space between content and buttons
+},
+actionButtons: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 12,
+  marginLeft: 'auto', // Push buttons to the right
+},
+actionButton: {
+  padding: 6,
+  minWidth: 32,
+  alignItems: 'center',
+},
   codeTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -794,10 +1166,103 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   badge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     borderRadius: 4,
   },
+  previewHeader: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: 12,
+},
+previewTitle: {
+  fontSize: 13,
+  fontWeight: '600',
+  color: '#fff',
+},
+applySampleButton: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 4,
+  backgroundColor: 'rgba(249,115,22,0.1)',
+  paddingHorizontal: 10,
+  paddingVertical: 5,
+  borderRadius: 6,
+},
+applySampleButtonText: {
+  fontSize: 11,
+  color: '#f97316',
+},
+previewCard: {
+  backgroundColor: '#2a2a2a',
+  borderRadius: 12,
+  overflow: 'hidden',
+},
+previewNotification: {
+  padding: 12,
+  borderBottomWidth: 1,
+  borderBottomColor: 'rgba(255,255,255,0.05)',
+},
+previewNotificationHeader: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 6,
+  marginBottom: 8,
+},
+previewNotificationText: {
+  fontSize: 10,
+  color: '#f97316',
+},
+previewTitleText: {
+  fontSize: 14,
+  fontWeight: '600',
+  color: '#fff',
+  marginBottom: 4,
+},
+previewBodyText: {
+  fontSize: 11,
+  color: '#666',
+},
+previewDivider: {
+  height: 1,
+  backgroundColor: 'rgba(255,255,255,0.05)',
+},
+previewModal: {
+  padding: 12,
+},
+previewModalHeader: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 6,
+  marginBottom: 8,
+},
+previewModalText: {
+  fontSize: 10,
+  color: '#f97316',
+},
+previewModalCode: {
+  fontSize: 18,
+  fontWeight: 'bold',
+  color: '#f97316',
+  fontFamily: 'monospace',
+  marginBottom: 4,
+},
+previewModalDiscount: {
+  fontSize: 12,
+  color: '#f97316',
+  backgroundColor: 'rgba(249,115,22,0.1)',
+  alignSelf: 'flex-start',
+  paddingHorizontal: 8,
+  paddingVertical: 2,
+  borderRadius: 4,
+  marginBottom: 8,
+},
+previewModalDesc: {
+  fontSize: 11,
+  color: '#666',
+  lineHeight: 16,
+},
   vendorBadge: {
     backgroundColor: 'rgba(59,130,246,0.1)',
   },
@@ -818,13 +1283,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
   },
-  actionButtons: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  actionButton: {
-    padding: 4,
-  },
+
   codeStats: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -834,13 +1293,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   stat: {
-    minWidth: '40%',
+    minWidth: '22%',
   },
-  statLabel: {
-    fontSize: 10,
-    color: '#666',
-    marginBottom: 2,
-  },
+
   statValue: {
     fontSize: 13,
     fontWeight: '500',
@@ -862,6 +1317,23 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#666',
     textAlign: 'center',
+    marginBottom: 20,
+  },
+  emptyButton: {
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  emptyButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  emptyButtonText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '500',
   },
   modalOverlay: {
     flex: 1,
@@ -882,10 +1354,28 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.05)',
   },
+  modalHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#fff',
+  },
+  sampleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(249,115,22,0.1)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  sampleButtonText: {
+    fontSize: 12,
+    color: '#f97316',
   },
   closeButton: {
     padding: 4,
@@ -913,6 +1403,15 @@ const styles = StyleSheet.create({
     padding: 12,
     color: '#fff',
     fontSize: 14,
+  },
+  textArea: {
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  helperText: {
+    fontSize: 11,
+    color: '#666',
+    marginTop: 4,
   },
   codeInputRow: {
     flexDirection: 'row',
@@ -985,6 +1484,16 @@ const styles = StyleSheet.create({
   usageTypeTextActive: {
     color: '#f97316',
   },
+  previewSection: {
+    marginTop: 8,
+    marginBottom: 16,
+  },
+
+  previewHeaderText: {
+    fontSize: 11,
+    color: '#f97316',
+  },
+
   submitButton: {
     height: 48,
     borderRadius: 8,
@@ -998,6 +1507,207 @@ const styles = StyleSheet.create({
   submitText: {
     color: '#fff',
     fontSize: 15,
+    fontWeight: '600',
+  },
+  // Help Modal Styles
+  helpModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  helpModalContent: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 20,
+    width: '100%',
+    maxHeight: '80%',
+  },
+  helpModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.05)',
+  },
+  helpModalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  helpModalBody: {
+    padding: 20,
+  },
+  helpSection: {
+    marginBottom: 24,
+  },
+  helpSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  helpSubtitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#f97316',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  helpText: {
+    fontSize: 13,
+    color: '#999',
+    lineHeight: 20,
+  },
+  helpModalButton: {
+    margin: 20,
+    marginTop: 0,
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  helpModalButtonGradient: {
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  helpModalButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  // Sample Modal Styles
+  sampleModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  sampleModalContent: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 20,
+    width: '100%',
+    maxHeight: '80%',
+  },
+  sampleModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.05)',
+  },
+  sampleModalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  sampleModalBody: {
+    padding: 20,
+  },
+  sampleModalSubtitle: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 16,
+  },
+  sampleDisplay: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 20,
+  },
+  sampleDisplayGradient: {
+    alignItems: 'center',
+    paddingVertical: 24,
+  },
+  sampleDisplayCode: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#fff',
+    letterSpacing: 2,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  sampleDisplayDiscount: {
+    fontSize: 16,
+    color: '#fff',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  sampleDisplayContent: {
+    padding: 16,
+    backgroundColor: '#2a2a2a',
+  },
+  sampleDisplayTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 8,
+  },
+  sampleDisplayDescription: {
+    fontSize: 13,
+    color: '#ccc',
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  sampleDisplayTerms: {
+    gap: 6,
+  },
+  sampleTermItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  sampleTermText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  sampleTipBox: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(245,158,11,0.1)',
+    padding: 12,
+    borderRadius: 12,
+    gap: 10,
+    marginBottom: 20,
+  },
+  sampleTipText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#f59e0b',
+    lineHeight: 18,
+  },
+  sampleButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  sampleCancelButton: {
+    flex: 1,
+    backgroundColor: '#2a2a2a',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  sampleCancelButtonText: {
+    color: '#666',
+    fontSize: 14,
+  },
+  sampleApplyButton: {
+    flex: 2,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  sampleApplyGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+  },
+  sampleApplyButtonText: {
+    color: '#fff',
+    fontSize: 14,
     fontWeight: '600',
   },
 });

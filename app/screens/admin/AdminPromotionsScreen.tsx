@@ -90,49 +90,84 @@ const handleViewDetails = (promotion: Promotion) => {
     });
   };
 
-  const fetchPromotions = async () => {
-    try {
-      setLoading(true);
-      
-      let query = supabase
-        .from('promotions')
-        .select(`
-          *,
-          vendor:vendor_id (name),
-          products:product_id (name),
-          main_product:main_product_id (name),
-          free_product:free_product_id (name)
-        `)
-        .order('created_at', { ascending: false });
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-
-      // Process data
-     const processedData = data?.map(promo => ({
-  ...promo,
-  vendor_name: promo.vendor?.name,
-  product_name: promo.products?.name,
-  main_product_name: promo.main_product?.name,
-  free_product_name: promo.free_product?.name,
-  views: promo.views || 0,
-  clicks: promo.clicks || 0,
-  conversions: promo.conversions || 0,
-  payment_amount: promo.payment_amount || 0,
-  payment_reference: promo.payment_reference || '',
-  payment_status: promo.payment_status || 'pending',
-})) || [];
-
-      setPromotions(processedData);
-    } catch (error) {
-      console.error('Error fetching promotions:', error);
-      showToast('Failed to load promotions', 'error');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+const fetchPromotions = async () => {
+  try {
+    setLoading(true);
+    
+    // FIRST: Update any expired promotions
+    const now = new Date().toISOString();
+    
+    // Find and update expired active promotions
+    const { data: expiredPromos, error: fetchExpiredError } = await supabase
+      .from('promotions')
+      .select('id')
+      .eq('status', 'active')
+      .lt('end_date', now);
+    
+    if (fetchExpiredError) {
+      console.error('Error checking expired promotions:', fetchExpiredError);
     }
-  };
+    
+    // Update each expired promotion
+    if (expiredPromos && expiredPromos.length > 0) {
+      console.log(`🕐 Found ${expiredPromos.length} expired promotions to update`);
+      
+      const { error: updateError } = await supabase
+        .from('promotions')
+        .update({ 
+          status: 'expired',
+          updated_at: now
+        })
+        .eq('status', 'active')
+        .lt('end_date', now);
+      
+      if (updateError) {
+        console.error('Error updating expired promotions:', updateError);
+      } else {
+        console.log(`✅ Updated ${expiredPromos.length} promotions to expired`);
+      }
+    }
+    
+    // Now fetch all promotions with the updated statuses
+    let query = supabase
+      .from('promotions')
+      .select(`
+        *,
+        vendor:vendor_id (name),
+        products:product_id (name),
+        main_product:main_product_id (name),
+        free_product:free_product_id (name)
+      `)
+      .order('created_at', { ascending: false });
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+
+    // Process data
+    const processedData = data?.map(promo => ({
+      ...promo,
+      vendor_name: promo.vendor?.name,
+      product_name: promo.products?.name,
+      main_product_name: promo.main_product?.name,
+      free_product_name: promo.free_product?.name,
+      views: promo.views || 0,
+      clicks: promo.clicks || 0,
+      conversions: promo.conversions || 0,
+      payment_amount: promo.payment_amount || 0,
+      payment_reference: promo.payment_reference || '',
+      payment_status: promo.payment_status || 'pending',
+    })) || [];
+
+    setPromotions(processedData);
+  } catch (error) {
+    console.error('Error fetching promotions:', error);
+    showToast('Failed to load promotions', 'error');
+  } finally {
+    setLoading(false);
+    setRefreshing(false);
+  }
+};
 
   useFocusEffect(
     useCallback(() => {

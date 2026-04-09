@@ -96,29 +96,60 @@ const loadOrder = async () => {
   setLoading(false);
 };
 
+
+
+// Restore product stock when order is cancelled
+const restoreProductStock = async (orderItems: any[]) => {
+  try {
+    for (const item of orderItems) {
+      const { data: product, error: fetchError } = await supabase
+        .from('products')
+        .select('track_stock, stock_quantity')
+        .eq('id', item.product_id)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching product stock:', fetchError);
+        continue;
+      }
+
+      if (product?.track_stock) {
+        const newStock = (product.stock_quantity || 0) + item.quantity;
+        
+        const { error: updateError } = await supabase
+          .from('products')
+          .update({ 
+            stock_quantity: newStock,
+            quantity_available: newStock
+          })
+          .eq('id', item.product_id);
+
+        if (updateError) {
+          console.error('Error restoring stock:', updateError);
+        } else {
+          console.log(`✅ Stock restored for product: +${item.quantity}, new stock: ${newStock}`);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error in restoreProductStock:', error);
+  }
+};
+
+
+
+
 const handleCancelOrder = async () => {
   if (!order) return;
 
-  // Check if order can be cancelled
-  if (order.status !== 'pending') {
+  if (order.status !== 'pending' && order.status !== 'confirmed') {
     showToast('Order cannot be cancelled at this stage');
     return;
   }
 
-  // Check if order is scheduled (maybe different cancellation rules)
-  const isScheduled = order.is_scheduled === true;
-  const cancelMessage = isScheduled 
-    ? 'Are you sure you want to cancel this scheduled order?'
-    : 'Are you sure you want to cancel this order?';
-
-  // Add payment warning if already paid
-  const paymentWarning = order.payment_method === 'card' && order.payment_status === 'paid'
-    ? '\n\nA refund will be processed to your card. This may take 3-7 business days.'
-    : '';
-
   Alert.alert(
-    "Cancel Order", 
-    cancelMessage + paymentWarning,
+    "Cancel Order",
+    `Are you sure you want to cancel this order?${order.payment_method === 'card' && order.payment_status === 'paid' ? '\n\nA refund will be processed to your card. This may take 3-7 business days.' : ''}`,
     [
       { text: "No", style: "cancel" },
       {
@@ -126,28 +157,10 @@ const handleCancelOrder = async () => {
         style: "destructive",
         onPress: async () => {
           setCancelling(true);
-
+          
           try {
-            // 1. If paid with card, process refund via Flutterwave
-            if (order.payment_method === 'card' && order.payment_status === 'paid') {
-              showToast('Processing refund...');
-              
-              // Get transaction ID from order
-              const transactionId = order.flutterwave_transaction_id;
-              
-              if (transactionId) {
-                // Call your refund function
-                const refundResult = await processRefund(order.id, 'Customer cancelled');
-                
-                if (!refundResult.success) {
-                  // If refund fails, still cancel but warn
-                  showToast('Order cancelled but refund failed. Contact support.');
-                }
-              }
-            }
-
-            // 2. Update order status to cancelled
-            const { error } = await supabase
+            // First update order status to cancelled
+            const { error: cancelError } = await supabase
               .from("orders")
               .update({ 
                 status: "cancelled",
@@ -158,10 +171,39 @@ const handleCancelOrder = async () => {
               })
               .eq("id", order.id);
 
-            if (error) throw error;
+            if (cancelError) throw cancelError;
+
+            // Restore product stock
+            const parsedItems = Array.isArray(order.items)
+              ? order.items
+              : typeof order.items === 'string'
+                ? JSON.parse(order.items)
+                : [];
+            
+            await restoreProductStock(parsedItems);
+            console.log('✅ Stock restored for cancelled order');
+
+            // Process refund if paid with card
+            if (order.payment_method === 'card' && order.payment_status === 'paid') {
+              // Update refund status to processing
+              await supabase
+                .from('orders')
+                .update({ refund_status: 'processing' })
+                .eq('id', order.id);
+              
+              // Process refund
+              const refundResult = await processRefund(order.id, 'Customer cancelled');
+              
+              if (!refundResult?.success) {
+                console.error('Refund failed:', refundResult?.error);
+                showToast('Order cancelled but refund failed. Contact support.');
+              } else {
+                showToast('Refund initiated successfully');
+              }
+            }
 
             showToast("Order cancelled successfully");
-            await loadOrder();
+            await loadOrder(); // Refresh to show updated status
             
           } catch (error) {
             console.error('Cancel error:', error);
@@ -312,21 +354,35 @@ if (loading) {
 
         {/* Cancel */}
 
-        {(order.status === "pending" || order.status === "confirmed") && (
-          <View style={styles.cancelContainer}>
-            <TouchableOpacity
-              onPress={handleCancelOrder}
-              disabled={cancelling}
-              style={styles.cancelButton}
-            >
-              {cancelling ? (
-                <ActivityIndicator color="#ef4444" />
-              ) : (
-                <Text style={styles.cancelButtonText}>Cancel Order</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
+      {(order.status === "pending" || order.status === "confirmed") && (
+  <View style={styles.cancelContainer}>
+    <TouchableOpacity
+      onPress={handleCancelOrder}
+      disabled={cancelling}
+      style={styles.cancelButton}
+    >
+      {cancelling ? (
+        <ActivityIndicator color="#ef4444" />
+      ) : (
+        <Text style={styles.cancelButtonText}>Cancel Order</Text>
+      )}
+    </TouchableOpacity>
+  </View>
+)}
+
+{order.status === 'cancelled' && order.payment_method === 'card' && (
+  <View style={styles.refundStatusContainer}>
+    {order.refund_status === 'processing' && (
+      <Text style={styles.refundStatusText}>Refund processing...</Text>
+    )}
+    {order.refund_status === 'completed' && (
+      <Text style={styles.refundStatusSuccess}>Refund completed</Text>
+    )}
+    {order.refund_status === 'failed' && (
+      <Text style={styles.refundStatusFailed}>Refund failed - contact support</Text>
+    )}
+  </View>
+)}
 
 
 {order.status === 'pending' && timeRemaining !== null && (
@@ -611,6 +667,24 @@ codeContainer: {
   borderRadius: 12,
   paddingVertical: 16,
   marginBottom: 12,
+},
+refundStatusContainer: {
+  marginTop: 8,
+  paddingTop: 8,
+  borderTopWidth: 1,
+  borderTopColor: 'rgba(255,255,255,0.05)',
+},
+refundStatusText: {
+  fontSize: 12,
+  color: '#f59e0b',
+},
+refundStatusSuccess: {
+  fontSize: 12,
+  color: '#10b981',
+},
+refundStatusFailed: {
+  fontSize: 12,
+  color: '#ef4444',
 },
 codeValue: {
   fontSize: 32,

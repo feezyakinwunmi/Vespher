@@ -35,7 +35,7 @@ interface FormData {
   latitude: number | null;
   longitude: number | null;
   locationAddress: string;
-  referralCode?: string; // ✅ Add this
+  referralCode: string; // ✅ Remove optional to make it required
 }
 
 export  function CustomerSignupScreen() {
@@ -57,6 +57,9 @@ export  function CustomerSignupScreen() {
   const [maskedEmail, setMaskedEmail] = useState('');
   const otpInputs = useRef<Array<TextInput | null>>([]);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
+  // Add with other state declarations
+const [referralValid, setReferralValid] = useState<boolean | null>(null);
+const [checkingReferral, setCheckingReferral] = useState(false);
 
   const [formData, setFormData] = useState<FormData>({
     email: '',
@@ -69,7 +72,7 @@ export  function CustomerSignupScreen() {
     latitude: null,
     longitude: null,
     locationAddress: '',
-      referralCode: '', // ✅ Add this
+    referralCode: '', // ✅ Add this
 
   });
 
@@ -289,6 +292,38 @@ export  function CustomerSignupScreen() {
       Alert.alert('Error', error.message || 'Failed to resend code');
     }
   };
+
+  // Verify referral code in real-time
+const verifyReferralCode = async (code: string) => {
+  if (!code || code.length < 5) {
+    setReferralValid(null);
+    return;
+  }
+
+  setCheckingReferral(true);
+  try {
+    const { data, error } = await supabase
+      .from('customer_rewards')
+      .select('customer_id, referral_code')
+      .eq('referral_code', code.toUpperCase())
+      .maybeSingle();
+
+    if (error) throw error;
+    
+    setReferralValid(!!data);
+    
+    if (data) {
+      console.log('✅ Valid referral code found:', code);
+    } else {
+      console.log('❌ Invalid referral code:', code);
+    }
+  } catch (error) {
+    console.error('Error verifying referral code:', error);
+    setReferralValid(false);
+  } finally {
+    setCheckingReferral(false);
+  }
+};
 
 const completeUserRegistration = async () => {
   try {
@@ -527,7 +562,7 @@ const generateReferralCode = () => {
               </View>
             ) : null}
 
-            {/* Referral Code (Optional) */}
+{/* Referral Code (Optional) */}
 <View style={styles.fieldContainer}>
   <Text style={styles.label}>Referral Code (Optional)</Text>
   <View style={styles.inputWrapper}>
@@ -535,13 +570,31 @@ const generateReferralCode = () => {
     <TextInput
       style={styles.input}
       value={formData.referralCode}
-      onChangeText={(text) => updateField('referralCode', text)}
+      onChangeText={(text) => {
+        updateField('referralCode', text.toUpperCase());
+        verifyReferralCode(text); // ✅ Verify in real-time
+      }}
       placeholder="Enter referral code (if you have one)"
       placeholderTextColor="#666"
       autoCapitalize="characters"
     />
+    {checkingReferral && (
+      <ActivityIndicator size="small" color="#f97316" style={styles.rightIcon} />
+    )}
+    {!checkingReferral && referralValid === true && (
+      <Feather name="check-circle" size={20} color="#10b981" style={styles.rightIcon} />
+    )}
+    {!checkingReferral && referralValid === false && formData.referralCode.length > 3 && (
+      <Feather name="x-circle" size={20} color="#ef4444" style={styles.rightIcon} />
+    )}
   </View>
-  <Text style={styles.hint}>Enter a friend's referral code to get ₦500 off your first order!</Text>
+  {referralValid === true && (
+    <Text style={styles.validText}>✓ Valid referral code! You'll get 10% off your first order.</Text>
+  )}
+  {referralValid === false && formData.referralCode.length > 3 && (
+    <Text style={styles.invalidText}>✗ Invalid referral code. Please check and try again.</Text>
+  )}
+  <Text style={styles.hint}>Enter a friend's referral code to get 10% off your first order!</Text>
 </View>
 
             <View style={styles.form}>
@@ -783,6 +836,22 @@ const styles = StyleSheet.create({
   content: { flex: 1, padding: 20 },
   stepContainer: { flex: 1 },
   headerContainer: { marginBottom: 24 },
+  rightIcon: {
+  position: 'absolute',
+  right: 16,
+},
+validText: {
+  fontSize: 12,
+  color: '#10b981',
+  marginTop: 4,
+  marginLeft: 4,
+},
+invalidText: {
+  fontSize: 12,
+  color: '#ef4444',
+  marginTop: 4,
+  marginLeft: 4,
+},
   title: { fontSize: 24, fontWeight: '700', color: '#fff', marginBottom: 8 },
   subtitle: { fontSize: 14, color: '#666' },
   errorContainer: { backgroundColor: 'rgba(239,68,68,0.1)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.2)', borderRadius: 12, padding: 16, marginBottom: 24, flexDirection: 'row', alignItems: 'center', gap: 12 },
