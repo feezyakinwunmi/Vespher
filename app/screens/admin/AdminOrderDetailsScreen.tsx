@@ -116,6 +116,146 @@ export function AdminOrderDetailsScreen() {
     }
   };
 
+  // ✅ Render discount details (same as vendor modal)
+  const renderDiscountDetails = () => {
+    if (!order?.discount || order.discount === 0) return null;
+
+    // Read directly from order fields
+    const discountCode = order.discount_code;
+    const discountType = order.discount_type;
+    const discountPercentage = order.discount_percentage;
+    const discountMeta = order.discount_metadata || {};
+    
+    // Check if it's a first order discount
+    const isFirstOrder = discountCode === 'FIRST_ORDER' || discountMeta?.type === 'first_order';
+    
+    // Check if it's a promo code discount
+    const isPromoCode = discountCode && discountCode !== 'FIRST_ORDER' && discountCode !== 'UNKNOWN_DISCOUNT';
+    
+    // Determine if this is a vendor promo code
+    const hasVendorId = discountMeta?.vendor_id !== null && discountMeta?.vendor_id !== undefined;
+    const appliedByVendor = discountMeta?.applied_by === 'vendor';
+    const isVendorPromo = hasVendorId || appliedByVendor;
+    const vendorName = discountMeta?.vendor_name;
+
+    // First Order Discount
+    if (isFirstOrder) {
+      return (
+        <View style={styles.discountSection}>
+          <View style={styles.discountHeader}>
+            <Feather name="star" size={16} color="#f59e0b" />
+            <Text style={[styles.discountTitle, { color: '#f59e0b' }]}>🎉 First Order Discount</Text>
+          </View>
+          <View style={styles.discountCard}>
+            <View style={styles.discountRow}>
+              <Text style={styles.discountLabel}>Code:</Text>
+              <Text style={styles.discountCodeValue}>{discountCode || 'FIRST_ORDER'}</Text>
+            </View>
+            <View style={styles.discountRow}>
+              <Text style={styles.discountLabel}>Discount:</Text>
+              <Text style={styles.discountValue}>
+                {discountPercentage ? `${discountPercentage}% OFF` : `₦${order.discount.toLocaleString()} OFF`}
+              </Text>
+            </View>
+            <View style={styles.discountRow}>
+              <Text style={styles.discountLabel}>Description:</Text>
+              <Text style={styles.discountDesc}>
+                {discountMeta?.description || 'First order discount - 10% off'}
+              </Text>
+            </View>
+            <View style={styles.discountRow}>
+              <Text style={styles.discountLabel}>Type:</Text>
+              <Text style={[styles.discountTypeBadge, styles.platformTypeBadge]}>
+                🌍 Platform Promotion
+              </Text>
+            </View>
+          </View>
+          <View style={styles.savingsRow}>
+            <Text style={styles.savingsLabel}>Total Savings:</Text>
+            <Text style={styles.savingsAmount}>-₦{order.discount.toLocaleString()}</Text>
+          </View>
+        </View>
+      );
+    }
+
+    // Promo Code Discount
+    if (isPromoCode) {
+      const promoCodeValue = discountMeta?.code || discountCode;
+      const promoDiscountValue = discountMeta?.discount_value || discountPercentage;
+      const promoDiscountType = discountMeta?.discount_type || discountType;
+      
+      return (
+        <View style={styles.discountSection}>
+          <View style={styles.discountHeader}>
+            <Feather name="tag" size={16} color="#f43f5e" />
+            <Text style={styles.discountTitle}>🏷️ Promo Code Applied</Text>
+          </View>
+          <View style={styles.discountCard}>
+            <View style={styles.discountRow}>
+              <Text style={styles.discountLabel}>Code:</Text>
+              <Text style={styles.discountCodeValue}>{promoCodeValue}</Text>
+            </View>
+            <View style={styles.discountRow}>
+              <Text style={styles.discountLabel}>Discount:</Text>
+              <Text style={styles.discountValue}>
+                {promoDiscountType === 'percentage' 
+                  ? `${promoDiscountValue || discountPercentage}% OFF`
+                  : `₦${(discountMeta?.discount_value || order.discount).toLocaleString()} OFF`}
+              </Text>
+            </View>
+            <View style={styles.discountRow}>
+              <Text style={styles.discountLabel}>Type:</Text>
+              <Text style={[
+                styles.discountTypeBadge,
+                isVendorPromo ? styles.vendorTypeBadge : styles.platformTypeBadge
+              ]}>
+                {isVendorPromo ? '🏪 Store Promo Code' : '🌍 Platform Promo Code'}
+              </Text>
+            </View>
+            {vendorName && (
+              <View style={styles.discountRow}>
+                <Text style={styles.discountLabel}>Store:</Text>
+                <Text style={styles.discountDesc}>{vendorName}</Text>
+              </View>
+            )}
+            {discountMeta?.description && (
+              <View style={styles.discountRow}>
+                <Text style={styles.discountLabel}>Description:</Text>
+                <Text style={styles.discountDesc}>{discountMeta.description}</Text>
+              </View>
+            )}
+          </View>
+          <View style={styles.savingsRow}>
+            <Text style={styles.savingsLabel}>Total Savings:</Text>
+            <Text style={styles.savingsAmount}>-₦{order.discount.toLocaleString()}</Text>
+          </View>
+        </View>
+      );
+    }
+
+    // Unknown / Fallback
+    return (
+      <View style={styles.discountSection}>
+        <View style={styles.discountHeader}>
+          <Feather name="tag" size={16} color="#f43f5e" />
+          <Text style={styles.discountTitle}>Discount Applied</Text>
+        </View>
+        <View style={styles.discountCard}>
+          <Text style={styles.discountAmount}>
+            -₦{order.discount.toLocaleString()}
+          </Text>
+          <Text style={styles.discountNote}>
+            {discountPercentage ? `${discountPercentage}% off` : 'Special offer applied'}
+          </Text>
+        </View>
+        <View style={styles.savingsRow}>
+          <Text style={styles.savingsLabel}>Total Savings:</Text>
+          <Text style={styles.savingsAmount}>-₦{order.discount.toLocaleString()}</Text>
+        </View>
+      </View>
+    );
+  };
+
   const callRider = () => {
     if (rider?.phone) {
       Linking.openURL(`tel:${rider.phone}`);
@@ -243,7 +383,7 @@ export function AdminOrderDetailsScreen() {
             </View>
           ))}
 
-          {/* Order Summary */}
+          {/* Order Summary with Discount Details */}
           <View style={styles.summaryContainer}>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Subtotal</Text>
@@ -253,12 +393,10 @@ export function AdminOrderDetailsScreen() {
               <Text style={styles.summaryLabel}>Delivery Fee</Text>
               <Text style={styles.summaryValue}>₦{order.delivery_fee?.toLocaleString() || 0}</Text>
             </View>
-            {order.discount > 0 && (
-              <View style={[styles.summaryRow, styles.discountRow]}>
-                <Text style={styles.discountLabel}>Discount</Text>
-                <Text style={styles.discountValue}>-₦{order.discount.toLocaleString()}</Text>
-              </View>
-            )}
+            
+            {/* ✅ Render discount details here */}
+            {renderDiscountDetails()}
+            
             <View style={[styles.summaryRow, styles.totalRow]}>
               <Text style={styles.totalLabel}>Customer Total</Text>
               <Text style={styles.totalValue}>₦{order.total?.toLocaleString() || 0}</Text>
@@ -266,7 +404,7 @@ export function AdminOrderDetailsScreen() {
           </View>
         </View>
 
-        {/* FINANCIAL BREAKDOWN - UPDATED SECTION */}
+        {/* FINANCIAL BREAKDOWN - UPDATED SECTION WITH DISCOUNT IMPACT */}
         <View style={styles.section}>
           <TouchableOpacity 
             style={styles.accordionHeader}
@@ -296,6 +434,19 @@ export function AdminOrderDetailsScreen() {
                 ({order.platform_commission_percentage || 10}% of ₦{order.subtotal?.toLocaleString()})
               </Text>
 
+              {/* Discount Impact on Platform */}
+              {order.discount > 0 && (
+                <View style={styles.financialRow}>
+                  <View style={styles.financialLabelContainer}>
+                    <Feather name="tag" size={14} color="#f43f5e" />
+                    <Text style={styles.financialLabel}>Discount Applied</Text>
+                  </View>
+                  <Text style={[styles.financialValue, styles.deductionText]}>
+                    -₦{order.discount.toLocaleString()}
+                  </Text>
+                </View>
+              )}
+
               {/* Flutterwave Fee */}
               <View style={styles.financialRow}>
                 <View style={styles.financialLabelContainer}>
@@ -307,7 +458,7 @@ export function AdminOrderDetailsScreen() {
                 </Text>
               </View>
               <Text style={styles.financialSubtext}>
-                (2% of ₦{order.subtotal?.toLocaleString()})
+                (1.4% of transaction)
               </Text>
 
               {/* Platform Delivery Share (50% of delivery) */}
@@ -324,7 +475,7 @@ export function AdminOrderDetailsScreen() {
                 (50% of ₦{order.delivery_fee?.toLocaleString()} delivery fee)
               </Text>
 
-              {/* Platform Net Earnings (Commission - Flutterwave) */}
+              {/* Platform Net Earnings (Commission - Flutterwave +/- Discount impact) */}
               <View style={styles.financialRow}>
                 <View style={styles.financialLabelContainer}>
                   <Feather name="trending-up" size={14} color="#10b981" />
@@ -355,7 +506,7 @@ export function AdminOrderDetailsScreen() {
                   <Text style={styles.financialLabel}>Vendor Payout</Text>
                 </View>
                 <Text style={styles.financialValue}>
-                  ₦{(order.subtotal - (order.platform_commission || 0)).toLocaleString()}
+                  ₦{order.vendor_payout?.toLocaleString() || (order.subtotal - (order.platform_commission || 0)).toLocaleString()}
                 </Text>
               </View>
 
@@ -366,17 +517,18 @@ export function AdminOrderDetailsScreen() {
                   <Text style={styles.financialLabel}>Rider Payout</Text>
                 </View>
                 <Text style={styles.financialValue}>
-                  ₦{riderShare.toLocaleString()}
+                  ₦{order.rider_earnings?.toLocaleString() || riderShare.toLocaleString()}
                 </Text>
               </View>
 
               {/* Discount Info (if any) */}
               {order.discount > 0 && (
-                <View style={styles.discountInfo}>
-                  <Text style={styles.discountInfoText}>
-                    ℹ️ Discount of ₦{order.discount.toLocaleString()} applied
-                    {order.discount_type === 'first_order' ? ' (First Order - Platform paid)' : ''}
-                    {order.discount_type === 'vendor_promo' ? ' (Vendor Promo - Vendor paid)' : ''}
+                <View style={styles.discountImpactInfo}>
+                  <Feather name="info" size={12} color="#f59e0b" />
+                  <Text style={styles.discountImpactText}>
+                    {order.discount_metadata?.applied_by === 'vendor' 
+                      ? `This discount (₦${order.discount.toLocaleString()}) was borne by the vendor.`
+                      : `This discount (₦${order.discount.toLocaleString()}) was borne by the platform.`}
                   </Text>
                 </View>
               )}
@@ -754,17 +906,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#fff',
   },
-  discountRow: {
-    marginBottom: 4,
-  },
-  discountLabel: {
-    fontSize: 12,
-    color: '#f43f5e',
-  },
-  discountValue: {
-    fontSize: 12,
-    color: '#f43f5e',
-  },
   totalRow: {
     marginTop: 8,
     paddingTop: 8,
@@ -780,6 +921,106 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: '#f97316',
+  },
+  // Discount Section Styles
+  discountSection: {
+    marginTop: 8,
+    marginBottom: 8,
+    padding: 12,
+    backgroundColor: 'rgba(239,68,68,0.05)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(239,68,68,0.2)',
+  },
+  discountHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+  },
+  discountTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#f43f5e',
+  },
+  discountCard: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 8,
+    padding: 10,
+    gap: 6,
+  },
+  discountRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'flex-start',
+  },
+  discountLabel: {
+    width: 80,
+    fontSize: 11,
+    color: '#666',
+  },
+  discountCodeValue: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#f97316',
+    fontFamily: 'monospace',
+  },
+  discountValue: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#10b981',
+  },
+  discountDesc: {
+    flex: 1,
+    fontSize: 11,
+    color: '#666',
+  },
+  discountTypeBadge: {
+    fontSize: 11,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    overflow: 'hidden',
+    alignSelf: 'flex-start',
+  },
+  platformTypeBadge: {
+    backgroundColor: 'rgba(139,92,246,0.1)',
+    color: '#8b5cf6',
+  },
+  vendorTypeBadge: {
+    backgroundColor: 'rgba(249,115,22,0.1)',
+    color: '#f97316',
+  },
+  discountAmount: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#f43f5e',
+    textAlign: 'center',
+  },
+  discountNote: {
+    fontSize: 11,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  savingsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(239,68,68,0.2)',
+  },
+  savingsLabel: {
+    fontSize: 12,
+    color: '#f43f5e',
+  },
+  savingsAmount: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#f43f5e',
   },
   // Financial styles
   financialCard: {
@@ -818,6 +1059,9 @@ const styles = StyleSheet.create({
   feeText: {
     color: '#ef4444',
   },
+  deductionText: {
+    color: '#f43f5e',
+  },
   financialTotalRow: {
     marginTop: 12,
     paddingTop: 12,
@@ -839,16 +1083,19 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.05)',
     marginVertical: 12,
   },
-  discountInfo: {
+  discountImpactInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     marginTop: 12,
     padding: 8,
-    backgroundColor: 'rgba(249,115,22,0.1)',
+    backgroundColor: 'rgba(245,158,11,0.1)',
     borderRadius: 6,
   },
-  discountInfoText: {
+  discountImpactText: {
+    flex: 1,
     fontSize: 11,
-    color: '#f97316',
-    textAlign: 'center',
+    color: '#f59e0b',
   },
   paymentReference: {
     marginTop: 12,

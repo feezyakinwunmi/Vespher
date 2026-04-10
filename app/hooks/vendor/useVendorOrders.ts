@@ -123,46 +123,54 @@ export function useVendorOrders() {
                                '';
 
           // Return complete order with all fields
-          return {
-            id: order.id,
-            order_number: order.order_number || order.id.slice(0, 8),
-            customer_id: order.customer_id,
-            vendor_id: order.vendor_id,
-            rider_id: order.rider_id,
-            items: enrichedItems,
-            status: order.status,
-            subtotal: order.subtotal || 0,
-            delivery_fee: order.delivery_fee || 0,
-            service_fee: order.service_fee || 0,
-            discount: order.discount || 0,
-            total: order.total || 0,
-            payment_method: order.payment_method || 'cash',
-            payment_status: order.payment_status || 'pending',
-            delivery_address: order.delivery_address || {},
-            notes: order.notes,
-            created_at: order.created_at,
-            updated_at: order.updated_at,
-            accepted_at: order.accepted_at,
-            prepared_at: order.prepared_at,
-            picked_up_at: order.picked_up_at,
-            delivered_at: order.delivered_at,
-            customer: order.customer,
-            customer_name: customerName,
-            customer_phone: customerPhone,
-            customer_email: order.customer?.email,
-            
-            // Scheduled fields
-            is_scheduled: order.is_scheduled || false,
-            scheduled_datetime: order.scheduled_datetime,
-            event_type: order.event_type,
-            guest_count: order.guest_count,
-            special_request_category: order.special_request_category,
-            special_request_text: order.special_request_text,
-            
-            // Promotion fields
-            promotion_id: order.promotion_id,
-            promotion_details: order.promotion_details,
-          };
+        // In the fetchOrders function, update the return object to include discount fields:
+
+return {
+  id: order.id,
+  order_number: order.order_number || order.id.slice(0, 8),
+  customer_id: order.customer_id,
+  vendor_id: order.vendor_id,
+  rider_id: order.rider_id,
+  items: enrichedItems,
+  status: order.status,
+  subtotal: order.subtotal || 0,
+  delivery_fee: order.delivery_fee || 0,
+  service_fee: order.service_fee || 0,
+  discount: order.discount || 0,
+  total: order.total || 0,
+  payment_method: order.payment_method || 'cash',
+  payment_status: order.payment_status || 'pending',
+  delivery_address: order.delivery_address || {},
+  notes: order.notes,
+  created_at: order.created_at,
+  updated_at: order.updated_at,
+  accepted_at: order.accepted_at,
+  prepared_at: order.prepared_at,
+  picked_up_at: order.picked_up_at,
+  delivered_at: order.delivered_at,
+  customer: order.customer,
+  customer_name: customerName,
+  customer_phone: customerPhone,
+  customer_email: order.customer?.email,
+  
+  // ✅ ADD THESE DISCOUNT FIELDS
+  discount_code: order.discount_code,
+  discount_type: order.discount_type,
+  discount_percentage: order.discount_percentage,
+  discount_metadata: order.discount_metadata,
+  
+  // Scheduled fields
+  is_scheduled: order.is_scheduled || false,
+  scheduled_datetime: order.scheduled_datetime,
+  event_type: order.event_type,
+  guest_count: order.guest_count,
+  special_request_category: order.special_request_category,
+  special_request_text: order.special_request_text,
+  
+  // Promotion fields
+  promotion_id: order.promotion_id,
+  promotion_details: order.promotion_details,
+};
         })
       );
 
@@ -410,31 +418,38 @@ export function useVendorOrders() {
               };
             });
 
-            const newOrder: Order = {
-              id: data.id,
-              order_number: data.order_number || data.id.slice(0, 8),
-              customer_id: data.customer_id,
-              vendor_id: data.vendor_id,
-              rider_id: data.rider_id,
-              items: enrichedItems,
-              status: data.status,
-              subtotal: data.subtotal || 0,
-              delivery_fee: data.delivery_fee || 0,
-              service_fee: data.service_fee || 0,
-              discount: data.discount || 0,
-              total: data.total || 0,
-              payment_method: data.payment_method || 'cash',
-              payment_status: data.payment_status || 'pending',
-              delivery_address: data.delivery_address || {},
-              notes: data.notes,
-              created_at: data.created_at,
-              updated_at: data.updated_at,
-              customer: data.customer,
-              customer_name: data.customer?.name || data.delivery_address?.label || 'Customer',
-              customer_phone: data.customer?.phone || data.delivery_address?.phone || '',
-              promotion_id: data.promotion_id,
-              promotion_details: data.promotion_details,
-            };
+         const newOrder: Order = {
+  id: data.id,
+  order_number: data.order_number || data.id.slice(0, 8),
+  customer_id: data.customer_id,
+  vendor_id: data.vendor_id,
+  rider_id: data.rider_id,
+  items: enrichedItems,
+  status: data.status,
+  subtotal: data.subtotal || 0,
+  delivery_fee: data.delivery_fee || 0,
+  service_fee: data.service_fee || 0,
+  discount: data.discount || 0,
+  total: data.total || 0,
+  payment_method: data.payment_method || 'cash',
+  payment_status: data.payment_status || 'pending',
+  delivery_address: data.delivery_address || {},
+  notes: data.notes,
+  created_at: data.created_at,
+  updated_at: data.updated_at,
+  customer: data.customer,
+  customer_name: data.customer?.name || data.delivery_address?.label || 'Customer',
+  customer_phone: data.customer?.phone || data.delivery_address?.phone || '',
+  
+  // ✅ ADD THESE DISCOUNT FIELDS
+  discount_code: data.discount_code,
+  discount_type: data.discount_type,
+  discount_percentage: data.discount_percentage,
+  discount_metadata: data.discount_metadata,
+  
+  promotion_id: data.promotion_id,
+  promotion_details: data.promotion_details,
+};
             
             setOrders(prev => [newOrder, ...prev]);
           }

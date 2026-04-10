@@ -600,14 +600,17 @@ const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
     
     // =============================================
     // ✅ Calculate who bears the discount and commission
-    // Commission is calculated on ORIGINAL subtotal (industry standard)
     // =============================================
     let vendorPayout = 0;
     let platformCommission = 0;
     let effectiveDiscount = totalDiscount;
     
-    // Check if this is a platform/admin created promo
-    const isPlatformPromo = appliedPromoData?.is_platform_promo === true;
+    // Determine if this is a vendor promo code
+    const isVendorPromo = appliedPromoData?.vendor_id !== null && 
+                          appliedPromoData?.vendor_id !== undefined &&
+                          appliedPromoData?.applies_to === 'vendor_only';
+    
+    const isPlatformPromo = !isVendorPromo && discount > 0;
     
     if (isPlatformPromo && discount > 0) {
       // Platform bears the discount - commission on original subtotal
@@ -644,19 +647,17 @@ const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
     // Stamp duty (₦50 for transactions ₦10,000 and above)
     const stampDuty = flutterwaveTotal >= 10000 ? 50 : 0;
     
-    // Platform net earnings
-// Calculate platform net earnings correctly based on who bears discount
-let platformNetEarnings = 0;
+    // Calculate platform net earnings
+    let platformNetEarnings = 0;
 
-if ((isPlatformPromo && discount > 0) || firstOrderDiscount > 0) {
-  // Platform bears the discount
-  platformNetEarnings = platformCommission + platformDeliveryEarnings - effectiveDiscount - flutterwaveFee - stampDuty - finalWalletUsedAmount;
-  console.log('📉 Platform bears discount: Net earnings reduced by ₦', effectiveDiscount);
-} else {
-  // Vendor bears discount - platform keeps full commission
-  platformNetEarnings = platformCommission + platformDeliveryEarnings - flutterwaveFee - stampDuty - finalWalletUsedAmount;
-  console.log('📈 Vendor bears discount: Platform keeps full commission');
-}
+    if ((isPlatformPromo && discount > 0) || firstOrderDiscount > 0) {
+      platformNetEarnings = platformCommission + platformDeliveryEarnings - effectiveDiscount - flutterwaveFee - stampDuty - finalWalletUsedAmount;
+      console.log('📉 Platform bears discount: Net earnings reduced by ₦', effectiveDiscount);
+    } else {
+      platformNetEarnings = platformCommission + platformDeliveryEarnings - flutterwaveFee - stampDuty - finalWalletUsedAmount;
+      console.log('📈 Vendor bears discount: Platform keeps full commission');
+    }
+    
     console.log('💰 Final Payment breakdown:', {
       subtotal,
       discount: effectiveDiscount,
@@ -699,6 +700,73 @@ if ((isPlatformPromo && discount > 0) || firstOrderDiscount > 0) {
       paymentStatus = 'paid';
     } else {
       paymentStatus = 'pending';
+    }
+
+    // =============================================
+    // ✅ BUILD DISCOUNT METADATA - FIXED FOR VENDOR PROMOS
+    // =============================================
+    let discountMetadata = null;
+    let discountCode = null;
+    let discountType = null;
+    let discountPercentage = null;
+    
+    // Handle promo code discount
+    if (promoApplied && appliedPromoData) {
+      discountCode = promoCode.toUpperCase();
+      discountType = appliedPromoData.discount_type;
+      discountPercentage = appliedPromoData.discount_type === 'percentage' ? appliedPromoData.discount_value : null;
+      
+      // Determine if this is a vendor promo code
+      const isVendorPromoCode = appliedPromoData.vendor_id !== null && 
+                                appliedPromoData.vendor_id !== undefined &&
+                                appliedPromoData.applies_to === 'vendor_only';
+      
+      // Get vendor name if it's a vendor promo
+      let vendorName = null;
+      if (isVendorPromoCode && appliedPromoData.vendor_id) {
+        const { data: vendor } = await supabase
+          .from('vendors')
+          .select('name')
+          .eq('id', appliedPromoData.vendor_id)
+          .single();
+        vendorName = vendor?.name;
+      }
+      
+      discountMetadata = {
+        type: 'promo_code',
+        code: appliedPromoData.code,
+        discount_type: appliedPromoData.discount_type,
+        discount_value: appliedPromoData.discount_value,
+        description: appliedPromoData.description || null,
+        applied_by: isVendorPromoCode ? 'vendor' : 'platform',
+        vendor_id: appliedPromoData.vendor_id || null,
+        vendor_name: vendorName,
+        is_platform_promo: !isVendorPromoCode,
+        applies_to: appliedPromoData.applies_to,
+      };
+    }
+    // Handle first order discount
+    else if (firstOrderDiscount > 0) {
+      discountCode = 'FIRST_ORDER';
+      discountType = 'percentage';
+      discountPercentage = 10;
+      
+      discountMetadata = {
+        type: 'first_order',
+        discount_type: 'percentage',
+        discount_value: 10,
+        description: 'First order discount - 10% off',
+        applied_by: 'platform',
+      };
+    }
+    
+    // Add wallet usage to metadata if applicable
+    if (finalWalletUsedAmount > 0) {
+      discountMetadata = {
+        ...(discountMetadata || {}),
+        wallet_used: finalWalletUsedAmount,
+        referral_bonus_applied: true,
+      };
     }
 
     // Insert order
@@ -754,7 +822,7 @@ if ((isPlatformPromo && discount > 0) || firstOrderDiscount > 0) {
         stamp_duty: stampDuty,
         flutterwave_fee: flutterwaveFee,
         flutterwave_fee_percentage: flutterwaveFeePercentage,
-        flutterwave_transaction_id: flutterwaveTransactionId,  // Add this line
+        flutterwave_transaction_id: flutterwaveTransactionId,
         platform_commission: platformCommission,
         platform_commission_percentage: platformFeePercentage,
         platform_delivery_earnings: platformDeliveryEarnings,
@@ -762,6 +830,11 @@ if ((isPlatformPromo && discount > 0) || firstOrderDiscount > 0) {
         vendor_payout: vendorPayout,
         payment_gateway_response: gatewayResponse,
         rider_earnings: riderEarnings,
+        // ✅ DISCOUNT FIELDS
+        discount_code: discountCode,
+        discount_type: discountType,
+        discount_percentage: discountPercentage,
+        discount_metadata: discountMetadata,
       })
       .select()
       .single();
@@ -772,11 +845,13 @@ if ((isPlatformPromo && discount > 0) || firstOrderDiscount > 0) {
     }
 
     console.log('✅ Order inserted successfully:', order.id);
+    
+    // Decrease product stock
     await decreaseProductStock(items);
     console.log('✅ Product stock updated');
 
     // Record first order discount if applied
-    if (isFirstOrder && firstOrderDiscount > 0) {
+    if (firstOrderDiscount > 0) {
       await supabase.from('first_order_discounts').insert({
         user_id: user.id,
         order_id: order.id,
@@ -787,7 +862,7 @@ if ((isPlatformPromo && discount > 0) || firstOrderDiscount > 0) {
     }
 
     // Record promo code usage if applied
-    if (appliedPromoData) {
+    if (promoApplied && appliedPromoData) {
       await supabase.from('promo_code_usage').insert({
         promo_code_id: appliedPromoData.id,
         user_id: user.id,

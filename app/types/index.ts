@@ -230,6 +230,11 @@ export interface Order {
   payment_method: PaymentMethod;
   payment_status?: string;
   payment_reference?: string;
+
+  discount_code?: string;
+  discount_type?: string;
+  discount_percentage?: number;
+  discount_metadata?: any;
   
   delivery_address: any;
   delivery_instructions?: string;

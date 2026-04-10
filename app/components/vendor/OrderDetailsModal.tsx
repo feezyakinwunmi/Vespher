@@ -1,5 +1,5 @@
 // app/components/vendor/OrderDetailsModal.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { addOrderToCalendar } from '../../utils/calendar';
 import { Linking } from 'react-native';
+import { supabase } from '../../lib/supabase';
 
 interface OrderDetailsModalProps {
   visible: boolean;
@@ -58,12 +59,83 @@ export function OrderDetailsModal({
   onReady,
 }: OrderDetailsModalProps) {
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+  const [discountDetails, setDiscountDetails] = useState<any>(null);
+  const [loadingDiscount, setLoadingDiscount] = useState(false);
 
-  if (!order) return null;
+  
+ // Fetch discount details when order has discount
+  // useEffect(() => {
+  //   if (visible && order?.discount > 0) {
+  //     fetchDiscountDetails();
+  //   }
+  // }, [visible, order?.id]);
+  
+ 
 
-  const isScheduled = order.is_scheduled === true;
+  // const fetchDiscountDetails = async () => {
+  //   setLoadingDiscount(true);
+  //   try {
+  //     // Check if discount came from promo code
+  //     const { data: promoUsage, error: promoError } = await supabase
+  //       .from('promo_code_usage')
+  //       .select(`
+  //         *,
+  //         promo_code:promo_code_id (*)
+  //       `)
+  //       .eq('order_id', order.id)
+  //       .maybeSingle();
+
+  //     if (promoError) throw promoError;
+
+  //     if (promoUsage?.promo_code) {
+  //       const promo = promoUsage.promo_code;
+  //       setDiscountDetails({
+  //         type: 'promo_code',
+  //         code: promo.code,
+  //         discount_type: promo.discount_type,
+  //         discount_value: promo.discount_value,
+  //         description: promo.description,
+  //         applies_to: promo.applies_to,
+  //       });
+  //     } else {
+  //       // Check if it's a platform promotion
+  //       const { data: promotion, error: promError } = await supabase
+  //         .from('promotions')
+  //         .select('*')
+  //         .eq('id', order.promotion_id)
+  //         .maybeSingle();
+
+  //       if (!promError && promotion) {
+  //         setDiscountDetails({
+  //           type: 'promotion',
+  //           title: promotion.title,
+  //           description: promotion.description,
+  //           discount_type: promotion.discount_type,
+  //           discount_value: promotion.discount_value,
+  //         });
+  //       } else {
+  //         // Default discount info from order
+  //         setDiscountDetails({
+  //           type: 'general',
+  //           amount: order.discount,
+  //         });
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error('Error fetching discount details:', error);
+  //     setDiscountDetails({
+  //       type: 'general',
+  //       amount: order.discount,
+  //     });
+  //   } finally {
+  //     setLoadingDiscount(false);
+  //   }
+  // };
+
+if (!order) return null;
+ const isScheduled = order.is_scheduled === true;
   const scheduledDateTime = order.scheduled_datetime ? new Date(order.scheduled_datetime) : null;
-
+ 
   const handleAction = (action: string) => {
     switch (action) {
       case 'accept':
@@ -111,6 +183,141 @@ export function OrderDetailsModal({
   const handleAddToCalendar = async () => {
     await addOrderToCalendar(order);
   };
+
+  // Render discount details section
+// Replace your entire renderDiscountDetails function with this:
+
+const renderDiscountDetails = () => {
+  if (!order.discount || order.discount === 0) return null;
+
+  // ✅ READ DIRECTLY FROM ORDER FIELDS (not fetching from other tables)
+  const discountCode = order.discount_code;
+  const discountType = order.discount_type;
+  const discountPercentage = order.discount_percentage;
+  const discountMeta = order.discount_metadata || {};
+  
+  // Check if it's a first order discount
+  const isFirstOrder = discountCode === 'FIRST_ORDER' || discountMeta?.type === 'first_order';
+  
+  // Check if it's a promo code discount
+  const isPromoCode = discountCode && discountCode !== 'FIRST_ORDER' && discountCode !== 'UNKNOWN_DISCOUNT';
+  
+  // Check if it's unknown
+  const isUnknown = discountCode === 'UNKNOWN_DISCOUNT' || !discountCode;
+
+  // First Order Discount
+  if (isFirstOrder) {
+    return (
+      <View style={styles.discountSection}>
+        <View style={styles.discountHeader}>
+          <Feather name="star" size={16} color="#f59e0b" />
+          <Text style={[styles.discountTitle, { color: '#f59e0b' }]}>🎉 First Order Discount</Text>
+        </View>
+        <View style={styles.promoCodeCard}>
+          <View style={styles.promoCodeRow}>
+            <Text style={styles.promoCodeLabel}>Code:</Text>
+            <Text style={styles.promoCodeValue}>{discountCode || 'FIRST_ORDER'}</Text>
+          </View>
+          <View style={styles.promoCodeRow}>
+            <Text style={styles.promoCodeLabel}>Discount:</Text>
+            <Text style={styles.promoCodeDiscount}>
+              {discountPercentage ? `${discountPercentage}% OFF` : `₦${order.discount.toLocaleString()} OFF`}
+            </Text>
+          </View>
+          <View style={styles.promoCodeRow}>
+            <Text style={styles.promoCodeLabel}>Description:</Text>
+            <Text style={styles.promoCodeDesc}>
+              {discountMeta?.description || 'First order discount - 10% off'}
+            </Text>
+          </View>
+          <View style={styles.promoCodeRow}>
+            <Text style={styles.promoCodeLabel}>Type:</Text>
+            <Text style={[styles.promoCodeType, styles.platformType]}>
+              🌍 Platform Promotion
+            </Text>
+          </View>
+        </View>
+        <View style={styles.savingsRow}>
+          <Text style={styles.savingsLabel}>Total Savings:</Text>
+          <Text style={styles.savingsValue}>-₦{order.discount.toLocaleString()}</Text>
+        </View>
+      </View>
+    );
+  }
+
+  // Promo Code Discount
+  if (isPromoCode) {
+    const isVendorPromo = discountMeta?.applied_by === 'vendor' || discountMeta?.vendor_id;
+    const vendorName = discountMeta?.vendor_name;
+    const promoCodeValue = discountMeta?.code || discountCode;
+    const promoDiscountValue = discountMeta?.discount_value || discountPercentage;
+    const promoDiscountType = discountMeta?.discount_type || discountType;
+    
+    return (
+      <View style={styles.discountSection}>
+        <View style={styles.discountHeader}>
+          <Feather name="tag" size={16} color="#f43f5e" />
+          <Text style={styles.discountTitle}>🏷️ Promo Code Applied</Text>
+        </View>
+        <View style={styles.promoCodeCard}>
+          <View style={styles.promoCodeRow}>
+            <Text style={styles.promoCodeLabel}>Code:</Text>
+            <Text style={styles.promoCodeValue}>{promoCodeValue}</Text>
+          </View>
+          <View style={styles.promoCodeRow}>
+            <Text style={styles.promoCodeLabel}>Discount:</Text>
+            <Text style={styles.promoCodeDiscount}>
+              {promoDiscountType === 'percentage' 
+                ? `${promoDiscountValue || discountPercentage}% OFF`
+                : `₦${(discountMeta?.discount_value || order.discount).toLocaleString()} OFF`}
+            </Text>
+          </View>
+          <View style={styles.promoCodeRow}>
+            <Text style={styles.promoCodeLabel}>Type:</Text>
+            <Text style={[
+              styles.promoCodeType,
+              isVendorPromo ? styles.vendorType : styles.platformType
+            ]}>
+              {isVendorPromo ? '🏪 Store Promo Code' : '🌍 Platform Promo Code'}
+            </Text>
+          </View>
+          {discountMeta?.description && (
+            <View style={styles.promoCodeRow}>
+              <Text style={styles.promoCodeLabel}>Description:</Text>
+              <Text style={styles.promoCodeDesc}>{discountMeta.description}</Text>
+            </View>
+          )}
+        </View>
+        <View style={styles.savingsRow}>
+          <Text style={styles.savingsLabel}>Total Savings:</Text>
+          <Text style={styles.savingsValue}>-₦{order.discount.toLocaleString()}</Text>
+        </View>
+      </View>
+    );
+  }
+
+  // Unknown / Fallback
+  return (
+    <View style={styles.discountSection}>
+      <View style={styles.discountHeader}>
+        <Feather name="tag" size={16} color="#f43f5e" />
+        <Text style={styles.discountTitle}>Discount Applied</Text>
+      </View>
+      <View style={styles.generalDiscountCard}>
+        <Text style={styles.generalDiscountAmount}>
+          -₦{order.discount.toLocaleString()}
+        </Text>
+        <Text style={styles.generalDiscountNote}>
+          {discountPercentage ? `${discountPercentage}% off` : 'Special offer applied'}
+        </Text>
+      </View>
+      <View style={styles.savingsRow}>
+        <Text style={styles.savingsLabel}>Total Savings:</Text>
+        <Text style={styles.savingsValue}>-₦{order.discount.toLocaleString()}</Text>
+      </View>
+    </View>
+  );
+};
 
   const getActionButtons = () => {
     if (isScheduled && order.status === 'pending') {
@@ -356,11 +563,10 @@ export function OrderDetailsModal({
               </View>
             </View>
 
-            {/* Delivery Address - No Map, Just Address Details */}
+            {/* Delivery Address */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Delivery Location</Text>
               
-              {/* Address Details Card */}
               <View style={styles.addressCard}>
                 <View style={styles.addressDetails}>
                   <Feather name="map-pin" size={18} color="#f97316" style={styles.addressIcon} />
@@ -379,7 +585,6 @@ export function OrderDetailsModal({
                 </View>
               </View>
 
-              {/* Get Directions Button */}
               {order.delivery_address?.latitude && order.delivery_address?.longitude && (
                 <TouchableOpacity
                   style={styles.directionsButton}
@@ -428,7 +633,7 @@ export function OrderDetailsModal({
               ))}
               {renderPromotionDetails()}
 
-              {/* Order Summary */}
+              {/* Order Summary with Discount Details */}
               <View style={styles.summaryContainer}>
                 <View style={styles.summaryRow}>
                   <Text style={styles.summaryLabel}>Subtotal</Text>
@@ -444,12 +649,12 @@ export function OrderDetailsModal({
                     <Text style={styles.summaryValue}>₦{(order.service_fee || 0).toLocaleString()}</Text>
                   </View>
                 )}
-                {(order.discount || 0) > 0 && (
-                  <View style={[styles.summaryRow, styles.discountRow]}>
-                    <Text style={styles.discountLabel}>Discount</Text>
-                    <Text style={styles.discountValue}>-₦{(order.discount || 0).toLocaleString()}</Text>
-                  </View>
-                )}
+
+  
+                
+                {/* Render the discount details section */}
+                {renderDiscountDetails()}
+                
                 <View style={[styles.summaryRow, styles.totalRow]}>
                   <Text style={styles.totalLabel}>Total</Text>
                   <Text style={styles.totalValue}>₦{(order.total || 0).toLocaleString()}</Text>
@@ -484,7 +689,7 @@ export function OrderDetailsModal({
             )}
           </ScrollView>
 
-          {/* Action Buttons - Fixed at bottom */}
+          {/* Action Buttons */}
           <View style={styles.modalFooter}>
             {getActionButtons()}
           </View>
@@ -593,7 +798,6 @@ const styles = StyleSheet.create({
   customerInfo: {
     gap: 8,
   },
-  // New address styles (no map)
   addressCard: {
     backgroundColor: '#2a2a2a',
     borderRadius: 12,
@@ -653,7 +857,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#666',
   },
-  // ... keep all your existing styles for itemCard, summary, promotion, etc.
   itemCard: {
     flexDirection: 'row',
     backgroundColor: '#2a2a2a',
@@ -715,95 +918,132 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#fff',
   },
-  promotionSection: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(249,115,22,0.3)',
+  // Discount Section Styles
+  discountSection: {
+    marginTop: 8,
+    marginBottom: 8,
+    padding: 12,
+    backgroundColor: 'rgba(239,68,68,0.05)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(239,68,68,0.2)',
   },
-  promotionHeader: {
+  discountHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     marginBottom: 10,
   },
-  promotionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#f97316',
-  },
-  promotionItem: {
-    backgroundColor: 'rgba(249,115,22,0.08)',
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(249,115,22,0.2)',
-  },
-  promotionItemHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  promotionItemName: {
+  discountTitle: {
     fontSize: 13,
-    fontWeight: '500',
-    color: '#fff',
-    flex: 1,
-  },
-  freeBadge: {
-    backgroundColor: 'rgba(16,185,129,0.2)',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  freeBadgeText: {
-    fontSize: 10,
-    color: '#10b981',
     fontWeight: '600',
+    color: '#f43f5e',
   },
-  comboBadge: {
-    backgroundColor: 'rgba(249,115,22,0.2)',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
+  promoCodeCard: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 8,
+    padding: 10,
+    gap: 6,
   },
-  comboBadgeText: {
-    fontSize: 10,
-    color: '#f97316',
-    fontWeight: '600',
+  promoCodeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'flex-start',
   },
-  comboDetailText: {
+  promoCodeLabel: {
+    width: 80,
     fontSize: 11,
+    color: '#666',
+  },
+  promoCodeValue: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '600',
     color: '#f97316',
+    fontFamily: 'monospace',
+  },
+  promoCodeDiscount: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#10b981',
+  },
+  promoCodeDesc: {
+    flex: 1,
+    fontSize: 11,
+    color: '#666',
+  },
+  promoCodeType: {
+    flex: 1,
+    fontSize: 11,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    alignSelf: 'flex-start',
+  },
+  platformType: {
+    backgroundColor: 'rgba(139,92,246,0.1)',
+    color: '#8b5cf6',
+  },
+  vendorType: {
+    backgroundColor: 'rgba(249,115,22,0.1)',
+    color: '#f97316',
+  },
+  promotionCard: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 8,
+    padding: 10,
+    gap: 6,
+  },
+  promotionName: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  promotionDesc: {
+    fontSize: 11,
+    color: '#666',
+  },
+  promotionDiscount: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     marginTop: 4,
   },
-  comboMainText: {
-    fontSize: 10,
-    color: '#666',
-    marginTop: 2,
-  },
-  comboFreeText: {
-    fontSize: 10,
-    color: '#10b981',
-    marginTop: 2,
-  },
-  promotionPriceText: {
-    fontSize: 10,
+  promotionDiscountText: {
+    fontSize: 12,
     color: '#f97316',
-    marginTop: 2,
     fontWeight: '500',
   },
-  discountRow: {
-    marginBottom: 4,
+  generalDiscountCard: {
+    alignItems: 'center',
+    padding: 8,
   },
-  discountLabel: {
+  generalDiscountAmount: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#f43f5e',
+  },
+  generalDiscountNote: {
+    fontSize: 11,
+    color: '#666',
+    marginTop: 4,
+  },
+  savingsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(239,68,68,0.2)',
+  },
+  savingsLabel: {
     fontSize: 12,
     color: '#f43f5e',
   },
-  discountValue: {
+  savingsValue: {
     fontSize: 12,
+    fontWeight: '600',
     color: '#f43f5e',
   },
   totalRow: {
@@ -905,5 +1145,85 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     color: '#8b5cf6',
+  },
+  promotionSection: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(249,115,22,0.3)',
+  },
+  promotionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+  },
+  promotionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#f97316',
+  },
+  promotionItem: {
+    backgroundColor: 'rgba(249,115,22,0.08)',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(249,115,22,0.2)',
+  },
+  promotionItemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  promotionItemName: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#fff',
+    flex: 1,
+  },
+  freeBadge: {
+    backgroundColor: 'rgba(16,185,129,0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  freeBadgeText: {
+    fontSize: 10,
+    color: '#10b981',
+    fontWeight: '600',
+  },
+  comboBadge: {
+    backgroundColor: 'rgba(249,115,22,0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  comboBadgeText: {
+    fontSize: 10,
+    color: '#f97316',
+    fontWeight: '600',
+  },
+  comboDetailText: {
+    fontSize: 11,
+    color: '#f97316',
+    marginTop: 4,
+  },
+  comboMainText: {
+    fontSize: 10,
+    color: '#666',
+    marginTop: 2,
+  },
+  comboFreeText: {
+    fontSize: 10,
+    color: '#10b981',
+    marginTop: 2,
+  },
+  promotionPriceText: {
+    fontSize: 10,
+    color: '#f97316',
+    marginTop: 2,
+    fontWeight: '500',
   },
 });
