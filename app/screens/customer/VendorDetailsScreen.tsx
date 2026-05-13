@@ -25,6 +25,8 @@ import { ProductCard } from '../../components/customer/ProductCard';
 import { RootStackParamList } from '../../navigation/types';
 import { VendorMap } from '../../components/VendorMap';
 import { useLocation } from '../../contexts/LocationContext';
+import { HealthWarningModal } from '../../components/customer/HealthWarningModal';
+import { HealthCheckResult } from '../../hooks/customer/useHealthCheck';
 const { width } = Dimensions.get('window');
 
 type VendorDetailsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -45,6 +47,9 @@ export function VendorDetailsScreen() {
   const [coverImageError, setCoverImageError] = useState(false);
   const [logoImageError, setLogoImageError] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
+  const [healthModalVisible, setHealthModalVisible] = useState(false);
+const [healthCheckResult, setHealthCheckResult] = useState<HealthCheckResult | null>(null);
+const [pendingProduct, setPendingProduct] = useState<any>(null);
 
   const vendor = vendors.find(v => v.id === vendorId);
   const [dynamicDeliveryFee, setDynamicDeliveryFee] = useState(vendor?.deliveryFee || 500);
@@ -78,6 +83,28 @@ const getCoverImageUrl = (vendorId: string) => {
   
   // Option 2: Try to construct the URL if you know the filename pattern
   // But since filenames have timestamps, you can't guess it
+};
+
+const handleHealthWarning = (product: any, result: any) => {
+  setPendingProduct(product);
+  setHealthCheckResult(result);
+  setHealthModalVisible(true);
+};
+
+const handleOrderAnyway = () => {
+  if (pendingProduct) {
+    addItem(pendingProduct, 1);
+    showToast(`${pendingProduct.name} added to cart`);
+  }
+  setHealthModalVisible(false);
+  setPendingProduct(null);
+  setHealthCheckResult(null);
+};
+
+const handleGoBack = () => {
+  setHealthModalVisible(false);
+  setPendingProduct(null);
+  setHealthCheckResult(null);
 };
   const isFav = isFavorite(vendor.id);
   const cartItemCount = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -245,12 +272,13 @@ const logoImage = vendor.logo || vendor.image_url || vendor.image || vendor.busi
                 <Text style={styles.categoryTitle}>{category}</Text>
                 <View style={styles.productsGrid}>
                   {products.map(product => (
-                    <ProductCard 
-                      key={product.id} 
-                      product={product} 
-                      variant="horizontal"
-                      onPress={() => {}}
-                    />
+                   <ProductCard 
+  key={product.id} 
+  product={product} 
+  variant="horizontal"
+  onPress={() => {}}
+  onHealthWarning={handleHealthWarning}
+/>
                   ))}
                 </View>
               </View>
@@ -371,6 +399,14 @@ const logoImage = vendor.logo || vendor.image_url || vendor.image || vendor.busi
           </View>
         </Modal>
       </View>
+
+      <HealthWarningModal
+  visible={healthModalVisible}
+  productName={pendingProduct?.name || ''}
+  checkResult={healthCheckResult}
+  onOrderAnyway={handleOrderAnyway}
+  onGoBack={handleGoBack}
+/>
     </SafeAreaView>
   );
 }
@@ -710,4 +746,12 @@ const styles = StyleSheet.create({
   },
 });
 
+
+function showToast(arg0: string) {
+  throw new Error('Function not implemented.');
+}
+
+function addItem(pendingProduct: any, arg1: number) {
+  throw new Error('Function not implemented.');
+}
 

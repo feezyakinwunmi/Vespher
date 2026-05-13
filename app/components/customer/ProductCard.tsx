@@ -11,38 +11,147 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCart } from '../../contexts/CartContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
+import { HEALTH_CONDITIONS, HealthCondition } from '../../contexts/HealthContext';
 import type { Product } from '../../types';
+import { ActivityIndicator } from 'react-native';
+
 
 interface ProductCardProps {
   product: Product;
   variant?: 'default' | 'compact' | 'horizontal';
   showAddButton?: boolean;
   onPress?: () => void;
+  onHealthWarning?: (product: Product, result: any) => void;
 }
 
 const { width } = Dimensions.get('window');
-const CARD_WIDTH = (width - 48) / 2; // 2 columns with padding
+const CARD_WIDTH = (width - 48) / 2;
 
 export function ProductCard({ 
   product, 
   variant = 'default', 
   showAddButton = true,
-  onPress 
+  onPress,
+  onHealthWarning
 }: ProductCardProps) {
   const { addItem, removeItem, items, updateQuantity } = useCart();
+  const { user } = useAuth();
   const [imageError, setImageError] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
 
   const cartItem = items.find(item => item.product.id === product.id);
   const quantity = cartItem?.quantity || 0;
 
-  const handleAdd = (e: any) => {
+  // Health check function
+ // In ProductCard.tsx, replace the checkProductHealth function with this:
+
+const checkProductHealth = async (product: Product): Promise<boolean> => {
+  if (!user?.id) return true;
+
+  try {
+    const { data: profile, error } = await supabase
+      .from('customer_health_profiles')
+      .select('conditions, is_locked, enable_warnings')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (error || !profile || !profile.is_locked || !profile.enable_warnings || !profile.conditions?.length) {
+      return true;
+    }
+
+    const searchText = `${product.name} ${product.description || ''} ${product.category || ''}`.toLowerCase();
+    const triggeredConditions: HealthCondition[] = [];
+    const effects: string[] = [];
+
+    for (const conditionId of profile.conditions) {
+      const conditionMeta = HEALTH_CONDITIONS.find(c => c.id === conditionId);
+      if (!conditionMeta) continue;
+      
+      for (const tag of conditionMeta.avoidTags) {
+        if (searchText.includes(tag.toLowerCase())) {
+          triggeredConditions.push(conditionId);
+          
+          // Add specific effect message for each condition
+          let effectMessage = '';
+          switch (conditionId) {
+            case 'low_sugar':
+              effectMessage = `⚠️ High in sugar - This item contains sugar which may affect your low sugar diet`;
+              break;
+            case 'diabetic_type2':
+              effectMessage = `🩸 May spike blood sugar - Not ideal for diabetic management`;
+              break;
+            case 'hypertensive':
+              effectMessage = `🧂 High in sodium - May increase blood pressure`;
+              break;
+            case 'workout_mode':
+              effectMessage = `💪 Not workout-friendly - Contains ingredients that may slow fitness progress`;
+              break;
+            case 'weight_loss':
+              effectMessage = `⚖️ High calorie - May hinder weight loss goals`;
+              break;
+            case 'high_cholesterol':
+              effectMessage = `🍔 High in saturated fat - May affect cholesterol levels`;
+              break;
+            default:
+              effectMessage = `⚠️ May be unsuitable for ${conditionMeta.label}`;
+          }
+          effects.push(effectMessage);
+          console.log(`⚠️ Match: "${product.name}" contains "${tag}" -> triggers ${conditionMeta.label}`);
+          break;
+        }
+      }
+    }
+
+    if (triggeredConditions.length > 0) {
+      const conditionNames = triggeredConditions.map(c => 
+        HEALTH_CONDITIONS.find(h => h.id === c)?.label || c
+      ).join(', ');
+      
+      if (onHealthWarning) {
+        onHealthWarning(product, {
+          verdict: 'caution',
+          reason: `This item may not be suitable for your ${conditionNames} condition(s).`,
+          effects: effects,
+          conditions: triggeredConditions,
+        });
+      }
+      return false;
+    }
+    
+    return true;
+    
+  } catch (err) {
+    console.error('Health check error:', err);
+    return true;
+  }
+};
+  const handleAdd = async (e: any) => {
     e.stopPropagation();
-    addItem(product, 1);
+    
+    if (!showAddButton) return;
+    
+    setIsChecking(true);
+    
+    try {
+      const isSafe = await checkProductHealth(product);
+      if (isSafe) {
+        addItem(product, 1);
+      }
+    } finally {
+      setIsChecking(false);
+    }
   };
 
-  const handleIncrement = (e: any) => {
+  const handleIncrement = async (e: any) => {
     e.stopPropagation();
-    addItem(product, 1);
+    if (quantity > 0) {
+      // For increment, we can skip health check since already in cart
+      addItem(product, 1);
+    } else {
+      await handleAdd(e);
+    }
   };
 
   const handleDecrement = (e: any) => {
@@ -59,7 +168,6 @@ export function ProductCard({
   if (variant === 'horizontal') {
     return (
       <TouchableOpacity onPress={onPress} style={styles.horizontalCard}>
-        {/* Image */}
         <View style={styles.horizontalImageContainer}>
           <Image 
             source={{ uri: productImage }} 
@@ -74,7 +182,6 @@ export function ProductCard({
           )}
         </View>
 
-        {/* Content */}
         <View style={styles.horizontalContent}>
           <View>
             <Text style={styles.horizontalName} numberOfLines={1}>{product.name}</Text>
@@ -105,8 +212,12 @@ export function ProductCard({
                   </TouchableOpacity>
                 </View>
               ) : (
-                <TouchableOpacity onPress={handleAdd} style={styles.addButtonSmall}>
-                  <Feather name="plus" size={16} color="#fff" />
+                <TouchableOpacity onPress={handleAdd} style={styles.addButtonSmall} disabled={isChecking}>
+                  {isChecking ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Feather name="plus" size={16} color="#fff" />
+                  )}
                 </TouchableOpacity>
               )
             )}
@@ -142,8 +253,12 @@ export function ProductCard({
           <View style={styles.compactFooter}>
             <Text style={styles.compactPrice}>₦{product.price.toLocaleString()}</Text>
             {showAddButton && product.isAvailable && (
-              <TouchableOpacity onPress={handleAdd} style={styles.compactAddButton}>
-                <Feather name="plus" size={14} color="#fff" />
+              <TouchableOpacity onPress={handleAdd} style={styles.compactAddButton} disabled={isChecking}>
+                {isChecking ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Feather name="plus" size={14} color="#fff" />
+                )}
               </TouchableOpacity>
             )}
           </View>
@@ -155,7 +270,6 @@ export function ProductCard({
   // Default variant
   return (
     <TouchableOpacity onPress={onPress} style={styles.defaultCard}>
-      {/* Image */}
       <View style={styles.defaultImageContainer}>
         <Image 
           source={{ uri: productImage }} 
@@ -182,7 +296,6 @@ export function ProductCard({
         )}
       </View>
 
-      {/* Content */}
       <View style={styles.defaultContent}>
         <Text style={styles.defaultName} numberOfLines={1}>{product.name}</Text>
         <Text style={styles.defaultDescription} numberOfLines={2}>
@@ -218,8 +331,12 @@ export function ProductCard({
                 </TouchableOpacity>
               </View>
             ) : (
-              <TouchableOpacity onPress={handleAdd} style={styles.defaultAddButton}>
-                <Text style={styles.defaultAddText}>Add</Text>
+              <TouchableOpacity onPress={handleAdd} style={styles.defaultAddButton} disabled={isChecking}>
+                {isChecking ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.defaultAddText}>Add</Text>
+                )}
               </TouchableOpacity>
             )
           )}
@@ -228,6 +345,8 @@ export function ProductCard({
     </TouchableOpacity>
   );
 }
+
+
 
 const styles = StyleSheet.create({
   // Horizontal variant

@@ -11,6 +11,8 @@ export type RootStackParamList = {
   RoleSelection: undefined;
   ForgotPassword: undefined;
   VendorAddresses: undefined;
+    Explore: { mealTimeFilter?: string } | undefined;
+
   AddressPicker: {
     onSelectAddress?: (address: any) => void;
     initialLocation?: { latitude: number; longitude: number };
@@ -27,7 +29,6 @@ AnnouncementDetails: { announcementId: string };
   
   // Customer Screens
   Home: undefined;
-  Explore: undefined;
   Vendors: undefined;
   VendorDetails: { vendorId: string };
   Orders: undefined;
@@ -40,6 +41,8 @@ AnnouncementDetails: { announcementId: string };
   Support: undefined;
   Privacy: undefined;
     AllVendorsMap: undefined
+      MealPlanner: undefined;  // ← ADD THIS
+
 
     TestWebView: undefined;
   Search: undefined;
@@ -112,6 +115,8 @@ export type CustomerTabParamList = {
   TestWebView: undefined;
   AllVendorsMap: undefined;
   Rewards:undefined;
+    MealPlanner: undefined;  // ← ADD THIS
+
 };
 
 export type VendorTabParamList = {
