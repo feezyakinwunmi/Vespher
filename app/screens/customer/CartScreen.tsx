@@ -28,6 +28,7 @@ import { FlutterwavePayment } from '../../components/FlutterwavePayment';
 import { useLocation } from '../../contexts/LocationContext';
 import type { Address, CartItem } from '../../types';
 import Toast from 'react-native-toast-message';
+import { CentiivPayment } from '../../components/CentiivPayment';
 
 type CartScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type CartScreenRouteProp = RouteProp<RootStackParamList, 'Cart'>;
@@ -94,6 +95,11 @@ const [applyFreeDelivery, setApplyFreeDelivery] = useState(false);
 const [applyReferralBonus, setApplyReferralBonus] = useState(false);
 const [walletBalance, setWalletBalance] = useState(0);
 const [applyWallet, setApplyWallet] = useState(false);
+
+//payment
+const [selectedGateway, setSelectedGateway] = useState<'flutterwave' | 'centiiv'>('flutterwave');
+const [showCentiiv, setShowCentiiv] = useState(false);
+
 
 
   const showToast = (message: string) => {
@@ -947,29 +953,54 @@ const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
   }
 };
 
-  const handleCardPayment = () => {
-    if (!user || !selectedAddress || !vendorId) {
-      showToast('Please complete all required fields');
-      return;
-    }
+  // const handleCardPayment = () => {
+  //   if (!user || !selectedAddress || !vendorId) {
+  //     showToast('Please complete all required fields');
+  //     return;
+  //   }
     
-    setProcessingPayment(true);
-    setShowCheckout(false);
+  //   setProcessingPayment(true);
+  //   setShowCheckout(false);
     
-    const reference = generateReference();
-    setPaymentReference(reference);
-    setFlutterwaveResponse(null);
+  //   const reference = generateReference();
+  //   setPaymentReference(reference);
+  //   setFlutterwaveResponse(null);
 
-    console.log('💰 Sending to Flutterwave:', {
-      total,
-      deliveryFee: effectiveDeliveryFee
-    });
+  //   console.log('💰 Sending to Flutterwave:', {
+  //     total,
+  //     deliveryFee: effectiveDeliveryFee
+  //   });
     
-    setTimeout(() => {
-      setShowFlutterwave(true);
-      setProcessingPayment(false);
-    }, 500);
-  };
+  //   setTimeout(() => {
+  //     setShowFlutterwave(true);
+  //     setProcessingPayment(false);
+  //   }, 500);
+  // };
+
+
+
+
+const handleCardPayment = () => {
+  if (!user || !selectedAddress || !vendorId) {
+    showToast('Please complete all required fields');
+    return;
+  }
+
+  setProcessingPayment(true);
+  setShowCheckout(false);
+
+  const reference = generateReference();
+  setPaymentReference(reference);
+
+  setTimeout(() => {
+    setShowFlutterwave(selectedGateway === 'flutterwave');
+    // setShowCentiiv(selectedGateway === 'centiiv');  // add this state too
+    setProcessingPayment(false);
+  }, 500);
+};
+
+
+
 
   const handlePlaceOrder = async () => {
     if (!user) {
@@ -1581,6 +1612,25 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
                       )}
                     </View>
                   </TouchableOpacity>
+                  {/* <TouchableOpacity
+    onPress={() => {
+      setPaymentMethod('card');
+      setSelectedGateway('flutterwave');
+    }}
+    style={[styles.paymentCard, paymentMethod === 'card' && selectedGateway === 'flutterwave' && styles.paymentCardSelected]}
+  >
+    <Text style={styles.paymentLabel}>Card - Flutterwave</Text>
+  </TouchableOpacity>
+
+  <TouchableOpacity
+    onPress={() => {
+      setPaymentMethod('card');
+      setSelectedGateway('centiiv');
+    }}
+    style={[styles.paymentCard, paymentMethod === 'card' && selectedGateway === 'centiiv' && styles.paymentCardSelected]}
+  >
+    <Text style={styles.paymentLabel}>Card - Centiiv (Recommended)</Text>
+  </TouchableOpacity> */}
                 </View>
 
                 {paymentMethod === 'cash' && total < 10000 && (
@@ -1886,6 +1936,28 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
       console.log('❌ Payment closed/cancelled by user');
       setShowFlutterwave(false);
       showToast('You cancelled the payment');
+      setShowCheckout(true);
+    }}
+  />
+)}
+{showCentiiv && (
+  <CentiivPayment
+    visible={showCentiiv}
+    amount={finalTotal}
+    email={user?.email || ''}
+    reference={paymentReference}
+    customerName={user?.name}
+    phone={user?.phone}
+    onSuccess={async (response) => {
+      setShowCentiiv(false);
+      await processOrder(response.tx_ref || paymentReference, {
+        ...response,
+        gateway: 'centiiv'
+      });
+    }}
+    onClose={() => {
+      setShowCentiiv(false);
+      showToast('Payment cancelled');
       setShowCheckout(true);
     }}
   />
