@@ -1,5 +1,6 @@
 export default {
   expo: {
+    
     name: "Vesphe",
     slug: "Vespher",
     version: "1.0.0",
@@ -52,6 +53,7 @@ export default {
       favicon: "./assets/favicon.png"
     },
     plugins: [
+      "expo-font",
       "expo-web-browser",
       [
         "expo-location",

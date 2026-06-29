@@ -27,6 +27,7 @@ import { VendorMap } from '../../components/VendorMap';
 import { useLocation } from '../../contexts/LocationContext';
 import { HealthWarningModal } from '../../components/customer/HealthWarningModal';
 import { HealthCheckResult } from '../../hooks/customer/useHealthCheck';
+import Toast from 'react-native-toast-message';
 const { width } = Dimensions.get('window');
 
 type VendorDetailsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -39,7 +40,7 @@ export function VendorDetailsScreen() {
   const { user } = useAuth();
   const { vendors } = useVendors();
   const { isFavorite, toggleFavorite } = useFavorites();
-  const { items, getSubtotal, vendorId: cartVendorId } = useCart();
+  const { items, getSubtotal, vendorId: cartVendorId, addItem } = useCart();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [showInfo, setShowInfo] = useState(false);
@@ -91,10 +92,15 @@ const handleHealthWarning = (product: any, result: any) => {
   setHealthModalVisible(true);
 };
 
-const handleOrderAnyway = () => {
+const handleOrderAnyway = async () => {
   if (pendingProduct) {
-    addItem(pendingProduct, 1);
-    showToast(`${pendingProduct.name} added to cart`);
+    await addItem(pendingProduct, 1);
+    Toast.show({
+      type: 'success',
+      text1: `${pendingProduct.name} added to cart`,
+      position: 'bottom',
+      visibilityTime: 2000,
+    });
   }
   setHealthModalVisible(false);
   setPendingProduct(null);
@@ -746,12 +752,4 @@ const styles = StyleSheet.create({
   },
 });
 
-
-function showToast(arg0: string) {
-  throw new Error('Function not implemented.');
-}
-
-function addItem(pendingProduct: any, arg1: number) {
-  throw new Error('Function not implemented.');
-}
 

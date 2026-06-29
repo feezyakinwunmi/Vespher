@@ -19,6 +19,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { usePaystack } from 'react-native-paystack-webview';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useVendors } from '../../hooks/customer/useVendors';
@@ -54,6 +55,7 @@ const generateReference = () => {
 export function CartScreen() {
   const navigation = useNavigation<CartScreenNavigationProp>();
   const route = useRoute<CartScreenRouteProp>();
+  const { popup } = usePaystack();
   const { 
     items, 
     removeItem, 
@@ -95,12 +97,8 @@ const [applyFreeDelivery, setApplyFreeDelivery] = useState(false);
 const [applyReferralBonus, setApplyReferralBonus] = useState(false);
 const [walletBalance, setWalletBalance] = useState(0);
 const [applyWallet, setApplyWallet] = useState(false);
-
-//payment
-const [selectedGateway, setSelectedGateway] = useState<'flutterwave' | 'centiiv'>('flutterwave');
+const [showFlutterwave, setShowFlutterwave] = useState(false);
 const [showCentiiv, setShowCentiiv] = useState(false);
-
-
 
   const showToast = (message: string) => {
     Toast.show({
@@ -111,8 +109,6 @@ const [showCentiiv, setShowCentiiv] = useState(false);
     });
   };
   
-  // Payment States
-  const [showFlutterwave, setShowFlutterwave] = useState(false);
   const [paymentReference, setPaymentReference] = useState('');
 
   const vendor = vendors.find(v => v.id === vendorId);
@@ -986,15 +982,51 @@ const handleCardPayment = () => {
     return;
   }
 
+  if (!process.env.EXPO_PUBLIC_PAYSTACK_PUBLIC_KEY) {
+    Alert.alert('Payment Error', 'Paystack public key is not configured.');
+    return;
+  }
+
   setProcessingPayment(true);
   setShowCheckout(false);
 
   const reference = generateReference();
   setPaymentReference(reference);
 
+  popup.checkout({
+    email: user.email || '',
+    amount: finalTotal,
+    reference,
+    metadata: {
+      customer_id: user.id,
+      vendor_id: vendorId,
+      order_type: orderType,
+    },
+    onSuccess: async (response) => {
+      const paystackResponse = {
+        ...response,
+        gateway: 'paystack',
+        tx_ref: response.reference || reference,
+        transaction_id: response.transaction || response.trans || response.reference || reference,
+        status: response.status || 'success',
+      };
+
+      await processOrder(paystackResponse.tx_ref, paystackResponse);
+    },
+    onCancel: () => {
+      showToast('Payment cancelled');
+      setShowCheckout(true);
+      setProcessingPayment(false);
+    },
+    onError: (error) => {
+      console.error('Paystack payment error:', error);
+      showToast(error?.message || 'Payment failed');
+      setShowCheckout(true);
+      setProcessingPayment(false);
+    },
+  });
+
   setTimeout(() => {
-    setShowFlutterwave(selectedGateway === 'flutterwave');
-    // setShowCentiiv(selectedGateway === 'centiiv');  // add this state too
     setProcessingPayment(false);
   }, 500);
 };

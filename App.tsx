@@ -8,6 +8,7 @@ import { AppNavigator } from './app/navigation';
 import { LocationProvider } from './app/contexts/LocationContext';
 import { TrackingProvider } from './app/contexts/TrackingContext';
 import Toast from 'react-native-toast-message';
+import { PaystackProvider } from 'react-native-paystack-webview';
 
 // Import mapbox config to initialize (optional)
 import './app/config/googleMaps';
@@ -22,9 +23,12 @@ function PushNotificationsHandler() {
 }
 
 export default function App() {
+  const paystackPublicKey = process.env.EXPO_PUBLIC_PAYSTACK_PUBLIC_KEY || '';
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
+        <PaystackProvider publicKey={paystackPublicKey} currency="NGN" defaultChannels={['card', 'bank', 'ussd', 'bank_transfer']}>
         <AuthProvider>
           <CartProvider>
             <LocationProvider> 
@@ -36,6 +40,7 @@ export default function App() {
             </LocationProvider>
           </CartProvider>
         </AuthProvider>
+        </PaystackProvider>
         <Toast
           topOffset={50}           
           visibilityTime={3500}
