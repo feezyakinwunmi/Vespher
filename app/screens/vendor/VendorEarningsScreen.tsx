@@ -130,6 +130,8 @@ function ReceiptModal({
     });
   };
 
+  
+
   const paymentStatus = transaction.status || 
                        (isOrder ? 'delivered' : transaction.status) || 
                        'completed';

@@ -26,28 +26,34 @@ import { supabase } from '../../lib/supabase';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import Toast from 'react-native-toast-message';
-import { verifyBankAccount } from '../../utils/flutterwave';
+import { verifyBankAccount } from '../../utils/paystack';
 import ReuseLocationPicker from '../../components/ReuseLocationPicker';
 
 type VendorScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type SettingsTab = 'profile' | 'business' | 'bank' | 'preferences' | 'promos' | 'support' ; // ✅ Added 'payouts'
 type NotificationKey = keyof VendorProfile['notifications'];
 
-// ✅ Updated banks with Flutterwave codes
+// ✅ Paystack-compatible bank codes
 const banks = [
-  { label: 'GTBank', value: 'gtb', code: '058' },
-  { label: 'First Bank', value: 'first', code: '011' },
-  { label: 'UBA', value: 'uba', code: '033' },
-  { label: 'Zenith Bank', value: 'zenith', code: '057' },
-  { label: 'Access Bank', value: 'access', code: '044' },
-  { label: 'Kuda Bank', value: 'kuda', code: '090267' },
-  { label: 'OPay', value: 'opay', code: '100052' },
-  { label: 'PalmPay', value: 'palmpay', code: '100033' },
-  { label: 'Fidelity Bank', value: 'fidelity', code: '070' },
-  { label: 'Union Bank', value: 'union', code: '032' },
-  { label: 'Sterling Bank', value: 'sterling', code: '232' },
-  { label: 'Wema Bank', value: 'wema', code: '035' },
+{ label: 'GTBank', value: 'gtb', code: '058' },
+{ label: 'First Bank', value: 'first', code: '011' },
+{ label: 'UBA', value: 'uba', code: '033' },
+{ label: 'Zenith Bank', value: 'zenith', code: '057' },
+{ label: 'Access Bank', value: 'access', code: '044' },
+{ label: 'Kuda Bank', value: 'kuda', code: '50211' },
+
+// ✅ Updated
+{ label: 'OPay', value: 'opay', code: '999992' },
+
+// ✅ Updated
+{ label: 'PalmPay', value: 'palmpay', code: '999991' },
+
+{ label: 'Fidelity Bank', value: 'fidelity', code: '070' },
+{ label: 'Union Bank', value: 'union', code: '032' },
+{ label: 'Sterling Bank', value: 'sterling', code: '232' },
+{ label: 'Wema Bank', value: 'wema', code: '035' },
 ];
+
 
 type DayKey = keyof BusinessHours;
 
@@ -403,210 +409,6 @@ function QAScreen({ onClose }: { onClose: () => void }) {
   );
 }
 
-// ✅ NEW: Payouts Tab Component
-// function PayoutsTab({ profile }: { profile: VendorProfile }) {
-//   const [isVerifying, setIsVerifying] = useState(false);
-//   const [platformSettings, setPlatformSettings] = useState<any>(null);
-
-//   useEffect(() => {
-//     fetchPlatformSettings();
-//   }, []);
-
-//   const fetchPlatformSettings = async () => {
-//     try {
-//       const { data, error } = await supabase
-//         .from('platform_settings')
-//         .select('*')
-//         .order('id', { ascending: false })
-//         .limit(1)
-//         .single();
-
-//       if (error) throw error;
-//       setPlatformSettings(data);
-//     } catch (error) {
-//       console.error('Error fetching platform settings:', error);
-//     }
-//   };
-
-//   const getBankLabel = (bankValue: string) => {
-//     const bank = banks.find(b => b.value === bankValue);
-//     return bank?.label || bankValue;
-//   };
-
-// const handleRetrySubaccount = async () => {
-//   setIsVerifying(true);
-//   try {
-//     const selectedBank = banks.find(b => b.value === profile.bankName);
-//     if (!selectedBank?.code) {
-//       throw new Error('Bank not found');
-//     }
-
-//     // First verify the account
-//     const verification = await verifyBankAccount(
-//       profile.accountNumber || '',
-//       selectedBank.code
-//     );
-
-//     if (verification.status !== 'success' || !verification.data) {
-//       throw new Error('Bank account verification failed');
-//     }
-
-//     // Create subaccount
-//     const platformFee = platformSettings ? parseFloat(platformSettings.platform_fee_percentage) : 10;
-    
-//     const result = await createVendorSubaccount({
-//       accountBank: selectedBank.code,
-//       accountNumber: profile.accountNumber || '',
-//       businessName: profile.businessName,
-//       businessEmail: profile.email,
-//       businessMobile: profile.phone,
-//       splitPercentage: platformFee,
-//     });
-
-//     if (result.status === 'success' && result.data) {
-//       // Update vendor with subaccount ID
-//       const { error } = await supabase
-//         .from('vendors')
-//         .update({ 
-//           flutterwave_subaccount_id: result.data.subaccount_id,
-//           account_name: result.data.account_name
-//         })
-//         .eq('id', profile.id);
-
-//       if (error) throw error;
-
-//       Alert.alert('Success', 'Payment setup completed successfully!');
-      
-//       // ✅ Refresh the profile to show updated subaccount
-//       // You'll need to add a refresh function from useVendorProfile
-//       // For now, we can reload the page
-//       // window.location.reload(); // Or use a refresh callback
-//     } else {
-//       throw new Error(result.message);
-//     }
-//   } catch (error: any) {
-//     Alert.alert('Error', error.message || 'Failed to setup payment');
-//   } finally {
-//     setIsVerifying(false);
-//   }
-// };
-
-//   return (
-//     <View style={styles.tabContent}>
-//       {/* Payment Status Card */}
-//       <View style={styles.paymentStatusCard}>
-//         <View style={styles.paymentStatusHeader}>
-//           <Feather 
-//             name={profile.flutterwave_subaccount_id ? "check-circle" : "alert-circle"} 
-//             size={24} 
-//             color={profile.flutterwave_subaccount_id ? "#10b981" : "#f59e0b"} 
-//           />
-//           <View style={styles.paymentStatusInfo}>
-//             <Text style={styles.paymentStatusTitle}>
-//               {profile.flutterwave_subaccount_id ? 'Payment Active' : 'Payment Setup Required'}
-//             </Text>
-//             <Text style={styles.paymentStatusSubtitle}>
-//               {profile.flutterwave_subaccount_id 
-//                 ? 'Your account is ready to receive payments' 
-//                 : 'Complete payment setup to start receiving payouts'}
-//             </Text>
-//           </View>
-//         </View>
-
-//         {profile.flutterwave_subaccount_id && (
-//           <View style={styles.subaccountInfo}>
-//             <Text style={styles.subaccountLabel}>Subaccount ID:</Text>
-//             <Text style={styles.subaccountValue} numberOfLines={1}>
-//               {profile.flutterwave_subaccount_id}
-//             </Text>
-//           </View>
-//         )}
-//       </View>
-
-//       {/* Bank Details Card */}
-//       <View style={styles.paymentDetailsCard}>
-//         <Text style={styles.paymentDetailsTitle}>Bank Account Details</Text>
-        
-//         <View style={styles.paymentDetailRow}>
-//           <Text style={styles.paymentDetailLabel}>Bank Name:</Text>
-//           <Text style={styles.paymentDetailValue}>
-//             {getBankLabel(profile.bankName) || 'Not set'}
-//           </Text>
-//         </View>
-
-//         <View style={styles.paymentDetailRow}>
-//           <Text style={styles.paymentDetailLabel}>Account Number:</Text>
-//           <Text style={styles.paymentDetailValue}>
-//             {profile.accountNumber ? `****${profile.accountNumber.slice(-4)}` : 'Not set'}
-//           </Text>
-//         </View>
-
-//         <View style={styles.paymentDetailRow}>
-//           <Text style={styles.paymentDetailLabel}>Account Name:</Text>
-//           <Text style={styles.paymentDetailValue}>
-//             {profile.accountName || 'Not set'}
-//           </Text>
-//         </View>
-//       </View>
-
-//       {/* Platform Fee Card */}
-//       <View style={styles.paymentDetailsCard}>
-//         <Text style={styles.paymentDetailsTitle}>Commission & Fees</Text>
-        
-//         <View style={styles.paymentDetailRow}>
-//           <Text style={styles.paymentDetailLabel}>Platform Commission:</Text>
-//           <Text style={styles.paymentDetailValueHighlight}>
-//             {platformSettings?.platform_fee_percentage || 10}%
-//           </Text>
-//         </View>
-
-//         <View style={styles.paymentDetailRow}>
-//           <Text style={styles.paymentDetailLabel}>Payment Processor:</Text>
-//           <Text style={styles.paymentDetailValue}>Flutterwave</Text>
-//         </View>
-
-//         <View style={styles.paymentNote}>
-//           <Feather name="info" size={14} color="#f97316" />
-//           <Text style={styles.paymentNoteText}>
-//             Commission is deducted from each order's subtotal before payout
-//           </Text>
-//         </View>
-//       </View>
-
-//       {/* Retry Button (if no subaccount) */}
-//       {!profile.flutterwave_subaccount_id && profile.bankName && profile.accountNumber && (
-//         <TouchableOpacity
-//           style={styles.retryButton}
-//           onPress={handleRetrySubaccount}
-//           disabled={isVerifying}
-//         >
-//           <LinearGradient
-//             colors={['#f97316', '#f43f5e']}
-//             style={styles.retryButtonGradient}
-//           >
-//             {isVerifying ? (
-//               <ActivityIndicator color="#fff" />
-//             ) : (
-//               <>
-//                 <Feather name="refresh-cw" size={18} color="#fff" />
-//                 <Text style={styles.retryButtonText}>Complete Payment Setup</Text>
-//               </>
-//             )}
-//           </LinearGradient>
-//         </TouchableOpacity>
-//       )}
-
-//       {/* Info Box */}
-//       <View style={styles.paymentInfoBox}>
-//         <Feather name="info" size={16} color="#666" />
-//         <Text style={styles.paymentInfoText}>
-//           Payouts are processed weekly. Make sure your bank details are correct to avoid payment delays.
-//         </Text>
-//       </View>
-//     </View>
-//   );
-// }
-
 export function VendorSettingsScreen() {
   const navigation = useNavigation<VendorScreenNavigationProp>();
   const { signOut } = useAuth();
@@ -655,46 +457,184 @@ export function VendorSettingsScreen() {
     );
   };
 
-  // ✅ Bank verification function
- const handleVerifyBank = async () => {
-  if (!formData.accountNumber || !formData.bankName) {
-    setVerificationError('Please select bank and enter account number');
-    return;
+// ✅ Bank verification + recipient creation
+const handleVerifyBank = async () => {
+if (!formData.accountNumber || !formData.bankName) {
+setVerificationError(
+'Please select bank and enter account number'
+);
+return;
+}
+
+setIsVerifyingBank(true);
+setVerificationError('');
+
+try {
+// ✅ Find selected bank
+const selectedBank = banks.find(
+(b) => b.value === formData.bankName
+);
+
+console.log('🏦 Selected bank:', selectedBank);
+
+if (!selectedBank?.code) {
+  throw new Error('Invalid bank selected');
+}
+
+// ✅ STEP 1: Verify bank account
+console.log('🔍 Verifying account...');
+
+const verifyResult =
+await supabase.functions.invoke(
+'verify-bank',
+{
+body: {
+account_number:
+formData.accountNumber,
+bank_code: selectedBank.code,
+},
+}
+);
+
+console.log(
+'📦 Verification result:',
+verifyResult
+);
+
+if (
+verifyResult.error ||
+!verifyResult.data?.status
+) {
+throw new Error(
+verifyResult.data?.message ||
+'Bank verification failed'
+);
+}
+
+const verifiedName =
+verifyResult.data.data.account_name;
+
+
+
+
+// ✅ STEP 2: Create Paystack recipient
+console.log('🚀 Creating recipient with:', {
+  account_name: verifiedName,
+  account_number: formData.accountNumber,
+  bank_code: selectedBank.code,
+});
+
+const {
+  data: recipientData,
+  error,
+} = await supabase.functions.invoke(
+  'create-recipient',
+  {
+    body: {
+      account_name: verifiedName,
+      account_number:
+        formData.accountNumber,
+      bank_code: selectedBank.code,
+    },
   }
+);
 
-  setIsVerifyingBank(true);
-  setVerificationError('');
+// ✅ LOG EVERYTHING
+console.log(
+  '📦 Recipient response:',
+  recipientData
+);
 
-  try {
-    const selectedBank = banks.find(b => b.value === formData.bankName);
-    if (!selectedBank?.code) {
-      throw new Error('Invalid bank selection');
-    }
+console.log(
+  '❌ Recipient error:',
+  error
+);
 
-    const result = await verifyBankAccount(
-      formData.accountNumber,
-      selectedBank.code
-    );
+if (error) {
+  console.error(
+    '❌ Supabase invoke error:',
+    error
+  );
 
-    if (result.status === 'success' && result.data) {
-      setFormData((prev: any) => ({ 
-        ...prev, 
-        accountName: result.data?.account_name || '',
-        bankCode: selectedBank.code, // ✅ Save bank code too
-      }));
-      setBankVerified(true);
-      showToast(`Account verified: ${result.data.account_name}`);
-    } else {
-      throw new Error(result.message);
-    }
-  } catch (error: any) {
-    console.error('Verification error:', error);
-    setVerificationError(error.message || 'Invalid account details');
-    setBankVerified(false);
-  } finally {
-    setIsVerifyingBank(false);
-  }
+  throw new Error(
+    error.message ||
+      'Failed to create recipient'
+  );
+}
+
+// ✅ Safer check
+if (
+  !recipientData ||
+  recipientData.status === false
+) {
+  console.error(
+    '❌ Paystack recipient failed:',
+    recipientData
+  );
+
+  throw new Error(
+    recipientData?.message ||
+      'Recipient creation failed'
+  );
+}
+
+// ✅ Paystack recipient code
+const recipientCode =
+  recipientData.data.recipient_code;
+
+console.log(
+  '🎉 Recipient code:',
+  recipientCode
+);
+
+const updatedFormData = {
+  ...formData,
+  accountName: verifiedName,
+  bankCode: selectedBank.code,
+  recipientCode: recipientCode,
 };
+
+setFormData(updatedFormData);
+
+console.log(
+  '💾 Updated formData with recipient'
+);
+
+setBankVerified(true);
+
+showToast(
+  `Account verified: ${verifiedName}`
+);
+
+console.log(
+  '✅ Recipient created successfully:',
+  recipientCode
+);
+
+
+} catch (error: any) {
+console.error(
+'❌ Verification error:',
+error
+);
+
+
+setVerificationError(
+  error.message ||
+    'Invalid account details'
+);
+
+setBankVerified(false);
+
+
+} finally {
+setIsVerifyingBank(false);
+}
+};
+
+
+
+
 
   if (isLoading) {
     return (
@@ -758,6 +698,9 @@ const handleSave = async () => {
       accountName: formData.accountName,
       latitude: formData.latitude,
       longitude: formData.longitude,
+      recipientCode: formData.recipientCode,
+bankCode: formData.bankCode,
+
     };
     
     console.log('📤 Sending to updateProfile:', profileData);

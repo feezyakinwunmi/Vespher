@@ -29,7 +29,7 @@ const slides = [
     id: '1',
     icon: 'shopping-bag',
     // use image
-    image: require('../assets/logo.png'), // replace with your image path
+    image: require('../assets/loginp.png'), // replace with your image path
 
     title: 'Order Food',
     description: 'Browse from 50+ Shops, Local vendors and Restaurants  Around you',
@@ -46,7 +46,7 @@ const slides = [
   {
     id: '3',
     icon: 'credit-card',
-    image: require('../assets/box.png'), // replace with your image path
+    image: require('../assets/vendorp.png'), // replace with your image path
     title: 'quality Assurance ',
     description: 'Get your orders in a very good healthy condition',
     colors: ORANGE_GRADIENT,

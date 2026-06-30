@@ -17,14 +17,14 @@ import { VendorLayout, VendorTab } from '../../components/vendor/VendorLayout';
 import { useVendorOrders } from '../../hooks/vendor/useVendorOrders';
 import { useVendorMenu } from '../../hooks/vendor/useVendorMenu';
 import { useVendorStats } from '../../hooks/vendor/useVendorStats';
-import { Image } from 'react-native'; // Add this import
+import { useVendorEarnings } from '../../hooks/vendor/useVendorEarnings';
+import { Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { RootStackParamList } from '../../navigation/types';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-
 
 const { width } = Dimensions.get('window');
 const cardWidth = (width - 48) / 2;
@@ -34,121 +34,13 @@ export function VendorDashboardScreen() {
   const [activeTab, setActiveTab] = useState<VendorTab>('overview');
   const [refreshing, setRefreshing] = useState(false);
   const navigation = useNavigation<VendorAddressesScreenNavigationProp>();
-const { user } = useAuth();
-const [vendorName, setVendorName] = useState('');
-// Add this state at the top with other states
-const [unreadCount, setUnreadCount] = useState(0);
-const [latestMessage, setLatestMessage] = useState<string | null>(null);
-
-// Add this function to fetch unread messages
-const fetchUnreadMessages = async () => {
-  if (!user?.id) return;
+  const { user } = useAuth();
+  const [vendorName, setVendorName] = useState('');
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [latestMessage, setLatestMessage] = useState<string | null>(null);
   
-  try {
-    // Get vendor ID first
-    const { data: vendorData } = await supabase
-      .from('vendors')
-      .select('id')
-      .eq('owner_id', user.id)
-      .single();
-    
-    if (!vendorData) return;
-    
-    // Get conversations where vendor is a participant
-    const { data: conversations } = await supabase
-      .from('conversations')
-      .select('id')
-      .contains('participants', [vendorData.id]);
-    
-    if (!conversations || conversations.length === 0) {
-      setUnreadCount(0);
-      return;
-    }
-    
-    const conversationIds = conversations.map(c => c.id);
-    
-    // Count unread messages where vendor is not the sender
-    const { count, error } = await supabase
-      .from('messages')
-      .select('*', { count: 'exact', head: true })
-      .in('conversation_id', conversationIds)
-      .eq('read', false)
-      .neq('sender_id', user.id);
-    
-    if (!error) {
-      setUnreadCount(count || 0);
-    }
-    
-    // Get latest message preview
-    const { data: latest } = await supabase
-      .from('messages')
-      .select('content, created_at, sender_name')
-      .in('conversation_id', conversationIds)
-      .order('created_at', { ascending: false })
-      .limit(1);
-    
-    if (latest && latest.length > 0) {
-      const msg = latest[0];
-      const preview = msg.content.length > 40 ? msg.content.substring(0, 40) + '...' : msg.content;
-      setLatestMessage(`${msg.sender_name}: ${preview}`);
-    } else {
-      setLatestMessage(null);
-    }
-    
-  } catch (error) {
-    console.error('Error fetching messages:', error);
-  }
-};
-
-// Add useEffect to fetch messages on mount and periodically
-useEffect(() => {
-  fetchUnreadMessages();
-  
-  // Set up real-time subscription for new messages
-  const subscription = supabase
-    .channel('vendor-messages')
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'messages',
-      },
-      () => {
-        fetchUnreadMessages();
-      }
-    )
-    .subscribe();
-  
-  return () => {
-    subscription.unsubscribe();
-  };
-}, [user?.id]);
-// Add this useEffect after the existing useEffects
-useEffect(() => {
-  fetchVendorName();
-}, [user?.id]);
-
-const fetchVendorName = async () => {
-  if (!user?.id) return;
-  
-  try {
-    const { data, error } = await supabase
-      .from('vendors')
-      .select('name')
-      .eq('owner_id', user.id)
-      .single();
-    
-    if (!error && data) {
-      setVendorName(data.name);
-    } else {
-      setVendorName('Vendor');
-    }
-  } catch (error) {
-    console.error('Error fetching vendor:', error);
-    setVendorName('Vendor');
-  }
-};
+  // Add earnings hook
+  const { earnings, isLoading: earningsLoading, refreshData: refreshEarnings } = useVendorEarnings();
 
   const { 
     orders, 
@@ -168,6 +60,110 @@ const fetchVendorName = async () => {
     refreshStats 
   } = useVendorStats();
 
+  // Fetch unread messages
+  const fetchUnreadMessages = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const { data: vendorData } = await supabase
+        .from('vendors')
+        .select('id')
+        .eq('owner_id', user.id)
+        .single();
+      
+      if (!vendorData) return;
+      
+      const { data: conversations } = await supabase
+        .from('conversations')
+        .select('id')
+        .contains('participants', [vendorData.id]);
+      
+      if (!conversations || conversations.length === 0) {
+        setUnreadCount(0);
+        return;
+      }
+      
+      const conversationIds = conversations.map(c => c.id);
+      
+      const { count, error } = await supabase
+        .from('messages')
+        .select('*', { count: 'exact', head: true })
+        .in('conversation_id', conversationIds)
+        .eq('read', false)
+        .neq('sender_id', user.id);
+      
+      if (!error) {
+        setUnreadCount(count || 0);
+      }
+      
+      const { data: latest } = await supabase
+        .from('messages')
+        .select('content, created_at, sender_name')
+        .in('conversation_id', conversationIds)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (latest && latest.length > 0) {
+        const msg = latest[0];
+        const preview = msg.content.length > 40 ? msg.content.substring(0, 40) + '...' : msg.content;
+        setLatestMessage(`${msg.sender_name}: ${preview}`);
+      } else {
+        setLatestMessage(null);
+      }
+      
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchUnreadMessages();
+    
+    const subscription = supabase
+      .channel('vendor-messages')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+        },
+        () => {
+          fetchUnreadMessages();
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [user?.id]);
+
+  useEffect(() => {
+    fetchVendorName();
+  }, [user?.id]);
+
+  const fetchVendorName = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('vendors')
+        .select('name')
+        .eq('owner_id', user.id)
+        .single();
+      
+      if (!error && data) {
+        setVendorName(data.name);
+      } else {
+        setVendorName('Vendor');
+      }
+    } catch (error) {
+      console.error('Error fetching vendor:', error);
+      setVendorName('Vendor');
+    }
+  };
+
   useEffect(() => {
     refreshData();
   }, [activeTab]);
@@ -177,6 +173,7 @@ const fetchVendorName = async () => {
       await refreshOrders();
     } else if (activeTab === 'overview') {
       await refreshStats();
+      await refreshEarnings();
     } else if (activeTab === 'menu') {
       await refreshMenu();
     }
@@ -212,28 +209,24 @@ const fetchVendorName = async () => {
     return colors[status] || 'rgba(255,255,255,0.05)';
   };
 
-  // In VendorDashboardScreen.tsx, update the renderOverview function:
+  const renderOverview = () => (
+    <SafeAreaView style={styles.container}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#f97316" />
+        }
+      >
+        {/* Welcome Section */}
+        <View style={styles.welcomeSection}>
+          <View style={styles.welcomeLeft}>
+            <View>
+              <Text style={styles.welcomeText}>Welcome back, 👋</Text>
+              <Text style={styles.vendorName}>{vendorName || 'Vendor'}</Text>
+            </View>
+          </View>
 
-const renderOverview = () => (
-  <SafeAreaView style={styles.container}>
-  <ScrollView
-    showsVerticalScrollIndicator={false}
-    refreshControl={
-      <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#f97316" />
-    }
-  >
-   {/* Welcome Section */}
-<View style={styles.welcomeSection}>
-  <View style={styles.welcomeLeft}>
-    <View>
-      <Text style={styles.welcomeText}>Welcome back, 👋</Text>
-      <Text style={styles.vendorName}>{vendorName || 'Vendor'}</Text>
-    </View>
-  </View>
-
-  
-  <View style={styles.headerRight}>
-     {/* Notifications */}
+          <View style={styles.headerRight}>
             <TouchableOpacity
               onPress={() => navigation.navigate('Notifications' as never)}
               style={styles.iconButton}
@@ -241,247 +234,309 @@ const renderOverview = () => (
               <Feather name="bell" size={20} color="#fff" />
               <View style={styles.notificationDot} />
             </TouchableOpacity>
-    <TouchableOpacity 
-      onPress={() => navigation.navigate('Messaging')}
-      style={styles.messageButton}
-    >
-      <Feather name="message-circle" size={20} color="#f97316" />
-      {unreadCount > 0 && (
-        <View style={styles.unreadBadge}>
-          <Text style={styles.unreadBadgeText}>
-            {unreadCount > 9 ? '9+' : unreadCount}
-          </Text>
-        </View>
-      )}
-    </TouchableOpacity>
-    <View style={styles.dateBadge}>
-      <Feather name="calendar" size={14} color="#f97316" />
-      <Text style={styles.dateText}>
-        {new Date().toLocaleDateString('en-US', { 
-          weekday: 'short', 
-          month: 'short', 
-          day: 'numeric' 
-        })}
-      </Text>
-    </View>
-  </View>
-</View>
-
-
-
-
-{/* Latest Message Preview (if there's a recent message) */}
-{latestMessage && (
-  <TouchableOpacity 
-    style={styles.latestMessagePreview}
-    onPress={() => navigation.navigate('Messaging')}
-  >
-    <Feather name="message-square" size={14} color="#f97316" />
-    <Text style={styles.latestMessageText} numberOfLines={1}>
-      {latestMessage}
-    </Text>
-    <Feather name="chevron-right" size={14} color="#666" />
-  </TouchableOpacity>
-)}
-
-
-
-    {/* Stats Grid */}
-    <View style={styles.statsGrid}>
-      <View style={styles.statCard}>
-        <View style={[styles.statIconContainer, { backgroundColor: 'rgba(59,130,246,0.1)' }]}>
-          <Feather name="shopping-bag" size={20} color="#3b82f6" />
-        </View>
-        <Text style={styles.statNumber}>{stats?.totalOrders || 0}</Text>
-        <Text style={styles.statLabel}>Total Orders</Text>
-      </View>
-
-     
-
-      <View style={styles.statCard}>
-        <View style={[styles.statIconContainer, { backgroundColor: 'rgba(249,115,22,0.1)' }]}>
-          <Feather name="star" size={20} color="#f97316" />
-        </View>
-        <Text style={styles.statNumber}>{stats?.averageRating?.toFixed(1) || '0.0'}</Text>
-        <Text style={styles.statLabel}>Rating</Text>
-      </View>
-
-      <View style={styles.statCard}>
-        <View style={[styles.statIconContainer, { backgroundColor: 'rgba(139,92,246,0.1)' }]}>
-          <Feather name="message-circle" size={20} color="#8b5cf6" />
-        </View>
-        <Text style={styles.statNumber}>{stats?.reviewCount || 0}</Text>
-        <Text style={styles.statLabel}>Reviews</Text>
-      </View>
-    </View>
-
-    {/* Order Status Summary */}
-    <View style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Order Status</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('VendorOrders' as never)}>
-          <Text style={styles.seeAllText}>View All</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.statusGrid}>
-        <View style={styles.statusItem}>
-          <View style={[styles.statusDot, { backgroundColor: '#f59e0b' }]} />
-          <Text style={styles.statusLabel}>Pending</Text>
-          <Text style={styles.statusCount}>{ordersByStatus.pending.length}</Text>
-        </View>
-        <View style={styles.statusItem}>
-          <View style={[styles.statusDot, { backgroundColor: '#3b82f6' }]} />
-          <Text style={styles.statusLabel}>Confirmed</Text>
-          <Text style={styles.statusCount}>{ordersByStatus.confirmed.length}</Text>
-        </View>
-        <View style={styles.statusItem}>
-          <View style={[styles.statusDot, { backgroundColor: '#f97316' }]} />
-          <Text style={styles.statusLabel}>Preparing</Text>
-          <Text style={styles.statusCount}>{ordersByStatus.preparing.length}</Text>
-        </View>
-        <View style={styles.statusItem}>
-          <View style={[styles.statusDot, { backgroundColor: '#10b981' }]} />
-          <Text style={styles.statusLabel}>Ready</Text>
-          <Text style={styles.statusCount}>{ordersByStatus.ready.length}</Text>
-        </View>
-      </View>
-    </View>
-
-
-
-  <TouchableOpacity 
-      activeOpacity={0.9}
-      onPress={() => navigation.navigate('Promotions')}
-      style={stylesCompact.container}
-    >
-      <LinearGradient
-        colors={['#f97316', '#f43f5e']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={stylesCompact.gradient}
-      >
-        <View style={stylesCompact.content}>
-          <View style={stylesCompact.iconContainer}>
-            <Feather name="phone" size={24} color="#fff" />
-          </View>
-          
-          <View style={stylesCompact.textContainer}>
-            <Text style={stylesCompact.title}>Promote Your Business! 🚀</Text>
-            <Text style={stylesCompact.subtitle}>
-                Get featured on our homepage starting at ₦300/day
-            </Text>
-          </View>
-          
-          <View style={stylesCompact.button}>
-            <Text style={stylesCompact.buttonText}>Create</Text>
-            <Feather name="arrow-right" size={14} color="#fff" />
-          </View>
-        </View>
-      </LinearGradient>
-    </TouchableOpacity>
-
-    {/* Recent Orders - Updated with images */}
-    <View style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Recent Orders</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('VendorOrders' as never)}>
-  <Text style={styles.seeAllText}>See All</Text>
-</TouchableOpacity>
-      </View>
-
-      {ordersLoading ? (
-        <ActivityIndicator size="small" color="#f97316" style={styles.loader} />
-      ) : orders.slice(0, 3).length === 0 ? (
-        <View style={styles.emptyState}>
-          <Feather name="package" size={32} color="#666" />
-          <Text style={styles.emptyStateText}>No orders yet</Text>
-        </View>
-      ) : (
-        orders.slice(0, 3).map((order) => {
-          const firstItem = order.items?.[0];
-          const itemImage = firstItem?.product?.image || firstItem?.image_url;
-          
-          return (
             <TouchableOpacity 
-              key={order.id} 
-              style={styles.recentOrderCard}
-onPress={() => (navigation as any).navigate('VendorOrders', { orderId: order.id })}
+              onPress={() => navigation.navigate('Messaging')}
+              style={styles.messageButton}
             >
-              {/* Order Image */}
-              <View style={styles.recentOrderImageContainer}>
-                {itemImage ? (
-                  <Image 
-                    source={{ uri: itemImage }} 
-                    style={styles.recentOrderImage}
-                  />
-                ) : (
-                  <View style={styles.recentOrderImagePlaceholder}>
-                    <Feather name="package" size={20} color="#f97316" />
-                  </View>
-                )}
-              </View>
-
-              {/* Order Details */}
-              <View style={styles.recentOrderDetails}>
-                <View style={styles.recentOrderHeader}>
-                  <Text style={styles.recentOrderId}>#{order.order_number}</Text>
-                  <View style={[styles.recentOrderBadge, { backgroundColor: getStatusBgColor(order.status) }]}>
-                    <Text style={[styles.recentOrderBadgeText, { color: getStatusColor(order.status) }]}>
-                      {order.status}
-                    </Text>
-                  </View>
+              <Feather name="message-circle" size={20} color="#f97316" />
+              {unreadCount > 0 && (
+                <View style={styles.unreadBadge}>
+                  <Text style={styles.unreadBadgeText}>
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </Text>
                 </View>
-
-                <Text style={styles.recentOrderCustomer}>{order.customer_name}</Text>
-                
-                <View style={styles.recentOrderItems}>
-                  {order.items.slice(0, 2).map((item: any, idx: number) => (
-                    <Text key={idx} style={styles.recentOrderItem} numberOfLines={1}>
-                      {item.quantity}x {item.name}
-                    </Text>
-                  ))}
-                  {order.items.length > 2 && (
-                    <Text style={styles.recentOrderMore}>
-                      +{order.items.length - 2} more
-                    </Text>
-                  )}
-                </View>
-
-                <Text style={styles.recentOrderTotal}>₦{order.total.toLocaleString()}</Text>
-              </View>
+              )}
             </TouchableOpacity>
-          );
-        })
-      )}
-    </View>
-
-    {/* Popular Items */}
-    {stats?.popularItems && stats.popularItems.length > 0 && (
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Popular Items</Text>
+          </View>
         </View>
-        {stats.popularItems.map((item, index) => (
-          <View key={item.id} style={styles.popularItem}>
-            <View style={styles.popularItemLeft}>
-              <View style={[styles.rankBadge, { backgroundColor: index === 0 ? '#f97316' : '#2a2a2a' }]}>
-                <Text style={[styles.rankText, index === 0 && styles.rankTextFirst]}>
-                  #{index + 1}
+
+        {/* 🎯 NEW: Available Balance Card */}
+        <TouchableOpacity 
+          activeOpacity={0.9}
+          onPress={() => navigation.navigate('VendorEarnings' as never)}
+          style={styles.balanceCardWrapper}
+        >
+          <LinearGradient
+            colors={['#31302f', '#030201']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.balanceCard}
+          >
+            <View style={styles.balanceCardHeader}>
+              <View style={styles.balanceLabelContainer}>
+                <Feather name="briefcase" size={20} color="rgba(255,255,255,0.9)" />
+                <Text style={styles.balanceLabel}>Available Balance</Text>
+              </View>
+              <View style={styles.balanceBadge}>
+                <Feather name="trending-up" size={12} color="#10b981" />
+                <Text style={styles.balanceBadgeText}>
+                  {(earnings?.weeklyGrowth ?? 0) > 0 ? '+' : ''}{earnings?.weeklyGrowth ?? 0}%
                 </Text>
               </View>
-              <Text style={styles.popularItemName}>{item.name}</Text>
             </View>
-            <Text style={styles.popularItemCount}>{item.count} sold</Text>
-          </View>
-        ))}
-      </View>
-    )}
 
- 
-  </ScrollView>
-  </SafeAreaView>
-);
+            {earningsLoading ? (
+              <ActivityIndicator size="small" color="#fff" style={styles.balanceLoader} />
+            ) : (
+              <>
+                <Text style={styles.balanceAmount}>
+                  ₦{earnings?.availableBalance?.toLocaleString() || '0'}
+                </Text>
+                <View style={styles.balanceCardFooter}>
+                  <View style={styles.balanceFooterItem}>
+                    <Text style={styles.balanceFooterLabel}>Total Earnings</Text>
+                    <Text style={styles.balanceFooterValue}>
+                      ₦{earnings?.totalEarnings?.toLocaleString() || '0'}
+                    </Text>
+                  </View>
+                  <View style={styles.balanceDivider} />
+                  <View style={styles.balanceFooterItem}>
+                    <Text style={styles.balanceFooterLabel}>Pending</Text>
+                    <Text style={[styles.balanceFooterValue, { color: '#fcd34d' }]}>
+                      ₦{earnings?.pendingPayout?.toLocaleString() || '0'}
+                    </Text>
+                  </View>
+                </View>
+              </>
+            )}
+
+            <TouchableOpacity 
+              style={styles.withdrawButton}
+              onPress={() => navigation.navigate('VendorEarnings' as never)}
+            >
+              <Text style={styles.withdrawButtonText}>Withdraw Funds</Text>
+              <Feather name="arrow-right" size={16} color="#fff" />
+            </TouchableOpacity>
+          </LinearGradient>
+        </TouchableOpacity>
+
+        {/* Latest Message Preview */}
+        {latestMessage && (
+          <TouchableOpacity 
+            style={styles.latestMessagePreview}
+            onPress={() => navigation.navigate('Messaging')}
+          >
+            <Feather name="message-square" size={14} color="#f97316" />
+            <Text style={styles.latestMessageText} numberOfLines={1}>
+              {latestMessage}
+            </Text>
+            <Feather name="chevron-right" size={14} color="#666" />
+          </TouchableOpacity>
+        )}
+
+        {/* Stats Grid - Horizontal Scroll */}
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          style={styles.statsScrollView}
+          contentContainerStyle={styles.statsScrollContent}
+        >
+          <View style={styles.statsGrid}>
+            <View style={styles.statCard}>
+              <View style={[styles.statIconContainer, { backgroundColor: 'rgba(59,130,246,0.1)' }]}>
+                <Feather name="shopping-bag" size={20} color="#3b82f6" />
+              </View>
+              <Text style={styles.statNumber}>{stats?.totalOrders || 0}</Text>
+              <Text style={styles.statLabel}>Total Orders</Text>
+            </View>
+
+            <View style={styles.statCard}>
+              <View style={[styles.statIconContainer, { backgroundColor: 'rgba(249,115,22,0.1)' }]}>
+                <Feather name="star" size={20} color="#f97316" />
+              </View>
+              <Text style={styles.statNumber}>{stats?.averageRating?.toFixed(1) || '0.0'}</Text>
+              <Text style={styles.statLabel}>Rating</Text>
+            </View>
+
+            <View style={styles.statCard}>
+              <View style={[styles.statIconContainer, { backgroundColor: 'rgba(139,92,246,0.1)' }]}>
+                <Feather name="message-circle" size={20} color="#8b5cf6" />
+              </View>
+              <Text style={styles.statNumber}>{stats?.reviewCount || 0}</Text>
+              <Text style={styles.statLabel}>Reviews</Text>
+            </View>
+
+            {/* Additional stat cards for horizontal scrolling */}
+            <View style={styles.statCard}>
+              <View style={[styles.statIconContainer, { backgroundColor: 'rgba(16,185,129,0.1)' }]}>
+                <Feather name="truck" size={20} color="#10b981" />
+              </View>
+              <Text style={styles.statNumber}>{(stats as any)?.deliveredOrders || 0}</Text>
+              <Text style={styles.statLabel}>Delivered</Text>
+            </View>
+
+            <View style={styles.statCard}>
+              <View style={[styles.statIconContainer, { backgroundColor: 'rgba(239,68,68,0.1)' }]}>
+                <Feather name="clock" size={20} color="#ef4444" />
+              </View>
+              <Text style={styles.statNumber}>{(stats as any)?.pendingOrders || 0}</Text>
+              <Text style={styles.statLabel}>Pending</Text>
+            </View>
+          </View>
+        </ScrollView>
+
+        {/* Order Status Summary */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Order Status</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('VendorOrders' as never)}>
+              <Text style={styles.seeAllText}>View All</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.statusGrid}>
+            <View style={styles.statusItem}>
+              <View style={[styles.statusDot, { backgroundColor: '#f59e0b' }]} />
+              <Text style={styles.statusLabel}>Pending</Text>
+              <Text style={styles.statusCount}>{ordersByStatus.pending.length}</Text>
+            </View>
+            <View style={styles.statusItem}>
+              <View style={[styles.statusDot, { backgroundColor: '#3b82f6' }]} />
+              <Text style={styles.statusLabel}>Confirmed</Text>
+              <Text style={styles.statusCount}>{ordersByStatus.confirmed.length}</Text>
+            </View>
+            <View style={styles.statusItem}>
+              <View style={[styles.statusDot, { backgroundColor: '#f97316' }]} />
+              <Text style={styles.statusLabel}>Preparing</Text>
+              <Text style={styles.statusCount}>{ordersByStatus.preparing.length}</Text>
+            </View>
+            <View style={styles.statusItem}>
+              <View style={[styles.statusDot, { backgroundColor: '#10b981' }]} />
+              <Text style={styles.statusLabel}>Ready</Text>
+              <Text style={styles.statusCount}>{ordersByStatus.ready.length}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Promotion Card */}
+        <TouchableOpacity 
+          activeOpacity={0.9}
+          onPress={() => navigation.navigate('Promotions')}
+          style={stylesCompact.container}
+        >
+          <LinearGradient
+            colors={['#f97316', '#f43f5e']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={stylesCompact.gradient}
+          >
+            <View style={stylesCompact.content}>
+              <View style={stylesCompact.iconContainer}>
+                <Feather name="phone" size={24} color="#fff" />
+              </View>
+              
+              <View style={stylesCompact.textContainer}>
+                <Text style={stylesCompact.title}>Promote Your Business! 🚀</Text>
+                <Text style={stylesCompact.subtitle}>
+                  Get featured on our homepage starting at ₦300/day
+                </Text>
+              </View>
+              
+              <View style={stylesCompact.button}>
+                <Text style={stylesCompact.buttonText}>Create</Text>
+                <Feather name="arrow-right" size={14} color="#fff" />
+              </View>
+            </View>
+          </LinearGradient>
+        </TouchableOpacity>
+
+        {/* Recent Orders */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Recent Orders</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('VendorOrders' as never)}>
+              <Text style={styles.seeAllText}>See All</Text>
+            </TouchableOpacity>
+          </View>
+
+          {ordersLoading ? (
+            <ActivityIndicator size="small" color="#f97316" style={styles.loader} />
+          ) : orders.slice(0, 3).length === 0 ? (
+            <View style={styles.emptyState}>
+              <Feather name="package" size={32} color="#666" />
+              <Text style={styles.emptyStateText}>No orders yet</Text>
+            </View>
+          ) : (
+            orders.slice(0, 3).map((order) => {
+              const firstItem = order.items?.[0];
+              const itemImage = firstItem?.product?.image || firstItem?.image_url;
+              
+              return (
+                <TouchableOpacity 
+                  key={order.id} 
+                  style={styles.recentOrderCard}
+                  onPress={() => (navigation as any).navigate('VendorOrders', { orderId: order.id })}
+                >
+                  <View style={styles.recentOrderImageContainer}>
+                    {itemImage ? (
+                      <Image 
+                        source={{ uri: itemImage }} 
+                        style={styles.recentOrderImage}
+                      />
+                    ) : (
+                      <View style={styles.recentOrderImagePlaceholder}>
+                        <Feather name="package" size={20} color="#f97316" />
+                      </View>
+                    )}
+                  </View>
+
+                  <View style={styles.recentOrderDetails}>
+                    <View style={styles.recentOrderHeader}>
+                      <Text style={styles.recentOrderId}>#{order.order_number}</Text>
+                      <View style={[styles.recentOrderBadge, { backgroundColor: getStatusBgColor(order.status) }]}>
+                        <Text style={[styles.recentOrderBadgeText, { color: getStatusColor(order.status) }]}>
+                          {order.status}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <Text style={styles.recentOrderCustomer}>{order.customer_name}</Text>
+                    
+                    <View style={styles.recentOrderItems}>
+                      {order.items.slice(0, 2).map((item: any, idx: number) => (
+                        <Text key={idx} style={styles.recentOrderItem} numberOfLines={1}>
+                          {item.quantity}x {item.name}
+                        </Text>
+                      ))}
+                      {order.items.length > 2 && (
+                        <Text style={styles.recentOrderMore}>
+                          +{order.items.length - 2} more
+                        </Text>
+                      )}
+                    </View>
+
+                    <Text style={styles.recentOrderTotal}>₦{order.total.toLocaleString()}</Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })
+          )}
+        </View>
+
+        {/* Popular Items */}
+        {stats?.popularItems && stats.popularItems.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Popular Items</Text>
+            </View>
+            {stats.popularItems.map((item, index) => (
+              <View key={item.id} style={styles.popularItem}>
+                <View style={styles.popularItemLeft}>
+                  <View style={[styles.rankBadge, { backgroundColor: index === 0 ? '#f97316' : '#2a2a2a' }]}>
+                    <Text style={[styles.rankText, index === 0 && styles.rankTextFirst]}>
+                      #{index + 1}
+                    </Text>
+                  </View>
+                  <Text style={styles.popularItemName}>{item.name}</Text>
+                </View>
+                <Text style={styles.popularItemCount}>{item.count} sold</Text>
+              </View>
+            ))}
+          </View>
+        )}
+      </ScrollView>
+    </SafeAreaView>
+  );
 
   const renderOrders = () => (
     <ScrollView
@@ -617,69 +672,21 @@ onPress={() => (navigation as any).navigate('VendorOrders', { orderId: order.id 
 }
 
 const styles = StyleSheet.create({
-  container:{
-    flex:1,
-        paddingBottom:60,
-
+  container: {
+    flex: 1,
+    paddingBottom: 60,
   },
-  welcomeLeft: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 12,
-},
-headerRight: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 12,
-},
-messageButton: {
-  width: 40,
-  height: 40,
-  borderRadius: 20,
-  backgroundColor: '#1a1a1a',
-  justifyContent: 'center',
-  alignItems: 'center',
-  position: 'relative',
-},
-unreadBadge: {
-  position: 'absolute',
-  top: -4,
-  right: -4,
-  minWidth: 18,
-  height: 18,
-  borderRadius: 9,
-  backgroundColor: '#ef4444',
-  justifyContent: 'center',
-  alignItems: 'center',
-  paddingHorizontal: 4,
-},
-unreadBadgeText: {
-  fontSize: 10,
-  fontWeight: 'bold',
-  color: '#fff',
-},
-latestMessagePreview: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  backgroundColor: '#1a1a1a',
-  marginHorizontal: 16,
-  marginBottom: 16,
-  padding: 12,
-  borderRadius: 12,
-  gap: 10,
-  borderWidth: 1,
-  borderColor: 'rgba(249,115,22,0.2)',
-},
-latestMessageText: {
-  flex: 1,
-  fontSize: 12,
-  color: '#fff',
-},
   welcomeSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  welcomeLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   welcomeText: {
     fontSize: 14,
@@ -691,69 +698,189 @@ latestMessageText: {
     color: '#fff',
     marginTop: 2,
   },
-  dateBadge: {
+  headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    gap: 12,
+  },
+  iconButton: {
+    width: 40,
+    height: 40,
     borderRadius: 20,
-    gap: 6,
+    backgroundColor: '#1a1a1a',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
   },
-  dateText: {
-    fontSize: 12,
-    color: '#f97316',
+  notificationDot: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#f97316',
   },
-  mainStatCard: {
-    borderRadius: 16,
+  messageButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#1a1a1a',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  unreadBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#ef4444',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  unreadBadgeText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+
+  // 🎯 Balance Card Styles
+  balanceCardWrapper: {
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  balanceCard: {
     padding: 20,
-    marginBottom: 20,
+    borderRadius: 16,
+    shadowColor: '#1d1c1c',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
   },
-  mainStatContent: {
+  balanceCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
-  mainStatLabel: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
-    marginBottom: 4,
-  },
-  mainStatValue: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  mainStatIcon: {
-    opacity: 0.5,
-  },
-  mainStatFooter: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  mainStatFooterItem: {
+  balanceLabelContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
-  mainStatFooterText: {
+  balanceLabel: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.9)',
+    fontWeight: '500',
+  },
+  balanceBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  balanceBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#10b981',
+  },
+  balanceLoader: {
+    marginVertical: 20,
+  },
+  balanceAmount: {
+    fontSize: 36,
+    fontWeight: '700',
+    color: '#fff',
+    marginBottom: 16,
+  },
+  balanceCardFooter: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+  },
+  balanceFooterItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  balanceFooterLabel: {
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.7)',
+    marginBottom: 2,
+  },
+  balanceFooterValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  balanceDivider: {
+    width: 1,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  withdrawButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingVertical: 12,
+    borderRadius: 10,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  withdrawButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+  },
+
+  latestMessagePreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1a1a1a',
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 12,
+    borderRadius: 12,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(249,115,22,0.2)',
+  },
+  latestMessageText: {
+    flex: 1,
     fontSize: 12,
-    color: 'rgba(255,255,255,0.8)',
+    color: '#fff',
+  },
+
+  // 🎯 Stats Grid - Horizontal Scroll
+  statsScrollView: {
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  statsScrollContent: {
+    paddingRight: 4,
   },
   statsGrid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 12,
-    marginBottom: 20,
   },
   statCard: {
-    width: cardWidth,
+    width: 140,
     backgroundColor: '#1a1a1a',
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.05)',
+    minHeight: 120,
   },
   statIconContainer: {
     width: 40,
@@ -763,139 +890,18 @@ latestMessageText: {
     alignItems: 'center',
     marginBottom: 12,
   },
-
-  gradient: {
-    padding: 20,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  content: {
-    position: 'relative',
-    zIndex: 2,
-  },
-  iconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  textContainer: {
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 6,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.9)',
-    lineHeight: 18,
-    marginBottom: 12,
-  },
-  benefits: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 16,
-  },
-  benefitItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-  },
-  benefitText: {
-    fontSize: 11,
-    color: '#fff',
-  },
-  priceTag: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 6,
-    marginBottom: 16,
-  },
-  priceLabel: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.8)',
-  },
-  price: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  buttonContainer: {
-    alignItems: 'flex-start',
-  },
-  button: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 30,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  decoration: {
-    position: 'absolute',
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    zIndex: 1,
-  },
-  decoration1: {
-    top: -30,
-    right: -30,
-    width: 120,
-    height: 120,
-  },
-  decoration2: {
-    bottom: -20,
-    left: -20,
-    width: 80,
-    height: 80,
-  },
-  decoration3: {
-    top: 40,
-    right: 40,
-    width: 40,
-    height: 40,
-  },
   statNumber: {
     fontSize: 20,
     fontWeight: '700',
     color: '#fff',
     marginBottom: 4,
   },
-   iconButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#1a1a1a',
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-  },
   statLabel: {
     fontSize: 12,
     color: '#666',
   },
   section: {
+    paddingHorizontal: 16,
     marginBottom: 24,
   },
   sectionHeader: {
@@ -908,15 +914,6 @@ latestMessageText: {
     fontSize: 18,
     fontWeight: '600',
     color: '#fff',
-  },
-    notificationDot: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#f97316',
   },
   seeAllText: {
     color: '#f97316',
@@ -950,152 +947,82 @@ latestMessageText: {
     fontWeight: '600',
     color: '#fff',
   },
-  loader: {
-    marginTop: 20,
-  },
-  emptyState: {
-    alignItems: 'center',
-    padding: 40,
-  },
-  emptyStateTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
-    marginTop: 12,
-    marginBottom: 4,
-  },
-  emptyStateSubtitle: {
-    fontSize: 14,
-    color: '#666',
-  },
-  emptyStateText: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 8,
-  },
-  orderItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#1a1a1a',
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 8,
-  },
 
-recentOrderCard: {
-  flexDirection: 'row',
-  backgroundColor: '#1a1a1a',
-  borderRadius: 12,
-  padding: 12,
-  marginBottom: 8,
-  borderWidth: 1,
-  borderColor: 'rgba(255,255,255,0.05)',
-},
-recentOrderImageContainer: {
-  width: 60,
-  height: 60,
-  borderRadius: 8,
-  overflow: 'hidden',
-  marginRight: 12,
-},
-recentOrderImage: {
-  width: '100%',
-  height: '100%',
-},
-recentOrderImagePlaceholder: {
-  width: '100%',
-  height: '100%',
-  backgroundColor: '#2a2a2a',
-  justifyContent: 'center',
-  alignItems: 'center',
-},
-recentOrderDetails: {
-  flex: 1,
-},
-recentOrderHeader: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  marginBottom: 4,
-},
-recentOrderId: {
-  fontSize: 12,
-  color: '#666',
-},
-recentOrderBadge: {
-  paddingHorizontal: 6,
-  paddingVertical: 2,
-  borderRadius: 4,
-},
-recentOrderBadgeText: {
-  fontSize: 9,
-  fontWeight: '500',
-},
-recentOrderCustomer: {
-  fontSize: 14,
-  fontWeight: '600',
-  color: '#fff',
-  marginBottom: 4,
-},
-recentOrderItems: {
-  marginBottom: 4,
-},
-recentOrderItem: {
-  fontSize: 11,
-  color: '#666',
-},
-recentOrderMore: {
-  fontSize: 10,
-  color: '#f97316',
-  marginTop: 2,
-},
-recentOrderTotal: {
-  fontSize: 14,
-  fontWeight: '600',
-  color: '#f97316',
-},
-  orderItemLeft: {
+  // Recent Orders
+  recentOrderCard: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
   },
-  orderItemIcon: {
-    width: 36,
-    height: 36,
+  recentOrderImageContainer: {
+    width: 60,
+    height: 60,
     borderRadius: 8,
-    backgroundColor: 'rgba(249,115,22,0.1)',
+    overflow: 'hidden',
+    marginRight: 12,
+  },
+  recentOrderImage: {
+    width: '100%',
+    height: '100%',
+  },
+  recentOrderImagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#2a2a2a',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  orderItemNumber: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#fff',
-    marginBottom: 2,
+  recentOrderDetails: {
+    flex: 1,
   },
-  orderItemCustomer: {
+  recentOrderHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  recentOrderId: {
     fontSize: 12,
     color: '#666',
   },
-  orderItemRight: {
-    alignItems: 'flex-end',
-  },
-  orderItemAmount: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#f97316',
-    marginBottom: 4,
-  },
-  orderItemBadge: {
+  recentOrderBadge: {
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
   },
-  orderItemBadgeText: {
-    fontSize: 10,
+  recentOrderBadgeText: {
+    fontSize: 9,
     fontWeight: '500',
   },
+  recentOrderCustomer: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 4,
+  },
+  recentOrderItems: {
+    marginBottom: 4,
+  },
+  recentOrderItem: {
+    fontSize: 11,
+    color: '#666',
+  },
+  recentOrderMore: {
+    fontSize: 10,
+    color: '#f97316',
+    marginTop: 2,
+  },
+  recentOrderTotal: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#f97316',
+  },
+
+  // Popular Items
   popularItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1134,34 +1061,8 @@ recentOrderTotal: {
     color: '#f97316',
     fontWeight: '500',
   },
-  quickActionsGrid: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  quickActionCard: {
-    flex: 1,
-    height: 140,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  quickActionGradient: {
-    flex: 1,
-    padding: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  quickActionTitle: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '600',
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  quickActionSubtitle: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 11,
-    textAlign: 'center',
-  },
+
+  // Order Cards
   orderCard: {
     backgroundColor: '#1a1a1a',
     borderRadius: 12,
@@ -1259,6 +1160,31 @@ recentOrderTotal: {
     fontSize: 12,
     fontWeight: '500',
   },
+
+  // Placeholders
+  loader: {
+    marginTop: 20,
+  },
+  emptyState: {
+    alignItems: 'center',
+    padding: 40,
+  },
+  emptyStateTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  emptyStateSubtitle: {
+    fontSize: 14,
+    color: '#666',
+  },
+  emptyStateText: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 8,
+  },
   placeholderContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -1280,7 +1206,7 @@ recentOrderTotal: {
 
 const stylesCompact = StyleSheet.create({
   container: {
-    marginHorizontal: 2,
+    marginHorizontal: 16,
     marginVertical: 8,
     borderRadius: 12,
     overflow: 'hidden',

@@ -444,60 +444,62 @@ export function useFoodSuggestions(allProducts: RawProduct[]) {
     return () => clearInterval(interval);
   }, []);
 
-  // Generate suggestions when needed
-  useEffect(() => {
-    if (!allProducts.length) {
-      if (!isInitialized.current) {
-        setSuggestions([]);
-        isInitialized.current = true;
-      }
-      return;
+useEffect(() => {
+  if (!allProducts.length) {
+    setSuggestions([]);
+    return;
+  }
+
+  const matchedProducts = allProducts
+    .filter(product => {
+      const matchedMeal = classifyProductForMealTime(
+        product.name,
+        product.category || '',
+        product.description || ''
+      );
+
+      return matchedMeal === mealTime;
+    })
+    .map(product => ({
+      id: product.id,
+      name: product.name,
+      image: product.image || product.image_url || '',
+      price: product.price,
+      vendorId: product.vendorId,
+      vendorName: product.vendorName || '',
+      category: product.category || '',
+    }))
+    .slice(0, 12);
+
+  let finalSuggestions = matchedProducts;
+
+  if (matchedProducts.length === 0) {
+    finalSuggestions = allProducts.slice(0, 8).map(product => ({
+      id: product.id,
+      name: product.name,
+      image: product.image || product.image_url || '',
+      price: product.price,
+      vendorId: product.vendorId,
+      vendorName: product.vendorName || '',
+      category: product.category || '',
+    }));
+  }
+
+  // ✅ Prevent unnecessary state updates
+  setSuggestions(prev => {
+    const prevIds = prev.map(p => p.id).join(',');
+    const newIds = finalSuggestions.map(p => p.id).join(',');
+
+    if (prevIds === newIds) {
+      return prev;
     }
 
-    const productsCountChanged = productsLength.current !== allProducts.length;
-    
-    if (!isInitialized.current || productsCountChanged) {
-      productsLength.current = allProducts.length;
-      isInitialized.current = true;
-      
-      // Classify and filter products
-      const matchedProducts = allProducts
-        .filter(product => {
-          const matchedMeal = classifyProductForMealTime(
-            product.name,
-            product.category || '',
-            product.description || ''
-          );
-          return matchedMeal === mealTime;
-        })
-        .map(product => ({
-          id: product.id,
-          name: product.name,
-          image: product.image || product.image_url || '',
-          price: product.price,
-          vendorId: product.vendorId,
-          vendorName: product.vendorName || '',
-          category: product.category || '',
-        }))
-        .slice(0, 12);
-      
-      // Fallback if no matches
-      let finalSuggestions = matchedProducts;
-      if (matchedProducts.length === 0 && allProducts.length > 0) {
-        finalSuggestions = allProducts.slice(0, 8).map(p => ({
-          id: p.id,
-          name: p.name,
-          image: p.image || p.image_url || '',
-          price: p.price,
-          vendorId: p.vendorId,
-          vendorName: p.vendorName || '',
-          category: p.category || '',
-        }));
-      }
-      
-      setSuggestions(finalSuggestions);
-    }
-  }, [allProducts.length, mealTime]);
+    return finalSuggestions;
+  });
+
+}, [mealTime, allProducts.length]);
+
+
 
   return {
     suggestions,

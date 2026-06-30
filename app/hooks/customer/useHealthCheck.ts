@@ -211,7 +211,11 @@ export function useHealthCheck() {
     }
 
     // STEP 4: Also check allergens from product
-    if (productData && productData.allergens && productData.allergens.length > 0) {
+   if (
+  productData &&
+  Array.isArray(productData.allergens) &&
+  productData.allergens.length > 0
+) {
       for (const allergen of productData.allergens) {
         const tagMapping = TAG_TO_CONDITION_MAP[allergen];
         if (tagMapping) {

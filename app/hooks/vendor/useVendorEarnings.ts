@@ -407,44 +407,138 @@ const fetchOrderDetails = useCallback(async (orderId: string) => {
   }
 }, [settings]);
 
-  // Request payout
- // Request payout
-const requestPayout = async (payoutData: PayoutRequest): Promise<boolean> => {
+// Request payout
+const requestPayout = async (
+  payoutData: PayoutRequest
+): Promise<boolean> => {
   if (!vendorId || !user) {
     Alert.alert('Error', 'Vendor not found');
     return false;
   }
 
   try {
-    // Validate minimum payout
+    console.log('================ PAYOUT START ================');
+    console.log('Vendor ID:', vendorId);
+    console.log('User ID:', user.id);
+    console.log('Payout Data:', payoutData);
+
+    // ✅ Validate minimum payout
     if (payoutData.amount < 1000) {
       Alert.alert('Error', 'Minimum payout amount is ₦1,000');
       return false;
     }
 
-    // ✅ Get current wallet balance and pending_balance
+    // ✅ Get wallet
+    console.log('Fetching vendor wallet...');
+
     const { data: wallet, error: walletError } = await supabase
       .from('vendor_wallets')
       .select('balance, pending_balance')
       .eq('vendor_id', vendorId)
       .single();
 
+    console.log('Wallet response:', wallet);
+
     if (walletError) {
-      console.error('Error fetching wallet:', walletError);
+      console.error('Wallet fetch error:', walletError);
       Alert.alert('Error', 'Could not verify balance');
       return false;
     }
 
-    // Check available balance
+    // ✅ Check balance
     if (payoutData.amount > (wallet?.balance || 0)) {
+      console.log('Insufficient balance');
+
       Alert.alert('Error', 'Insufficient balance');
       return false;
     }
 
-    // Generate reference
-    const reference = `PO-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`.toUpperCase();
+    // ✅ Generate reference
+    const reference = `PO-${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(2, 7)}`.toUpperCase();
 
-    // Create withdrawal request
+    console.log('Generated reference:', reference);
+
+    // ✅ GET vendor recipient code
+    console.log('Fetching vendor recipient code...');
+
+    const { data: vendorData, error: vendorError } = await supabase
+      .from('vendors')
+      .select('recipient_code')
+      .eq('id', vendorId)
+      .single();
+
+    console.log('Vendor response:', vendorData);
+
+    if (vendorError) {
+      console.error('Vendor fetch error:', vendorError);
+    }
+
+    if (!vendorData?.recipient_code) {
+      console.error('Recipient code missing');
+
+      Alert.alert('Error', 'Vendor recipient code not found');
+      return false;
+    }
+
+    console.log(
+      'Recipient code found:',
+      vendorData.recipient_code
+    );
+
+    // ✅ CALL PAYSTACK PAYOUT FUNCTION
+    console.log('Calling Supabase payout function...');
+
+    const { data: payoutResponse, error: functionError } =
+      await supabase.functions.invoke('payout', {
+        body: {
+          amount: payoutData.amount,
+          recipient_code: vendorData.recipient_code,
+          reference,
+        },
+      });
+
+    console.log('=========== FUNCTION RESPONSE ===========');
+    console.log('Function data:', payoutResponse);
+    console.log('Function error:', functionError);
+    console.log('=========================================');
+
+    // ✅ HANDLE EDGE FUNCTION ERROR
+    if (functionError) {
+      console.error(
+        'Function invoke error:',
+        JSON.stringify(functionError, null, 2)
+      );
+
+      Alert.alert(
+        'Payout Failed',
+        'Unable to process payout right now.'
+      );
+
+      return false;
+    }
+
+    // ✅ HANDLE PAYSTACK FAILURE
+    if (!payoutResponse?.status) {
+      console.error(
+        'Paystack payout failed:',
+        payoutResponse
+      );
+
+      Alert.alert(
+        'Payout Failed',
+        payoutResponse?.message || 'Transfer failed'
+      );
+
+      return false;
+    }
+
+    console.log('Paystack payout successful');
+
+    // ✅ CREATE WITHDRAWAL RECORD ONLY AFTER SUCCESS
+    console.log('Creating withdrawal record...');
+
     const { error: payoutError } = await supabase
       .from('withdrawals')
       .insert({
@@ -454,37 +548,86 @@ const requestPayout = async (payoutData: PayoutRequest): Promise<boolean> => {
         bank_name: payoutData.bank_name,
         account_number: payoutData.account_number,
         account_name: payoutData.account_name,
-        reference: reference,
-        status: 'pending',
+        reference,
+        status: 'success',
         created_at: new Date().toISOString(),
       });
 
     if (payoutError) {
-      console.error('Payout error:', payoutError);
-      Alert.alert('Error', 'Failed to request payout');
+      console.error(
+        'Withdrawal insert error:',
+        payoutError
+      );
+
+      Alert.alert(
+        'Warning',
+        'Transfer succeeded but withdrawal record failed.'
+      );
+
       return false;
     }
 
-    // ✅ UPDATE: Deduct from balance, add to pending_balance
-    await supabase
+    console.log('Withdrawal record created');
+
+    // ✅ UPDATE WALLET
+    console.log('Updating wallet balance...');
+
+    const newBalance =
+      (wallet?.balance || 0) - payoutData.amount;
+
+    const { error: walletUpdateError } = await supabase
       .from('vendor_wallets')
       .update({
-        balance: (wallet?.balance || 0) - payoutData.amount,
-        pending_balance: (wallet?.pending_balance || 0) + payoutData.amount,
-        updated_at: new Date().toISOString()
+        balance: newBalance,
+        updated_at: new Date().toISOString(),
       })
       .eq('vendor_id', vendorId);
 
-    // Refresh data
+    if (walletUpdateError) {
+      console.error(
+        'Wallet update error:',
+        walletUpdateError
+      );
+
+      Alert.alert(
+        'Warning',
+        'Transfer succeeded but wallet update failed.'
+      );
+
+      return false;
+    }
+
+    console.log('Wallet updated successfully');
+    console.log('New balance:', newBalance);
+
+    // ✅ REFRESH UI
     await fetchEarnings();
     await fetchTransactions();
 
-    Alert.alert('Success', 'Payout request submitted successfully!');
+    console.log('================ PAYOUT SUCCESS ================');
+
+    Alert.alert(
+      'Success',
+      'Payout processed successfully!'
+    );
+
     return true;
 
   } catch (err: any) {
-    console.error('Error requesting payout:', err);
-    Alert.alert('Error', err.message || 'Failed to request payout');
+    console.error(
+      '================ PAYOUT ERROR ================'
+    );
+
+    console.error(
+      'Error requesting payout:',
+      JSON.stringify(err, null, 2)
+    );
+
+    Alert.alert(
+      'Error',
+      err.message || 'Failed to request payout'
+    );
+
     return false;
   }
 };

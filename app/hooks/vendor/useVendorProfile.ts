@@ -42,6 +42,7 @@ export interface VendorProfile {
   bankCode?: string;
   accountNumber: string;
   accountName: string;
+  recipientCode?: string;
 
     latitude: any;  // or latitude?: number;
   longitude: any;
@@ -81,9 +82,12 @@ export function useVendorProfile() {
           delivery_radius,
           min_order,
           delivery_fee,
-          bank_name,
-          account_number,
-          account_name,
+         bank_name,
+bank_code,
+account_number,
+account_name,
+recipient_code,
+account_verified,
           notification_settings,
           latitude,
           longitude,
@@ -128,9 +132,11 @@ export function useVendorProfile() {
           deliveryRadius: vendorData.delivery_radius || 5,
           minOrder: vendorData.min_order || 1000,
           deliveryFee: vendorData.delivery_fee || 500,
-          bankName: vendorData.bank_name || '',
-          accountNumber: vendorData.account_number || '',
-          accountName: vendorData.account_name || '',
+         bankName: vendorData.bank_name || '',
+bankCode: vendorData.bank_code || '',
+accountNumber: vendorData.account_number || '',
+accountName: vendorData.account_name || '',
+recipientCode: vendorData.recipient_code || '',
           latitude: vendorData.latitude,
 longitude: vendorData.longitude,
           notifications: vendorData.notification_settings || {
@@ -192,9 +198,26 @@ longitude: vendorData.longitude,
       if (updates.deliveryRadius) vendorUpdates.delivery_radius = updates.deliveryRadius;
       if (updates.minOrder) vendorUpdates.min_order = updates.minOrder;
       if (updates.deliveryFee) vendorUpdates.delivery_fee = updates.deliveryFee;
-      if (updates.bankName) vendorUpdates.bank_name = updates.bankName;
-      if (updates.accountNumber) vendorUpdates.account_number = updates.accountNumber;
-      if (updates.accountName) vendorUpdates.account_name = updates.accountName;
+     // ✅ Bank details
+if (updates.bankName !== undefined)
+  vendorUpdates.bank_name = updates.bankName;
+
+if (updates.accountNumber !== undefined)
+  vendorUpdates.account_number = updates.accountNumber;
+
+if (updates.accountName !== undefined)
+  vendorUpdates.account_name = updates.accountName;
+
+// ✅ IMPORTANT
+if (updates.bankCode !== undefined)
+  vendorUpdates.bank_code = updates.bankCode;
+
+if (updates.recipientCode !== undefined)
+  vendorUpdates.recipient_code = updates.recipientCode;
+
+// ✅ Auto mark verified
+if (updates.recipientCode)
+  vendorUpdates.account_verified = true;
       if (updates.notifications) vendorUpdates.notification_settings = updates.notifications;
 vendorUpdates.latitude = updates.latitude;
 vendorUpdates.longitude = updates.longitude;

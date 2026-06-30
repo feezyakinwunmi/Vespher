@@ -117,6 +117,19 @@ export function RoleSelectionScreen() {
           </View>
         </View>
 
+
+<View 
+            style={{alignItems:'center',justifyContent:'center',marginBottom:20}}
+          > 
+            <Image
+              source={require('../assets/vendorp.png')}
+              style={{ width: 400, height: 300 }}
+              resizeMode="contain"
+            />
+          </View>
+
+
+
         {/* Title */}
         <View style={styles.titleContainer}>
           <Text style={styles.title}>How would you like to join?</Text>

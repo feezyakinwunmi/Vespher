@@ -78,15 +78,7 @@ const handleSubmit = async () => {
             <Feather name="arrow-left" size={24} color="#fff" />
           </TouchableOpacity>
           
-          <View 
-            style={{alignItems:'center',justifyContent:'center',marginBottom:20}}
-          > 
-            <Image
-              source={require('../assets/box.png')}
-              style={{ width: 200, height: 200 }}
-              resizeMode="contain"
-            />
-          </View>
+         
 
           {/* Header */}
           <View style={styles.header}>
@@ -95,6 +87,18 @@ const handleSubmit = async () => {
               Sign in to continue to veshpe
             </Text>
           </View>
+
+
+ <View 
+            style={{alignItems:'center',justifyContent:'center',marginBottom:20}}
+          > 
+            <Image
+              source={require('../assets/loginp.png')}
+              style={{ width: 400, height: 350 }}
+              resizeMode="contain"
+            />
+          </View>
+
 
           {/* Error Message */}
           {error ? (
