@@ -22,6 +22,7 @@ import { RootStackParamList } from '../navigation/types';
 import { formatDistanceToNow } from 'date-fns';
 import Toast from 'react-native-toast-message';
 import { supabase } from '../lib/supabase';
+import { openAppLink } from '../navigation/RootNavigation';
 
 type NotificationsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -106,28 +107,8 @@ const handleNotificationClick = async (notification: any) => {
     await markAsRead(notification.id);
   }
   
-  // Handle action_link navigation
-  if (notification.action_link) {
-    if (notification.action_link.startsWith('/order/')) {
-      const orderId = notification.action_link.split('/').pop();
-      navigation.navigate('OrderTracking', { orderId });
-    } 
-    else if (notification.action_link === '/orders') {
-      navigation.navigate('Orders');
-    }
-    else if (notification.action_link === '/vendor/orders') {
-      navigation.navigate('VendorOrders' as never);
-    }
-    else if (notification.action_link === '/vendor/menu') {
-      navigation.navigate('VendorMenu');
-    }
-    else if (notification.action_link === '/home') {
-      navigation.navigate('Home');
-    }
-    else {
-      navigation.navigate('Notifications');
-    }
-  }
+  // Handle action_link navigation (resolved for the signed-in user's role)
+  openAppLink(user?.role, notification.action_link);
 };
 
 const handlePromoCodeClick = async (notification: any) => {
@@ -207,12 +188,11 @@ const copyPromoCode = (code: string) => {
   Toast.show({ type: 'success', text1: 'Code copied to clipboard!' });
 };
 
-// Add this function to apply promo code
 const applyPromoCode = (code: string, vendorId: string) => {
   setShowPromoModal(false);
-  navigation.navigate('Cart');
-  // TODO: Store the promo code in a global state/context to be applied at checkout
-  // e.g., usePromoStore.setPendingPromoCode(code);
+  if (user?.role !== 'customer') return;
+  // CartScreen pre-fills the code and validates it against the cart.
+  navigation.navigate('Cart', { promoCode: code });
 };
 
   const onRefresh = async () => {

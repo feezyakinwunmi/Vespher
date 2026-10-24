@@ -1,4 +1,5 @@
 // app/screens/ForgotPasswordScreen.tsx
+import type { TextInputInstance } from 'react-native';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -17,6 +18,7 @@ import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 import { validatePassword, getPasswordStrengthColor, getPasswordStrengthLabel } from '../utils/passwordValidation';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
@@ -25,6 +27,7 @@ type ScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export function ForgotPasswordScreen() {
   const navigation = useNavigation<ScreenNavigationProp>();
+  const { beginPasswordRecovery, endPasswordRecovery } = useAuth();
   
   // Step 1: Email
   const [email, setEmail] = useState('');
@@ -39,7 +42,7 @@ export function ForgotPasswordScreen() {
   const [otpError, setOtpError] = useState('');
   const [canResend, setCanResend] = useState(true);
   const [countdown, setCountdown] = useState(60);
-  const otpInputs = useRef<Array<TextInput | null>>([]);
+  const otpInputs = useRef<Array<TextInputInstance | null>>([]);
   
   // Step 3: Reset Password Modal
   const [showResetModal, setShowResetModal] = useState(false);
@@ -103,24 +106,9 @@ const [passwordStrength, setPasswordStrength] = useState<{
     setIsLoading(true);
     
     try {
-      // Check if user exists
-      const { data: user, error: userError } = await supabase
-        .from('users')
-        .select('email')
-        .eq('email', email)
-        .single();
-
-      if (userError || !user) {
-        Alert.alert('Error', 'No account found with this email');
-        return;
-      }
-
-      // Send OTP for password reset
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: 'yourapp://reset-password', // Optional: deep link if you still want to support links
-      });
-      
-      if (error) throw error;
+      // Don't reveal whether the email has an account: always show the OTP step.
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim());
+      if (error && error.status === 429) throw error;
       
       setMaskedEmail(maskEmail(email));
       setEmailSent(true);
@@ -173,6 +161,12 @@ useEffect(() => {
     }
   };
 
+  const cancelPasswordReset = async () => {
+    setShowResetModal(false);
+    endPasswordRecovery();
+    await supabase.auth.signOut();
+  };
+
   const handleVerifyOTP = async () => {
     const otpString = otpCode.join('');
     if (otpString.length !== 6) {
@@ -183,8 +177,9 @@ useEffect(() => {
     setIsVerifyingOTP(true);
     
     try {
-      // Verify OTP
-      const { data, error } = await supabase.auth.verifyOtp({
+      // Keep the user on this screen until the new password is set.
+      beginPasswordRecovery();
+      const { error } = await supabase.auth.verifyOtp({
         email: email,
         token: otpString,
         type: 'recovery'
@@ -197,6 +192,7 @@ useEffect(() => {
       setShowResetModal(true);
       
     } catch (error: any) {
+      endPasswordRecovery();
       setOtpError(error.message || 'Invalid OTP. Please try again.');
       // Clear OTP fields on error
       setOtpCode(['', '', '', '', '', '']);
@@ -211,7 +207,7 @@ useEffect(() => {
     
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim());
       if (error) throw error;
       
       setCanResend(false);
@@ -248,10 +244,14 @@ useEffect(() => {
       });
 
       if (error) throw error;
-      
+
+      // End the recovery session so the user signs in with the new password.
+      endPasswordRecovery();
+      await supabase.auth.signOut();
+
       Alert.alert(
         'Success',
-        'Password updated successfully',
+        'Password updated successfully. Please sign in with your new password.',
         [
           {
             text: 'OK',
@@ -459,13 +459,13 @@ useEffect(() => {
         visible={showResetModal}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setShowResetModal(false)}
+        onRequestClose={cancelPasswordReset}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Reset Password</Text>
-              <TouchableOpacity onPress={() => setShowResetModal(false)}>
+              <TouchableOpacity onPress={cancelPasswordReset}>
                 <Feather name="x" size={20} color="#fff" />
               </TouchableOpacity>
             </View>

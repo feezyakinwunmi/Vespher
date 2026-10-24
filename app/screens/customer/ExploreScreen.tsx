@@ -1,4 +1,5 @@
 // app/screens/customer/ExploreScreen.tsx
+import { imageSource } from '../../utils/images';
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
@@ -24,16 +25,17 @@ import { useCategories } from '../../hooks/customer/useCategories';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { HealthWarningModal } from '../../components/customer/HealthWarningModal';
+import { ProductDetailsModal } from '../../components/customer/ProductDetailsModal';
 import { HealthCheckResult } from '../../hooks/customer/useHealthCheck';
 import { supabase } from '../../lib/supabase';
 import { HEALTH_CONDITIONS, HealthCondition } from '../../contexts/HealthContext';
-import { RootStackParamList } from '../../navigation/types';
+import { RootStackParamList, CustomerTabParamList } from '../../navigation/types';
 import Toast from 'react-native-toast-message';
 import { useLocation } from '../../contexts/LocationContext';
 import { calculateDistance } from '../../services/locationService';
 
 type ExploreScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
-type ExploreScreenRouteProp = RouteProp<RootStackParamList, 'Explore'>;
+type ExploreScreenRouteProp = RouteProp<CustomerTabParamList, 'Explore'>;
 
 interface FilterState {
   categories: string[];
@@ -188,6 +190,7 @@ export function ExploreScreen() {
   const [healthCheckResult, setHealthCheckResult] = useState<HealthCheckResult | null>(null);
   const [pendingCartAction, setPendingCartAction] = useState<PendingCartAction | null>(null);
   const [pendingProductName, setPendingProductName] = useState('');
+  const [detailsProduct, setDetailsProduct] = useState<any>(null);
   const [deliveryFees, setDeliveryFees] = useState<Record<string, number>>({});
   const [isLoadingFees, setIsLoadingFees] = useState(false);
   const { userLocation, calculateDeliveryToVendor } = useLocation();
@@ -517,6 +520,18 @@ export function ExploreScreen() {
         onGoBack={handleGoBack}
       />
 
+      <ProductDetailsModal
+        product={detailsProduct}
+        vendorName={detailsProduct?.vendorName}
+        onClose={() => setDetailsProduct(null)}
+        onHealthWarning={(product, result) => {
+          setHealthCheckResult(result);
+          setPendingCartAction({ product, quantity: 1 });
+          setPendingProductName(product.name);
+          setHealthModalVisible(true);
+        }}
+      />
+
       {/* Meal Time Tabs (NEW - above health tabs) */}
       <ScrollView
         horizontal
@@ -590,10 +605,10 @@ export function ExploreScreen() {
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={styles.horizontalProductCard}
-                onPress={() => navigation.navigate('VendorDetails', { vendorId: item.vendorId })}
+                onPress={() => setDetailsProduct(item)}
                 activeOpacity={0.8}
               >
-                <Image source={{ uri: item.image || 'https://via.placeholder.com/150' }} style={styles.horizontalProductImage} />
+                <Image source={imageSource(item.image)} style={styles.horizontalProductImage} />
                 <LinearGradient colors={['transparent', 'rgba(0,0,0,0.9)']} style={styles.productGradient}>
                   <View style={styles.productInfo}>
                     <Text style={styles.productName} numberOfLines={1}>{item.name}</Text>
@@ -680,10 +695,10 @@ export function ExploreScreen() {
               <TouchableOpacity
                 key={product.id}
                 style={styles.productCard}
-                onPress={() => navigation.navigate('VendorDetails', { vendorId: product.vendorId })}
+                onPress={() => setDetailsProduct(product)}
                 activeOpacity={0.8}
               >
-                <Image source={{ uri: product.image || 'https://via.placeholder.com/150' }} style={styles.productImage} />
+                <Image source={imageSource(product.image)} style={styles.productImage} />
                 <LinearGradient colors={['transparent', 'rgba(0,0,0,0.9)']} style={styles.productGradient}>
                   <View style={styles.productInfo}>
                     <Text style={styles.productName} numberOfLines={1}>{product.name}</Text>
@@ -758,7 +773,7 @@ export function ExploreScreen() {
                 <View style={styles.vendorOptions}>
                   {vendors.map((vendor) => (
                     <TouchableOpacity key={vendor.id} onPress={() => toggleVendor(vendor.id)} style={[styles.vendorOption, tempFilters.vendors.includes(vendor.id) && styles.vendorOptionSelected]}>
-                      <Image source={{ uri: vendor.image || 'https://via.placeholder.com/40' }} style={styles.vendorOptionImage} />
+                      <Image source={imageSource(vendor.image)} style={styles.vendorOptionImage} />
                       <View style={styles.vendorOptionInfo}>
                         <Text style={styles.vendorOptionName}>{vendor.name}</Text>
                         <Text style={styles.vendorOptionRating}>⭐ {vendor.rating.toFixed(1)}</Text>

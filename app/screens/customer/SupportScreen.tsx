@@ -1,4 +1,5 @@
 // app/screens/customer/SupportScreen.tsx
+import { SUPPORT, supportLinks } from '../../config/support';
 import React from 'react';
 import {
   View,
@@ -45,20 +46,20 @@ const contactOptions = [
   { 
     icon: 'phone' as const, 
     label: 'Call Us', 
-    value: '+234 800 123 4567', 
-    action: () => Linking.openURL('tel:+2348001234567') 
+    value: SUPPORT.phoneDisplay, 
+    action: () => Linking.openURL(supportLinks.call) 
   },
   { 
     icon: 'mail' as const, 
     label: 'Email Us', 
-    value: 'support@vespher.com', 
-    action: () => Linking.openURL('mailto:support@vespher.com') 
+    value: SUPPORT.email, 
+    action: () => Linking.openURL(supportLinks.email()) 
   },
   { 
     icon: 'message-circle' as const, 
     label: 'WhatsApp', 
-    value: '+234 800 123 4567', 
-    action: () => Linking.openURL('https://wa.me/2348001234567') 
+    value: SUPPORT.phoneDisplay, 
+    action: () => Linking.openURL(supportLinks.whatsapp) 
   },
 ];
 
@@ -106,6 +107,21 @@ export function SupportScreen() {
           </View>
         </View>
 
+        {/* Complaints */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Report a problem</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Complaints')} style={styles.contactCard}>
+            <View style={styles.contactIconContainer}>
+              <Feather name="alert-circle" size={20} color="#f97316" />
+            </View>
+            <View style={styles.contactInfo}>
+              <Text style={styles.contactLabel}>Complaints & chat</Text>
+              <Text style={styles.contactValue}>Raise an issue and chat with Vesphe support</Text>
+            </View>
+            <Feather name="chevron-right" size={18} color="#666" />
+          </TouchableOpacity>
+        </View>
+
         {/* Quick Links */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Links</Text>
@@ -115,7 +131,7 @@ export function SupportScreen() {
               <Text style={styles.quickLinkText}>Terms of Service</Text>
               <Feather name="chevron-right" size={18} color="#666" style={styles.quickLinkArrow} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.quickLinkCard}>
+            <TouchableOpacity style={styles.quickLinkCard} onPress={() => navigation.navigate('Privacy')}>
               <Feather name="shield" size={18} color="#666" />
               <Text style={styles.quickLinkText}>Privacy Policy</Text>
               <Feather name="chevron-right" size={18} color="#666" style={styles.quickLinkArrow} />

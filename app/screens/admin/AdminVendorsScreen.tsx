@@ -18,7 +18,8 @@ import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
-import { verifyBankAccount } from '../../utils/flutterwave'; // Only verifyBankAccount
+import { verifyBankAccount, functionErrorMessage } from '../../utils/paystack';
+import { BANKS } from '../../constants/banks';
 
 type VendorStatus = 'all' | 'pending' | 'approved' | 'suspended';
 
@@ -55,28 +56,7 @@ interface PlatformSettings {
 }
 
 // Bank list with codes
-const banks = [
-  { label: 'Access Bank', value: 'access', code: '044' },
-  { label: 'Citibank', value: 'citibank', code: '023' },
-  { label: 'Ecobank', value: 'ecobank', code: '050' },
-  { label: 'Fidelity Bank', value: 'fidelity', code: '070' },
-  { label: 'First Bank of Nigeria', value: 'first', code: '011' },
-  { label: 'FCMB', value: 'fcmb', code: '214' },
-  { label: 'GTBank', value: 'gtb', code: '058' },
-  { label: 'Heritage Bank', value: 'heritage', code: '030' },
-  { label: 'Keystone Bank', value: 'keystone', code: '082' },
-  { label: 'Polaris Bank', value: 'polaris', code: '076' },
-  { label: 'Stanbic IBTC', value: 'stanbic', code: '221' },
-  { label: 'Standard Chartered', value: 'standard', code: '068' },
-  { label: 'Sterling Bank', value: 'sterling', code: '232' },
-  { label: 'Union Bank', value: 'union', code: '032' },
-  { label: 'UBA', value: 'uba', code: '033' },
-  { label: 'Wema Bank', value: 'wema', code: '035' },
-  { label: 'Zenith Bank', value: 'zenith', code: '057' },
-  { label: 'Kuda Bank', value: 'kuda', code: '090267' },
-  { label: 'OPay', value: 'opay', code: '100052' },
-  { label: 'PalmPay', value: 'palmpay', code: '100033' },
-];
+const banks = BANKS;
 
 export function AdminVendorsScreen() {
   const navigation = useNavigation();
@@ -278,17 +258,19 @@ export function AdminVendorsScreen() {
     }
 
     try {
-      const { error } = await supabase
-        .from('vendors')
-        .update({
+      // Creates a new Paystack recipient and saves the bank details server-side, so
+      // card payments settle to the new account (payout details are not client-writable).
+      const { data, error } = await supabase.functions.invoke('setup-subaccount', {
+        body: {
+          vendor_id: selectedVendor.id,
           bank_name: editedBankDetails.bank_name,
           bank_code: editedBankDetails.bank_code,
           account_number: editedBankDetails.account_number,
-          account_name: editedBankDetails.account_name,
-        })
-        .eq('id', selectedVendor.id);
+        },
+      });
 
-      if (error) throw error;
+      if (error) throw new Error(await functionErrorMessage(error, 'Failed to update bank details'));
+      if (!data?.status) throw new Error(data?.message || 'Failed to update bank details');
 
       Alert.alert('Success', 'Bank details updated successfully');
       fetchVendors();

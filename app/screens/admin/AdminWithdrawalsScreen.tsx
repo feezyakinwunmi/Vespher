@@ -146,52 +146,30 @@ export function AdminWithdrawalsScreen() {
 
 
 
+// Vendors are paid automatically by Paystack split payments. The remaining
+// withdrawal requests (riders, old vendor wallet balances) are paid by the admin
+// outside the app (bank app or Paystack dashboard) and recorded here.
 const processWithdrawalPayment = async (withdrawal: Withdrawal) => {
   setProcessingPayment(true);
-  
+
   try {
-    // ✅ Call your process-withdrawal Edge Function
-    const response = await fetch(
-      `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/process-withdrawal`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY}`
-        },
-        body: JSON.stringify({
-          withdrawalId: withdrawal.id,
-          amount: withdrawal.amount,
-          accountNumber: withdrawal.account_number,
-          bankCode: getBankCodeFromName(withdrawal.bank_name),
-          accountName: withdrawal.account_name
-        })
-      }
-    );
-
-    const result = await response.json();
-
-    if (result.success) {
-      showToast(`Withdrawal of ₦${withdrawal.amount.toLocaleString()} initiated successfully`);
-      fetchWithdrawals(); // Refresh the list
-      return true;
-    } else {
-      throw new Error(result.message || 'Payment failed');
-    }
-  } catch (error: any) {
-    console.error('Error processing withdrawal payment:', error);
-    showToast(`Payment failed: ${error.message}`);
-    
-    // Mark as failed
-    await supabase
+    const { error } = await supabase
       .from('withdrawals')
-      .update({ 
-        status: 'failed', 
-        notes: `Failed: ${error.message}`,
+      .update({
+        status: 'completed',
+        notes: `Paid manually by admin to ${withdrawal.account_name} (${withdrawal.bank_name} ${withdrawal.account_number})`,
         processed_at: new Date().toISOString()
       })
       .eq('id', withdrawal.id);
-    
+
+    if (error) throw error;
+
+    showToast(`Withdrawal of ₦${withdrawal.amount.toLocaleString()} marked as paid`);
+    fetchWithdrawals();
+    return true;
+  } catch (error: any) {
+    console.error('Error recording withdrawal payment:', error);
+    showToast(`Could not update withdrawal: ${error.message}`);
     fetchWithdrawals();
     return false;
   } finally {
@@ -232,29 +210,6 @@ const handleRetryWithdrawal = async (withdrawal: Withdrawal) => {
     setProcessingPayment(false);
   }
 };
-  // Helper to get bank code from bank name
-  const getBankCodeFromName = (bankName: string): string => {
-    const bankMap: Record<string, string> = {
-      'Access Bank': '044',
-      'GTBank': '058',
-      'First Bank': '011',
-      'UBA': '033',
-      'Zenith Bank': '057',
-      'Kuda Bank': '090267',
-      'OPay': '100052',
-      'PalmPay': '100033',
-      'Fidelity Bank': '070',
-      'Union Bank': '032',
-      'Sterling Bank': '232',
-      'Wema Bank': '035',
-    };
-    
-    const matchedKey = Object.keys(bankMap).find(key => 
-      bankName.toLowerCase().includes(key.toLowerCase())
-    );
-    
-    return bankMap[matchedKey || ''] || '044';
-  };
 
  const handleProcessWithdrawal = async (withdrawalId: string, action: 'approve' | 'reject', notes?: string) => {
   try {
@@ -693,7 +648,7 @@ const handleRetryWithdrawal = async (withdrawal: Withdrawal) => {
           >
             <Feather name="check-circle" size={18} color="#10b981" />
             <Text style={styles.actionText}>
-              {processingPayment ? 'Processing...' : 'Approve & Send Payment'}
+              {processingPayment ? 'Saving...' : 'Mark as Paid'}
             </Text>
           </TouchableOpacity>
 
@@ -760,7 +715,7 @@ const handleRetryWithdrawal = async (withdrawal: Withdrawal) => {
             <Text style={styles.confirmTitle}>Confirm Action</Text>
             <Text style={styles.confirmMessage}>
               {confirmAction?.type === 'approve' 
-                ? `Are you sure you want to process this withdrawal of ₦${confirmAction?.withdrawal.amount.toLocaleString()}? This will send money to the vendor's bank account.` 
+                ? `Only confirm after you have sent ₦${confirmAction?.withdrawal.amount.toLocaleString()} to ${confirmAction?.withdrawal.account_name} (${confirmAction?.withdrawal.bank_name} ${confirmAction?.withdrawal.account_number}) from your bank app or the Paystack dashboard. The app does not send this money.` 
                 : `Are you sure you want to reject this withdrawal?`}
             </Text>
 
@@ -784,7 +739,7 @@ const handleRetryWithdrawal = async (withdrawal: Withdrawal) => {
                 disabled={processingPayment}
               >
                 <Text style={styles.confirmButtonText}>
-                  {processingPayment ? 'Processing...' : (confirmAction?.type === 'approve' ? 'Approve & Send' : 'Reject')}
+                  {processingPayment ? 'Saving...' : (confirmAction?.type === 'approve' ? 'Mark as Paid' : 'Reject')}
                 </Text>
               </TouchableOpacity>
             </View>

@@ -1,4 +1,5 @@
 // app/screens/AddressPickerScreen.tsx
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState } from 'react';
 import {
   View,
@@ -8,7 +9,6 @@ import {
   ActivityIndicator,
   TextInput,
   FlatList,
-  SafeAreaView,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';

@@ -18,10 +18,10 @@ import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { useVendorEarnings } from '../../hooks/vendor/useVendorEarnings';
-import { PayoutModal } from '../../components/vendor/PayoutModal';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Toast from 'react-native-toast-message';
 import { supabase } from '../../lib/supabase';
+import { estimatePaystackFee } from '../../utils/fees';
 
 type FilterType = 'all' | 'order' | 'payout';
 type DateRangeType = 'all' | 'today' | 'week' | 'month' | 'custom';
@@ -52,14 +52,14 @@ interface OrderDetails {
 
 // ✅ Receipt Modal Component
 // ✅ Receipt Modal Component
-function ReceiptModal({ 
-  visible, 
-  onClose, 
+function ReceiptModal({
+  visible,
+  onClose,
   transaction,
-  orderDetails 
-}: { 
-  visible: boolean; 
-  onClose: () => void; 
+  orderDetails
+}: {
+  visible: boolean;
+  onClose: () => void;
   transaction: any;
   orderDetails?: OrderDetails | null;
 }) {
@@ -67,17 +67,17 @@ function ReceiptModal({
 
   // For order transactions, use orderDetails if available
   const isOrder = transaction.type === 'order';
-  
+
   // Calculate breakdown with proper null checks
   const subtotal = orderDetails?.subtotal || 0;
   const discount = orderDetails?.discount || 0;
   const deliveryFee = orderDetails?.delivery_fee || 0;
   const platformCommission = orderDetails?.platform_commission || Math.round(subtotal * 0.1);
-  const flutterwaveFee = orderDetails?.flutterwave_fee || Math.round(subtotal * 0.02);
+  const flutterwaveFee = orderDetails?.flutterwave_fee ?? estimatePaystackFee(orderDetails?.total || 0);
   const vatOnFee = orderDetails?.vat_on_fee || Math.round(flutterwaveFee * 0.075);
   const stampDuty = orderDetails?.stamp_duty || (subtotal >= 10000 ? 50 : 0);
   const netPayout = orderDetails?.vendor_payout || transaction.amount;
-  
+
   // ✅ Discount details with safe access
   const firstOrderDiscount = orderDetails?.first_order_discount || 0;
   const promoDiscount = orderDetails?.promo_discount || 0;
@@ -130,10 +130,10 @@ function ReceiptModal({
     });
   };
 
-  
 
-  const paymentStatus = transaction.status || 
-                       (isOrder ? 'delivered' : transaction.status) || 
+
+  const paymentStatus = transaction.status ||
+                       (isOrder ? 'delivered' : transaction.status) ||
                        'completed';
 
   return (
@@ -168,10 +168,10 @@ function ReceiptModal({
 
             {/* Status Badge */}
             <View style={[styles.receiptStatusBadge, { backgroundColor: `${getStatusColor(paymentStatus)}20` }]}>
-              <Feather 
-                name={getStatusIcon(paymentStatus)} 
-                size={16} 
-                color={getStatusColor(paymentStatus)} 
+              <Feather
+                name={getStatusIcon(paymentStatus)}
+                size={16}
+                color={getStatusColor(paymentStatus)}
               />
               <Text style={[styles.receiptStatusText, { color: getStatusColor(paymentStatus) }]}>
                 {paymentStatus.toUpperCase()}
@@ -192,7 +192,7 @@ function ReceiptModal({
             {/* Transaction Details */}
             <View style={styles.receiptDetailsSection}>
               <Text style={styles.receiptDetailsTitle}>Transaction Details</Text>
-              
+
               <View style={styles.receiptDetailRow}>
                 <Text style={styles.receiptDetailLabel}>Reference</Text>
                 <Text style={styles.receiptDetailValue}>
@@ -210,8 +210,8 @@ function ReceiptModal({
               <View style={styles.receiptDetailRow}>
                 <Text style={styles.receiptDetailLabel}>Type</Text>
                 <Text style={styles.receiptDetailValue}>
-                  {transaction.type === 'order' ? 'Order Payment' : 
-                   transaction.type === 'payout' ? 'Withdrawal' : 
+                  {transaction.type === 'order' ? 'Order Payment' :
+                   transaction.type === 'payout' ? 'Withdrawal' :
                    transaction.type || 'Transaction'}
                 </Text>
               </View>
@@ -263,7 +263,7 @@ function ReceiptModal({
             {isOrder && (
               <View style={styles.receiptBreakdownSection}>
                 <Text style={styles.receiptBreakdownTitle}>Earnings Breakdown</Text>
-                
+
                 {/* Subtotal */}
                 <View style={styles.receiptBreakdownRow}>
                   <Text style={styles.receiptBreakdownLabel}>Subtotal</Text>
@@ -340,9 +340,9 @@ function ReceiptModal({
                   </View>
                 )}
 
-                {/* Flutterwave Fee */}
+                {/* Paystack Fee */}
                 <View style={styles.receiptBreakdownRow}>
-                  <Text style={styles.receiptBreakdownLabel}>Flutterwave Fee (2%)</Text>
+                  <Text style={styles.receiptBreakdownLabel}>Paystack Fee</Text>
                   <Text style={[styles.receiptBreakdownValue, styles.receiptDeduction]}>
                     -₦{flutterwaveFee.toLocaleString()}
                   </Text>
@@ -392,8 +392,8 @@ function ReceiptModal({
             <View style={styles.receiptFooter}>
               <Feather name="info" size={14} color="#f97316" />
               <Text style={styles.receiptFooterText}>
-                {isOrder 
-                  ? 'Funds will be available for withdrawal within 1-2 business days'
+                {isOrder
+                  ? 'Card payments: your share is sent to your bank by Paystack, usually the next business day. Cash orders are paid to you directly.'
                   : transaction.status === 'pending'
                   ? 'Withdrawal is being processed'
                   : transaction.status === 'completed'
@@ -418,7 +418,6 @@ function ReceiptModal({
 
 export function VendorEarningsScreen() {
   const navigation = useNavigation();
-  const [showPayoutModal, setShowPayoutModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<FilterType>('all');
@@ -428,7 +427,7 @@ export function VendorEarningsScreen() {
   const [customEndDate, setCustomEndDate] = useState<Date | null>(null);
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
-  
+
   // ✅ Receipt modal states
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
   const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
@@ -444,12 +443,11 @@ export function VendorEarningsScreen() {
     });
   };
 
-  const { 
-    earnings, 
-    transactions, 
-    isLoading, 
+  const {
+    earnings,
+    transactions,
+    isLoading,
     refreshData,
-    requestPayout 
   } = useVendorEarnings();
 
   const onRefresh = async () => {
@@ -514,13 +512,13 @@ const fetchOrderDetails = async (orderId: string) => {
     let promoCode = null;
     let promoDiscount = 0;
     let discountType = null;
-    
+
     if (promoUsage && promoUsage.promo_code) {
       // If promo_code is an array, take the first element
-      const promoData = Array.isArray(promoUsage.promo_code) 
-        ? promoUsage.promo_code[0] 
+      const promoData = Array.isArray(promoUsage.promo_code)
+        ? promoUsage.promo_code[0]
         : promoUsage.promo_code;
-      
+
       promoCode = promoData?.code;
       discountType = promoData?.discount_type;
       promoDiscount = promoUsage.discount_amount || 0;
@@ -543,13 +541,13 @@ const fetchOrderDetails = async (orderId: string) => {
   // ✅ Handle transaction press
   const handleTransactionPress = async (txn: any) => {
     setSelectedTransaction(txn);
-    
+
     if (txn.type === 'order' && txn.order_id) {
       await fetchOrderDetails(txn.order_id);
     } else {
       setOrderDetails(null);
     }
-    
+
     setShowReceipt(true);
   };
 
@@ -566,7 +564,7 @@ const fetchOrderDetails = async (orderId: string) => {
     if (dateRange !== 'all') {
       const now = new Date();
       const today = new Date(now.setHours(0, 0, 0, 0));
-      
+
       if (dateRange === 'today') {
         filtered = filtered.filter(t => {
           const txDate = new Date(t.date);
@@ -590,7 +588,7 @@ const fetchOrderDetails = async (orderId: string) => {
 
     // Search by ID
     if (searchQuery) {
-      filtered = filtered.filter(t => 
+      filtered = filtered.filter(t =>
         t.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
         t.type.toLowerCase().includes(searchQuery.toLowerCase())
       );
@@ -604,7 +602,7 @@ const fetchOrderDetails = async (orderId: string) => {
       case 'today': return 'Today';
       case 'week': return 'Last 7 days';
       case 'month': return 'Last 30 days';
-      case 'custom': 
+      case 'custom':
         if (customStartDate && customEndDate) {
           return `${customStartDate.toLocaleDateString()} - ${customEndDate.toLocaleDateString()}`;
         }
@@ -683,10 +681,10 @@ const fetchOrderDetails = async (orderId: string) => {
               This week: ₦{earnings.weeklyEarnings.toLocaleString()}
             </Text> */}
             <View style={styles.growthBadge}>
-              <Feather 
-                name="trending-up" 
-                size={12} 
-                color={earnings.weeklyGrowth >= 0 ? '#10b981' : '#ef4444'} 
+              <Feather
+                name="trending-up"
+                size={12}
+                color={earnings.weeklyGrowth >= 0 ? '#10b981' : '#ef4444'}
               />
               <Text style={[
                 styles.growthText,
@@ -713,38 +711,35 @@ const fetchOrderDetails = async (orderId: string) => {
             <Text style={styles.statValue}>{earnings.rating.toFixed(1)}</Text>
             <Text style={styles.statSubtext}>{earnings.reviewCount} reviews</Text>
           </View>
-           <View style={styles.statCard}>
-            <Text style={styles.statLabel}>Pending</Text>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Arriving soon</Text>
             <Text style={[styles.statValue, { color: '#f59e0b' }]}>
-              ₦{earnings.pendingPayout.toLocaleString()}
+              ₦{earnings.settling.toLocaleString()}
             </Text>
-          </View> 
+          </View>
         </View>
 
-         <View style={styles.balanceCard}>
+        {/* Direct bank payouts (Paystack split payments, no wallet) */}
+        <View style={styles.balanceCard}>
           <View style={styles.balanceRow}>
             <View>
-              <Text style={styles.balanceLabel}>Available for Payout</Text>
-              <Text style={styles.balanceValue}>₦{earnings.availableBalance.toLocaleString()}</Text>
+              <Text style={styles.balanceLabel}>Sent to your bank</Text>
+              <Text style={styles.balanceValue}>₦{earnings.paidToBank.toLocaleString()}</Text>
             </View>
-            <TouchableOpacity
-              onPress={() => setShowPayoutModal(true)}
-              disabled={earnings.availableBalance < 1000}
-              style={[
-                styles.withdrawButton,
-                earnings.availableBalance < 1000 && styles.withdrawButtonDisabled
-              ]}
-            >
-              <Text style={styles.withdrawButtonText}>Withdraw</Text>
-            </TouchableOpacity>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={styles.balanceLabel}>Cash orders</Text>
+              <Text style={[styles.balanceValue, { fontSize: 18 }]}>₦{earnings.cashEarnings.toLocaleString()}</Text>
+            </View>
           </View>
           <View style={styles.payoutInfo}>
-            <Feather name="clock" size={12} color="#666" />
+            <Feather name={earnings.payoutAccountReady ? 'check-circle' : 'alert-circle'} size={12} color={earnings.payoutAccountReady ? '#10b981' : '#f59e0b'} />
             <Text style={styles.payoutInfoText}>
-              Payouts are processed within 1-2 business days
+              {earnings.payoutAccountReady
+                ? `Card payments go straight to ${earnings.bankName ? earnings.bankName.toUpperCase() + ' ' : ''}${earnings.accountNumber ? '••••' + earnings.accountNumber.slice(-4) : 'your bank'}, usually the next business day.`
+                : 'Add and verify your bank account in Settings to receive card payments.'}
             </Text>
           </View>
-        </View> 
+        </View>
 
         {/* Transactions Section with Search and Filters */}
         <View style={styles.transactionsSection}>
@@ -802,7 +797,7 @@ const fetchOrderDetails = async (orderId: string) => {
             </ScrollView>
 
             {/* Date Filter Button */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.dateFilterButton}
               onPress={() => setShowDatePicker(true)}
             >
@@ -819,7 +814,7 @@ const fetchOrderDetails = async (orderId: string) => {
               Showing {filteredTransactions.length} of {transactions.length} transactions
             </Text>
             {(filterType !== 'all' || dateRange !== 'all' || searchQuery) && (
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => {
                   setFilterType('all');
                   setDateRange('all');
@@ -848,30 +843,30 @@ const fetchOrderDetails = async (orderId: string) => {
               >
                 <View style={styles.transactionLeft}>
                   <View style={styles.transactionIcon}>
-                    <Feather 
-                      name={txn.type === 'order' ? 'shopping-bag' : 'credit-card'} 
-                      size={16} 
-                      color={txn.type === 'order' ? '#f97316' : '#8b5cf6'} 
+                    <Feather
+                      name={txn.type === 'order' ? 'shopping-bag' : 'credit-card'}
+                      size={16}
+                      color={txn.type === 'order' ? '#f97316' : '#8b5cf6'}
                     />
                   </View>
                   <View style={styles.transactionInfo}>
                     <Text style={styles.transactionType}>
-                      {txn.type === 'order' ? 'Order Payment' : 
+                      {txn.type === 'order' ? 'Order Payment' :
                        txn.type === 'payout' ? 'Withdrawal' : 'Transaction'}
                     </Text>
                     <Text style={styles.transactionId}>{txn.id.slice(0, 8)}...</Text>
                     <Text style={styles.transactionDate}>{txn.date}</Text>
-                    
+
                     {/* Status Badge */}
                     {txn.status && (
                       <View style={[
                         styles.statusBadge,
                         { backgroundColor: `${getStatusColor(txn.status)}20` }
                       ]}>
-                        <Feather 
-                          name={txn.status === 'completed' || txn.status === 'delivered' ? 'check-circle' : 'clock'} 
-                          size={10} 
-                          color={getStatusColor(txn.status)} 
+                        <Feather
+                          name={txn.status === 'completed' || txn.status === 'delivered' ? 'check-circle' : 'clock'}
+                          size={10}
+                          color={getStatusColor(txn.status)}
                         />
                         <Text style={[styles.statusText, { color: getStatusColor(txn.status) }]}>
                           {txn.status}
@@ -974,17 +969,7 @@ const fetchOrderDetails = async (orderId: string) => {
       )}
 
       {/* Payout Modal - YOUR EXISTING COMPONENT */}
-      <PayoutModal
-        visible={showPayoutModal}
-        onClose={() => setShowPayoutModal(false)}
-        onSubmit={requestPayout}
-        maxAmount={earnings.availableBalance}
-        bankDetails={{
-          bankName: earnings.bankName || '',
-          accountNumber: earnings.accountNumber || '',
-          accountName: earnings.accountName || '',
-        }}
-      />
+
 
       {/* ✅ Receipt Modal - NEW */}
       <ReceiptModal
@@ -1013,7 +998,7 @@ const fetchOrderDetails = async (orderId: string) => {
 
 const styles = StyleSheet.create({
 
-  
+
   receiptModal: {
     backgroundColor: '#1a1a1a',
     borderTopLeftRadius: 20,
@@ -1239,7 +1224,7 @@ discountNoteText: {
     flex: 1,
   },
   loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.7)',
     justifyContent: 'center',
     alignItems: 'center',
@@ -1250,7 +1235,7 @@ discountNoteText: {
     marginTop: 12,
     fontSize: 14,
   },
-    
+
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',

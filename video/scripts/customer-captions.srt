@@ -1,0 +1,51 @@
+1
+00:00:00,300 --> 00:00:04,800
+Ordering food shouldn't be a gamble with your health.
+
+2
+00:00:05,200 --> 00:00:07,800
+Meet Vesphe.
+
+3
+00:00:08,300 --> 00:00:12,800
+See exactly what's in every dish —
+
+4
+00:00:12,800 --> 00:00:17,700
+ingredients, allergens and dietary tags — before you order.
+
+5
+00:00:18,300 --> 00:00:21,500
+Tell Vesphe about your health.
+
+6
+00:00:21,500 --> 00:00:27,700
+Diabetic? Allergic to nuts? We'll warn you before it reaches your cart.
+
+7
+00:00:28,300 --> 00:00:32,800
+With Vesphe Pro, your whole week of meals is planned —
+
+8
+00:00:32,800 --> 00:00:37,700
+the right food for breakfast, lunch and dinner.
+
+9
+00:00:38,300 --> 00:00:46,700
+Pay by card or cash. Checkout takes seconds, secured by Paystack.
+
+10
+00:00:47,300 --> 00:00:51,800
+Then watch your rider come to you, live.
+
+11
+00:00:51,800 --> 00:00:58,700
+Your delivery code makes sure only you get your order.
+
+12
+00:00:59,300 --> 00:01:07,700
+You're updated at every step — and real people are just a message away.
+
+13
+00:01:08,300 --> 00:01:14,800
+Vesphe. Eat smart. Download now.

@@ -19,6 +19,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import { supabase } from '../../lib/supabase';
+import { estimatePaystackFee } from '../../utils/fees';
 import Toast from 'react-native-toast-message';
 
 const { width } = Dimensions.get('window');
@@ -103,7 +104,7 @@ export function VendorOrderDetailsScreen() {
     const platformCommission = orderData.platform_commission || Math.round(subtotal * 0.1);
     const vendorPayout = orderData.vendor_payout || (subtotal - platformCommission);
     
-    const flutterwaveFee = orderData.flutterwave_fee || Math.round(orderData.total * 0.02);
+    const flutterwaveFee = orderData.flutterwave_fee ?? (orderData.payment_method === 'card' ? estimatePaystackFee(orderData.total || 0) : 0);
     const vatOnFee = orderData.vat_on_fee || Math.round(flutterwaveFee * 0.075);
     const stampDuty = orderData.stamp_duty || (orderData.total >= 10000 ? 50 : 0);
     const platformNetEarnings = orderData.platform_net_earnings || 
@@ -678,7 +679,7 @@ const renderEarningsBreakdown = () => {
       </View>
 
       <View style={styles.earningsRow}>
-        <Text style={styles.earningsLabel}>Flutterwave Fee (1.4%):</Text>
+        <Text style={styles.earningsLabel}>Paystack Fee:</Text>
         <Text style={[styles.earningsValue, styles.deduction]}>
           -₦{feeBreakdown.flutterwaveFee.toLocaleString()}
         </Text>

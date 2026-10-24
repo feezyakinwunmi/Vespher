@@ -137,6 +137,10 @@ export interface Product {
   is_popular?: boolean; // For Supabase compatibility
   preparationTime?: number; // Changed from string to number
   preparation_time?: number; // For Supabase compatibility
+  ingredients?: string[];
+  allergens?: string[];
+  health_tags?: string[];
+  meal_times?: string[];
   options?: ProductOption[];
   created_at?: string;
   original_price?: number;

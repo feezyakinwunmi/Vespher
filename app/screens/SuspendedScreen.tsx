@@ -1,7 +1,8 @@
 // app/screens/SuspendedScreen.tsx
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { SUPPORT, supportLinks } from '../config/support';
 import React from 'react';
 import {
-  SafeAreaView,
   View,
   Text,
   TouchableOpacity,
@@ -16,15 +17,15 @@ export function SuspendedScreen() {
   const { user, signOut } = useAuth();
 
   const handleContactEmail = () => {
-    Linking.openURL('mailto:support@vesphe.com?subject=Account%20Suspension%20Appeal');
+    Linking.openURL(supportLinks.email('Account Suspension Appeal'));
   };
 
   const handleCallSupport = () => {
-    Linking.openURL('tel:+2349161460898');
+    Linking.openURL(supportLinks.call);
   };
 
   const handleDispute = () => {
-    Linking.openURL('https://vesphe.com/support/dispute');
+    Linking.openURL(supportLinks.email('Account Suspension Dispute'));
   };
 
   return (
@@ -73,7 +74,7 @@ export function SuspendedScreen() {
             </View>
             <View>
               <Text style={styles.supportButtonText}>Email Support</Text>
-              <Text style={styles.supportButtonSub}>support@vesphe.com</Text>
+              <Text style={styles.supportButtonSub}>{SUPPORT.email}</Text>
             </View>
           </TouchableOpacity>
 

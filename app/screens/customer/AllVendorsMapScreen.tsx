@@ -1,3 +1,4 @@
+import { imageSource } from '../../utils/images';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -318,7 +319,7 @@ export function AllVendorsMapScreen() {
                   {/* Logo */}
                   <View style={styles.modalLogoContainer}>
                     <Image 
-                      source={{ uri: selectedVendor.image || selectedVendor.logo || 'https://via.placeholder.com/60' }} 
+                      source={imageSource(selectedVendor.image || selectedVendor.logo)} 
                       style={styles.modalLogo}
                     />
                   </View>

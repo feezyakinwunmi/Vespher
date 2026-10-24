@@ -1,4 +1,5 @@
 // app/screens/customer/MealPlannerScreen.tsx
+import { imageSource } from '../../utils/images';
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -26,6 +27,10 @@ import { supabase } from '../../lib/supabase';
 import { RootStackParamList } from '../../navigation/types';
 import Toast from 'react-native-toast-message';
 import { HealthCondition, HEALTH_CONDITIONS } from '../../contexts/HealthContext';
+import { useSubscription } from '../../contexts/SubscriptionContext';
+import { assessFood } from '../../services/foodSafety';
+import { planWeek } from '../../services/recommendations';
+import { getCurrentMealTime } from '../../hooks/customer/useAIFoodSuggestions';
 
 const { width } = Dimensions.get('window');
 
@@ -49,13 +54,15 @@ interface WeeklyMealPlan {
   updated_at?: string;
 }
 
-interface NutritionSummary {
-  totalCalories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-  fiber: number;
+interface PlanSummary {
+  planned: number;
+  fitsProfile: number;
+  needsAttention: number;
+  vendors: number;
 }
+
+// JS getDay(): 0 = Sunday
+const TODAY_ID: DayOfWeek = (['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as DayOfWeek[])[new Date().getDay()];
 
 const DAYS: { id: DayOfWeek; label: string; short: string }[] = [
   { id: 'monday', label: 'Monday', short: 'Mon' },
@@ -73,26 +80,6 @@ const MEAL_COLUMNS: { id: MealTime; label: string; icon: string; color: string }
   { id: 'dinner', label: 'Dinner', icon: '🌙', color: '#8b5cf6' },
   { id: 'snack', label: 'Snack', icon: '🍿', color: '#10b981' },
 ];
-
-// Only used for AUTO-suggestions, NOT for manual selection
-const AUTO_SUGGEST_RULES = {
-  breakfast: {
-    allowed: ['toast', 'bread', 'egg', 'cereal', 'oatmeal', 'pancake', 'waffle', 'yogurt', 'fruit', 'smoothie', 'akara', 'moi moi', 'pap', 'coffee', 'tea'],
-    notAllowed: ['rice', 'pasta', 'noodles', 'burger', 'pizza', 'fries', 'steak', 'fried chicken', 'eba', 'fufu', 'pounded yam']
-  },
-  lunch: {
-    allowed: ['rice', 'jollof', 'fried rice', 'beans', 'pasta', 'noodles', 'burger', 'shawarma', 'salad', 'soup', 'stew', 'protein'],
-    notAllowed: ['cereal', 'pancake', 'oatmeal', 'donut', 'pastry']
-  },
-  dinner: {
-    allowed: ['steak', 'grill', 'seafood', 'fish', 'pepper soup', 'pizza', 'pasta', 'soup', 'swallow', 'rice'],
-    notAllowed: ['cereal', 'pancake', 'heavy fried foods']
-  },
-  snack: {
-    allowed: ['fries', 'chips', 'samosa', 'spring roll', 'puff puff', 'cake', 'ice cream', 'fruit', 'smoothie', 'drink'],
-    notAllowed: []
-  }
-};
 
 const DEFAULT_WEEKLY_PLAN = (userId: string): WeeklyMealPlan => ({
   id: '',
@@ -126,13 +113,9 @@ export function MealPlannerScreen() {
     conditions: [],
     isLocked: false,
   });
-  const [nutritionSummary, setNutritionSummary] = useState<NutritionSummary>({
-    totalCalories: 0,
-    protein: 0,
-    carbs: 0,
-    fat: 0,
-    fiber: 0,
-  });
+  const { isPro, isLoading: subscriptionLoading } = useSubscription();
+  const [planSummary, setPlanSummary] = useState<PlanSummary>({ planned: 0, fitsProfile: 0, needsAttention: 0, vendors: 0 });
+  const currentMealTime = getCurrentMealTime();
 
   // Get all products
   const allProducts = vendors.flatMap(vendor =>
@@ -143,61 +126,24 @@ export function MealPlannerScreen() {
     }))
   );
 
-  // Calculate nutrition for the entire week
-  const calculateWeeklyNutrition = (plan: WeeklyMealPlan): NutritionSummary => {
-    let totalCalories = 0;
-    let protein = 0, carbs = 0, fat = 0, fiber = 0;
-    let mealCount = 0;
-    
+  // Plan check: what we can state truthfully from the dishes and the user's profile.
+  useEffect(() => {
+    if (!weeklyPlan) return;
+    let planned = 0;
+    let needsAttention = 0;
+    const vendorIds = new Set<string>();
     for (const day of DAYS) {
-      const dayPlan = plan[day.id];
       for (const meal of MEAL_COLUMNS) {
-        const product = dayPlan[meal.id];
-        if (product) {
-          const estimatedCalories = Math.min(800, Math.max(200, product.price * 0.3));
-          totalCalories += estimatedCalories;
-          mealCount++;
-          
-          const name = product.name.toLowerCase();
-          if (name.includes('chicken') || name.includes('fish') || name.includes('meat') || name.includes('egg') || name.includes('beef')) {
-            protein += 15;
-          }
-          if (name.includes('rice') || name.includes('bread') || name.includes('pasta') || name.includes('yam') || name.includes('noodles')) {
-            carbs += 25;
-          }
-          if (name.includes('fried') || name.includes('cheese') || name.includes('butter') || name.includes('oil') || name.includes('cream')) {
-            fat += 12;
-          }
-          if (name.includes('vegetable') || name.includes('salad') || name.includes('fruit') || name.includes('green')) {
-            fiber += 8;
-          }
-        }
+        const product = weeklyPlan[day.id][meal.id];
+        if (!product) continue;
+        planned++;
+        if (product.vendorId) vendorIds.add(product.vendorId);
+        if (hasHealthWarning(product)) needsAttention++;
       }
     }
-    
-    const daysWithMeals = Math.max(1, mealCount / 4);
-    const avgCalories = Math.round(totalCalories / daysWithMeals);
-    
-    const totalMacros = protein + carbs + fat + fiber;
-    if (totalMacros > 0) {
-      return {
-        totalCalories: avgCalories,
-        protein: Math.round((protein / totalMacros) * 100),
-        carbs: Math.round((carbs / totalMacros) * 100),
-        fat: Math.round((fat / totalMacros) * 100),
-        fiber: Math.round((fiber / totalMacros) * 100),
-      };
-    }
-    
-    return { totalCalories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
-  };
-
-  useEffect(() => {
-    if (weeklyPlan) {
-      const nutrition = calculateWeeklyNutrition(weeklyPlan);
-      setNutritionSummary(nutrition);
-    }
-  }, [weeklyPlan]);
+    setPlanSummary({ planned, fitsProfile: planned - needsAttention, needsAttention, vendors: vendorIds.size });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weeklyPlan, userHealthProfile.conditions.join(',')]);
 
   const fetchHealthProfile = async () => {
     if (!user?.id) return;
@@ -333,38 +279,8 @@ const loadSavedPlan = async () => {
 
 
 
-  const hasHealthWarning = (productName: string, productDescription: string): boolean => {
-    if (!userHealthProfile.isLocked || userHealthProfile.conditions.length === 0) {
-      return false;
-    }
-    
-    const searchText = `${productName} ${productDescription}`.toLowerCase();
-    
-    for (const conditionId of userHealthProfile.conditions) {
-      const conditionMeta = HEALTH_CONDITIONS.find(c => c.id === conditionId);
-      if (conditionMeta) {
-        for (const tag of conditionMeta.avoidTags) {
-          if (searchText.includes(tag.toLowerCase())) {
-            return true;
-          }
-        }
-      }
-    }
-    return false;
-  };
-
-  // For AUTO-suggest only - filter by meal time rules
-  const filterForAutoSuggest = (products: any[], mealTime: MealTime): any[] => {
-    const rules = AUTO_SUGGEST_RULES[mealTime];
-    if (!rules) return products;
-    
-    return products.filter(product => {
-      const productName = product.name.toLowerCase();
-      const isAllowed = rules.allowed.some(term => productName.includes(term));
-      const isNotAllowed = rules.notAllowed.some(term => productName.includes(term));
-      return isAllowed && !isNotAllowed;
-    });
-  };
+  const hasHealthWarning = (product: any): boolean =>
+    userHealthProfile.conditions.length > 0 && !!assessFood(product, userHealthProfile.conditions);
 
   // FOR MANUAL SELECTION - show ALL products (no restrictions)
   const getAllProductsForManual = (search: string = ''): any[] => {
@@ -382,94 +298,33 @@ const loadSavedPlan = async () => {
     return filtered.slice(0, 30);
   };
 
-  // Get random product from list (for variety in auto-suggest)
-  const getRandomProduct = (products: any[], usedProductIds: Set<string> = new Set()): any | null => {
-    if (products.length === 0) return null;
-    
-    let available = products;
-    if (usedProductIds.size > 0 && products.length > usedProductIds.size) {
-      available = products.filter(p => !usedProductIds.has(p.id));
-    }
-    
-    if (available.length === 0) return products[0];
-    
-    const randomIndex = Math.floor(Math.random() * available.length);
-    return available[randomIndex];
-  };
-
-  // Auto-suggest meals for the entire week with VARIETY
+  // Auto-plan the week: right dishes for each meal time, safe for the user's
+  // conditions, no repeats in the week and different vendors within a day.
   const autoSuggestWeek = async () => {
     if (!weeklyPlan) return;
-    
     setIsResuggesting(true);
-    
     try {
+      const plan = planWeek(allProducts, DAYS.map(d => d.id), userHealthProfile.conditions);
       const newPlan = { ...weeklyPlan };
-      const usedProductsPerMealType: Record<string, Set<string>> = {
-        breakfast: new Set(),
-        lunch: new Set(),
-        dinner: new Set(),
-        snack: new Set(),
-      };
-      
-      // Get suitable products for auto-suggest (filtered by meal appropriateness)
-      const suitableProductsByMeal: Record<MealTime, any[]> = {
-        breakfast: filterForAutoSuggest(allProducts, 'breakfast'),
-        lunch: filterForAutoSuggest(allProducts, 'lunch'),
-        dinner: filterForAutoSuggest(allProducts, 'dinner'),
-        snack: filterForAutoSuggest(allProducts, 'snack'),
-      };
-      
-      const shuffledVendors = [...vendors].sort(() => Math.random() - 0.5);
-      
       for (const day of DAYS) {
-        for (const mealTime of MEAL_COLUMNS) {
-          let suitable = [...suitableProductsByMeal[mealTime.id]];
-          
-          let bestProduct = null;
-          
-          for (const vendor of shuffledVendors) {
-            const vendorProducts = suitable.filter(p => p.vendorId === vendor.id);
-            if (vendorProducts.length > 0) {
-              const available = vendorProducts.filter(p => !usedProductsPerMealType[mealTime.id].has(p.id));
-              if (available.length > 0) {
-                bestProduct = getRandomProduct(available, usedProductsPerMealType[mealTime.id]);
-                if (bestProduct) break;
-              }
-            }
-          }
-          
-          if (!bestProduct) {
-            bestProduct = getRandomProduct(suitable, usedProductsPerMealType[mealTime.id]);
-          }
-          
-          if (bestProduct) {
-            newPlan[day.id][mealTime.id] = bestProduct;
-            usedProductsPerMealType[mealTime.id].add(bestProduct.id);
-          } else {
-            newPlan[day.id][mealTime.id] = null;
-          }
-        }
+        newPlan[day.id] = {
+          breakfast: plan[day.id].breakfast?.product ?? null,
+          lunch: plan[day.id].lunch?.product ?? null,
+          dinner: plan[day.id].dinner?.product ?? null,
+          snack: plan[day.id].snack?.product ?? null,
+        };
       }
-      
       setWeeklyPlan(newPlan);
-      
       Toast.show({
         type: 'success',
-        text1: 'Weekly meal plan suggested!',
-        text2: 'Based on your health preferences',
+        text1: 'Your week is planned',
+        text2: userHealthProfile.conditions.length ? 'Matched to your health profile' : 'Set your health profile for personalised picks',
         position: 'bottom',
         visibilityTime: 3000,
       });
-      
     } catch (error) {
       console.error('Auto-suggest error:', error);
-      Toast.show({
-        type: 'error',
-        text1: 'Failed to suggest meals',
-        position: 'bottom',
-        visibilityTime: 2000,
-      });
+      Toast.show({ type: 'error', text1: 'Failed to suggest meals', position: 'bottom', visibilityTime: 2000 });
     } finally {
       setIsResuggesting(false);
     }
@@ -485,7 +340,7 @@ const loadSavedPlan = async () => {
   const selectProduct = (product: any) => {
     if (!selectedDay || !selectedMealTime || !weeklyPlan) return;
     
-    if (hasHealthWarning(product.name, product.description || '')) {
+    if (hasHealthWarning(product)) {
       Alert.alert(
         'Health Warning',
         `This item may not be suitable for your health conditions. Are you sure you want to add it?`,
@@ -567,6 +422,35 @@ const loadSavedPlan = async () => {
     loadSavedPlan();
   }, [user?.id]);
 
+  if (!subscriptionLoading && !isPro) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Feather name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Weekly Meal Planner</Text>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.gate}>
+          <View style={styles.gateIcon}>
+            <Feather name="calendar" size={32} color="#f97316" />
+          </View>
+          <Text style={styles.gateTitle}>Your week, planned around you</Text>
+          <Text style={styles.gateText}>
+            Vesphe Pro builds a full weekly timetable – the right dishes for breakfast, lunch, dinner and snacks, matched to your health profile, with variety across vendors.
+          </Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Pro')} style={styles.gateButton}>
+            <LinearGradient colors={['#f97316', '#f43f5e']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.gateButtonGradient}>
+              <Feather name="award" size={18} color="#fff" />
+              <Text style={styles.gateButtonText}>Unlock with Vesphe Pro</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   if (vendorsLoading || isLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -603,30 +487,28 @@ const loadSavedPlan = async () => {
         </View>
       </View>
 
-      {/* Nutrition Summary */}
+      {/* Plan check */}
       <LinearGradient
         colors={['rgba(249,115,22,0.15)', 'rgba(16,185,129,0.05)']}
         style={styles.nutritionCard}
       >
-        <Text style={styles.nutritionTitle}>Daily Nutrition Goal</Text>
-        <Text style={styles.caloriesText}>{nutritionSummary.totalCalories} / 2000 kcal</Text>
-        
-        <View style={styles.macroContainer}>
-          <View style={styles.macroItem}>
-            <View style={[styles.macroBar, { width: `${nutritionSummary.protein}%`, backgroundColor: '#f97316' }]} />
-            <Text style={styles.macroLabel}>Protein {nutritionSummary.protein}%</Text>
+        <Text style={styles.nutritionTitle}>This week's plan</Text>
+        <View style={styles.summaryRow}>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryValue}>{planSummary.planned}/28</Text>
+            <Text style={styles.summaryLabel}>Meals planned</Text>
           </View>
-          <View style={styles.macroItem}>
-            <View style={[styles.macroBar, { width: `${nutritionSummary.carbs}%`, backgroundColor: '#10b981' }]} />
-            <Text style={styles.macroLabel}>Carbs {nutritionSummary.carbs}%</Text>
+          <View style={styles.summaryItem}>
+            <Text style={[styles.summaryValue, { color: '#10b981' }]}>{planSummary.fitsProfile}</Text>
+            <Text style={styles.summaryLabel}>Fit your profile</Text>
           </View>
-          <View style={styles.macroItem}>
-            <View style={[styles.macroBar, { width: `${nutritionSummary.fat}%`, backgroundColor: '#f59e0b' }]} />
-            <Text style={styles.macroLabel}>Fat {nutritionSummary.fat}%</Text>
+          <View style={styles.summaryItem}>
+            <Text style={[styles.summaryValue, { color: planSummary.needsAttention ? '#f59e0b' : '#fff' }]}>{planSummary.needsAttention}</Text>
+            <Text style={styles.summaryLabel}>Need attention</Text>
           </View>
-          <View style={styles.macroItem}>
-            <View style={[styles.macroBar, { width: `${nutritionSummary.fiber}%`, backgroundColor: '#8b5cf6' }]} />
-            <Text style={styles.macroLabel}>Fiber {nutritionSummary.fiber}%</Text>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryValue}>{planSummary.vendors}</Text>
+            <Text style={styles.summaryLabel}>Vendors</Text>
           </View>
         </View>
       </LinearGradient>
@@ -664,7 +546,8 @@ const loadSavedPlan = async () => {
         {MEAL_COLUMNS.map(meal => (
           <View key={meal.id} style={styles.mealColumnHeader}>
             <Text style={styles.mealIcon}>{meal.icon}</Text>
-            <Text style={styles.tableHeaderText}>{meal.label}</Text>
+            <Text style={[styles.tableHeaderText, meal.id === currentMealTime && { color: meal.color }]}>{meal.label}</Text>
+            {meal.id === currentMealTime && <Text style={[styles.nowLabel, { color: meal.color }]}>Now</Text>}
           </View>
         ))}
       </View>
@@ -675,9 +558,9 @@ const loadSavedPlan = async () => {
           const dayPlan = weeklyPlan[day.id];
           
           return (
-            <View key={day.id} style={styles.tableRow}>
+            <View key={day.id} style={[styles.tableRow, day.id === TODAY_ID && styles.todayRow]}>
               <View style={styles.dayColumn}>
-                <Text style={styles.dayText}>{day.short}</Text>
+                <Text style={[styles.dayText, day.id === TODAY_ID && { color: '#f97316' }]}>{day.id === TODAY_ID ? 'Today' : day.short}</Text>
                 <Text style={styles.dayFull}>{day.label}</Text>
               </View>
               
@@ -695,7 +578,7 @@ const loadSavedPlan = async () => {
                     {hasProduct && product ? (
                       <View style={styles.mealCellContent}>
                         <Image 
-                          source={{ uri: product.image || 'https://via.placeholder.com/50' }} 
+                          source={imageSource(product.image)} 
                           style={styles.mealCellImage}
                         />
                         <Text style={styles.mealCellName} numberOfLines={2}>
@@ -716,7 +599,7 @@ const loadSavedPlan = async () => {
                             <Feather name="x" size={12} color="#ef4444" />
                           </TouchableOpacity>
                         </View>
-                        {hasHealthWarning(product.name, product.description || '') && (
+                        {hasHealthWarning(product) && (
                           <View style={styles.warningDot} />
                         )}
                       </View>
@@ -772,14 +655,14 @@ const loadSavedPlan = async () => {
                   onPress={() => selectProduct(item)}
                 >
                   <Image 
-                    source={{ uri: item.image || 'https://via.placeholder.com/50' }} 
+                    source={imageSource(item.image)} 
                     style={styles.productImage}
                   />
                   <View style={styles.productInfo}>
                     <Text style={styles.productName}>{item.name}</Text>
                     <Text style={styles.productVendor}>{item.vendorName}</Text>
                     <Text style={styles.productPrice}>₦{item.price.toLocaleString()}</Text>
-                    {hasHealthWarning(item.name, item.description || '') && (
+                    {hasHealthWarning(item) && (
                       <View style={styles.warningBadge}>
                         <Feather name="alert-triangle" size={10} color="#f59e0b" />
                         <Text style={styles.warningText}>May not suit your health</Text>
@@ -906,6 +789,81 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#fff',
     fontWeight: '500',
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  summaryItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  summaryValue: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  summaryLabel: {
+    color: '#999',
+    fontSize: 10,
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  todayRow: {
+    backgroundColor: 'rgba(249,115,22,0.06)',
+    borderLeftWidth: 2,
+    borderLeftColor: '#f97316',
+  },
+  nowLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  gate: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+    gap: 12,
+  },
+  gateIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: 'rgba(249,115,22,0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  gateTitle: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  gateText: {
+    color: '#aaa',
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
+  },
+  gateButton: {
+    marginTop: 8,
+    borderRadius: 12,
+    overflow: 'hidden',
+    alignSelf: 'stretch',
+  },
+  gateButtonGradient: {
+    height: 50,
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  gateButtonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
   },
   healthBanner: {
     marginHorizontal: 16,

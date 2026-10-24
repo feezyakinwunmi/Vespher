@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Alert } from 'react-native';
 import type { Order } from '../../types';
+import { processRefund } from '../../utils/refund';
 
 export type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'ready' | 'picked_up' | 'in_transit' | 'delivered' | 'cancelled';
 
@@ -53,6 +54,8 @@ export function useVendorOrders() {
           )
         `)
         .eq('vendor_id', vendorId)
+        // Card orders appear only once Paystack payment is verified (paid/refunded).
+        .or('payment_method.neq.card,payment_status.neq.pending')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -220,59 +223,32 @@ return {
     await updateOrderStatus(orderId, 'confirmed');
   };
 
-  // Reject/Cancel order
+  // Reject/Cancel order. Paid card orders are refunded and cancelled server-side.
   const rejectOrder = async (orderId: string) => {
     try {
-      // First, get the order to check if payment was made
       const { data: order, error: fetchError } = await supabase
         .from('orders')
-        .select('payment_method, payment_status, flutterwave_transaction_id, total')
+        .select('payment_method, payment_status')
         .eq('id', orderId)
         .single();
 
       if (fetchError) throw fetchError;
 
-      // If it was a card payment and already paid, process refund
       if (order.payment_method === 'card' && order.payment_status === 'paid') {
-        // Call Flutterwave refund API
-        const refundResult = await processRefund(
-          order.flutterwave_transaction_id, 
-          order.total,
-          orderId
-        );
-        
-        if (refundResult.success) {
-          // Update payment_status to 'refunded' ONLY for card orders
-          await supabase
-            .from('orders')
-            .update({ 
-              status: 'cancelled',
-              payment_status: 'refunded',
-              updated_at: new Date().toISOString(),
-              rejection_reason: 'Order rejected by vendor - refunded'
-            })
-            .eq('id', orderId);
-            
-          Alert.alert('Success', 'Order rejected and refund initiated');
+        const refundResult = await processRefund(orderId, 'Order rejected by vendor');
+        if (!refundResult.success) {
+          Alert.alert('Refund Failed', `${refundResult.error || 'Refund failed'}. The order was cancelled; please contact support to complete the refund.`);
         } else {
-          // Refund failed - still cancel but alert
-          Alert.alert('Warning', 'Order rejected but refund failed. Please process manually.');
-          await supabase
-            .from('orders')
-            .update({ 
-              status: 'cancelled',
-              updated_at: new Date().toISOString(),
-              rejection_reason: 'Order rejected by vendor - refund failed'
-            })
-            .eq('id', orderId);
+          Alert.alert('Success', 'Order rejected and refund initiated');
         }
       } else {
-        // Cash order - just cancel, no payment_status change needed
         const { error } = await supabase
           .from('orders')
-          .update({ 
+          .update({
             status: 'cancelled',
             updated_at: new Date().toISOString(),
+            cancelled_by: 'vendor',
+            cancelled_at: new Date().toISOString(),
             rejection_reason: 'Order rejected by vendor'
           })
           .eq('id', orderId);
@@ -280,54 +256,14 @@ return {
         if (error) throw error;
         Alert.alert('Success', 'Order rejected successfully');
       }
-      
+
+      setOrders(prev =>
+        prev.map(o => (o.id === orderId ? { ...o, status: 'cancelled', updated_at: new Date().toISOString() } : o))
+      );
     } catch (err: any) {
       console.error('Error rejecting order:', err);
       Alert.alert('Error', err?.message || 'Failed to reject order');
       throw err;
-    }
-  };
-
-  // Helper function to process refund
-  const processRefund = async (transactionId: string, amount: number, orderId: string) => {
-    try {
-      // Call your refund edge function
-      const response = await fetch('https://your-project-ref.supabase.co/functions/v1/process-refund', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY}`
-        },
-        body: JSON.stringify({
-          transactionId,
-          amount,
-          orderId,
-          reason: 'Vendor rejected order'
-        })
-      });
-
-      const result = await response.json();
-      
-      if (result.success) {
-        // Update refund status
-        await supabase
-          .from('orders')
-          .update({
-            refund_status: 'processing',
-            refund_reference: result.refundId,
-            refund_requested_at: new Date().toISOString(),
-            refund_amount: amount,
-            refund_reason: 'Vendor rejected order'
-          })
-          .eq('id', orderId);
-        
-        return { success: true };
-      }
-      
-      return { success: false, error: result.error };
-    } catch (error) {
-      console.error('Refund error:', error);
-      return { success: false, error };
     }
   };
 
@@ -370,7 +306,8 @@ return {
             .eq('id', payload.new.id)
             .single();
 
-          if (data) {
+          // Unverified card orders are shown once payment is confirmed (UPDATE below).
+          if (data && !(data.payment_method === 'card' && data.payment_status === 'pending')) {
             // Fetch product images for the new order
             const items = data.items || [];
             const productIds = items.map((item: any) => item.product_id).filter(Boolean);
@@ -464,13 +401,18 @@ return {
           filter: `vendor_id=eq.${vendorId}`,
         },
         (payload) => {
-          setOrders(prev => 
-            prev.map(order => 
-              order.id === payload.new.id 
+          setOrders(prev => {
+            if (!prev.some(order => order.id === payload.new.id)) {
+              // e.g. a card order whose payment was just verified: reload with full details.
+              fetchOrders();
+              return prev;
+            }
+            return prev.map(order =>
+              order.id === payload.new.id
                 ? { ...order, ...payload.new }
                 : order
-            )
-          );
+            );
+          });
         }
       )
       .subscribe();

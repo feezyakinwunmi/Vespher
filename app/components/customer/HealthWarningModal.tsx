@@ -1,4 +1,5 @@
 // components/customer/HealthWarningModal.tsx
+import { imageSource } from '../../utils/images';
 import React, { useEffect, useRef } from 'react';
 import {
   View,
@@ -127,7 +128,7 @@ export function HealthWarningModal({
       activeOpacity={0.8}
     >
       <Image 
-        source={{ uri: item.image || 'https://via.placeholder.com/80' }} 
+        source={imageSource(item.image)} 
         style={styles.suggestionProductImage} 
       />
       <View style={styles.suggestionProductInfo}>
@@ -249,7 +250,7 @@ export function HealthWarningModal({
 
 const styles = StyleSheet.create({
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.7)',
   },
   sheet: {

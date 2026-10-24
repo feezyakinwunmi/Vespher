@@ -1,4 +1,5 @@
 // app/screens/LoginScreen.tsx
+import { GoogleSignInButton } from '../components/GoogleSignInButton';
 import React, { useState } from 'react';
 import {
   View,
@@ -26,7 +27,7 @@ export function LoginScreen() {
   
   const navigation = useNavigation<ScreenNavigationProp>();
   
-  const { signIn, isLoading } = useAuth();
+  const { signIn, isAuthenticating: isLoading } = useAuth();
   
   const [email, setEmail] = useState('');
   
@@ -198,6 +199,8 @@ const handleSubmit = async () => {
                 )}
               </LinearGradient>
             </TouchableOpacity>
+
+            <GoogleSignInButton />
           </View>
 
           {/* Sign Up Link */}

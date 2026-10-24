@@ -1,4 +1,5 @@
 // app/components/customer/ProductCard.tsx
+import { imageSource } from '../../utils/images';
 import React, { useState } from 'react';
 import {
   View,
@@ -11,9 +12,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCart } from '../../contexts/CartContext';
-import { useAuth } from '../../contexts/AuthContext';
-import { supabase } from '../../lib/supabase';
-import { HEALTH_CONDITIONS, HealthCondition } from '../../contexts/HealthContext';
+import { useHealthCheck, HealthCheckResult } from '../../hooks/customer/useHealthCheck';
 import type { Product } from '../../types';
 import { ActivityIndicator } from 'react-native';
 
@@ -23,7 +22,7 @@ interface ProductCardProps {
   variant?: 'default' | 'compact' | 'horizontal';
   showAddButton?: boolean;
   onPress?: () => void;
-  onHealthWarning?: (product: Product, result: any) => void;
+  onHealthWarning?: (product: Product, result: HealthCheckResult) => void;
 }
 
 const { width } = Dimensions.get('window');
@@ -37,96 +36,27 @@ export function ProductCard({
   onHealthWarning
 }: ProductCardProps) {
   const { addItem, removeItem, items, updateQuantity } = useCart();
-  const { user } = useAuth();
+  const { checkProduct } = useHealthCheck();
   const [imageError, setImageError] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
 
   const cartItem = items.find(item => item.product.id === product.id);
   const quantity = cartItem?.quantity || 0;
 
-  // Health check function
- // In ProductCard.tsx, replace the checkProductHealth function with this:
-
-const checkProductHealth = async (product: Product): Promise<boolean> => {
-  if (!user?.id) return true;
-
-  try {
-    const { data: profile, error } = await supabase
-      .from('customer_health_profiles')
-      .select('conditions, is_locked, enable_warnings')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    if (error || !profile || !profile.is_locked || !profile.enable_warnings || !profile.conditions?.length) {
-      return true;
-    }
-
-    const searchText = `${product.name} ${product.description || ''} ${product.category || ''}`.toLowerCase();
-    const triggeredConditions: HealthCondition[] = [];
-    const effects: string[] = [];
-
-    for (const conditionId of profile.conditions) {
-      const conditionMeta = HEALTH_CONDITIONS.find(c => c.id === conditionId);
-      if (!conditionMeta) continue;
-      
-      for (const tag of conditionMeta.avoidTags) {
-        if (searchText.includes(tag.toLowerCase())) {
-          triggeredConditions.push(conditionId);
-          
-          // Add specific effect message for each condition
-          let effectMessage = '';
-          switch (conditionId) {
-            case 'low_sugar':
-              effectMessage = `⚠️ High in sugar - This item contains sugar which may affect your low sugar diet`;
-              break;
-            case 'diabetic_type2':
-              effectMessage = `🩸 May spike blood sugar - Not ideal for diabetic management`;
-              break;
-            case 'hypertensive':
-              effectMessage = `🧂 High in sodium - May increase blood pressure`;
-              break;
-            case 'workout_mode':
-              effectMessage = `💪 Not workout-friendly - Contains ingredients that may slow fitness progress`;
-              break;
-            case 'weight_loss':
-              effectMessage = `⚖️ High calorie - May hinder weight loss goals`;
-              break;
-            case 'high_cholesterol':
-              effectMessage = `🍔 High in saturated fat - May affect cholesterol levels`;
-              break;
-            default:
-              effectMessage = `⚠️ May be unsuitable for ${conditionMeta.label}`;
-          }
-          effects.push(effectMessage);
-          console.log(`⚠️ Match: "${product.name}" contains "${tag}" -> triggers ${conditionMeta.label}`);
-          break;
-        }
+  // Same check used everywhere: vendor ingredients/allergens + the user's conditions.
+  const checkProductHealth = async (product: Product): Promise<boolean> => {
+    try {
+      const result = await checkProduct(product.id, product.name, product.description || '', product.category || '');
+      if (result) {
+        onHealthWarning?.(product, result);
+        return false;
       }
+    } catch (err) {
+      console.error('Health check error:', err);
     }
+    return true;
+  };
 
-    if (triggeredConditions.length > 0) {
-      const conditionNames = triggeredConditions.map(c => 
-        HEALTH_CONDITIONS.find(h => h.id === c)?.label || c
-      ).join(', ');
-      
-      if (onHealthWarning) {
-        onHealthWarning(product, {
-          verdict: 'caution',
-          reason: `This item may not be suitable for your ${conditionNames} condition(s).`,
-          effects: effects,
-          conditions: triggeredConditions,
-        });
-      }
-      return false;
-    }
-    
-    return true;
-    
-  } catch (err) {
-    console.error('Health check error:', err);
-    return true;
-  }
-};
   const handleAdd = async (e: any) => {
     e.stopPropagation();
     
@@ -163,14 +93,14 @@ const checkProductHealth = async (product: Product): Promise<boolean> => {
     }
   };
 
-  const productImage = product.image || product.image_url || 'https://via.placeholder.com/200';
+  const productImage = product.image || product.image_url || null;
 
   if (variant === 'horizontal') {
     return (
       <TouchableOpacity onPress={onPress} style={styles.horizontalCard}>
         <View style={styles.horizontalImageContainer}>
           <Image 
-            source={{ uri: productImage }} 
+            source={imageSource(productImage)} 
             style={styles.horizontalImage}
             onError={() => setImageError(true)}
           />
@@ -232,7 +162,7 @@ const checkProductHealth = async (product: Product): Promise<boolean> => {
       <TouchableOpacity onPress={onPress} style={styles.compactCard}>
         <View style={styles.compactImageContainer}>
           <Image 
-            source={{ uri: productImage }} 
+            source={imageSource(productImage)} 
             style={styles.compactImage}
             onError={() => setImageError(true)}
           />
@@ -272,7 +202,7 @@ const checkProductHealth = async (product: Product): Promise<boolean> => {
     <TouchableOpacity onPress={onPress} style={styles.defaultCard}>
       <View style={styles.defaultImageContainer}>
         <Image 
-          source={{ uri: productImage }} 
+          source={imageSource(productImage)} 
           style={styles.defaultImage}
           onError={() => setImageError(true)}
         />

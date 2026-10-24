@@ -1,4 +1,5 @@
 // app/components/GoogleTrackingMap.tsx
+import { computeRoute } from '../services/routes';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -122,19 +123,16 @@ export default function GoogleTrackingMap({
     return points;
   }
 
-  // Fetch actual route from Directions API
+  // Fetch the road route (Google Routes API)
   const fetchRoute = async (origin: { lat: number; lng: number }, destination: { lat: number; lng: number }) => {
     setRouteLoading(true);
     try {
-      const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/directions/json?origin=${origin.lat},${origin.lng}&destination=${destination.lat},${destination.lng}&key=${GOOGLE_API_KEY}`
+      const route = await computeRoute(
+        { latitude: origin.lat, longitude: origin.lng },
+        { latitude: destination.lat, longitude: destination.lng }
       );
-      const data = await response.json();
-      
-      if (data.status === 'OK' && data.routes && data.routes[0]) {
-        const points = decodePolyline(data.routes[0].overview_polyline.points);
-        setRouteCoordinates(points);
+      if (route?.encodedPolyline) {
+        setRouteCoordinates(decodePolyline(route.encodedPolyline));
       }
     } catch (error) {
       console.error('Error fetching route:', error);

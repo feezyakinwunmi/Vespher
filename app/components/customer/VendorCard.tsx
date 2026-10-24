@@ -41,7 +41,7 @@ export function VendorCard({ vendor, variant = 'default', onPress }: VendorCardP
     await toggleFavorite(vendor.id);
   };
 
-  const vendorImage = vendor.image || vendor.logo || 'https://via.placeholder.com/200';
+  const vendorImage = vendor.image || vendor.logo || null;
 
   if (variant === 'horizontal') {
     return (

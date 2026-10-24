@@ -1,4 +1,5 @@
 // app/screens/admin/AdminDashboardScreen.tsx
+import { useAuth } from '../../contexts/AuthContext';
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -36,6 +37,7 @@ interface DashboardFinancials {
 export function AdminDashboardScreen() {
   const [refreshing, setRefreshing] = React.useState(false);
   const navigation = useNavigation<AdminLogisticsScreenNavigationProp>();
+  const { user } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
 
   // State for business request stats
@@ -100,7 +102,7 @@ const fetchUnreadMessages = async () => {
     const { data: conversations, error: convError } = await supabase
       .from('conversations')
       .select('id')
-      .contains('participants', ['8eac4518-c4c9-4e1f-9695-a623e96b6134']); // Use your admin user ID
+      .contains('participants', [user?.id || '']);
 
     if (convError || !conversations || conversations.length === 0) {
       setUnreadCount(0);

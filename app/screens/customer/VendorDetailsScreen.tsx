@@ -1,4 +1,6 @@
 // app/screens/customer/VendorDetailsScreen.tsx
+import type { ScrollViewInstance } from 'react-native';
+import { imageSource } from '../../utils/images';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -26,6 +28,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { VendorMap } from '../../components/VendorMap';
 import { useLocation } from '../../contexts/LocationContext';
 import { HealthWarningModal } from '../../components/customer/HealthWarningModal';
+import { ProductDetailsModal } from '../../components/customer/ProductDetailsModal';
 import { HealthCheckResult } from '../../hooks/customer/useHealthCheck';
 import Toast from 'react-native-toast-message';
 const { width } = Dimensions.get('window');
@@ -47,10 +50,11 @@ export function VendorDetailsScreen() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [coverImageError, setCoverImageError] = useState(false);
   const [logoImageError, setLogoImageError] = useState(false);
-  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollViewRef = useRef<ScrollViewInstance>(null);
   const [healthModalVisible, setHealthModalVisible] = useState(false);
 const [healthCheckResult, setHealthCheckResult] = useState<HealthCheckResult | null>(null);
 const [pendingProduct, setPendingProduct] = useState<any>(null);
+const [detailsProduct, setDetailsProduct] = useState<any>(null);
 
   const vendor = vendors.find(v => v.id === vendorId);
   const [dynamicDeliveryFee, setDynamicDeliveryFee] = useState(vendor?.deliveryFee || 500);
@@ -149,7 +153,7 @@ const handleGoBack = () => {
   // ✅ Use separate images for cover and logo
 // Replace line 113 with this:
 const coverImage = vendor.coverImage || vendor.businessCover || vendor.coverImage || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800';
-const logoImage = vendor.logo || vendor.image_url || vendor.image || vendor.businessLogo || 'https://via.placeholder.com/80';
+const logoImage = vendor.logo || vendor.image_url || vendor.image || vendor.businessLogo || null;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -199,7 +203,7 @@ const logoImage = vendor.logo || vendor.image_url || vendor.image || vendor.busi
             <View style={styles.vendorOverlay}>
               <View style={styles.vendorLogoContainer}>
                 <Image 
-                  source={{ uri: logoImage }} 
+                  source={imageSource(logoImage)} 
                   style={styles.vendorLogo}
                   onError={() => setLogoImageError(true)}
                 />
@@ -282,7 +286,7 @@ const logoImage = vendor.logo || vendor.image_url || vendor.image || vendor.busi
   key={product.id} 
   product={product} 
   variant="horizontal"
-  onPress={() => {}}
+  onPress={() => setDetailsProduct(product)}
   onHealthWarning={handleHealthWarning}
 />
                   ))}
@@ -405,6 +409,12 @@ const logoImage = vendor.logo || vendor.image_url || vendor.image || vendor.busi
           </View>
         </Modal>
       </View>
+
+      <ProductDetailsModal
+        product={detailsProduct}
+        onClose={() => setDetailsProduct(null)}
+        onHealthWarning={handleHealthWarning}
+      />
 
       <HealthWarningModal
   visible={healthModalVisible}

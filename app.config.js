@@ -3,15 +3,12 @@ export default {
     
     name: "Vesphe",
     slug: "Vespher",
+    // Deep links (Google sign-in returns to vesphe://auth-callback)
+    scheme: "vesphe",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/icon.png",
     userInterfaceStyle: "dark",
-    splash: {
-      image: "./assets/splash-icon.png",
-      resizeMode: "contain",
-      backgroundColor: "#0a0a0a"
-    },
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.femi-ceo.Vespher",
@@ -19,9 +16,7 @@ export default {
         googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
       },
       infoPlist: {
-        NSLocationWhenInUseUsageDescription: "Vesphe needs your location to show nearby deliveries and track rides",
-        NSLocationAlwaysAndWhenInUseUsageDescription: "Vesphe needs your location to track deliveries in real-time",
-        NSLocationAlwaysUsageDescription: "Vesphe needs your location to track deliveries even when app is in background"
+        NSLocationWhenInUseUsageDescription: "Vesphe uses your location to show nearby vendors and set your delivery address."
       }
     },
     android: {
@@ -37,8 +32,6 @@ export default {
       permissions: [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
-        "ACCESS_BACKGROUND_LOCATION",
-        "FOREGROUND_SERVICE",
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE",
         "WAKE_LOCK"
@@ -53,19 +46,37 @@ export default {
       favicon: "./assets/favicon.png"
     },
     plugins: [
+      [
+        "expo-splash-screen",
+        {
+          image: "./assets/splash-icon.png",
+          imageWidth: 200,
+          resizeMode: "contain",
+          backgroundColor: "#0a0a0a"
+        }
+      ],
+      "expo-status-bar",
+      "@react-native-community/datetimepicker",
       "expo-font",
       "expo-web-browser",
       [
         "expo-location",
         {
-          locationAlwaysAndWhenInUsePermission: "Allow Vesphe to track your location for deliveries",
-          locationWhenInUsePermission: "Allow Vesphe to find nearby deliveries",
-          isIosBackgroundLocationEnabled: true,
-          isAndroidBackgroundLocationEnabled: true
+          // Foreground only: background location is for the rider app and gets
+          // store-rejected without a background feature that needs it.
+          locationWhenInUsePermission: "Allow Vesphe to use your location to find nearby vendors and set your delivery address.",
+          isIosBackgroundLocationEnabled: false,
+          isAndroidBackgroundLocationEnabled: false
         }
       ],
-      // ✅ Simplified expo-notifications plugin - uses defaults, no custom icon/sound required
-      "expo-notifications"
+      "expo-notifications",
+      [
+        "expo-image-picker",
+        {
+          photosPermission: "Vesphe needs access to your photos so you can upload profile, store and menu images.",
+          cameraPermission: "Vesphe uses the camera so you can take photos for your profile, store and menu."
+        }
+      ]
     ],
     extra: {
       eas: {

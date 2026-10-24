@@ -1,5 +1,5 @@
 // app/components/customer/CustomerHeader.tsx
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,14 @@ import {
   Platform,
   Image,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { supabase } from '../../lib/supabase';
+import { useProfileSetup } from '../../hooks/customer/useProfileSetup';
+
+// Dismissing the setup tooltip hides it for the rest of the app session.
+let setupTooltipDismissed = false;
+import type { RootStackParamList } from '../../navigation/types';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../contexts/AuthContext';
@@ -32,11 +39,49 @@ export function CustomerHeader({
   title,
   showBack = false,
 }: CustomerHeaderProps) {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { user } = useAuth();
   const { getItemCount } = useCart();
 
   const cartItemCount = getItemCount?.() || 0;
+  const [deliveryLabel, setDeliveryLabel] = useState('Add address');
+  const [hasUnread, setHasUnread] = useState(false);
+  const setup = useProfileSetup();
+  const [tooltipDismissed, setTooltipDismissed] = useState(setupTooltipDismissed);
+  const showSetupTooltip = !!user && !setup.isComplete && !tooltipDismissed;
+  const dismissTooltip = () => {
+    setupTooltipDismissed = true;
+    setTooltipDismissed(true);
+  };
+
+  // Default delivery address and unread-notification state, refreshed on focus.
+  useFocusEffect(
+    useCallback(() => {
+      if (!user?.id) return;
+      let active = true;
+      supabase
+        .from('addresses')
+        .select('label, street, is_default')
+        .eq('user_id', user.id)
+        .order('is_default', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (active) setDeliveryLabel(data ? data.label || data.street : 'Add address');
+        });
+      supabase
+        .from('notifications')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('read', false)
+        .then(({ count }) => {
+          if (active) setHasUnread((count || 0) > 0);
+        });
+      return () => {
+        active = false;
+      };
+    }, [user?.id])
+  );
 
   const getUserInitials = () => {
     if (!user?.name) return 'U';
@@ -61,7 +106,7 @@ export function CustomerHeader({
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
-            onPress={() => navigation.navigate('Locations' as never)}
+            onPress={() => navigation.navigate('Addresses')}
             style={styles.locationButton}
           >
             <View style={styles.locationIcon}>
@@ -74,7 +119,7 @@ export function CustomerHeader({
               <Text style={styles.locationLabel}>Deliver to</Text>
               <View style={styles.locationRow}>
                 <Text style={styles.locationAddress} numberOfLines={1}>
-                  Home
+                  {deliveryLabel}
                 </Text>
                 <Feather name="chevron-down" size={14} color="#666" />
               </View>
@@ -87,7 +132,7 @@ export function CustomerHeader({
       <View style={styles.rightSection}>
         {/* Map Button - NEW */}
         <TouchableOpacity
-          onPress={() => navigation.navigate('AllVendorsMap' as never)}
+          onPress={() => navigation.navigate('AllVendorsMap')}
           style={styles.iconButton}
         >
           <Feather name="map" size={20} color="#fff" />
@@ -95,7 +140,7 @@ export function CustomerHeader({
 
         {/* Cart */}
         <TouchableOpacity
-          onPress={() => navigation.navigate('Cart' as never)}
+          onPress={() => navigation.navigate('Cart')}
           style={styles.iconButton}
         >
           <Feather name="shopping-bag" size={20} color="#fff" />
@@ -110,16 +155,16 @@ export function CustomerHeader({
 
         {/* Notifications */}
         <TouchableOpacity
-          onPress={() => navigation.navigate('Notifications' as never)}
+          onPress={() => navigation.navigate('Notifications')}
           style={styles.iconButton}
         >
           <Feather name="bell" size={20} color="#fff" />
-          <View style={styles.notificationDot} />
+          {hasUnread && <View style={styles.notificationDot} />}
         </TouchableOpacity>
 
         {/* Profile */}
         <TouchableOpacity
-          onPress={() => navigation.navigate('Profile' as never)}
+          onPress={() => navigation.navigate('Profile')}
           style={styles.profileButton}
         >
           {user?.avatar_url ? (
@@ -138,6 +183,19 @@ export function CustomerHeader({
             </LinearGradient>
           )}
         </TouchableOpacity>
+
+        {showSetupTooltip && (
+          <View style={styles.tooltip}>
+            <View style={styles.tooltipArrow} />
+            <TouchableOpacity style={styles.tooltipBody} onPress={() => navigation.navigate('Profile')} activeOpacity={0.9}>
+              <Text style={styles.tooltipTitle}>Finish your profile ({setup.completed}/{setup.total})</Text>
+              <Text style={styles.tooltipText}>Add your phone, address and health info to start ordering.</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={dismissTooltip} style={styles.tooltipClose} hitSlop={8}>
+              <Feather name="x" size={14} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -303,6 +361,48 @@ const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  tooltip: {
+    position: 'absolute',
+    top: 46,
+    right: 0,
+    width: 230,
+    zIndex: 200,
+    elevation: 10,
+  },
+  tooltipArrow: {
+    alignSelf: 'flex-end',
+    marginRight: 12,
+    width: 0,
+    height: 0,
+    borderLeftWidth: 7,
+    borderRightWidth: 7,
+    borderBottomWidth: 8,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: '#f97316',
+  },
+  tooltipBody: {
+    backgroundColor: '#f97316',
+    borderRadius: 12,
+    padding: 12,
+    paddingRight: 28,
+  },
+  tooltipTitle: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  tooltipText: {
+    color: 'rgba(255,255,255,0.95)',
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  tooltipClose: {
+    position: 'absolute',
+    top: 14,
+    right: 8,
   },
   initialsText: {
     color: '#fff',

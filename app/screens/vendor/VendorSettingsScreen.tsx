@@ -1,4 +1,5 @@
 // app/screens/vendor/VendorSettingsScreen.tsx
+import { SUPPORT, supportLinks } from '../../config/support';
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -23,36 +24,20 @@ import { BusinessHours, useVendorProfile, VendorProfile } from '../../hooks/vend
 import { PromoCodeManager } from '../../components/vendor/PromoCodeManager';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../../lib/supabase';
+import { confirmDeleteAccount } from '../../utils/account';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import Toast from 'react-native-toast-message';
 import { verifyBankAccount } from '../../utils/paystack';
 import ReuseLocationPicker from '../../components/ReuseLocationPicker';
+import { BANKS } from '../../constants/banks';
 
 type VendorScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type SettingsTab = 'profile' | 'business' | 'bank' | 'preferences' | 'promos' | 'support' ; // ✅ Added 'payouts'
 type NotificationKey = keyof VendorProfile['notifications'];
 
 // ✅ Paystack-compatible bank codes
-const banks = [
-{ label: 'GTBank', value: 'gtb', code: '058' },
-{ label: 'First Bank', value: 'first', code: '011' },
-{ label: 'UBA', value: 'uba', code: '033' },
-{ label: 'Zenith Bank', value: 'zenith', code: '057' },
-{ label: 'Access Bank', value: 'access', code: '044' },
-{ label: 'Kuda Bank', value: 'kuda', code: '50211' },
-
-// ✅ Updated
-{ label: 'OPay', value: 'opay', code: '999992' },
-
-// ✅ Updated
-{ label: 'PalmPay', value: 'palmpay', code: '999991' },
-
-{ label: 'Fidelity Bank', value: 'fidelity', code: '070' },
-{ label: 'Union Bank', value: 'union', code: '032' },
-{ label: 'Sterling Bank', value: 'sterling', code: '232' },
-{ label: 'Wema Bank', value: 'wema', code: '035' },
-];
+const banks = BANKS;
 
 
 type DayKey = keyof BusinessHours;
@@ -223,15 +208,15 @@ function PrivacyPolicyScreen({ onClose }: { onClose: () => void }) {
 // Help & Support Page (keep as is)
 function HelpSupportScreen({ onClose }: { onClose: () => void }) {
   const handleCall = () => {
-    Linking.openURL('tel:09161460898');
+    Linking.openURL(supportLinks.call);
   };
 
   const handleWhatsApp = () => {
-    Linking.openURL('https://wa.me/2349161460898');
+    Linking.openURL(supportLinks.whatsapp);
   };
 
   const handleEmail = () => {
-    Linking.openURL('mailto:info.phantomire@gmail.com');
+    Linking.openURL(supportLinks.email());
   };
 
   return (
@@ -254,7 +239,7 @@ function HelpSupportScreen({ onClose }: { onClose: () => void }) {
             </View>
             <View style={styles.contactInfo}>
               <Text style={styles.contactLabel}>Call Us</Text>
-              <Text style={styles.contactValue}>09161460898</Text>
+              <Text style={styles.contactValue}>{SUPPORT.phoneDisplay}</Text>
               <Text style={styles.contactNote}>Mon-Fri, 9am - 6pm</Text>
             </View>
             <Feather name="chevron-right" size={20} color="#666" />
@@ -266,7 +251,7 @@ function HelpSupportScreen({ onClose }: { onClose: () => void }) {
             </View>
             <View style={styles.contactInfo}>
               <Text style={styles.contactLabel}>WhatsApp</Text>
-              <Text style={styles.contactValue}>09161460898</Text>
+              <Text style={styles.contactValue}>{SUPPORT.phoneDisplay}</Text>
               <Text style={styles.contactNote}>Instant messaging support</Text>
             </View>
             <Feather name="chevron-right" size={20} color="#666" />
@@ -278,7 +263,7 @@ function HelpSupportScreen({ onClose }: { onClose: () => void }) {
             </View>
             <View style={styles.contactInfo}>
               <Text style={styles.contactLabel}>Email</Text>
-              <Text style={styles.contactValue}>info.phantomire@gmail.com</Text>
+              <Text style={styles.contactValue}>{SUPPORT.email}</Text>
               <Text style={styles.contactNote}>24hr response time</Text>
             </View>
             <Feather name="chevron-right" size={20} color="#666" />
@@ -528,13 +513,13 @@ const {
   data: recipientData,
   error,
 } = await supabase.functions.invoke(
-  'create-recipient',
+  'setup-subaccount',
   {
     body: {
-      account_name: verifiedName,
       account_number:
         formData.accountNumber,
       bank_code: selectedBank.code,
+      bank_name: selectedBank.value,
     },
   }
 );
@@ -580,7 +565,7 @@ if (
 
 // ✅ Paystack recipient code
 const recipientCode =
-  recipientData.data.recipient_code;
+  recipientData.data.subaccount_code;
 
 console.log(
   '🎉 Recipient code:',
@@ -825,6 +810,17 @@ const pickImage = async (type: 'avatar' | 'cover') => {
         <View style={styles.supportInfo}>
           <Text style={styles.supportTitle}>Help & Support</Text>
           <Text style={styles.supportSubtitle}>Contact our support team</Text>
+        </View>
+        <Feather name="chevron-right" size={20} color="#666" />
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.supportOption} onPress={() => navigation.navigate('Complaints')}>
+        <View style={styles.supportIconContainer}>
+          <Feather name="alert-circle" size={24} color="#f97316" />
+        </View>
+        <View style={styles.supportInfo}>
+          <Text style={styles.supportTitle}>Complaints & chat</Text>
+          <Text style={styles.supportSubtitle}>Report a problem and chat with Vesphe support</Text>
         </View>
         <Feather name="chevron-right" size={20} color="#666" />
       </TouchableOpacity>
@@ -1430,6 +1426,13 @@ const renderBusinessTab = () => (
           <Feather name="log-out" size={20} color="#ef4444" />
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => confirmDeleteAccount(signOut)} style={styles.deleteAccountButton}>
+          <Text style={styles.deleteAccountText}>Delete account</Text>
+        </TouchableOpacity>
+
+        {/* Space for the floating tab bar */}
+        <View style={{ height: 100 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -1917,6 +1920,16 @@ hint: {
     color: '#ef4444',
     fontSize: 15,
     fontWeight: '600',
+  },
+  deleteAccountButton: {
+    alignItems: 'center',
+    paddingVertical: 12,
+    marginHorizontal: 16,
+  },
+  deleteAccountText: {
+    color: '#888',
+    fontSize: 13,
+    textDecorationLine: 'underline',
   },
   // Support tab styles
   supportOption: {

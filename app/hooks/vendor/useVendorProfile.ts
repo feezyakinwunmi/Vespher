@@ -86,7 +86,7 @@ export function useVendorProfile() {
 bank_code,
 account_number,
 account_name,
-recipient_code,
+paystack_subaccount_code,
 account_verified,
           notification_settings,
           latitude,
@@ -136,7 +136,7 @@ account_verified,
 bankCode: vendorData.bank_code || '',
 accountNumber: vendorData.account_number || '',
 accountName: vendorData.account_name || '',
-recipientCode: vendorData.recipient_code || '',
+recipientCode: vendorData.paystack_subaccount_code || '', // Paystack subaccount (payout account ready)
           latitude: vendorData.latitude,
 longitude: vendorData.longitude,
           notifications: vendorData.notification_settings || {
@@ -198,26 +198,8 @@ longitude: vendorData.longitude,
       if (updates.deliveryRadius) vendorUpdates.delivery_radius = updates.deliveryRadius;
       if (updates.minOrder) vendorUpdates.min_order = updates.minOrder;
       if (updates.deliveryFee) vendorUpdates.delivery_fee = updates.deliveryFee;
-     // ✅ Bank details
-if (updates.bankName !== undefined)
-  vendorUpdates.bank_name = updates.bankName;
-
-if (updates.accountNumber !== undefined)
-  vendorUpdates.account_number = updates.accountNumber;
-
-if (updates.accountName !== undefined)
-  vendorUpdates.account_name = updates.accountName;
-
-// ✅ IMPORTANT
-if (updates.bankCode !== undefined)
-  vendorUpdates.bank_code = updates.bankCode;
-
-if (updates.recipientCode !== undefined)
-  vendorUpdates.recipient_code = updates.recipientCode;
-
-// ✅ Auto mark verified
-if (updates.recipientCode)
-  vendorUpdates.account_verified = true;
+      // Bank details and the Paystack subaccount are saved server-side by the
+      // setup-subaccount function after the account is verified.
       if (updates.notifications) vendorUpdates.notification_settings = updates.notifications;
 vendorUpdates.latitude = updates.latitude;
 vendorUpdates.longitude = updates.longitude;

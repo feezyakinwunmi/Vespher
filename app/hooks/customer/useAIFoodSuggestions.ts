@@ -1,5 +1,6 @@
-// hooks/customer/useFoodSuggestions.ts
-import { useState, useEffect, useRef } from 'react';
+// hooks/customer/useAIFoodSuggestions.ts - meal-time classification helpers (used by services/recommendations)
+
+import { containsTerm } from '../../services/foodSafety';
 
 export type MealTime = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
@@ -254,7 +255,7 @@ const FOOD_KEYWORDS = {
 // MAIN CLASSIFICATION FUNCTION
 // ============================================
 
-function classifyProductForMealTime(
+export function classifyProductForMealTime(
   productName: string,
   category: string = '',
   description: string = ''
@@ -263,14 +264,14 @@ function classifyProductForMealTime(
   
   // STEP 1: Check FORCE CLASSIFICATION (highest priority)
   for (const [key, forcedMeal] of Object.entries(FORCE_CLASSIFICATION)) {
-    if (searchText.includes(key.toLowerCase())) {
+    if (containsTerm(searchText, key)) {
       return forcedMeal;
     }
   }
   
   // STEP 2: Check NEVER SNACK rules
   for (const forbidden of NEVER_SNACK) {
-    if (searchText.includes(forbidden.toLowerCase())) {
+    if (containsTerm(searchText, forbidden)) {
       // Determine correct meal based on time of day
       const hour = new Date().getHours();
       if (hour >= 5 && hour < 11) return 'breakfast';
@@ -282,7 +283,7 @@ function classifyProductForMealTime(
   
   // STEP 3: Check NEVER BREAKFAST rules
   for (const forbidden of NEVER_BREAKFAST) {
-    if (searchText.includes(forbidden.toLowerCase())) {
+    if (containsTerm(searchText, forbidden)) {
       const hour = new Date().getHours();
       if (hour >= 11 && hour < 16) return 'lunch';
       if (hour >= 16 && hour < 21) return 'dinner';
@@ -298,32 +299,32 @@ function classifyProductForMealTime(
     
     // Strong keywords (+5)
     for (const keyword of keywords.strong) {
-      if (searchText.includes(keyword.toLowerCase())) {
+      if (containsTerm(searchText, keyword)) {
         scores[meal] += 5;
       }
     }
     
     // Medium keywords (+3)
     for (const keyword of keywords.medium) {
-      if (searchText.includes(keyword.toLowerCase())) {
+      if (containsTerm(searchText, keyword)) {
         scores[meal] += 3;
       }
     }
     
     // Weak keywords (+1)
     for (const keyword of keywords.weak) {
-      if (searchText.includes(keyword.toLowerCase())) {
+      if (containsTerm(searchText, keyword)) {
         scores[meal] += 1;
       }
     }
   }
   
   // STEP 5: Special combo detection (soup + solid food = main meal)
-  const hasSoup = searchText.includes('soup') || searchText.includes('stew');
-  const hasSolid = searchText.includes('eba') || searchText.includes('fufu') || 
-                   searchText.includes('amala') || searchText.includes('semo') ||
-                   searchText.includes('rice') || searchText.includes('pounded yam') ||
-                   searchText.includes('yam') || searchText.includes('plantain');
+  const hasSoup = containsTerm(searchText, 'soup') || containsTerm(searchText, 'stew');
+  const hasSolid = containsTerm(searchText, 'eba') || containsTerm(searchText, 'fufu') || 
+                   containsTerm(searchText, 'amala') || containsTerm(searchText, 'semo') ||
+                   containsTerm(searchText, 'rice') || containsTerm(searchText, 'pounded yam') ||
+                   containsTerm(searchText, 'yam') || containsTerm(searchText, 'plantain');
   
   if (hasSoup && hasSolid) {
     scores.lunch += 10;
@@ -339,7 +340,7 @@ function classifyProductForMealTime(
   ];
   
   for (const indicator of mainMealIndicators) {
-    if (searchText.includes(indicator)) {
+    if (containsTerm(searchText, indicator)) {
       scores.snack -= 15;
     }
   }
@@ -358,7 +359,7 @@ function classifyProductForMealTime(
   // STEP 8: Final safety check - if result is snack but has main meal content
   if (bestMeal === 'snack') {
     for (const indicator of mainMealIndicators) {
-      if (searchText.includes(indicator)) {
+      if (containsTerm(searchText, indicator)) {
         return 'lunch';
       }
     }
@@ -420,95 +421,3 @@ export function getMealTimeGreeting(mealTime: MealTime, firstName: string): { gr
   return greetings[mealTime];
 }
 
-// ============================================
-// MAIN HOOK
-// ============================================
-
-export function useFoodSuggestions(allProducts: RawProduct[]) {
-  const [suggestions, setSuggestions] = useState<SuggestedProduct[]>([]);
-  const [mealTime, setMealTime] = useState<MealTime>(getCurrentMealTime);
-  
-  const isInitialized = useRef(false);
-  const productsLength = useRef(0);
-  const mealTimeRef = useRef(mealTime);
-
-  // Update meal time from clock every minute
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const newMealTime = getCurrentMealTime();
-      if (newMealTime !== mealTimeRef.current) {
-        mealTimeRef.current = newMealTime;
-        setMealTime(newMealTime);
-      }
-    }, 60_000);
-    return () => clearInterval(interval);
-  }, []);
-
-useEffect(() => {
-  if (!allProducts.length) {
-    setSuggestions([]);
-    return;
-  }
-
-  const matchedProducts = allProducts
-    .filter(product => {
-      const matchedMeal = classifyProductForMealTime(
-        product.name,
-        product.category || '',
-        product.description || ''
-      );
-
-      return matchedMeal === mealTime;
-    })
-    .map(product => ({
-      id: product.id,
-      name: product.name,
-      image: product.image || product.image_url || '',
-      price: product.price,
-      vendorId: product.vendorId,
-      vendorName: product.vendorName || '',
-      category: product.category || '',
-    }))
-    .slice(0, 12);
-
-  let finalSuggestions = matchedProducts;
-
-  if (matchedProducts.length === 0) {
-    finalSuggestions = allProducts.slice(0, 8).map(product => ({
-      id: product.id,
-      name: product.name,
-      image: product.image || product.image_url || '',
-      price: product.price,
-      vendorId: product.vendorId,
-      vendorName: product.vendorName || '',
-      category: product.category || '',
-    }));
-  }
-
-  // ✅ Prevent unnecessary state updates
-  setSuggestions(prev => {
-    const prevIds = prev.map(p => p.id).join(',');
-    const newIds = finalSuggestions.map(p => p.id).join(',');
-
-    if (prevIds === newIds) {
-      return prev;
-    }
-
-    return finalSuggestions;
-  });
-
-}, [mealTime, allProducts.length]);
-
-
-
-  return {
-    suggestions,
-    isLoading: false,
-    mealTime,
-    refresh: () => {
-      isInitialized.current = false;
-      productsLength.current = 0;
-      setMealTime(getCurrentMealTime());
-    },
-  };
-}

@@ -1,5 +1,7 @@
 // app/screens/common/AnnouncementDetailsScreen.tsx
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { openAppLink } from '../navigation/RootNavigation';
 import {
   View,
   Text,
@@ -15,6 +17,7 @@ import { supabase } from '../lib/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export function AnnouncementDetailsScreen({ navigation, route }: any) {
+  const { user } = useAuth();
   const { announcementId } = route.params || {};
   const [announcement, setAnnouncement] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -60,34 +63,9 @@ export function AnnouncementDetailsScreen({ navigation, route }: any) {
     );
   }
 
-  // Get user role to determine navigation
-  const getUserRole = () => {
-    // You can get this from your auth context
-    // For now, we'll check based on current screen
-    return 'customer'; // Replace with actual role from auth
-  };
-
   const handleActionPress = () => {
-    const userRole = getUserRole();
-    const link = announcement.action_link;
-    
-    if (!link) return;
-    
-    // Customer navigation
-    if (link === '/home') navigation.navigate('Home');
-    else if (link === '/orders') navigation.navigate('Orders');
-    else if (link === '/vendors') navigation.navigate('Promotions');
-    else if (link === '/vendor/menu') navigation.navigate('VendorMenu');
-    else if (link === '/vendor/orders') navigation.navigate('VendorOrders');
-    else if (link === '/deliveries') navigation.navigate('AvailableDeliveries');
-    else if (link === '/earnings') navigation.navigate('Earnings');
-    else if (link === '/requests') navigation.navigate('Requests');
-    else if (link.startsWith('/order/')) {
-      const orderId = link.split('/').pop();
-      navigation.navigate('OrderTracking', { orderId });
-    }
-    else {
-      // Default fallback
+    // Fall back to closing the announcement if the link has no screen for this role.
+    if (!openAppLink(user?.role, announcement.action_link)) {
       navigation.goBack();
     }
   };

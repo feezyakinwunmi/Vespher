@@ -18,6 +18,7 @@ import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import Toast from 'react-native-toast-message';
+import { ComplaintChat, type ComplaintSummary } from '../components/ComplaintChat';
 
 interface Complaint {
   id: string;
@@ -29,7 +30,8 @@ interface Complaint {
   title: string;
   description: string;
   status: 'pending' | 'resolved' | 'rejected';
-  admin_response?: string;
+  response?: string;
+  last_message_at?: string;
   created_at: string;
   resolved_at?: string;
 }
@@ -47,7 +49,7 @@ export function ComplaintsScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [userRole, setUserRole] = useState<string>('');
   const [vendorOrders, setVendorOrders] = useState<any[]>([]);
-  const [selectedTab, setSelectedTab] = useState<'my' | 'all'>('my');
+  const [openComplaint, setOpenComplaint] = useState<ComplaintSummary | null>(null);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     Toast.show({
@@ -109,20 +111,11 @@ export function ComplaintsScreen() {
     try {
       setLoading(true);
       
-      let query = supabase
+      const { data, error } = await supabase
         .from('complaints')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
-      
-      // If user is vendor, show complaints about their orders
-      if (userRole === 'vendor' && vendorId) {
-        query = query.eq('vendor_id', vendorId);
-      } else if (userRole === 'customer') {
-        // Customer sees their own complaints
-        query = query.eq('user_id', user.id);
-      }
-      
-      const { data, error } = await query;
       
       if (error) throw error;
       setComplaints(data || []);
@@ -151,7 +144,7 @@ export function ComplaintsScreen() {
       const complaintData: any = {
         user_id: user?.id,
         user_name: user?.name || 'User',
-        user_role: userRole,
+        user_role: userRole || user?.role || 'customer',
         title: title.trim(),
         description: description.trim(),
         status: 'pending',
@@ -254,7 +247,7 @@ export function ComplaintsScreen() {
       ) : (
         <ScrollView showsVerticalScrollIndicator={false}>
           {complaints.map((complaint) => (
-            <View key={complaint.id} style={styles.complaintCard}>
+            <TouchableOpacity key={complaint.id} style={styles.complaintCard} activeOpacity={0.8} onPress={() => setOpenComplaint(complaint)}>
               <View style={styles.complaintHeader}>
                 <Text style={styles.complaintTitle}>{complaint.title}</Text>
                 <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor(complaint.status)}20` }]}>
@@ -274,16 +267,29 @@ export function ComplaintsScreen() {
                 {new Date(complaint.created_at).toLocaleString()}
               </Text>
               
-              {complaint.admin_response && (
+              {!!complaint.response && (
                 <View style={styles.responseBox}>
-                  <Text style={styles.responseLabel}>Admin Response:</Text>
-                  <Text style={styles.responseText}>{complaint.admin_response}</Text>
+                  <Text style={styles.responseLabel}>Latest reply from Vesphe:</Text>
+                  <Text style={styles.responseText} numberOfLines={3}>{complaint.response}</Text>
                 </View>
               )}
-            </View>
+
+              <View style={styles.chatLink}>
+                <Feather name="message-circle" size={14} color="#f97316" />
+                <Text style={styles.chatLinkText}>{complaint.status === 'pending' ? 'Open chat' : 'View conversation'}</Text>
+              </View>
+            </TouchableOpacity>
           ))}
         </ScrollView>
       )}
+
+      <ComplaintChat
+        complaint={openComplaint}
+        onClose={() => {
+          setOpenComplaint(null);
+          fetchComplaints();
+        }}
+      />
 
       {/* New Complaint Modal */}
       <Modal
@@ -381,6 +387,8 @@ export function ComplaintsScreen() {
 }
 
 const styles = StyleSheet.create({
+  chatLink: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 },
+  chatLinkText: { color: '#f97316', fontSize: 13, fontWeight: '600' },
   container: {
     flex: 1,
     backgroundColor: '#0a0a0a',

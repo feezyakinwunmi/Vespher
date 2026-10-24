@@ -1,4 +1,5 @@
 // app/screens/customer/OrdersScreen.tsx
+import { imageSource } from '../../utils/images';
 import React, { useState } from 'react';
 import {
   View,
@@ -25,6 +26,7 @@ import { supabase } from '../../lib/supabase';
 import type { Order, OrderStatus } from '../../types';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
+import { CustomerHeader } from '../../components/customer/CustomerHeader';
 import Toast from 'react-native-toast-message';
 
 type OrdersScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -201,7 +203,7 @@ function OrderCard({ order, onPress, onOrderUpdated }: { order: Order; onPress: 
 
   const vendorName = order.vendor?.name || 'Vendor';
 
-  const [itemImage, setItemImage] = useState('https://via.placeholder.com/100');
+  const [itemImage, setItemImage] = useState<string | null>(null);
 
   // Get the first item's image
   const parsedItems = Array.isArray(order.items)
@@ -230,14 +232,14 @@ function OrderCard({ order, onPress, onOrderUpdated }: { order: Order; onPress: 
           .single();
 
         if (error || !data?.image_url) {
-          setItemImage('https://via.placeholder.com/100');
+          setItemImage(null);
           return;
         }
 
         setItemImage(data.image_url);
       } catch (err) {
         console.log('Error fetching product image:', err);
-        setItemImage('https://via.placeholder.com/100');
+        setItemImage(null);
       }
     }
 
@@ -306,7 +308,7 @@ const handleReorder = async (e: any) => {
           <View style={styles.vendorInfo}>
             <View style={styles.itemImageContainer}>
               <Image 
-                source={{ uri: itemImage }} 
+                source={imageSource(itemImage)} 
                 style={styles.itemImage}
                 onError={() => setImageError(true)}
               />
@@ -448,13 +450,11 @@ export function OrdersScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
+      {/* Shared tab header (cart, notifications, profile) — same as Home/Explore/Vendors */}
+      <CustomerHeader showSearch={false} />
+
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Feather name="arrow-left" size={24} color="#fff" />
-        </TouchableOpacity>
         <Text style={styles.headerTitle}>My Orders</Text>
-        <View style={styles.headerRight} />
       </View>
 
       {/* Tabs */}
@@ -514,7 +514,7 @@ export function OrdersScreen() {
             </Text>
             {activeTab === 'active' && (
               <TouchableOpacity 
-                onPress={() => navigation.navigate('Vendors')}
+                onPress={() => navigation.navigate('CustomerTabs', { screen: 'Vendors' })}
                 style={styles.emptyButton}
               >
                 <LinearGradient
@@ -549,9 +549,9 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
+    marginTop: 10,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.05)',
   },

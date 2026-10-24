@@ -54,9 +54,9 @@ export function useCategories() {
       'Rice Dishes': 'package',
       'Swallow': 'circle',
       'Soups & Stews': 'coffee',
-      'Grilled & Fried': 'flame',
+      'Grilled & Fried': 'zap',
       'Small Chops': 'grid',
-      'Beverages': 'cup',
+      'Beverages': 'droplet',
     'Desserts': 'gift', // Changed from 'cake' to 'gift'
       'Specials': 'star',
     };
