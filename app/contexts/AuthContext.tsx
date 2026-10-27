@@ -1,8 +1,8 @@
-
 // app/contexts/AuthContext.tsx
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { Session } from '@supabase/supabase-js';
+import { unregisterPushToken } from '../services/pushTokenRegistry';
+import { Session, User } from '@supabase/supabase-js';
 import { Alert, AppState } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 
@@ -21,12 +21,23 @@ interface AuthUser {
 interface AuthContextType {
   user: AuthUser | null;
   session: Session | null;
+  // True only while the initial session is restored on app start.
   isLoading: boolean;
+  // True while a sign-in / sign-out request is in flight (for button spinners).
+  isAuthenticating: boolean;
   isReady: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
   requestPasswordReset: (email: string) => Promise<boolean>;
   updatePassword: (newPassword: string) => Promise<boolean>;
+  // While a password-recovery OTP session is active the user must not be routed
+  // into the app until they have set a new password.
+  beginPasswordRecovery: () => void;
+  endPasswordRecovery: () => void;
+  // True right after a first-time Google sign-up, so the app can open Profile setup.
+  isNewUser: boolean;
+  clearNewUser: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -37,10 +48,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const mounted = useRef(true);
+  const recoveryInProgress = useRef(false);
+  const [isNewUser, setIsNewUser] = useState(false);
 
-  const fetchUserProfile = async (userId: string) => {
+  // First Google sign-in: the auth user exists but has no profile row yet.
+  // Google sign-up is for customers; vendors register with business details.
+  const createProfileForOAuthUser = async (authUser: User): Promise<boolean> => {
+    const providers: string[] = authUser.app_metadata?.providers
+      || (authUser.app_metadata?.provider ? [authUser.app_metadata.provider] : []);
+    if (!providers.includes('google')) return false;
+
+    const meta = authUser.user_metadata || {};
+    const email = authUser.email || '';
+    const name = String(meta.full_name || meta.name || email.split('@')[0] || 'Vesphe user').slice(0, 80);
+
+    const { error } = await supabase.from('users').insert({
+      id: authUser.id,
+      email,
+      name,
+      phone: null,
+      avatar_url: meta.avatar_url || meta.picture || null,
+      role: 'customer',
+      created_at: new Date().toISOString(),
+    });
+    if (error && error.code !== '23505') {
+      console.error('Error creating Google profile:', error);
+      return false;
+    }
+
+    const prefix = name.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 6) || 'USER';
+    await supabase.from('customer_rewards').insert({
+      customer_id: authUser.id,
+      total_orders: 0,
+      free_delivery_earned: 0,
+      free_delivery_used: 0,
+      referral_code: `VSP-${prefix}-${Math.floor(100 + Math.random() * 900)}`,
+      referral_count: 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+
+    setIsNewUser(true);
+    return true;
+  };
+
+  const fetchUserProfile = async (authUser: User, allowCreate = true) => {
+    const userId = authUser.id;
     try {
       const { data: userData, error } = await supabase
         .from('users')
@@ -49,6 +105,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle();
 
       if (error) throw error;
+
+      if (!userData) {
+        if (allowCreate && await createProfileForOAuthUser(authUser)) {
+          await fetchUserProfile(authUser, false);
+        }
+        return;
+      }
 
       if (mounted.current && userData) {
         setUser({
@@ -60,7 +123,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           phone: userData.phone,
           is_suspended: userData.is_suspended ?? false,
         });
-        // NO signOut() here anymore
       }
     } catch (error) {
       console.error('Error fetching user profile:', error);
@@ -79,14 +141,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (isActive) {
           setSession(currentSession);
           if (currentSession?.user) {
-            await fetchUserProfile(currentSession.user.id);
+            await fetchUserProfile(currentSession.user);
           }
-          setIsLoading(false);
-          setIsReady(true);
-          await SplashScreen.hideAsync();
         }
       } catch (err) {
         console.error('Auth initialization error:', err);
+      } finally {
         if (isActive) {
           setIsLoading(false);
           setIsReady(true);
@@ -100,11 +160,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       if (!isActive) return;
 
-      console.log('Auth event:', event);
       setSession(newSession);
 
       if (event === 'SIGNED_IN' && newSession?.user) {
-        await fetchUserProfile(newSession.user.id);
+        if (recoveryInProgress.current) return;
+        await fetchUserProfile(newSession.user);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
       }
@@ -127,22 +187,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    setIsLoading(true);
+    setIsAuthenticating(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       if (error) throw error;
-      // No extra check here — suspension is handled in navigator
+      // Suspension and role routing are handled in the navigator.
     } catch (err: any) {
-      Alert.alert('Sign In Failed', err.message || 'Failed to sign in');
       throw err;
     } finally {
-      setIsLoading(false);
+      setIsAuthenticating(false);
     }
   };
 
   const signOut = async () => {
-    setIsLoading(true);
+    setIsAuthenticating(true);
     try {
+      await unregisterPushToken();
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       setUser(null);
@@ -150,13 +210,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (err: any) {
       Alert.alert('Sign Out Failed', err.message || 'Failed to sign out');
     } finally {
-      setIsLoading(false);
+      setIsAuthenticating(false);
+    }
+  };
+
+  const refreshProfile = async () => {
+    const { data: { session: currentSession } } = await supabase.auth.getSession();
+    if (currentSession?.user) {
+      await fetchUserProfile(currentSession.user);
     }
   };
 
   const updatePassword = async (newPassword: string) => {
     try {
-      setIsLoading(true);
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
       Alert.alert('Success', 'Password updated successfully');
@@ -165,38 +231,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Password update error:', error);
       Alert.alert('Error', error.message || 'Failed to update password');
       return false;
-    } finally {
-      setIsLoading(false);
     }
   };
 
+  // Always reports success so the screen cannot be used to discover which emails
+  // have accounts.
   const requestPasswordReset = async (email: string) => {
     try {
-      setIsLoading(true);
-      const { data: user, error: userError } = await supabase
-        .from('users')
-        .select('email')
-        .eq('email', email)
-        .maybeSingle();
-
-      if (userError || !user) {
-        Alert.alert('Error', 'No account found with this email');
-        return false;
-      }
-
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: 'vespher://reset-password',
-      });
-
-      if (error) throw error;
-      return true;
-    } catch (error: any) {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim());
+      if (error) console.error('Reset request error:', error);
+    } catch (error) {
       console.error('Reset request error:', error);
-      Alert.alert('Error', error.message || 'Failed to send reset email');
-      return false;
-    } finally {
-      setIsLoading(false);
     }
+    return true;
+  };
+
+  const beginPasswordRecovery = () => {
+    recoveryInProgress.current = true;
+  };
+
+  const endPasswordRecovery = () => {
+    recoveryInProgress.current = false;
   };
 
   return (
@@ -205,11 +260,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         session,
         isLoading,
+        isAuthenticating,
         isReady,
         signIn,
         signOut,
+        refreshProfile,
         requestPasswordReset,
         updatePassword,
+        beginPasswordRecovery,
+        endPasswordRecovery,
+        isNewUser,
+        clearNewUser: () => setIsNewUser(false),
       }}
     >
       {children}

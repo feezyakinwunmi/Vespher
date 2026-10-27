@@ -140,6 +140,10 @@ export function useVendors() {
             is_popular: p.is_popular,
             preparationTime: p.preparation_time,
             preparation_time: p.preparation_time,
+            ingredients: p.ingredients || [],
+            allergens: p.allergens || [],
+            health_tags: p.health_tags || [],
+            meal_times: p.meal_times || [],
             created_at: p.created_at,
             // Include stock fields for UI display
             stock_quantity: p.stock_quantity,

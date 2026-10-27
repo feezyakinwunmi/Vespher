@@ -36,6 +36,7 @@ export function VendorDashboardScreen() {
   const navigation = useNavigation<VendorAddressesScreenNavigationProp>();
   const { user } = useAuth();
   const [vendorName, setVendorName] = useState('');
+  const [vendorStatus, setVendorStatus] = useState<{ approved: boolean; suspended: boolean } | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [latestMessage, setLatestMessage] = useState<string | null>(null);
   
@@ -47,7 +48,9 @@ export function VendorDashboardScreen() {
     ordersByStatus, 
     isLoading: ordersLoading, 
     error: ordersError,
-    refreshOrders 
+    refreshOrders,
+    acceptOrder,
+    rejectOrder,
   } = useVendorOrders();
   
   const { 
@@ -65,18 +68,11 @@ export function VendorDashboardScreen() {
     if (!user?.id) return;
     
     try {
-      const { data: vendorData } = await supabase
-        .from('vendors')
-        .select('id')
-        .eq('owner_id', user.id)
-        .single();
-      
-      if (!vendorData) return;
-      
+      // Conversations store user ids (not store ids) as participants.
       const { data: conversations } = await supabase
         .from('conversations')
         .select('id')
-        .contains('participants', [vendorData.id]);
+        .contains('participants', [user.id]);
       
       if (!conversations || conversations.length === 0) {
         setUnreadCount(0);
@@ -149,12 +145,13 @@ export function VendorDashboardScreen() {
     try {
       const { data, error } = await supabase
         .from('vendors')
-        .select('name')
+        .select('name, is_approved, is_suspended')
         .eq('owner_id', user.id)
         .single();
       
       if (!error && data) {
         setVendorName(data.name);
+        setVendorStatus({ approved: !!data.is_approved, suspended: !!data.is_suspended });
       } else {
         setVendorName('Vendor');
       }
@@ -228,7 +225,7 @@ export function VendorDashboardScreen() {
 
           <View style={styles.headerRight}>
             <TouchableOpacity
-              onPress={() => navigation.navigate('Notifications' as never)}
+              onPress={() => navigation.navigate('Notifications')}
               style={styles.iconButton}
             >
               <Feather name="bell" size={20} color="#fff" />
@@ -250,10 +247,27 @@ export function VendorDashboardScreen() {
           </View>
         </View>
 
-        {/* 🎯 NEW: Available Balance Card */}
+        {/* Account status: customers only see approved, active vendors */}
+        {vendorStatus && (!vendorStatus.approved || vendorStatus.suspended) && (
+          <View style={styles.statusBanner}>
+            <Feather name={vendorStatus.suspended ? 'slash' : 'clock'} size={18} color="#f59e0b" />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.statusBannerTitle}>
+                {vendorStatus.suspended ? 'Store suspended' : 'Awaiting approval'}
+              </Text>
+              <Text style={styles.statusBannerText}>
+                {vendorStatus.suspended
+                  ? 'Your store is hidden from customers. Contact support to resolve this.'
+                  : 'Your store will be visible to customers once an admin approves it. You can set up your menu in the meantime.'}
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Earnings card: card payments are paid straight to the vendor's bank */}
         <TouchableOpacity 
           activeOpacity={0.9}
-          onPress={() => navigation.navigate('VendorEarnings' as never)}
+          onPress={() => navigation.navigate('VendorTabs', { screen: 'Earnings' })}
           style={styles.balanceCardWrapper}
         >
           <LinearGradient
@@ -265,7 +279,7 @@ export function VendorDashboardScreen() {
             <View style={styles.balanceCardHeader}>
               <View style={styles.balanceLabelContainer}>
                 <Feather name="briefcase" size={20} color="rgba(255,255,255,0.9)" />
-                <Text style={styles.balanceLabel}>Available Balance</Text>
+                <Text style={styles.balanceLabel}>This Week</Text>
               </View>
               <View style={styles.balanceBadge}>
                 <Feather name="trending-up" size={12} color="#10b981" />
@@ -280,7 +294,7 @@ export function VendorDashboardScreen() {
             ) : (
               <>
                 <Text style={styles.balanceAmount}>
-                  ₦{earnings?.availableBalance?.toLocaleString() || '0'}
+                  ₦{earnings?.weeklyEarnings?.toLocaleString() || '0'}
                 </Text>
                 <View style={styles.balanceCardFooter}>
                   <View style={styles.balanceFooterItem}>
@@ -291,9 +305,9 @@ export function VendorDashboardScreen() {
                   </View>
                   <View style={styles.balanceDivider} />
                   <View style={styles.balanceFooterItem}>
-                    <Text style={styles.balanceFooterLabel}>Pending</Text>
+                    <Text style={styles.balanceFooterLabel}>Arriving soon</Text>
                     <Text style={[styles.balanceFooterValue, { color: '#fcd34d' }]}>
-                      ₦{earnings?.pendingPayout?.toLocaleString() || '0'}
+                      ₦{earnings?.settling?.toLocaleString() || '0'}
                     </Text>
                   </View>
                 </View>
@@ -302,9 +316,9 @@ export function VendorDashboardScreen() {
 
             <TouchableOpacity 
               style={styles.withdrawButton}
-              onPress={() => navigation.navigate('VendorEarnings' as never)}
+              onPress={() => navigation.navigate('VendorTabs', { screen: earnings && !earnings.payoutAccountReady ? 'Settings' : 'Earnings' })}
             >
-              <Text style={styles.withdrawButtonText}>Withdraw Funds</Text>
+              <Text style={styles.withdrawButtonText}>{earnings && !earnings.payoutAccountReady ? 'Add bank account' : 'View earnings'}</Text>
               <Feather name="arrow-right" size={16} color="#fff" />
             </TouchableOpacity>
           </LinearGradient>
@@ -379,7 +393,7 @@ export function VendorDashboardScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Order Status</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('VendorOrders' as never)}>
+            <TouchableOpacity onPress={() => navigation.navigate('VendorTabs', { screen: 'Orders' })}>
               <Text style={styles.seeAllText}>View All</Text>
             </TouchableOpacity>
           </View>
@@ -406,6 +420,20 @@ export function VendorDashboardScreen() {
               <Text style={styles.statusCount}>{ordersByStatus.ready.length}</Text>
             </View>
           </View>
+        </View>
+
+        {/* Quick links */}
+        <View style={styles.quickLinks}>
+          {[
+            { label: 'History', icon: 'clock', onPress: () => navigation.navigate('History') },
+            { label: 'Analytics', icon: 'bar-chart-2', onPress: () => navigation.navigate('VendorAnalytics') },
+            { label: 'Promotions', icon: 'trending-up', onPress: () => navigation.navigate('Promotions') },
+          ].map(link => (
+            <TouchableOpacity key={link.label} style={styles.quickLink} onPress={link.onPress}>
+              <Feather name={link.icon as any} size={18} color="#f97316" />
+              <Text style={styles.quickLinkText}>{link.label}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
 
         {/* Promotion Card */}
@@ -444,7 +472,7 @@ export function VendorDashboardScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Recent Orders</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('VendorOrders' as never)}>
+            <TouchableOpacity onPress={() => navigation.navigate('VendorTabs', { screen: 'Orders' })}>
               <Text style={styles.seeAllText}>See All</Text>
             </TouchableOpacity>
           </View>
@@ -465,7 +493,7 @@ export function VendorDashboardScreen() {
                 <TouchableOpacity 
                   key={order.id} 
                   style={styles.recentOrderCard}
-                  onPress={() => (navigation as any).navigate('VendorOrders', { orderId: order.id })}
+                  onPress={() => navigation.navigate('VendorOrderDetails', { orderId: order.id })}
                 >
                   <View style={styles.recentOrderImageContainer}>
                     {itemImage ? (
@@ -597,13 +625,13 @@ export function VendorDashboardScreen() {
                   <View style={styles.orderCardActions}>
                     <TouchableOpacity 
                       style={[styles.orderCardAction, styles.rejectAction]}
-                      onPress={() => {}}
+                      onPress={() => rejectOrder(order.id).catch(() => {})}
                     >
                       <Text style={styles.rejectActionText}>Decline</Text>
                     </TouchableOpacity>
                     <TouchableOpacity 
                       style={[styles.orderCardAction, styles.acceptAction]}
-                      onPress={() => {}}
+                      onPress={() => acceptOrder(order.id).catch(() => {})}
                     >
                       <Text style={styles.acceptActionText}>Accept</Text>
                     </TouchableOpacity>
@@ -672,6 +700,49 @@ export function VendorDashboardScreen() {
 }
 
 const styles = StyleSheet.create({
+  statusBanner: {
+    flexDirection: 'row',
+    gap: 12,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: 'rgba(245,158,11,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,158,11,0.3)',
+  },
+  statusBannerTitle: {
+    color: '#f59e0b',
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  statusBannerText: {
+    color: '#ccc',
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  quickLinks: {
+    flexDirection: 'row',
+    gap: 12,
+    marginHorizontal: 16,
+    marginBottom: 20,
+  },
+  quickLink: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#1a1a1a',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
+  quickLinkText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '500',
+  },
   container: {
     flex: 1,
     paddingBottom: 60,

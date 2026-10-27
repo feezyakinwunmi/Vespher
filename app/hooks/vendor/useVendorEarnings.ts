@@ -1,16 +1,20 @@
 // app/hooks/vendor/useVendorEarnings.ts
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
+import { estimatePaystackFee } from '../../utils/fees';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePlatformSettings } from '../usePlatformSettings';
-import { Alert } from 'react-native';
 
 export interface EarningsData {
   totalEarnings: number;
   weeklyEarnings: number;
   weeklyGrowth: number;
-  pendingPayout: number;
-  availableBalance: number;
+  // Card payments are split by Paystack: the vendor's share goes straight to their
+  // bank account (no wallet). Cash orders are paid to the vendor directly.
+  paidToBank: number;
+  settling: number;
+  cashEarnings: number;
+  payoutAccountReady: boolean;
   orderCount: number;
   averageOrderValue: number;
   rating: number;
@@ -28,13 +32,6 @@ export interface Transaction {
   status?: string;
   order_id?: string;
   reference?: string;
-}
-
-export interface PayoutRequest {
-  amount: number;
-  bank_name: string;
-  account_number: string;
-  account_name: string;
 }
 
 export function useVendorEarnings() {
@@ -87,14 +84,20 @@ const fetchEarnings = useCallback(async () => {
     const startOfLastWeek = new Date(startOfWeek);
     startOfLastWeek.setDate(startOfLastWeek.getDate() - 7);
 
-    // Fetch ONLY DELIVERED orders for this vendor
-    const { data: orders, error: ordersError } = await supabase
+    // Earning orders: delivered orders, plus paid card orders (the vendor's share is
+    // settled by Paystack when the customer pays).
+    const { data: allOrders, error: ordersError } = await supabase
       .from('orders')
       .select('*')
       .eq('vendor_id', vendorId)
-      .eq('status', 'delivered');
+      .neq('status', 'cancelled');
 
     if (ordersError) throw ordersError;
+
+    const orders = (allOrders || []).filter(order =>
+      order.status === 'delivered' ||
+      (order.payment_method === 'card' && order.payment_status === 'paid')
+    );
 
     // ✅ USE STORED vendor_payout from database
     const ordersWithPayout = orders?.map(order => {
@@ -115,40 +118,20 @@ const fetchEarnings = useCallback(async () => {
       };
     }) || [];
 
-    // ✅ Get wallet balance (including pending_balance)
-    let walletBalance = 0;
-    let pendingBalance = 0;
-    let totalEarned = 0;
-    
-    const { data: wallet, error: walletError } = await supabase
-      .from('vendor_wallets')
-      .select('balance, pending_balance, total_earned')
-      .eq('vendor_id', vendorId)
-      .single();
-    
-    if (walletError && walletError.code !== 'PGRST116') {
-      console.error('Error fetching wallet:', walletError);
+    const totalEarnings = ordersWithPayout.reduce((sum, order) => sum + (order.vendor_payout || 0), 0);
+    const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+    let paidToBank = 0;
+    let settling = 0;
+    let cashEarnings = 0;
+    for (const order of ordersWithPayout) {
+      const share = order.vendor_payout || 0;
+      if (order.payment_method === 'card') {
+        if (new Date(order.created_at).getTime() > dayAgo) settling += share;
+        else paidToBank += share;
+      } else {
+        cashEarnings += share;
+      }
     }
-    
-    if (wallet) {
-      walletBalance = wallet.balance || 0;
-      pendingBalance = wallet.pending_balance || 0;
-      totalEarned = wallet.total_earned || 0;
-    } else {
-      // If no wallet exists, create one
-      await supabase
-        .from('vendor_wallets')
-        .insert({
-          vendor_id: vendorId,
-          balance: 0,
-          pending_balance: 0,
-          total_earned: 0,
-          updated_at: new Date().toISOString()
-        });
-    }
-
-    // Calculate total earnings from wallet (already stored)
-    const totalEarnings = totalEarned;
 
     // Calculate weekly earnings from orders (for growth calculation)
     const weeklyOrders = ordersWithPayout.filter(order => 
@@ -165,12 +148,6 @@ const fetchEarnings = useCallback(async () => {
     const weeklyGrowth = lastWeekEarnings > 0 
       ? Math.round(((weeklyEarnings - lastWeekEarnings) / lastWeekEarnings) * 100)
       : weeklyEarnings > 0 ? 100 : 0;
-
-    // ✅ Use pending_balance from wallet instead of querying withdrawals separately
-    const pendingPayout = pendingBalance;
-
-    // Available balance is wallet balance
-    const availableBalance = walletBalance;
 
     // Get delivered order count
     const orderCount = orders?.length || 0;
@@ -211,23 +188,18 @@ const fetchEarnings = useCallback(async () => {
     // Get bank details
     const { data: vendor } = await supabase
       .from('vendors')
-      .select('bank_name, account_number, account_name')
+      .select('bank_name, account_number, account_name, paystack_subaccount_code')
       .eq('id', vendorId)
       .single();
-
-    console.log('Earnings from wallet:', {
-      totalEarnings,
-      walletBalance,
-      pendingBalance,
-      weeklyEarnings,
-    });
 
     setEarnings({
       totalEarnings,
       weeklyEarnings,
       weeklyGrowth,
-      pendingPayout,
-      availableBalance,
+      paidToBank,
+      settling,
+      cashEarnings,
+      payoutAccountReady: !!vendor?.paystack_subaccount_code,
       orderCount,
       averageOrderValue,
       rating: averageRating,
@@ -375,7 +347,7 @@ const fetchOrderDetails = useCallback(async (orderId: string) => {
         const platformFeePercentage = settings?.platform_fee_percentage ? settings.platform_fee_percentage / 100 : 0.1;
         const subtotal = basicData.subtotal || 0;
         const platformCommission = Math.round(subtotal * platformFeePercentage);
-        const flutterwaveFee = Math.round(subtotal * 0.02);
+        const flutterwaveFee = basicData.payment_method === 'card' ? estimatePaystackFee(basicData.total || 0) : 0;
         const vatOnFee = Math.round(flutterwaveFee * 0.075);
         const stampDuty = basicData.total >= 10000 ? 50 : 0;
         const vendorPayout = subtotal - platformCommission;
@@ -407,231 +379,6 @@ const fetchOrderDetails = useCallback(async (orderId: string) => {
   }
 }, [settings]);
 
-// Request payout
-const requestPayout = async (
-  payoutData: PayoutRequest
-): Promise<boolean> => {
-  if (!vendorId || !user) {
-    Alert.alert('Error', 'Vendor not found');
-    return false;
-  }
-
-  try {
-    console.log('================ PAYOUT START ================');
-    console.log('Vendor ID:', vendorId);
-    console.log('User ID:', user.id);
-    console.log('Payout Data:', payoutData);
-
-    // ✅ Validate minimum payout
-    if (payoutData.amount < 1000) {
-      Alert.alert('Error', 'Minimum payout amount is ₦1,000');
-      return false;
-    }
-
-    // ✅ Get wallet
-    console.log('Fetching vendor wallet...');
-
-    const { data: wallet, error: walletError } = await supabase
-      .from('vendor_wallets')
-      .select('balance, pending_balance')
-      .eq('vendor_id', vendorId)
-      .single();
-
-    console.log('Wallet response:', wallet);
-
-    if (walletError) {
-      console.error('Wallet fetch error:', walletError);
-      Alert.alert('Error', 'Could not verify balance');
-      return false;
-    }
-
-    // ✅ Check balance
-    if (payoutData.amount > (wallet?.balance || 0)) {
-      console.log('Insufficient balance');
-
-      Alert.alert('Error', 'Insufficient balance');
-      return false;
-    }
-
-    // ✅ Generate reference
-    const reference = `PO-${Date.now()}-${Math.random()
-      .toString(36)
-      .substring(2, 7)}`.toUpperCase();
-
-    console.log('Generated reference:', reference);
-
-    // ✅ GET vendor recipient code
-    console.log('Fetching vendor recipient code...');
-
-    const { data: vendorData, error: vendorError } = await supabase
-      .from('vendors')
-      .select('recipient_code')
-      .eq('id', vendorId)
-      .single();
-
-    console.log('Vendor response:', vendorData);
-
-    if (vendorError) {
-      console.error('Vendor fetch error:', vendorError);
-    }
-
-    if (!vendorData?.recipient_code) {
-      console.error('Recipient code missing');
-
-      Alert.alert('Error', 'Vendor recipient code not found');
-      return false;
-    }
-
-    console.log(
-      'Recipient code found:',
-      vendorData.recipient_code
-    );
-
-    // ✅ CALL PAYSTACK PAYOUT FUNCTION
-    console.log('Calling Supabase payout function...');
-
-    const { data: payoutResponse, error: functionError } =
-      await supabase.functions.invoke('payout', {
-        body: {
-          amount: payoutData.amount,
-          recipient_code: vendorData.recipient_code,
-          reference,
-        },
-      });
-
-    console.log('=========== FUNCTION RESPONSE ===========');
-    console.log('Function data:', payoutResponse);
-    console.log('Function error:', functionError);
-    console.log('=========================================');
-
-    // ✅ HANDLE EDGE FUNCTION ERROR
-    if (functionError) {
-      console.error(
-        'Function invoke error:',
-        JSON.stringify(functionError, null, 2)
-      );
-
-      Alert.alert(
-        'Payout Failed',
-        'Unable to process payout right now.'
-      );
-
-      return false;
-    }
-
-    // ✅ HANDLE PAYSTACK FAILURE
-    if (!payoutResponse?.status) {
-      console.error(
-        'Paystack payout failed:',
-        payoutResponse
-      );
-
-      Alert.alert(
-        'Payout Failed',
-        payoutResponse?.message || 'Transfer failed'
-      );
-
-      return false;
-    }
-
-    console.log('Paystack payout successful');
-
-    // ✅ CREATE WITHDRAWAL RECORD ONLY AFTER SUCCESS
-    console.log('Creating withdrawal record...');
-
-    const { error: payoutError } = await supabase
-      .from('withdrawals')
-      .insert({
-        user_id: user.id,
-        user_type: 'vendor',
-        amount: payoutData.amount,
-        bank_name: payoutData.bank_name,
-        account_number: payoutData.account_number,
-        account_name: payoutData.account_name,
-        reference,
-        status: 'success',
-        created_at: new Date().toISOString(),
-      });
-
-    if (payoutError) {
-      console.error(
-        'Withdrawal insert error:',
-        payoutError
-      );
-
-      Alert.alert(
-        'Warning',
-        'Transfer succeeded but withdrawal record failed.'
-      );
-
-      return false;
-    }
-
-    console.log('Withdrawal record created');
-
-    // ✅ UPDATE WALLET
-    console.log('Updating wallet balance...');
-
-    const newBalance =
-      (wallet?.balance || 0) - payoutData.amount;
-
-    const { error: walletUpdateError } = await supabase
-      .from('vendor_wallets')
-      .update({
-        balance: newBalance,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('vendor_id', vendorId);
-
-    if (walletUpdateError) {
-      console.error(
-        'Wallet update error:',
-        walletUpdateError
-      );
-
-      Alert.alert(
-        'Warning',
-        'Transfer succeeded but wallet update failed.'
-      );
-
-      return false;
-    }
-
-    console.log('Wallet updated successfully');
-    console.log('New balance:', newBalance);
-
-    // ✅ REFRESH UI
-    await fetchEarnings();
-    await fetchTransactions();
-
-    console.log('================ PAYOUT SUCCESS ================');
-
-    Alert.alert(
-      'Success',
-      'Payout processed successfully!'
-    );
-
-    return true;
-
-  } catch (err: any) {
-    console.error(
-      '================ PAYOUT ERROR ================'
-    );
-
-    console.error(
-      'Error requesting payout:',
-      JSON.stringify(err, null, 2)
-    );
-
-    Alert.alert(
-      'Error',
-      err.message || 'Failed to request payout'
-    );
-
-    return false;
-  }
-};
-
   // Fetch data when vendorId changes
   useEffect(() => {
     if (vendorId) {
@@ -651,7 +398,6 @@ const requestPayout = async (
     transactions,
     isLoading,
     error,
-    requestPayout,
     refreshData,
    fetchOrderDetails, // Add this line
 

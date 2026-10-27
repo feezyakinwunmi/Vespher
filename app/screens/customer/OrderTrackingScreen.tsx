@@ -82,7 +82,19 @@ export function OrderTrackingScreen() {
 
 const loadOrder = async () => {
   setLoading(true);
-  const data = await getOrderById(orderId);
+  let data = await getOrderById(orderId);
+
+  // A card order can stay unpaid if verification failed right after checkout (e.g. a
+  // network drop). Retry once; the server re-checks the transaction with Paystack.
+  if (data && data.payment_method === 'card' && data.payment_status === 'pending' && data.payment_reference) {
+    const { data: verified } = await supabase.functions.invoke('verify-payment', {
+      body: { kind: 'order', id: data.id, reference: data.payment_reference },
+    });
+    if (verified?.status) {
+      data = (await getOrderById(orderId)) || data;
+    }
+  }
+
   if (data) {
     setOrder({
       ...data,
@@ -159,19 +171,29 @@ const handleCancelOrder = async () => {
           setCancelling(true);
           
           try {
-            // First update order status to cancelled
-            const { error: cancelError } = await supabase
-              .from("orders")
-              .update({ 
-                status: "cancelled",
-                updated_at: new Date().toISOString(),
-                cancelled_by: 'customer',
-                cancelled_at: new Date().toISOString(),
-                rejection_reason: "Cancelled by customer"
-              })
-              .eq("id", order.id);
+            const isPaidCard = order.payment_method === 'card' && order.payment_status === 'paid';
 
-            if (cancelError) throw cancelError;
+            if (isPaidCard) {
+              // The refund function cancels the order and refunds the card in one step.
+              const refundResult = await processRefund(order.id, 'Cancelled by customer');
+              if (!refundResult.success) {
+                showToast(refundResult.error || 'Could not cancel order. Please contact support.');
+                return;
+              }
+            } else {
+              const { error: cancelError } = await supabase
+                .from("orders")
+                .update({
+                  status: "cancelled",
+                  updated_at: new Date().toISOString(),
+                  cancelled_by: 'customer',
+                  cancelled_at: new Date().toISOString(),
+                  rejection_reason: "Cancelled by customer"
+                })
+                .eq("id", order.id);
+
+              if (cancelError) throw cancelError;
+            }
 
             // Restore product stock
             const parsedItems = Array.isArray(order.items)
@@ -183,26 +205,7 @@ const handleCancelOrder = async () => {
             await restoreProductStock(parsedItems);
             console.log('✅ Stock restored for cancelled order');
 
-            // Process refund if paid with card
-            if (order.payment_method === 'card' && order.payment_status === 'paid') {
-              // Update refund status to processing
-              await supabase
-                .from('orders')
-                .update({ refund_status: 'processing' })
-                .eq('id', order.id);
-              
-              // Process refund
-              const refundResult = await processRefund(order.id, 'Customer cancelled');
-              
-              if (!refundResult?.success) {
-                console.error('Refund failed:', refundResult?.error);
-                showToast('Order cancelled but refund failed. Contact support.');
-              } else {
-                showToast('Refund initiated successfully');
-              }
-            }
-
-            showToast("Order cancelled successfully");
+            showToast(isPaidCard ? "Order cancelled. Refund initiated." : "Order cancelled successfully");
             await loadOrder(); // Refresh to show updated status
             
           } catch (error) {
@@ -258,7 +261,7 @@ if (loading) {
         <Text style={styles.errorTitle}>Order not found</Text>
 
         <TouchableOpacity
-          onPress={() => navigation.navigate("Orders")}
+          onPress={() => navigation.navigate('CustomerTabs', { screen: 'Orders' })}
           style={styles.errorButton}
         >
           <Text style={styles.errorButtonText}>Back to Orders</Text>

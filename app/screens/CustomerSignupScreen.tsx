@@ -1,4 +1,6 @@
 // app/screens/CustomerSignupScreen.tsx
+import type { TextInputInstance } from 'react-native';
+import { GoogleSignInButton } from '../components/GoogleSignInButton';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -55,7 +57,7 @@ export  function CustomerSignupScreen() {
   const [countdown, setCountdown] = useState(60);
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
   const [maskedEmail, setMaskedEmail] = useState('');
-  const otpInputs = useRef<Array<TextInput | null>>([]);
+  const otpInputs = useRef<Array<TextInputInstance | null>>([]);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   // Add with other state declarations
 const [referralValid, setReferralValid] = useState<boolean | null>(null);
@@ -754,6 +756,8 @@ const generateReferralCode = () => {
                   )}
                 </LinearGradient>
               </TouchableOpacity>
+
+              {step === 'auth' && <GoogleSignInButton label="Sign up with Google" />}
 
               {step === 'auth' && (
                 <View style={styles.loginContainer}>

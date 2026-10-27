@@ -1,5 +1,5 @@
 // navigation/index.tsx
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -18,7 +18,7 @@ import { MessagingScreen } from '../screens/MessagingScreen';
 import { AddressPickerScreen } from '../screens/AddressPickerScreen';
 
 // Auth Screens
-import { SplashScreen } from '../screens/SplashScreen';
+import { SplashScreen, LoadingSplash } from '../screens/SplashScreen';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { CustomerSignupScreen } from '../screens/CustomerSignupScreen';
@@ -33,6 +33,9 @@ import { SuspendedScreen } from '../screens/SuspendedScreen';
 import { CustomerTabs } from './CustomerTabs';
 import { VendorTabs } from './VendorTabs';
 import { AdminTabs } from './AdminTabs';
+import { AdminCodeScreen } from '../screens/admin/AdminCodeScreen';
+import { ComplaintsScreen } from '../screens/ComplaintsScreen';
+import { sessionHasRecentCode } from '../utils/adminCode';
 import { AnnouncementDetailsScreen } from '../screens/AnnouncementDetailsScreen';
 
 // Customer Screens
@@ -46,25 +49,23 @@ import { PrivacyScreen } from '../screens/customer/PrivacyScreen';
 import { CartScreen } from '../screens/customer/CartScreen';
 import { RewardsScreen } from '../screens/customer/RewardsScreen';
 import { MealPlannerScreen } from '../screens/customer/MealPlannerScreen';
+import { ProfileScreen } from '../screens/customer/ProfileScreen';
+import { ProScreen } from '../screens/customer/ProScreen';
 // Vendor Screens
-import { VendorMenuScreen } from '../screens/vendor/VendorMenuScreen';
-import { VendorOrdersScreen } from '../screens/vendor/VendorOrdersScreen';
 import { VendorOrderDetailsScreen } from '../screens/vendor/VendorOrderDetailsScreen';
 import { VendorAnalyticsScreen } from '../screens/vendor/VendorAnalyticsScreen';
 import { VendorAddressesScreen } from '../screens/vendor/VendorAddressesScreen';
 import {CreatePromotionScreen} from '../screens/vendor/CreatePromotionScreen';
 import { PromotionsScreen } from '../screens/vendor/PromotionsScreen';
 import { PromotionDetailsScreen } from '../screens/vendor/PromotionDetailsScreen';
-import { VendorDashboardScreen } from '../screens/vendor/VendorDashboardScreen';
+import { VendorHistoryScreen } from '../screens/vendor/VendorHistoryScreen';
 
 // Admin Screens
 import { AdminOrderDetailsScreen } from '../screens/admin/AdminOrderDetailsScreen';
 import { AdminVendorsScreen } from '../screens/admin/AdminVendorsScreen';
 import { AdminWithdrawalsScreen } from '../screens/admin/AdminWithdrawalsScreen';
 import { AdminMenuScreen } from '../screens/admin/AdminMenuScreen';
-import { AdminLogisticsScreen } from '../lib/AdminLogisticsScreen';
 import { AdminCreateLogisticScreen } from '../screens/admin/AdminCreateLogisticScreen';
-import { AdminSettingsScreen } from '../screens/admin/AdminSettingsScreen';
 import { AdminBusinessRequestsScreen } from '../screens/admin/AdminBusinessRequestsScreen';
 import { AdminAllOrdersScreen } from '../screens/admin/AdminAllOrdersScreen';
 import { AdminUsersScreen } from '../screens/admin/AdminUsersScreen';
@@ -72,12 +73,8 @@ import { AdminAnalyticsScreen } from '../screens/admin/AdminAnalyticsScreen';
 import { AdminPromotionsScreen } from '../screens/admin/AdminPromotionsScreen';
 import { OutstandingPaymentsScreen } from '../screens/admin/OutstandingPaymentsScreen';
 import { AllVendorsMapScreen } from '../screens/customer/AllVendorsMapScreen';
-import { VendorsScreen } from '../screens/customer/VendorScreen';
-import { VendorSettingsScreen } from '../screens/vendor/VendorSettingsScreen';
-import { HomeScreen } from '../screens/customer/HomeScreen';
 import { navigationRef, onNavigationReady } from './RootNavigation';
 import { AdminAnnouncementsScreen } from '../screens/admin/AdminAnnouncementsScreen';
-import { OrdersScreen } from '../screens/customer/OrdersScreen';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 // Warning Modal for Rider/Business users
@@ -163,11 +160,10 @@ function WrongAppWarningModal({
 }
 
 function AppContent() {
-  const { user, isLoading } = useAuth();
-  const [showWrongAppModal, setShowWrongAppModal] = useState(false);
+  const { user, session, isLoading } = useAuth();
 
   if (isLoading) {
-    return <SplashScreen />;
+    return <LoadingSplash />;
   }
 
   // If user is suspended → show suspension screen (full-screen, no tabs)
@@ -175,16 +171,12 @@ function AppContent() {
     return <SuspendedScreen />;
   }
 
-  // If user is rider or business, show warning modal
+  // Riders and business accounts belong in the logistics app
   if (user && (user.role === 'rider' || user.role === 'business')) {
     return (
       <>
-        <SplashScreen />
-        <WrongAppWarningModal
-          visible={true}
-          onClose={() => setShowWrongAppModal(false)}
-          userRole={user.role}
-        />
+        <LoadingSplash />
+        <WrongAppWarningModal visible onClose={() => {}} userRole={user.role} />
       </>
     );
   }
@@ -200,89 +192,67 @@ function AppContent() {
           <Stack.Screen name="VendorSignup" component={VendorSignupScreen} />
           <Stack.Screen name="RoleSelection" component={RoleSelectionScreen} />
           <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-          <Stack.Screen name="AdminSettings" component={AdminSettingsScreen} />
-          <Stack.Screen name="Messaging" component={MessagingScreen}/>
+        </>
+      ) : user.role === 'customer' ? (
+        <>
+          <Stack.Screen name="CustomerTabs" component={CustomerTabs} />
+          <Stack.Screen name="Cart" component={CartScreen} />
+          <Stack.Screen name="Profile" component={ProfileScreen} />
+          <Stack.Screen name="VendorDetails" component={VendorDetailsScreen} />
+          <Stack.Screen name="OrderTracking" component={OrderTrackingScreen} />
+          <Stack.Screen name="Addresses" component={AddressesScreen} />
           <Stack.Screen name="AddressPicker" component={AddressPickerScreen} />
-<Stack.Screen name="AnnouncementDetails" component={AnnouncementDetailsScreen} />
+          <Stack.Screen name="AllVendorsMap" component={AllVendorsMapScreen} />
+          <Stack.Screen name="Favorites" component={FavoritesScreen} />
+          <Stack.Screen name="Rewards" component={RewardsScreen} />
+          <Stack.Screen name="MealPlanner" component={MealPlannerScreen} />
+          <Stack.Screen name="Pro" component={ProScreen} />
+          <Stack.Screen name="Support" component={SupportScreen} />
+          <Stack.Screen name="Complaints" component={ComplaintsScreen} />
+          <Stack.Screen name="Privacy" component={PrivacyScreen} />
+          <Stack.Screen name="Notifications" component={NotificationsScreen} />
+          <Stack.Screen name="AnnouncementDetails" component={AnnouncementDetailsScreen} />
+          <Stack.Screen name="Messaging" component={MessagingScreen} />
+        </>
+      ) : user.role === 'vendor' ? (
+        <>
+          <Stack.Screen name="VendorTabs" component={VendorTabs} />
+          <Stack.Screen name="VendorOrderDetails" component={VendorOrderDetailsScreen} />
+          <Stack.Screen name="History" component={VendorHistoryScreen} />
+          <Stack.Screen name="VendorAnalytics" component={VendorAnalyticsScreen} />
+          <Stack.Screen name="VendorAddresses" component={VendorAddressesScreen} />
+          <Stack.Screen name="CreatePromotion" component={CreatePromotionScreen} />
+          <Stack.Screen name="Promotions" component={PromotionsScreen} />
+          <Stack.Screen name="PromotionDetails" component={PromotionDetailsScreen} />
+          <Stack.Screen name="Complaints" component={ComplaintsScreen} />
+          <Stack.Screen name="Notifications" component={NotificationsScreen} />
+          <Stack.Screen name="AnnouncementDetails" component={AnnouncementDetailsScreen} />
+          <Stack.Screen name="Messaging" component={MessagingScreen} />
+        </>
+      ) : user.role === 'admin' && !sessionHasRecentCode(session) ? (
+        // Admins also need the emailed sign-in code, not just the password.
+        <Stack.Screen name="AdminCode" component={AdminCodeScreen} />
+      ) : user.role === 'admin' ? (
+        <>
+          <Stack.Screen name="AdminTabs" component={AdminTabs} />
+          <Stack.Screen name="AdminOrderDetails" component={AdminOrderDetailsScreen} />
+          <Stack.Screen name="AdminAllOrders" component={AdminAllOrdersScreen} />
+          <Stack.Screen name="AdminUsers" component={AdminUsersScreen} />
+          <Stack.Screen name="AdminAnalytics" component={AdminAnalyticsScreen} />
+          <Stack.Screen name="AdminBusinessRequests" component={AdminBusinessRequestsScreen} />
+          <Stack.Screen name="AdminCreateLogistic" component={AdminCreateLogisticScreen} />
+          <Stack.Screen name="AdminPromotions" component={AdminPromotionsScreen} />
+          <Stack.Screen name="AdminAnnouncements" component={AdminAnnouncementsScreen} />
+          <Stack.Screen name="OutstandingPayments" component={OutstandingPaymentsScreen} />
+          <Stack.Screen name="AdminVendors" component={AdminVendorsScreen} />
+          <Stack.Screen name="AdminWithdrawals" component={AdminWithdrawalsScreen} />
+          <Stack.Screen name="AdminMenu" component={AdminMenuScreen} />
+          <Stack.Screen name="Notifications" component={NotificationsScreen} />
+          <Stack.Screen name="AnnouncementDetails" component={AnnouncementDetailsScreen} />
+          <Stack.Screen name="Messaging" component={MessagingScreen} />
         </>
       ) : (
-        <>
-          {user.role === 'customer' && (
-            <>
-              <Stack.Screen name="CustomerTabs" component={CustomerTabs} />
-                 <Stack.Screen name="Home" component={HomeScreen} />
-
-              <Stack.Screen name="VendorDetails" component={VendorDetailsScreen} />
-              <Stack.Screen name="OrderTracking" component={OrderTrackingScreen} />
-              <Stack.Screen name="Addresses" component={AddressesScreen} />
-              <Stack.Screen name="Favorites" component={FavoritesScreen} />
-              <Stack.Screen name="Notifications" component={NotificationsScreen} />
-              <Stack.Screen name="Support" component={SupportScreen} />
-              <Stack.Screen name="Privacy" component={PrivacyScreen} />
-              <Stack.Screen name="Cart" component={CartScreen} />
-              <Stack.Screen name="Vendors" component={VendorsScreen} />
-              <Stack.Screen name="Messaging" component={MessagingScreen}/>
-          <Stack.Screen name="AddressPicker" component={AddressPickerScreen} />
-          <Stack.Screen name="AllVendorsMap" component={AllVendorsMapScreen} /> 
-                        <Stack.Screen name="Splash" component={SplashScreen} />
-<Stack.Screen name="AnnouncementDetails" component={AnnouncementDetailsScreen} />
-      <Stack.Screen name="Rewards" component={RewardsScreen} />
-      <Stack.Screen name="Orders" component={OrdersScreen} />
-      <Stack.Screen name="MealPlanner" component={MealPlannerScreen} />
-
-
-            </>
-          )}
-          {user.role === 'vendor' && (
-            <>
-              <Stack.Screen name="VendorTabs" component={VendorTabs} />     
-              <Stack.Screen name="VendorDashboard" component={VendorDashboardScreen} />
-              <Stack.Screen name="VendorSettings" component={VendorSettingsScreen} />
-              <Stack.Screen name="Splash" component={SplashScreen} />
-
-              <Stack.Screen name="VendorMenu" component={VendorMenuScreen} />
-              <Stack.Screen name="VendorOrders" component={VendorOrdersScreen} />
-              <Stack.Screen name="VendorOrderDetails" component={VendorOrderDetailsScreen} />
-              <Stack.Screen name="VendorAnalytics" component={VendorAnalyticsScreen} />
-              <Stack.Screen name="VendorAddresses" component={VendorAddressesScreen} />
-              <Stack.Screen name="CreatePromotion" component={CreatePromotionScreen}/>
-              <Stack.Screen name="Promotions" component={PromotionsScreen} />
-              <Stack.Screen name ="PromotionDetails" component={PromotionDetailsScreen} />
-          <Stack.Screen name="Messaging" component={MessagingScreen}/>
-                        <Stack.Screen name="Notifications" component={NotificationsScreen} />
-
-<Stack.Screen name="AnnouncementDetails" component={AnnouncementDetailsScreen} />
-
-
-            </>
-          )}
-          {user.role === 'admin' && (
-            <>
-              <Stack.Screen name="AdminTabs" component={AdminTabs} />
-              <Stack.Screen name="AdminDashboard" component={AdminSettingsScreen} />
-              <Stack.Screen name="AdminOrderDetails" component={AdminOrderDetailsScreen} />
-              <Stack.Screen name="AdminVendors" component={AdminVendorsScreen} />
-              <Stack.Screen name="AdminWithdrawals" component={AdminWithdrawalsScreen} />
-              <Stack.Screen name="AdminMenu" component={AdminMenuScreen} />
-              <Stack.Screen name="AdminLogistics" component={AdminLogisticsScreen} />
-              <Stack.Screen name="AdminCreateLogistic" component={AdminCreateLogisticScreen} />
-              <Stack.Screen name="AdminBusinessRequests" component={AdminBusinessRequestsScreen} />
-              <Stack.Screen name="AdminUsers" component={AdminUsersScreen} />
-              <Stack.Screen name="AdminAnalytics" component={AdminAnalyticsScreen} />
-              <Stack.Screen name="AdminAllOrders" component={AdminAllOrdersScreen} />
-              <Stack.Screen name="OutstandingPayments" component={OutstandingPaymentsScreen}/>
-              <Stack.Screen name="AdminPromotions" component={AdminPromotionsScreen} />
-                            <Stack.Screen name="Splash" component={SplashScreen} />
-
-          <Stack.Screen name="Messaging" component={MessagingScreen}/>
-                                  <Stack.Screen name="Notifications" component={NotificationsScreen} />
-<Stack.Screen name="AnnouncementDetails" component={AnnouncementDetailsScreen} />
-<Stack.Screen name="AdminAnnouncements" component={AdminAnnouncementsScreen} />
-
-
-            </>
-          )}
-        </>
+        <Stack.Screen name="Login" component={LoginScreen} />
       )}
     </Stack.Navigator>
   );
@@ -296,7 +266,7 @@ export function AppNavigator() {
       ref={navigationRef}
       onReady={onNavigationReady}
     >
-      {isReady ? <AppContent /> : <SplashScreen />}
+      {isReady ? <AppContent /> : <LoadingSplash />}
     </NavigationContainer>
   );
 }

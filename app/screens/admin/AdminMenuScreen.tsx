@@ -19,6 +19,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import Toast from 'react-native-toast-message';
+import { reviewFood, FoodReview } from '../../services/foodSafety';
 
 type MenuStatus = 'all' | 'pending' | 'approved' | 'rejected';
 
@@ -36,6 +37,9 @@ interface MenuItem {
   preparation_time?: string;
   approval_status: 'pending' | 'approved' | 'rejected';
   rejection_reason?: string;
+  ingredients?: string[] | null;
+  allergens?: string[] | null;
+  health_tags?: string[] | null;
   created_at: string;
   vendor?: {
     id: string;
@@ -145,6 +149,33 @@ export function AdminMenuScreen() {
   const onRefresh = () => {
     setRefreshing(true);
     fetchData();
+  };
+
+  const reviewOf = (item: MenuItem): FoodReview => reviewFood(item);
+
+  // Approve, but make the admin confirm when the ingredient check found problems.
+  const confirmApprove = (item: MenuItem) => {
+    const { issues } = reviewOf(item);
+    if (issues.length === 0) {
+      handleApprove(item.id);
+      return;
+    }
+    Alert.alert(
+      'Review issues found',
+      issues.map(i => '• ' + i).join('\n') + '\n\nApprove anyway, or reject and ask the vendor to fix the listing?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reject',
+          onPress: () => {
+            setSelectedItem(item);
+            setRejectReason(issues.join('; '));
+            setShowRejectModal(true);
+          },
+        },
+        { text: 'Approve anyway', style: 'destructive', onPress: () => handleApprove(item.id) },
+      ]
+    );
   };
 
   const handleApprove = async (itemId: string) => {
@@ -491,6 +522,12 @@ export function AdminMenuScreen() {
                     )}
                     <Text style={styles.menuCategory}>{item.category}</Text>
                   </View>
+                  {item.approval_status === 'pending' && reviewOf(item).issues.length > 0 && (
+                    <View style={styles.reviewFlag}>
+                      <Feather name="alert-triangle" size={10} color="#f59e0b" />
+                      <Text style={styles.reviewFlagText}>{reviewOf(item).issues.length} to check</Text>
+                    </View>
+                  )}
                 </View>
               </TouchableOpacity>
             ))
@@ -583,6 +620,78 @@ export function AdminMenuScreen() {
                   </View>
                 </View>
 
+                {/* Ingredients */}
+                <View style={styles.detailSection}>
+                  <Text style={styles.detailLabel}>Ingredients</Text>
+                  {selectedItem.ingredients?.length ? (
+                    <View style={styles.chipRow}>
+                      {selectedItem.ingredients.map((ing, i) => (
+                        <View key={ing + i} style={styles.chip}>
+                          <Text style={styles.chipText}>{ing}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  ) : (
+                    <Text style={styles.missingText}>No ingredients listed</Text>
+                  )}
+                </View>
+
+                {/* Allergens, health tags and the automatic ingredient check */}
+                {(() => {
+                  const review = reviewOf(selectedItem);
+                  const hasIssues = review.issues.length > 0;
+                  return (
+                    <>
+                      <View style={styles.detailSection}>
+                        <Text style={styles.detailLabel}>Allergens</Text>
+                        {review.allAllergens.length ? (
+                          <View style={styles.chipRow}>
+                            {review.allAllergens.map(a => (
+                              <View key={a.id} style={[styles.chip, styles.allergenChip]}>
+                                <Text style={styles.chipText}>{a.icon} {a.label}</Text>
+                              </View>
+                            ))}
+                          </View>
+                        ) : (
+                          <Text style={styles.detailValue}>None declared or detected</Text>
+                        )}
+                      </View>
+
+                      {!!selectedItem.health_tags?.length && (
+                        <View style={styles.detailSection}>
+                          <Text style={styles.detailLabel}>Health Tags</Text>
+                          <View style={styles.chipRow}>
+                            {selectedItem.health_tags.map(t => (
+                              <View key={t} style={styles.chip}>
+                                <Text style={styles.chipText}>{t.replace(/_/g, ' ')}</Text>
+                              </View>
+                            ))}
+                          </View>
+                        </View>
+                      )}
+
+                      <View style={[styles.reviewBox, hasIssues ? styles.reviewBoxWarn : styles.reviewBoxOk]}>
+                        <View style={styles.reviewHeader}>
+                          <Feather
+                            name={hasIssues ? 'alert-triangle' : 'check-circle'}
+                            size={16}
+                            color={hasIssues ? '#f59e0b' : '#10b981'}
+                          />
+                          <Text style={[styles.reviewTitle, { color: hasIssues ? '#f59e0b' : '#10b981' }]}>
+                            {hasIssues ? 'Ingredient check: needs attention' : 'Ingredient check: no issues found'}
+                          </Text>
+                        </View>
+                        {review.issues.map(issue => (
+                          <Text key={issue} style={styles.reviewLine}>• {issue}</Text>
+                        ))}
+                        {review.notes.map(note => (
+                          <Text key={note} style={styles.reviewNote}>{note}</Text>
+                        ))}
+                      </View>
+                    </>
+                  );
+                })()}
+
                 {/* Vendor Info */}
                 <View style={styles.detailSection}>
                   <Text style={styles.detailLabel}>Vendor</Text>
@@ -643,7 +752,7 @@ export function AdminMenuScreen() {
                       style={[styles.actionButton, styles.approveButton]}
                       onPress={() => {
                         setShowDetailsModal(false);
-                        handleApprove(selectedItem.id);
+                        confirmApprove(selectedItem);
                       }}
                     >
                       <Feather name="check-circle" size={18} color="#fff" />
@@ -734,6 +843,76 @@ export function AdminMenuScreen() {
 }
 
 const styles = StyleSheet.create({
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 4,
+  },
+  chip: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  allergenChip: {
+    backgroundColor: 'rgba(245,158,11,0.15)',
+  },
+  chipText: {
+    color: '#fff',
+    fontSize: 12,
+    textTransform: 'capitalize',
+  },
+  missingText: {
+    color: '#ef4444',
+    fontSize: 13,
+  },
+  reviewBox: {
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 16,
+    gap: 4,
+  },
+  reviewBoxWarn: {
+    backgroundColor: 'rgba(245,158,11,0.08)',
+    borderColor: 'rgba(245,158,11,0.3)',
+  },
+  reviewBoxOk: {
+    backgroundColor: 'rgba(16,185,129,0.08)',
+    borderColor: 'rgba(16,185,129,0.3)',
+  },
+  reviewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  reviewTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  reviewLine: {
+    color: '#ddd',
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  reviewNote: {
+    color: '#999',
+    fontSize: 12,
+    fontStyle: 'italic',
+  },
+  reviewFlag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 6,
+  },
+  reviewFlagText: {
+    color: '#f59e0b',
+    fontSize: 10,
+    fontWeight: '600',
+  },
   container: {
     flex: 1,
     backgroundColor: '#0a0a0a',

@@ -1,67 +1,59 @@
 // app/utils/paystack.ts
+// Client-side wrappers around Paystack edge functions. Secret keys live only on the
+// server (Supabase function secrets) and must never be bundled into the app.
+import { supabase } from '../lib/supabase';
 
-const PAYSTACK_SECRET_KEY =
-process.env.EXPO_PUBLIC_PAYSTACK_SECRET_KEY;
-
-export async function verifyBankAccount(
-accountNumber: string,
-bankCode: string
-) {
-try {
-const response = await fetch(
-`https://api.paystack.co/bank/resolve?account_number=${accountNumber}&bank_code=${bankCode}`,
-{
-method: 'GET',
-headers: {
-Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
-'Content-Type': 'application/json',
-},
-}
-);
-
-
-const data = await response.json();
-
-console.log(
-  '🏦 Paystack verify response:',
-  data
-);
-
-if (data.status && data.data) {
-  return {
-    status: 'success',
-    message: 'Account verified',
-    data: {
-      account_number:
-        data.data.account_number,
-      account_name:
-        data.data.account_name,
-      bank_code: bankCode,
-    },
+export interface VerifyAccountResult {
+  status: 'success' | 'error';
+  message: string;
+  data?: {
+    account_number: string;
+    account_name: string;
+    bank_code: string;
   };
 }
 
-return {
-  status: 'error',
-  message:
-    data.message ||
-    'Unable to verify account',
-};
+export async function verifyBankAccount(
+  accountNumber: string,
+  bankCode: string
+): Promise<VerifyAccountResult> {
+  if (!/^\d{10}$/.test(accountNumber)) {
+    return { status: 'error', message: 'Account number must be 10 digits' };
+  }
+  if (!bankCode) {
+    return { status: 'error', message: 'Please select a bank' };
+  }
 
-} catch (error: any) {
-console.error(
-'❌ Paystack verification error:',
-error
-);
+  try {
+    const { data, error } = await supabase.functions.invoke('verify-bank', {
+      body: { account_number: accountNumber, bank_code: bankCode },
+    });
 
+    if (error || !data?.status || !data?.data?.account_name) {
+      return { status: 'error', message: data?.message || 'Unable to verify account' };
+    }
 
-return {
-  status: 'error',
-  message:
-    error.message ||
-    'Verification failed',
-};
-
-
+    return {
+      status: 'success',
+      message: 'Account verified',
+      data: {
+        account_number: data.data.account_number,
+        account_name: data.data.account_name,
+        bank_code: bankCode,
+      },
+    };
+  } catch (error: any) {
+    return { status: 'error', message: error?.message || 'Verification failed' };
+  }
 }
+
+// Extracts the server's error message from a FunctionsHttpError, if any.
+export async function functionErrorMessage(error: any, fallback: string): Promise<string> {
+  try {
+    const body = await error?.context?.json?.();
+    if (body?.message) return body.message;
+  } catch {
+    // ignore - body was not JSON
+  }
+  return error?.message || fallback;
 }

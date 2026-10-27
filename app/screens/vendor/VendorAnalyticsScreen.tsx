@@ -14,6 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { useVendorEarnings } from '../../hooks/vendor/useVendorEarnings';
 import { SimpleLineChart, SimpleBarChart } from '../../components/SimpleChart';
 
 export function VendorAnalyticsScreen() {
@@ -21,9 +22,11 @@ export function VendorAnalyticsScreen() {
   const { user } = useAuth();
   const [period, setPeriod] = useState<'week' | 'month' | 'year'>('month');
   const [analyticsData, setAnalyticsData] = useState<any>(null);
-  const [walletBalance, setWalletBalance] = useState(0);
-  const [totalEarned, setTotalEarned] = useState(0);
-  const [pendingPayout, setPendingPayout] = useState(0);
+  // Card payments settle straight to the vendor's bank (no wallet).
+  const { earnings } = useVendorEarnings();
+  const totalEarned = earnings?.totalEarnings ?? 0;
+  const paidToBank = earnings?.paidToBank ?? 0;
+  const settling = earnings?.settling ?? 0;
   const [loading, setLoading] = useState(true);
   const [vendorId, setVendorId] = useState<string | null>(null);
 
@@ -43,47 +46,11 @@ export function VendorAnalyticsScreen() {
       if (error) throw error;
       if (data) {
         setVendorId(data.id);
-        fetchWalletData(data.id);
         fetchAnalyticsData(data.id);
       }
     } catch (error) {
       console.error('Error fetching vendor ID:', error);
       setLoading(false);
-    }
-  };
-
-  const fetchWalletData = async (vendorId: string) => {
-    try {
-      // Fetch wallet balance
-      const { data: wallet, error: walletError } = await supabase
-        .from('vendor_wallets')
-        .select('balance, total_earned')
-        .eq('vendor_id', vendorId)
-        .single();
-
-      if (walletError && walletError.code !== 'PGRST116') {
-        console.error('Error fetching wallet:', walletError);
-      }
-
-      if (wallet) {
-        setWalletBalance(wallet.balance || 0);
-        setTotalEarned(wallet.total_earned || 0);
-      }
-
-      // Fetch pending withdrawals
-      const { data: withdrawals, error: withdrawalsError } = await supabase
-        .from('withdrawals')
-        .select('amount, status')
-        .eq('user_id', user?.id)
-        .eq('user_type', 'vendor')
-        .in('status', ['pending', 'processing']);
-
-      if (!withdrawalsError && withdrawals) {
-        const pending = withdrawals.reduce((sum, w) => sum + (w.amount || 0), 0);
-        setPendingPayout(pending);
-      }
-    } catch (error) {
-      console.error('Error fetching wallet data:', error);
     }
   };
 
@@ -318,14 +285,14 @@ export function VendorAnalyticsScreen() {
             end={{ x: 1, y: 1 }}
             style={styles.summaryCard}
           >
-            <Text style={styles.summaryLabel}>Available Balance</Text>
-            <Text style={styles.summaryValue}>{formatCurrency(walletBalance)}</Text>
+            <Text style={styles.summaryLabel}>Sent to Your Bank</Text>
+            <Text style={styles.summaryValue}>{formatCurrency(paidToBank)}</Text>
           </LinearGradient>
 
           {/* Pending Payout Card */}
           <View style={styles.summaryCardSecondary}>
-            <Text style={styles.summaryLabelSecondary}>Pending Payout</Text>
-            <Text style={styles.summaryValueSecondary}>{formatCurrency(pendingPayout)}</Text>
+            <Text style={styles.summaryLabelSecondary}>Arriving Soon</Text>
+            <Text style={styles.summaryValueSecondary}>{formatCurrency(settling)}</Text>
           </View>
 
           {/* Period Earnings Card */}

@@ -1,4 +1,7 @@
 // app/screens/customer/ProfileScreen.tsx
+import { useHealth } from '../../contexts/HealthContext';
+import { useProfileSetup, SetupStepId } from '../../hooks/customer/useProfileSetup';
+import { useSubscription } from '../../contexts/SubscriptionContext';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -21,7 +24,9 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../contexts/AuthContext';
 import { HEALTH_CONDITIONS, HealthCondition } from '../../contexts/HealthContext';
 import { supabase } from '../../lib/supabase';
+import { confirmDeleteAccount } from '../../utils/account';
 import { RootStackParamList } from '../../navigation/types';
+import { VoiceAndCardsSection } from '../../components/customer/VoiceAndCardsSection';
 import type { Address } from '../../types';
 import Toast from 'react-native-toast-message';
 
@@ -83,7 +88,8 @@ const DURATION_OPTIONS = [
 ];
 
 const menuItems = [
-  { icon: 'calendar', label: 'Meal Planner', path: 'MealPlanner', color: '#10b981' },  // ← ADD THIS
+  { icon: 'award', label: 'Vesphe Pro', path: 'Pro', color: '#f97316' },
+  { icon: 'calendar', label: 'Meal Planner', path: 'MealPlanner', color: '#10b981' },
   { icon: 'heart', label: 'Favorites', path: 'Favorites', color: '#ef4444' },
   { icon: 'map-pin', label: 'Saved Addresses', path: 'Addresses', color: '#f97316' },
   { icon: 'shield', label: 'Privacy & Security', path: 'Privacy', color: '#10b981' },
@@ -92,7 +98,7 @@ const menuItems = [
 
 export function ProfileScreen() {
   const navigation = useNavigation<ProfileScreenNavigationProp>();
-  const { user, signOut } = useAuth();
+  const { user, signOut, refreshProfile } = useAuth();
 
   // Direct state from database
   const [healthConditions, setHealthConditions] = useState<HealthCondition[]>([]);
@@ -104,6 +110,10 @@ export function ProfileScreen() {
 
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [editedName, setEditedName] = useState(user?.name || '');
+  const [editedPhone, setEditedPhone] = useState(user?.phone || '');
+  const setup = useProfileSetup();
+  const { refreshProfile: refreshHealthContext } = useHealth();
+  const { isPro } = useSubscription();
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [stats, setStats] = useState<UserStats>({ orders: 0, favorites: 0, rewards: 0 });
   const [isLoading, setIsLoading] = useState(true);
@@ -122,7 +132,9 @@ export function ProfileScreen() {
   };
 
   // Fetch health profile directly from Supabase
+  // Also refreshes the app-wide health context (Home picks, add-to-cart checks).
   const fetchHealthProfile = async () => {
+    refreshHealthContext();
     if (!user?.id) {
       setIsLoadingHealth(false);
       return;
@@ -216,14 +228,34 @@ export function ProfileScreen() {
     ]);
   };
 
+  const openEditProfile = () => {
+    setEditedName(user?.name || '');
+    setEditedPhone(user?.phone || '');
+    setShowEditProfile(true);
+  };
+
+  const handleSetupStep = (id: SetupStepId) => {
+    if (id === 'phone') openEditProfile();
+    else if (id === 'address') navigation.navigate('Addresses');
+    else setShowLockInModal(true);
+  };
+
   const handleSaveProfile = async () => {
     if (!user) return;
     try {
-      const { error } = await supabase.from('users').update({ name: editedName }).eq('id', user.id);
+      const name = editedName.trim();
+      if (name.length < 2) { showToast('Please enter your name', 'error'); return; }
+      const phone = editedPhone.replace(/[\s-]/g, '');
+      if (phone && !/^(\+?234|0)[789][01]\d{8}$/.test(phone)) {
+        showToast('Enter a valid Nigerian phone number', 'error');
+        return;
+      }
+      const { error } = await supabase.from('users').update({ name: name.slice(0, 80), phone: phone || null }).eq('id', user.id);
       if (error) throw error;
       showToast('Profile updated successfully');
       setShowEditProfile(false);
       fetchUserData();
+      refreshProfile();
     } catch { showToast('Failed to update profile', 'error'); }
   };
 
@@ -463,10 +495,6 @@ const isLifestyleCondition = (id: HealthCondition) => {
   };
 
   // Debug log
-  console.log('🔴 Profile render - healthConditions:', healthConditions);
-  console.log('🔴 isLocked:', isLocked);
-  console.log('🔴 lockInGoal:', lockInGoal);
-  console.log('🔴 lockInEndDate:', lockInEndDate);
 
   if (!user) {
     return (
@@ -495,7 +523,7 @@ const isLifestyleCondition = (id: HealthCondition) => {
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Profile</Text>
         </View>
-        <TouchableOpacity onPress={() => { setEditedName(user.name); setShowEditProfile(true); }} style={styles.editButton}>
+        <TouchableOpacity onPress={openEditProfile} style={styles.editButton}>
           <Feather name="edit-2" size={18} color="#f97316" />
         </TouchableOpacity>
       </View>
@@ -519,9 +547,55 @@ const isLifestyleCondition = (id: HealthCondition) => {
           </View>
         </View>
 
+        {/* Getting started checklist */}
+        {!setup.isComplete && (
+          <View style={styles.setupCard}>
+            <View style={styles.setupHeader}>
+              <Text style={styles.setupTitle}>Finish setting up</Text>
+              <Text style={styles.setupProgress}>{setup.completed}/{setup.total}</Text>
+            </View>
+            <View style={styles.setupBar}>
+              <View style={[styles.setupBarFill, { width: `${(setup.completed / setup.total) * 100}%` }]} />
+            </View>
+            {setup.steps.map(step => (
+              <TouchableOpacity
+                key={step.id}
+                style={styles.setupStep}
+                onPress={() => handleSetupStep(step.id)}
+                disabled={step.done}
+              >
+                <Feather
+                  name={step.done ? 'check-circle' : 'circle'}
+                  size={20}
+                  color={step.done ? '#10b981' : '#f97316'}
+                />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.setupStepTitle, step.done && styles.setupStepDone]}>{step.title}</Text>
+                  {!step.done && <Text style={styles.setupStepText}>{step.description}</Text>}
+                </View>
+                {!step.done && <Feather name="chevron-right" size={18} color="#666" />}
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {/* Vesphe Pro */}
+        {!isPro && (
+          <TouchableOpacity onPress={() => navigation.navigate('Pro')} style={styles.proCard} activeOpacity={0.85}>
+            <LinearGradient colors={['#f97316', '#f43f5e']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.proCardGradient}>
+              <Feather name="award" size={22} color="#fff" />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.proCardTitle}>Try Vesphe Pro</Text>
+                <Text style={styles.proCardText}>Unlimited personalised picks and a weekly meal timetable</Text>
+              </View>
+              <Feather name="chevron-right" size={20} color="#fff" />
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
+
         {/* Stats */}
         <View style={styles.statsContainer}>
-          <TouchableOpacity onPress={() => navigation.navigate('Orders')} style={styles.statItem}>
+          <TouchableOpacity onPress={() => navigation.navigate('CustomerTabs', { screen: 'Orders' })} style={styles.statItem}>
             <Text style={styles.statNumber}>{stats.orders}</Text>
             <Text style={styles.statLabel}>Orders</Text>
           </TouchableOpacity>
@@ -729,6 +803,8 @@ const isLifestyleCondition = (id: HealthCondition) => {
           )}
         </View>
 
+        <VoiceAndCardsSection />
+
         {/* Menu Items */}
         <View style={styles.menuSection}>
           {menuItems.map((item, index) => (
@@ -746,6 +822,9 @@ const isLifestyleCondition = (id: HealthCondition) => {
         <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
           <View style={styles.logoutIcon}><Feather name="log-out" size={20} color="#ef4444" /></View>
           <Text style={styles.logoutText}>Logout</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => confirmDeleteAccount(signOut)} style={styles.deleteAccountButton}>
+          <Text style={styles.deleteAccountText}>Delete account</Text>
         </TouchableOpacity>
         <View style={styles.bottomPadding} />
       </ScrollView>
@@ -767,7 +846,14 @@ const isLifestyleCondition = (id: HealthCondition) => {
               </View>
               <View style={styles.modalField}>
                 <Text style={styles.modalFieldLabel}>Phone</Text>
-                <TextInput style={[styles.modalInput, styles.modalInputDisabled]} value={user.phone} editable={false} />
+                <TextInput
+                  style={styles.modalInput}
+                  value={editedPhone}
+                  onChangeText={setEditedPhone}
+                  placeholder="e.g. 08012345678"
+                  placeholderTextColor="#666"
+                  keyboardType="phone-pad"
+                />
               </View>
               <View style={styles.modalField}>
                 <Text style={styles.modalFieldLabel}>Email</Text>
@@ -1117,6 +1203,22 @@ const styles = StyleSheet.create({
   logoutButton: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 24, padding: 12, backgroundColor: 'rgba(239,68,68,0.1)', borderRadius: 12, gap: 12 },
   logoutIcon: { width: 40, height: 40, borderRadius: 8, backgroundColor: 'rgba(239,68,68,0.1)', justifyContent: 'center', alignItems: 'center' },
   logoutText: { fontSize: 14, color: '#ef4444', fontWeight: '500' },
+  setupCard: { marginHorizontal: 16, marginBottom: 16, padding: 16, borderRadius: 14, backgroundColor: '#1a1a1a', borderWidth: 1, borderColor: 'rgba(249,115,22,0.3)', gap: 10 },
+  setupHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  setupTitle: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  setupProgress: { color: '#f97316', fontSize: 13, fontWeight: '600' },
+  setupBar: { height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.08)', overflow: 'hidden' },
+  setupBarFill: { height: '100%', backgroundColor: '#f97316' },
+  setupStep: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 6 },
+  setupStepTitle: { color: '#fff', fontSize: 14, fontWeight: '500' },
+  setupStepDone: { color: '#777', textDecorationLine: 'line-through' },
+  setupStepText: { color: '#888', fontSize: 12, marginTop: 2 },
+  proCard: { marginHorizontal: 16, marginBottom: 16, borderRadius: 14, overflow: 'hidden' },
+  proCardGradient: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 },
+  proCardTitle: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  proCardText: { color: 'rgba(255,255,255,0.9)', fontSize: 12, marginTop: 2 },
+  deleteAccountButton: { alignItems: 'center', paddingVertical: 8, marginHorizontal: 16, marginTop: -12, marginBottom: 16 },
+  deleteAccountText: { fontSize: 13, color: '#888', textDecorationLine: 'underline' },
   bottomPadding: { height: 20 },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'flex-end' },

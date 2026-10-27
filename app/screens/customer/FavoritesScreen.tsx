@@ -116,7 +116,7 @@ export function FavoritesScreen() {
               Save your favorite vendors for quick access
             </Text>
             <TouchableOpacity
-              onPress={() => navigation.navigate('Vendors')}
+              onPress={() => navigation.navigate('CustomerTabs', { screen: 'Vendors' })}
               style={styles.browseButton}
             >
               <Text style={styles.browseButtonText}>Browse Vendors</Text>

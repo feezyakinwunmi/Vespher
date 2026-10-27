@@ -12,12 +12,18 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { MealTime, SuggestedProduct, getMealTimeLabel } from '../../hooks/customer/useAIFoodSuggestions';
 
+type Suggestion = SuggestedProduct & { reasons?: string[]; hasWarning?: boolean };
+
 interface Props {
-  suggestions: SuggestedProduct[];
+  suggestions: Suggestion[];
   isLoading: boolean;
   mealTime: MealTime;
-  onProductPress: (product: SuggestedProduct) => void;
+  onProductPress: (product: Suggestion) => void;
   onViewAll: () => void;
+  // Picks hidden for free users; tapping the card opens Vesphe Pro.
+  lockedCount?: number;
+  onUnlock?: () => void;
+  isPersonalised?: boolean;
 }
 
 const MEAL_TIME_ICONS: Record<MealTime, string> = {
@@ -27,8 +33,17 @@ const MEAL_TIME_ICONS: Record<MealTime, string> = {
   snack: '🌆',
 };
 
-export function TimedFoodSuggestions({ suggestions, isLoading, mealTime, onProductPress, onViewAll }: Props) {
-  if (!isLoading && suggestions.length === 0) return null;
+export function TimedFoodSuggestions({
+  suggestions,
+  isLoading,
+  mealTime,
+  onProductPress,
+  onViewAll,
+  lockedCount = 0,
+  onUnlock,
+  isPersonalised = false,
+}: Props) {
+  if (!isLoading && suggestions.length === 0 && lockedCount === 0) return null;
 
   return (
     <View style={styles.container}>
@@ -40,7 +55,9 @@ export function TimedFoodSuggestions({ suggestions, isLoading, mealTime, onProdu
             <Text style={styles.sectionTitle}>
               {getMealTimeLabel(mealTime)} Picks
             </Text>
-            <Text style={styles.sectionSubtitle}>AI-selected for this time of day</Text>
+            <Text style={styles.sectionSubtitle}>
+              {isPersonalised ? 'Picked for your health profile' : 'Picked for this time of day'}
+            </Text>
           </View>
         </View>
         <TouchableOpacity style={styles.viewAllButton} onPress={onViewAll}>
@@ -66,6 +83,17 @@ export function TimedFoodSuggestions({ suggestions, isLoading, mealTime, onProdu
           data={suggestions}
           keyExtractor={item => item.id}
           contentContainerStyle={styles.listContent}
+          ListFooterComponent={
+            lockedCount > 0 && onUnlock ? (
+              <TouchableOpacity style={styles.suggestionItem} onPress={onUnlock} activeOpacity={0.8}>
+                <View style={[styles.imageWrapper, styles.lockedCircle]}>
+                  <Feather name="lock" size={22} color="#f97316" />
+                </View>
+                <Text style={styles.foodName} numberOfLines={2}>+{lockedCount} more picks</Text>
+                <Text style={styles.unlockText} numberOfLines={1}>Unlock with Pro</Text>
+              </TouchableOpacity>
+            ) : undefined
+          }
           renderItem={({ item }) => (
             <TouchableOpacity
               style={styles.suggestionItem}
@@ -104,6 +132,13 @@ export function TimedFoodSuggestions({ suggestions, isLoading, mealTime, onProdu
               <Text style={styles.vendorName} numberOfLines={1}>
                 {item.vendorName}
               </Text>
+
+              {/* Why this was picked */}
+              {item.hasWarning ? (
+                <Text style={styles.warningText} numberOfLines={1}>⚠️ Check health note</Text>
+              ) : !!item.reasons?.length && (
+                <Text style={styles.reasonText} numberOfLines={2}>{item.reasons[0]}</Text>
+              )}
             </TouchableOpacity>
           )}
         />
@@ -208,6 +243,32 @@ const styles = StyleSheet.create({
     color: '#fff',
     textAlign: 'center',
     lineHeight: 16,
+  },
+  reasonText: {
+    color: '#10b981',
+    fontSize: 10,
+    textAlign: 'center',
+    marginTop: 3,
+  },
+  warningText: {
+    color: '#f59e0b',
+    fontSize: 10,
+    textAlign: 'center',
+    marginTop: 3,
+  },
+  unlockText: {
+    color: '#f97316',
+    fontSize: 11,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  lockedCircle: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(249,115,22,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(249,115,22,0.4)',
+    borderStyle: 'dashed',
   },
   vendorName: {
     fontSize: 10,

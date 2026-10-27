@@ -43,7 +43,7 @@ export function OrderCard({
   const navigation = useNavigation<OrderCardNavigationProp>();
   
   const firstItem = order.items?.[0];
-  const itemImage = firstItem?.product?.image || 'https://via.placeholder.com/100';
+  const itemImage = firstItem?.product?.image || null;
   const itemCount = order.items?.length || 0;
   const timeAgo = new Date(order.created_at).toLocaleTimeString([], { 
     hour: '2-digit', 

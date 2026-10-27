@@ -1,55 +1,15 @@
 // app/hooks/useOrderTimer.ts
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { processRefund } from '../utils/refund';
+
+const AUTO_CANCEL_REASON = 'Auto-cancelled - not accepted within 30 minutes';
 
 interface TimerReturn {
   timeRemaining: number | null;
   isExpired: boolean;
   formattedTime: string;
 }
-
-// Helper function to process refund
-const processRefund = async (transactionId: string, amount: number, orderId: string) => {
-  try {
-    // Call your refund edge function
-    const response = await fetch('https://your-project-ref.supabase.co/functions/v1/process-refund', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY}`
-      },
-      body: JSON.stringify({
-        transactionId,
-        amount,
-        orderId,
-        reason: 'Auto-cancelled - not accepted within 30 minutes'
-      })
-    });
-
-    const result = await response.json();
-    
-    if (result.success) {
-      // Update refund status
-      await supabase
-        .from('orders')
-        .update({
-          refund_status: 'processing',
-          refund_reference: result.refundId,
-          refund_requested_at: new Date().toISOString(),
-          refund_amount: amount,
-          refund_reason: 'Auto-cancelled - not accepted within 30 minutes'
-        })
-        .eq('id', orderId);
-      
-      return { success: true };
-    }
-    
-    return { success: false, error: result.error };
-  } catch (error) {
-    console.error('Refund error:', error);
-    return { success: false, error };
-  }
-};
 
 export function useOrderTimer(createdAt: string, status: string, orderId: string): TimerReturn {
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
@@ -61,7 +21,7 @@ export function useOrderTimer(createdAt: string, status: string, orderId: string
       // Get current order details
       const { data: order, error: fetchError } = await supabase
         .from('orders')
-        .select('status, payment_method, payment_status, flutterwave_transaction_id, total')
+        .select('status, payment_method, payment_status')
         .eq('id', orderId)
         .single();
 
@@ -72,34 +32,12 @@ export function useOrderTimer(createdAt: string, status: string, orderId: string
 
       // Only cancel if still pending
       if (order?.status === 'pending') {
-        // For paid card orders - process refund
+        // Paid card orders: the refund function cancels and refunds server-side.
         if (order.payment_method === 'card' && order.payment_status === 'paid') {
-          console.log(`💰 Processing refund for order ${orderId}`);
-          
-          // Call refund function
-          const refundResult = await processRefund(
-            order.flutterwave_transaction_id,
-            order.total,
-            orderId
-          );
-          
-          // Update order with refund status
-          await supabase
-            .from('orders')
-            .update({
-              status: 'cancelled',
-              payment_status: refundResult.success ? 'refunded' : 'paid',
-              refund_status: refundResult.success ? 'processing' : 'failed',
-              updated_at: new Date().toISOString(),
-              cancelled_by: 'system',
-              cancelled_at: new Date().toISOString(),
-              rejection_reason: refundResult.success 
-                ? 'Auto-cancelled - refund initiated'
-                : 'Auto-cancelled - refund failed'
-            })
-            .eq('id', orderId);
-          
-          console.log(`✅ Order ${orderId} auto-cancelled with refund: ${refundResult.success ? 'success' : 'failed'}`);
+          const refundResult = await processRefund(orderId, AUTO_CANCEL_REASON);
+          if (!refundResult.success) {
+            console.error(`Auto-cancel refund failed for order ${orderId}:`, refundResult.error);
+          }
         } else {
           // Cash order - just cancel
           await supabase
@@ -109,7 +47,7 @@ export function useOrderTimer(createdAt: string, status: string, orderId: string
               updated_at: new Date().toISOString(),
               cancelled_by: 'system',
               cancelled_at: new Date().toISOString(),
-              rejection_reason: 'Auto-cancelled - not accepted within 30 minutes'
+              rejection_reason: AUTO_CANCEL_REASON
             })
             .eq('id', orderId);
           

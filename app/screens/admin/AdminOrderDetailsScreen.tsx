@@ -447,11 +447,11 @@ export function AdminOrderDetailsScreen() {
                 </View>
               )}
 
-              {/* Flutterwave Fee */}
+              {/* Paystack Fee */}
               <View style={styles.financialRow}>
                 <View style={styles.financialLabelContainer}>
                   <Feather name="credit-card" size={14} color="#ef4444" />
-                  <Text style={styles.financialLabel}>Flutterwave Fee</Text>
+                  <Text style={styles.financialLabel}>Paystack Fee</Text>
                 </View>
                 <Text style={[styles.financialValue, styles.feeText]}>
                   -₦{order.flutterwave_fee?.toLocaleString() || 0}
@@ -475,7 +475,7 @@ export function AdminOrderDetailsScreen() {
                 (50% of ₦{order.delivery_fee?.toLocaleString()} delivery fee)
               </Text>
 
-              {/* Platform Net Earnings (Commission - Flutterwave +/- Discount impact) */}
+              {/* Platform Net Earnings (Commission - Paystack +/- Discount impact) */}
               <View style={styles.financialRow}>
                 <View style={styles.financialLabelContainer}>
                   <Feather name="trending-up" size={14} color="#10b981" />

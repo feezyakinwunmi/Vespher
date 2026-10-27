@@ -29,6 +29,9 @@ interface PlatformSettings {
   // NEW: Rider percentage settings
   company_vehicle_rider_percentage: number;
   personal_vehicle_rider_percentage: number;
+  pro_monthly_price?: number;
+  pro_yearly_price?: number;
+  free_recommendation_limit?: number;
   updated_at: string;
   updated_by: string | null;
 }
@@ -58,6 +61,10 @@ export function AdminSettingsScreen() {
   // NEW: Rider percentage state
   const [companyVehicleRiderPercent, setCompanyVehicleRiderPercent] = useState('');
   const [personalVehicleRiderPercent, setPersonalVehicleRiderPercent] = useState('');
+  // Vesphe Pro (customer subscription)
+  const [proMonthlyPrice, setProMonthlyPrice] = useState('');
+  const [proYearlyPrice, setProYearlyPrice] = useState('');
+  const [freeRecommendationLimit, setFreeRecommendationLimit] = useState('');
 
   useEffect(() => {
     fetchSettings();
@@ -87,6 +94,9 @@ export function AdminSettingsScreen() {
       // NEW: Set rider percentage values
       setCompanyVehicleRiderPercent(data.company_vehicle_rider_percentage?.toString() || '50');
       setPersonalVehicleRiderPercent(data.personal_vehicle_rider_percentage?.toString() || '80');
+      setProMonthlyPrice(data.pro_monthly_price?.toString() || '1500');
+      setProYearlyPrice(data.pro_yearly_price?.toString() || '15000');
+      setFreeRecommendationLimit(data.free_recommendation_limit?.toString() || '3');
       
     } catch (error) {
       console.error('Error fetching settings:', error);
@@ -152,6 +162,18 @@ export function AdminSettingsScreen() {
       return false;
     }
 
+    const monthly = parseInt(proMonthlyPrice);
+    const yearly = parseInt(proYearlyPrice);
+    if (isNaN(monthly) || monthly < 100 || isNaN(yearly) || yearly < 100) {
+      showToast('Pro prices must be at least ₦100', 'error');
+      return false;
+    }
+    const freeLimit = parseInt(freeRecommendationLimit);
+    if (isNaN(freeLimit) || freeLimit < 0 || freeLimit > 20) {
+      showToast('Free recommendations must be between 0 and 20', 'error');
+      return false;
+    }
+
     return true;
   };
 
@@ -180,6 +202,9 @@ export function AdminSettingsScreen() {
           // NEW: Save rider percentages
           company_vehicle_rider_percentage: parseFloat(companyVehicleRiderPercent),
           personal_vehicle_rider_percentage: parseFloat(personalVehicleRiderPercent),
+          pro_monthly_price: parseInt(proMonthlyPrice),
+          pro_yearly_price: parseInt(proYearlyPrice),
+          free_recommendation_limit: parseInt(freeRecommendationLimit),
           updated_by: user.id,
           updated_at: new Date().toISOString(),
         })
@@ -556,6 +581,65 @@ Send Announcements to all users or targeted users                     </Text>
                 <Text style={styles.exampleLabelTotal}>Total Promotion Cost:</Text>
                 <Text style={styles.exampleValueTotal}>₦{totalPromotionCost.toLocaleString()}</Text>
               </View>
+            </View>
+          </View>
+
+          {/* Vesphe Pro Section */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Feather name="award" size={20} color="#f97316" />
+              <Text style={styles.sectionTitle}>Vesphe Pro</Text>
+            </View>
+            <Text style={styles.sectionDescription}>
+              Customer subscription: unlimited personalised recommendations and the weekly meal timetable. New prices apply to the next purchase.
+            </Text>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Monthly price (₦)</Text>
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputPrefix}>₦</Text>
+                <TextInput
+                  style={[styles.input, styles.inputWithPrefix]}
+                  value={proMonthlyPrice}
+                  onChangeText={(text) => setProMonthlyPrice(formatCurrency(text))}
+                  placeholder="1500"
+                  placeholderTextColor="#666"
+                  keyboardType="number-pad"
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Yearly price (₦)</Text>
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputPrefix}>₦</Text>
+                <TextInput
+                  style={[styles.input, styles.inputWithPrefix]}
+                  value={proYearlyPrice}
+                  onChangeText={(text) => setProYearlyPrice(formatCurrency(text))}
+                  placeholder="15000"
+                  placeholderTextColor="#666"
+                  keyboardType="number-pad"
+                />
+              </View>
+              {!!proMonthlyPrice && !!proYearlyPrice && parseInt(proYearlyPrice) < parseInt(proMonthlyPrice) * 12 && (
+                <Text style={styles.hint}>
+                  Customers save {Math.round((1 - parseInt(proYearlyPrice) / (parseInt(proMonthlyPrice) * 12)) * 100)}% with yearly
+                </Text>
+              )}
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Free recommendations shown</Text>
+              <TextInput
+                style={styles.input}
+                value={freeRecommendationLimit}
+                onChangeText={(text) => setFreeRecommendationLimit(formatCurrency(text))}
+                placeholder="3"
+                placeholderTextColor="#666"
+                keyboardType="number-pad"
+              />
+              <Text style={styles.hint}>How many personalised picks free customers see per meal time</Text>
             </View>
           </View>
 

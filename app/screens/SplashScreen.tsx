@@ -8,18 +8,8 @@ import { Image } from 'react-native';
 
 type SplashScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-export function SplashScreen() {
-
-  const navigation = useNavigation<SplashScreenNavigationProp>();
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-navigation.navigate('Onboarding');
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
+// Branded loading view; safe to render outside a navigator (e.g. while auth restores).
+export function LoadingSplash() {
   return (
     <LinearGradient
       colors={['black', 'black']} 
@@ -27,9 +17,8 @@ navigation.navigate('Onboarding');
     >
       <View style={styles.content}>
         <View style={styles.logoContainer}>
-          {/* add image as logo */}
           <Image
-            source={require('../assets/logo.png')} // replace with your logo path
+            source={require('../assets/logo.png')}
             style={styles.logo}
             resizeMode="contain"
           />
@@ -40,6 +29,21 @@ navigation.navigate('Onboarding');
       </View>
     </LinearGradient>
   );
+}
+
+// Entry route for signed-out users: shows the splash briefly, then onboarding.
+export function SplashScreen() {
+  const navigation = useNavigation<SplashScreenNavigationProp>();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      navigation.replace('Onboarding');
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [navigation]);
+
+  return <LoadingSplash />;
 }
 
 const styles = StyleSheet.create({

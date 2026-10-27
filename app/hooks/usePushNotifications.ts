@@ -2,11 +2,12 @@
 import { useEffect, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
-import Constants from 'expo-constants';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { Platform } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import {navigate} from '../navigation/RootNavigation';
+import { setCurrentPushToken } from '../services/pushTokenRegistry';
+import { navigate, openOrder, openOrders, openAppLink } from '../navigation/RootNavigation';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -24,48 +25,9 @@ export function usePushNotifications() {
   const notificationListener = useRef<Notifications.Subscription | null>(null);
   const responseListener = useRef<Notifications.Subscription | null>(null);
 
-  const savePushToken = async (userId: string, token: string) => {
-    try {
-      const { data: existingToken } = await supabase
-        .from('user_push_tokens')
-        .select('user_id')
-        .eq('push_token', token)
-        .maybeSingle();
-
-      if (existingToken) {
-        const { error: updateError } = await supabase
-          .from('user_push_tokens')
-          .update({ 
-            user_id: userId, 
-            updated_at: new Date().toISOString() 
-          })
-          .eq('push_token', token);
-
-        if (updateError) {
-          console.error('Error updating token:', updateError);
-        } else {
-          console.log('✅ Token reassigned to user:', userId);
-        }
-      } else {
-        const { error: insertError } = await supabase
-          .from('user_push_tokens')
-          .insert({
-            user_id: userId,
-            push_token: token,
-            device_type: Platform.OS,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          });
-
-        if (insertError) {
-          console.error('Error inserting token:', insertError);
-        } else {
-          console.log('✅ New token saved for user:', userId);
-        }
-      }
-    } catch (error) {
-      console.error('Error in savePushToken:', error);
-    }
+  const savePushToken = async (token: string) => {
+    const { error } = await supabase.rpc('register_push_token', { p_token: token, p_device: Platform.OS });
+    if (error) console.error('Error saving push token:', error);
   };
 
   useEffect(() => {
@@ -76,20 +38,13 @@ export function usePushNotifications() {
         console.log('Must use physical device for push notifications');
         return;
       }
+      // Expo Go can't receive remote push notifications; use a development build to test them.
+      if (Constants.executionEnvironment === ExecutionEnvironment.StoreClient) {
+        console.log('Push notifications are disabled in Expo Go');
+        return;
+      }
 
       try {
-        const { status } = await Notifications.requestPermissionsAsync();
-        if (status !== 'granted') {
-          console.log('Push notification permission denied');
-          return;
-        }
-
-        const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-        const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
-        const token = tokenData.data;
-
-        console.log('📱 Expo Push Token:', token);
-
         if (Platform.OS === 'android') {
           await Notifications.setNotificationChannelAsync('default', {
             name: 'Main Notifications',
@@ -120,7 +75,20 @@ export function usePushNotifications() {
           });
         }
 
-        await savePushToken(user.id, token);
+        const { status } = await Notifications.requestPermissionsAsync();
+        if (status !== 'granted') {
+          console.log('Push notification permission denied');
+          return;
+        }
+
+        const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+        const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
+        const token = tokenData.data;
+
+        console.log('📱 Expo Push Token:', token);
+
+        setCurrentPushToken(token);
+        await savePushToken(token);
 
       } catch (error) {
         console.error('❌ Push notification setup error:', error);
@@ -132,40 +100,45 @@ export function usePushNotifications() {
     notificationListener.current = Notifications.addNotificationReceivedListener((notification) => {
       console.log('🔔 Foreground notification received:', notification);
     });
-// In the response listener, add a small delay
-responseListener.current = Notifications.addNotificationResponseReceivedListener(async (response) => {
-  const data = response.notification.request.content.data;
-  console.log('👆 Notification tapped - Data:', data);
+    // Taps on a push notification. Payload values are untrusted, so only known
+    // destinations are opened and they are resolved for the user's role.
+    const handleResponse = async (response: Notifications.NotificationResponse) => {
+      const data = (response.notification.request.content.data || {}) as Record<string, unknown>;
+      const str = (v: unknown) => (typeof v === 'string' && v.length > 0 ? v : undefined);
+      const role = user?.role;
 
-  // Small delay to ensure navigation is ready
-  await new Promise(resolve => setTimeout(resolve, 300));
+      // Small delay to ensure navigation is ready
+      await new Promise(resolve => setTimeout(resolve, 300));
 
-  if (data?.announcement_id) {
-    navigate('AnnouncementDetails', { announcementId: data.announcement_id });
-  } 
-  else if (data?.orderId) {
-    navigate('OrderTracking', { orderId: data.orderId });
-  }
-  else if (data?.product_id) {
-    navigate('VendorMenu');
-  }
-  else if (data?.conversation_id) {
-    navigate('Messaging');
-  }
-  else if (data?.screen === 'VendorOrders') {
-    navigate('VendorOrders', { orderId: data.orderId });
-  }
-  else if (data?.screen === 'Orders') {
-    navigate('Orders');
-  }
-  else if (data?.screen) {
-    // @ts-ignore
-    navigate(data.screen, data);
-  }
-  else {
-    navigate('Notifications');
-  }
-});
+      const announcementId = str(data.announcement_id);
+      const orderId = str(data.orderId) || str(data.order_id);
+
+      if (announcementId) {
+        navigate('AnnouncementDetails', { announcementId });
+      } else if (orderId) {
+        openOrder(role, orderId);
+      } else if (str(data.complaint_id) && (role === 'customer' || role === 'vendor')) {
+        navigate('Complaints');
+      } else if (str(data.conversation_id)) {
+        navigate('Messaging', { conversationId: str(data.conversation_id) });
+      } else if (data.product_id && role === 'vendor') {
+        navigate('VendorTabs', { screen: 'Menu' });
+      } else if (data.screen === 'VendorOrders' || data.screen === 'Orders') {
+        openOrders(role);
+      } else if (!openAppLink(role, str(data.action_link))) {
+        navigate('Notifications');
+      }
+    };
+
+    responseListener.current = Notifications.addNotificationResponseReceivedListener(handleResponse);
+
+    // The app was opened from a killed state by tapping a notification.
+    Notifications.getLastNotificationResponseAsync().then(response => {
+      if (response) {
+        handleResponse(response);
+        Notifications.clearLastNotificationResponseAsync?.();
+      }
+    });
 
     return () => {
       notificationListener.current?.remove();

@@ -1,0 +1,26 @@
+{
+  "name": "vesphe-video",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Vesphe promo videos (Remotion). Renders MP4s from code + your screen recordings.",
+  "scripts": {
+    "studio": "remotion studio",
+    "render:customer": "remotion render CustomerPortrait out/vesphe-customer-9x16.mp4",
+    "render:customer:wide": "remotion render CustomerLandscape out/vesphe-customer-16x9.mp4",
+    "render:customer:teaser": "remotion render CustomerTeaser out/vesphe-customer-15s.mp4",
+    "render:customer:all": "npm run render:customer && npm run render:customer:wide && npm run render:customer:teaser",
+    "typecheck": "tsc --noEmit",
+    "icons": "node scripts/render-icons.mjs"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.534",
+    "@remotion/google-fonts": "4.0.534",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "remotion": "4.0.534"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "typescript": "6.0.3"
+  }
+}

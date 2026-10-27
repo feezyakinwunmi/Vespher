@@ -4,17 +4,22 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider } from './app/contexts/AuthContext';
 import { CartProvider } from './app/contexts/CartContext';
+import { HealthProvider } from './app/contexts/HealthContext';
+import { SubscriptionProvider } from './app/contexts/SubscriptionContext';
 import { AppNavigator } from './app/navigation';
 import { LocationProvider } from './app/contexts/LocationContext';
 import { TrackingProvider } from './app/contexts/TrackingContext';
 import Toast from 'react-native-toast-message';
-import { PaystackProvider } from 'react-native-paystack-webview';
+import { PaystackCheckoutProvider } from './app/contexts/PaystackCheckoutContext';
 
 // Import mapbox config to initialize (optional)
 import './app/config/googleMaps';
 
 // ✅ Import the push notifications hook
 import { usePushNotifications } from './app/hooks/usePushNotifications';
+import { VoiceAssistantProvider } from './app/voice/VoiceAssistantContext';
+import { VoiceEntryPoints } from './app/voice/VoiceEntryPoints';
+import { FloatingMic } from './app/voice/FloatingMic';
 
 // Create a separate component that uses the hook
 function PushNotificationsHandler() {
@@ -23,24 +28,30 @@ function PushNotificationsHandler() {
 }
 
 export default function App() {
-  const paystackPublicKey = process.env.EXPO_PUBLIC_PAYSTACK_PUBLIC_KEY || '';
-
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <PaystackProvider publicKey={paystackPublicKey} currency="NGN" defaultChannels={['card', 'bank', 'ussd', 'bank_transfer']}>
+        <PaystackCheckoutProvider>
         <AuthProvider>
+          <HealthProvider>
+          <SubscriptionProvider>
           <CartProvider>
             <LocationProvider> 
-              <TrackingProvider> 
-                <AppNavigator />
-                {/* ✅ Add push notifications handler */}
-                <PushNotificationsHandler />
+              <TrackingProvider>
+                {/* Hands-free ordering: "Hey Vesphe", app-icon shortcut, vesphe://voice */}
+                <VoiceAssistantProvider>
+                  <AppNavigator />
+                  <PushNotificationsHandler />
+                  <VoiceEntryPoints />
+                  <FloatingMic />
+                </VoiceAssistantProvider>
               </TrackingProvider>
             </LocationProvider>
           </CartProvider>
+          </SubscriptionProvider>
+          </HealthProvider>
         </AuthProvider>
-        </PaystackProvider>
+        </PaystackCheckoutProvider>
         <Toast
           topOffset={50}           
           visibilityTime={3500}

@@ -21,7 +21,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import Toast from 'react-native-toast-message';
-import { usePaystack } from 'react-native-paystack-webview';
+import { usePaystackCheckout } from '../../contexts/PaystackCheckoutContext';
 interface Product {
   id: string;
   name: string;
@@ -37,7 +37,7 @@ interface Vendor {
 export function CreatePromotionScreen() {
   const navigation = useNavigation();
 const { user } = useAuth();
-const { popup } = usePaystack();
+const { pay } = usePaystackCheckout();
   
   // Form state
   const [promotionType, setPromotionType] = useState<'flyer' | 'product_offer' | 'combo'>('flyer');
@@ -70,7 +70,6 @@ const { popup } = usePaystack();
   
   // Payment state
   // const [showPayment, setShowPayment] = useState(false);
-  const [paymentReference, setPaymentReference] = useState('');
   const [creatingPromotion, setCreatingPromotion] = useState(false);
   
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -369,54 +368,37 @@ const createPromotionRecord = async (imageUrl: string) => {
   return data;
 };
 
- const handlePaymentSuccess = async (response: any) => {
+const handleProceedToPayment = async () => {
+  if (!validateForm()) return;
   setCreatingPromotion(true);
 
   try {
-    // Upload image first
     const imageUrl = await uploadImage();
-
     if (!imageUrl) {
       showToast('Failed to upload image', 'error');
       return;
     }
 
-    // Create promotion record
+    // Created as pending_payment; the amount is calculated server-side.
     const promotion = await createPromotionRecord(imageUrl);
+    if (!promotion) throw new Error('Failed to create promotion');
 
-    if (!promotion) {
-      throw new Error('Failed to create promotion');
+    const result = await pay('promotion', promotion.id);
+    if (result.status === 'paid') {
+      showToast('Promotion created! Waiting for admin approval');
+      navigation.goBack();
+    } else if (result.status === 'pending') {
+      Alert.alert(
+        'Payment Pending',
+        `We could not confirm your payment yet (ref: ${result.reference}). It will update once confirmed; contact support if it does not.`
+      );
+      navigation.goBack();
+    } else {
+      showToast(result.status === 'failed' ? result.message || 'Could not start payment' : 'Payment cancelled', 'error');
     }
-
-    // Update payment status
-    const { error: updateError } = await supabase
-      .from('promotions')
-      .update({
-        payment_status: 'paid',
-
-        payment_reference:
-          response.tx_ref ||
-          response.reference ||
-          paymentReference,
-
-        status: 'pending_approval',
-      })
-      .eq('id', promotion.id);
-
-    if (updateError) throw updateError;
-
-    showToast(
-      'Promotion created! Waiting for admin approval'
-    );
-
-    navigation.goBack();
   } catch (error) {
     console.error('Error creating promotion:', error);
-
-    showToast(
-      'Failed to create promotion',
-      'error'
-    );
+    showToast('Failed to create promotion', 'error');
   } finally {
     setCreatingPromotion(false);
   }
@@ -481,93 +463,6 @@ const createPromotionRecord = async (imageUrl: string) => {
     
     return true;
   };
-const handleProceedToPayment = async () => {
-  if (!validateForm()) return;
-
-  if (!user?.email) {
-    showToast('User email not found', 'error');
-    return;
-  }
-
-  if (!process.env.EXPO_PUBLIC_PAYSTACK_PUBLIC_KEY) {
-    Alert.alert(
-      'Payment Error',
-      'Paystack public key is not configured.'
-    );
-    return;
-  }
-
-  const reference = `PROMO-${Date.now()
-    .toString(36)
-    .substring(2, 10)}`;
-
-  setPaymentReference(reference);
-
-  popup.checkout({
-    email: user.email,
-
-    amount: totalCost,
-
-    reference,
-
-    metadata: {
-      vendor_id: vendor?.id,
-      promotion_type: promotionType,
-      promotion_title: title,
-    },
-
-    onSuccess: async (response) => {
-      console.log(
-        '✅ Paystack payment success:',
-        response
-      );
-
-      const paystackResponse = {
-        ...response,
-
-        gateway: 'paystack',
-
-        tx_ref:
-          response.reference || reference,
-
-        transaction_id:
-          response.transaction ||
-          response.trans ||
-          response.reference ||
-          reference,
-
-        status:
-          response.status || 'success',
-      };
-
-      await handlePaymentSuccess(
-        paystackResponse
-      );
-    },
-
-    onCancel: () => {
-      console.log('❌ Payment cancelled');
-
-      showToast(
-        'Payment cancelled',
-        'error'
-      );
-    },
-
-    onError: (error) => {
-      console.error(
-        '❌ Paystack payment error:',
-        error
-      );
-
-      showToast(
-   (error as any)?.message || 'Payment failed',
-        'error'
-      );
-    },
-  });
-};
-
   // Show loading while fetching vendor and products
   if (loadingVendor || loadingProducts) {
     return (

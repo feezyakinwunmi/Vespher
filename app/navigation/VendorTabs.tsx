@@ -1,151 +1,34 @@
 // app/navigation/VendorTabs.tsx
 import React from 'react';
-import { View, StyleSheet, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { BlurView } from 'expo-blur';
 import { Feather } from '@expo/vector-icons';
 import { VendorTabParamList } from './types';
+import { useTabBarOptions, TAB_ICON_SIZE } from './tabBarOptions';
 
-// Import vendor screens
+// History and Analytics are stack screens linked from the dashboard.
 import { VendorDashboardScreen } from '../screens/vendor/VendorDashboardScreen';
 import { VendorOrdersScreen } from '../screens/vendor/VendorOrdersScreen';
 import { VendorMenuScreen } from '../screens/vendor/VendorMenuScreen';
 import { VendorEarningsScreen } from '../screens/vendor/VendorEarningsScreen';
 import { VendorSettingsScreen } from '../screens/vendor/VendorSettingsScreen';
-import { VendorHistoryScreen } from '../screens/vendor/VendorHistoryScreen';
-import { VendorAnalyticsScreen } from '../screens/vendor/VendorAnalyticsScreen';
-
 
 const Tab = createBottomTabNavigator<VendorTabParamList>();
 
+const icon = (name: React.ComponentProps<typeof Feather>['name']) =>
+  ({ color, focused }: { color: string; focused: boolean }) => (
+    <Feather name={name} size={focused ? TAB_ICON_SIZE + 2 : TAB_ICON_SIZE} color={color} />
+  );
+
 export function VendorTabs() {
+  const screenOptions = useTabBarOptions();
+
   return (
-    <Tab.Navigator
-      screenOptions={{
-        headerShown: false,
-        tabBarStyle: styles.tabBar,
-        tabBarBackground: () => (
-          <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
-        ),
-        tabBarActiveTintColor: '#f97316', // Orange
-        tabBarInactiveTintColor: '#666',
-        tabBarShowLabel: true,
-        tabBarLabelStyle: styles.tabBarLabel,
-      }}
-    >
-      <Tab.Screen
-        name="Dashboard"
-        component={VendorDashboardScreen}
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <Feather 
-              name="grid" 
-              size={focused ? 24 : 22} 
-              color={color} 
-            />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Orders"
-        component={VendorOrdersScreen}
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <Feather 
-              name="package" 
-              size={focused ? 24 : 22} 
-              color={color} 
-            />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Menu"
-        component={VendorMenuScreen}
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <Feather 
-              name="coffee" 
-              size={focused ? 24 : 22} 
-              color={color} 
-            />
-          ),
-        }}
-      />  
-       <Tab.Screen
-        name="History"
-        component={VendorHistoryScreen}
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <Feather 
-              name="clock" 
-              size={focused ? 24 : 22} 
-              color={color} 
-            />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="VendorAnalytics"
-        component={VendorAnalyticsScreen}
-        options={{
-          tabBarIcon: ({ color, focused }) => ( 
-            <Feather 
-              name="bar-chart-2" 
-              size={focused ? 24 : 22}
-              color={color}            />
-          ),
-        }}
-      />
-       <Tab.Screen
-        name="Earnings"
-        component={VendorEarningsScreen}
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <Feather 
-              name="dollar-sign" 
-              size={focused ? 24 : 22} 
-              color={color} 
-            />
-          ),
-        }}
-      />
-       <Tab.Screen
-        name="Settings"
-        component={VendorSettingsScreen}
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <Feather 
-              name="settings" 
-              size={focused ? 24 : 22} 
-              color={color} 
-            />
-          ),
-        }}
-      />
-    
-     
-      
+    <Tab.Navigator screenOptions={screenOptions}>
+      <Tab.Screen name="Dashboard" component={VendorDashboardScreen} options={{ tabBarIcon: icon('grid') }} />
+      <Tab.Screen name="Orders" component={VendorOrdersScreen} options={{ tabBarIcon: icon('package') }} />
+      <Tab.Screen name="Menu" component={VendorMenuScreen} options={{ tabBarIcon: icon('coffee') }} />
+      <Tab.Screen name="Earnings" component={VendorEarningsScreen} options={{ tabBarIcon: icon('dollar-sign') }} />
+      <Tab.Screen name="Settings" component={VendorSettingsScreen} options={{ tabBarIcon: icon('settings') }} />
     </Tab.Navigator>
   );
 }
-
-const styles = StyleSheet.create({
-  tabBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: Platform.OS === 'ios' ? 85 : 70,
-    backgroundColor: 'transparent',
-    borderTopWidth: 0,
-    elevation: 0,
-    paddingBottom: Platform.OS === 'ios' ? 20 : 10,
-    paddingTop: 5,
-  },
-  tabBarLabel: {
-    fontSize: 11,
-    fontWeight: '500',
-    marginBottom: Platform.OS === 'ios' ? 0 : 5,
-  },
-});

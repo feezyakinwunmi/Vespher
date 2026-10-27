@@ -503,7 +503,7 @@ const processAnalyticsData = (
     { name: 'Vendor Payouts', amount: totalVendorEarnings, color: colors.success },
     { name: 'Rider Earnings', amount: totalRiderEarnings, color: colors.warning },
     { name: 'Platform Earnings', amount: platformEarnings.total, color: colors.primary },
-    { name: 'Flutterwave Fees', amount: flutterwaveFees.total, color: colors.danger },
+    { name: 'Paystack Fees', amount: flutterwaveFees.total, color: colors.danger },
   ].filter(r => r.amount > 0);
   
   return {
@@ -675,11 +675,11 @@ const processAnalyticsData = (
             </View>
           </View>
 
-          {/* Flutterwave Fees */}
+          {/* Paystack Fees */}
           <View style={styles.metricCard}>
             <Feather name="credit-card" size={20} color={colors.danger} />
             <Text style={[styles.metricValue, { color: colors.danger }]}>{formatCurrency(analytics.flutterwaveFees.total)}</Text>
-            <Text style={styles.metricLabel}>Flutterwave Fees</Text>
+            <Text style={styles.metricLabel}>Paystack Fees</Text>
             <View style={styles.metricSubtext}>
               <Text style={styles.metricSubtextText}>Food: {formatCurrency(analytics.flutterwaveFees.fromFoodOrders)}</Text>
               <Text style={styles.metricSubtextText}>Business: {formatCurrency(analytics.flutterwaveFees.fromBusinessOrders)}</Text>

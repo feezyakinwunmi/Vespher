@@ -153,6 +153,15 @@ export function MenuItemCard({
             {item.description || 'No description'}
           </Text>
 
+          {item.approval_status === 'rejected' && !!item.rejection_reason && (
+            <View style={styles.rejectionBox}>
+              <Feather name="alert-circle" size={12} color="#ef4444" />
+              <Text style={styles.rejectionText}>
+                {item.rejection_reason} — edit the item to resubmit.
+              </Text>
+            </View>
+          )}
+
           {/* Price and Quantity */}
           <View style={styles.details}>
             <View style={styles.priceContainer}>
@@ -288,6 +297,21 @@ export function MenuItemCard({
 }
 
 const styles = StyleSheet.create({
+  rejectionBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+    marginBottom: 8,
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: 'rgba(239,68,68,0.1)',
+  },
+  rejectionText: {
+    flex: 1,
+    color: '#fca5a5',
+    fontSize: 12,
+    lineHeight: 16,
+  },
   card: {
     flexDirection: 'row',
     backgroundColor: '#1a1a1a',

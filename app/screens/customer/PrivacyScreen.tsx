@@ -1,4 +1,5 @@
 // app/screens/customer/PrivacyScreen.tsx
+import { SUPPORT } from '../../config/support';
 import React from 'react';
 import {
   View,
@@ -82,7 +83,7 @@ export function PrivacyScreen() {
 
           <Text style={styles.subtitle}>Contact Us</Text>
           <Text style={styles.paragraph}>
-            If you have questions about this Privacy Policy, please contact us at privacy@vespher.com
+            If you have questions about this Privacy Policy, please contact us at {SUPPORT.email}
           </Text>
         </View>
         <View style={styles.bottomPadding} />

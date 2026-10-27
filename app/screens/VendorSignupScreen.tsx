@@ -1,4 +1,5 @@
 // app/screens/VendorSignupScreen.tsx
+import type { TextInputInstance } from 'react-native';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -23,8 +24,9 @@ import { supabase } from '../lib/supabase';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
-import { verifyBankAccount } from '../utils/flutterwave';
+import { verifyBankAccount } from '../utils/paystack';
 import ReuseLocationPicker from '../components/ReuseLocationPicker';
+import { BANKS } from '../constants/banks';
 
 type RegistrationStep = 'auth' | 'business' | 'documents' | 'review' | 'success';
 
@@ -73,16 +75,7 @@ const categories = [
   { label: 'Automotive', value: 'auto' },
 ];
 
-const banks = [
-  { label: 'Access Bank', value: 'access', code: '044' },
-  { label: 'GTBank', value: 'gtb', code: '058' },
-  { label: 'First Bank', value: 'first', code: '011' },
-  { label: 'UBA', value: 'uba', code: '033' },
-  { label: 'Zenith Bank', value: 'zenith', code: '057' },
-  { label: 'Kuda Bank', value: 'kuda', code: '090267' },
-  { label: 'OPay', value: 'opay', code: '100052' },
-  { label: 'PalmPay', value: 'palmpay', code: '100033' },
-];
+const banks = BANKS;
 
 export function VendorSignupScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -113,7 +106,7 @@ export function VendorSignupScreen() {
   const [countdown, setCountdown] = useState(60);
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
   const [maskedEmail, setMaskedEmail] = useState('');
-  const otpInputs = useRef<Array<TextInput | null>>([]);
+  const otpInputs = useRef<Array<TextInputInstance | null>>([]);
   
   const [formData, setFormData] = useState<FormData>({
     email: '',
@@ -412,16 +405,18 @@ export function VendorSignupScreen() {
         .single();
       if (vendorError) throw vendorError;
 
-      // 3. Create vendor wallet using the actual vendor ID
-      const { error: walletError } = await supabase
-        .from('vendor_wallets')
-        .insert({
-          vendor_id: vendorData.id,  // ✅ Use the vendor's actual ID
-          balance: 0,
-          total_earned: 0,
-          updated_at: new Date().toISOString(),
+      // 3. Paystack subaccount: card payments settle straight to this bank account
+      // (no wallet). If it fails, the vendor can finish it later in Settings.
+      if (formData.accountNumber && formData.bankCode) {
+        const { error: subaccountError } = await supabase.functions.invoke('setup-subaccount', {
+          body: {
+            account_number: formData.accountNumber,
+            bank_code: formData.bankCode,
+            bank_name: formData.bankName,
+          },
         });
-      if (walletError) console.error('Failed to create vendor wallet:', walletError);
+        if (subaccountError) console.error('Payout account setup failed:', vendorData.id, subaccountError);
+      }
 
       setShowOTPModal(false);
       setStep('success');

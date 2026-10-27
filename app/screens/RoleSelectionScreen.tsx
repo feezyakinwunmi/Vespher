@@ -1,5 +1,5 @@
 // screens/RoleSelectionScreen.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,6 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useAuth } from '../contexts/AuthContext';
 import { RootStackParamList } from '../navigation/types';
 
 
@@ -64,18 +63,8 @@ const roles: RoleOption[] = [
 
 export function RoleSelectionScreen() {
   const navigation = useNavigation<RoleSelectionScreenNavigationProp>();
-  const { user } = useAuth();
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
 
-  useEffect(() => {
-    if (user?.role) {
-      if (user.role === 'customer') {
-        navigation.navigate('CustomerTabs');
-      } else if (user.role === 'vendor') {
-        navigation.navigate('VendorTabs');
-      }
-    }
-  }, [user, navigation]);
 
   const handleContinue = () => {
     if (selectedRole) {

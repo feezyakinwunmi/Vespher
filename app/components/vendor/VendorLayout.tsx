@@ -1,4 +1,5 @@
 // app/components/vendor/VendorLayout.tsx
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React from 'react';
 import {
   View,
@@ -6,7 +7,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
   StatusBar,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
@@ -47,7 +47,7 @@ export function VendorLayout({
   return (
     <SafeAreaView style={styles.container}>
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0a0a0a" />
+      <StatusBar barStyle="light-content" />
       
       {/* Header */}
       {/* {showHeader && (

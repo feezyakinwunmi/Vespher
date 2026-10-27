@@ -20,7 +20,11 @@ export interface MenuItem {
   preparation_time?: string;
   options?: any[];
   quantity_available?: number; // Track available quantity
-  approval_status: 'pending' | 'approved' | 'rejected'; // New approval status
+  approval_status: 'pending' | 'approved' | 'rejected';
+  rejection_reason?: string;
+  ingredients?: string[];
+  allergens?: string[];
+  health_tags?: string[];
   created_at: string;
 }
 
@@ -104,10 +108,16 @@ export function useVendorMenu() {
 
   const updateMenuItem = async (id: string, updates: Partial<MenuItem>) => {
     try {
-      // If updating after approval, reset approval status if content changed
-      const item = items.find(i => i.id === id);
-      if (item?.approval_status === 'approved' && 
-          (updates.name || updates.description || updates.price || updates.category)) {
+      // Vendors never set approval themselves; any change to what admins review
+      // (including ingredients/allergens) sends an approved item back for review.
+      const { approval_status: _ignored, ...changes } = updates as Partial<MenuItem> & Record<string, any>;
+      updates = changes;
+      const item = items.find(i => i.id === id) as (MenuItem & Record<string, any>) | undefined;
+      const reviewedFields = ['name', 'description', 'price', 'category', 'image_url', 'ingredients', 'allergens', 'health_tags'];
+      const reviewedChanged = reviewedFields.some(field =>
+        field in changes && JSON.stringify((changes as any)[field] ?? null) !== JSON.stringify(item?.[field] ?? null)
+      );
+      if (item?.approval_status !== 'pending' && reviewedChanged) {
         updates.approval_status = 'pending';
       }
 

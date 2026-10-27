@@ -1,5 +1,6 @@
 // app/contexts/LocationContext.tsx
 
+import { computeRoute } from '../services/routes';
 import React, { createContext, useContext, useState } from 'react';
 import * as Location from 'expo-location';
 import { supabase } from '../lib/supabase';
@@ -179,25 +180,13 @@ const getRoadDistance = async (
   destLng: number
 ): Promise<number> => {
   try {
-    const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
-    
-    const response = await fetch(
-      `https://maps.googleapis.com/maps/api/directions/json?origin=${originLat},${originLng}&destination=${destLat},${destLng}&key=${GOOGLE_API_KEY}`
+    const route = await computeRoute(
+      { latitude: originLat, longitude: originLng },
+      { latitude: destLat, longitude: destLng }
     );
-    
-    const data = await response.json();
-    
-    if (data.status === 'OK' && data.routes && data.routes[0]) {
-      // Get distance in meters, convert to km
-      const distanceInMeters = data.routes[0].legs[0].distance.value;
-      const distanceInKm = distanceInMeters / 1000;
-      console.log(`🚗 Road distance: ${distanceInKm.toFixed(2)} km`);
-      return distanceInKm;
-    } else {
-      console.warn('Directions API error:', data.status);
-      // Fallback to Haversine if Directions fails
-      return calculateHaversineDistance(originLat, originLng, destLat, destLng);
-    }
+    if (route) return route.distanceKm;
+    // Fallback to straight-line distance if the Routes API is unavailable
+    return calculateHaversineDistance(originLat, originLng, destLat, destLng);
   } catch (error) {
     console.error('Error getting road distance:', error);
     // Fallback to Haversine
