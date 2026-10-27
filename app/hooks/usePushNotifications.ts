@@ -120,7 +120,7 @@ export function usePushNotifications() {
       } else if (str(data.complaint_id) && (role === 'customer' || role === 'vendor')) {
         navigate('Complaints');
       } else if (str(data.conversation_id)) {
-        navigate('Messaging');
+        navigate('Messaging', { conversationId: str(data.conversation_id) });
       } else if (data.product_id && role === 'vendor') {
         navigate('VendorTabs', { screen: 'Menu' });
       } else if (data.screen === 'VendorOrders' || data.screen === 'Orders') {

@@ -2,14 +2,15 @@
 // Starts every Paystack payment server-side so amounts and splits come from the
 // database, never from the app.
 //
-//  - order:        amount = order total. Split: the vendor's share goes to their Paystack
-//                  subaccount (settled to their bank); the platform keeps the rest
-//                  (commission + delivery) as transaction_charge and bears Paystack's fee.
+//  - order:        amount = order total. Split (see _shared/orderPayment.ts): the vendor's
+//                  share goes to their Paystack subaccount (settled to their bank); the
+//                  platform keeps the rest (commission + delivery) and bears Paystack's fee.
 //  - promotion:    amount = days × admin cost per day (no split).
 //  - subscription: amount = price set by the database at creation (no split).
 // @ts-ignore - Deno remote import
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { getCaller, handler, json, paystack, readJson, HttpError } from '../_shared/http.ts';
+import { newReference, orderCharge } from '../_shared/orderPayment.ts';
 
 // Never loaded: the in-app checkout intercepts navigation to this URL.
 export const CALLBACK_URL = 'https://vesphe.app/paystack/callback';
@@ -17,11 +18,13 @@ export const CALLBACK_URL = 'https://vesphe.app/paystack/callback';
 interface Body {
   kind?: 'order' | 'promotion' | 'subscription';
   id?: string;
+  // Keep the card on Paystack for one-tap and voice checkout next time.
+  save_card?: boolean;
 }
 
 serve(handler(async (req) => {
   const caller = await getCaller(req);
-  const { kind = 'order', id } = await readJson<Body>(req);
+  const { kind = 'order', id, save_card } = await readJson<Body>(req);
   if (!id || typeof id !== 'string') throw new HttpError(400, 'id is required');
   if (!caller.email) throw new HttpError(400, 'Your account needs an email address to pay by card');
 
@@ -32,47 +35,9 @@ serve(handler(async (req) => {
 
   if (kind === 'order') {
     table = 'orders';
-    const { data: order } = await admin
-      .from('orders')
-      .select('id, customer_id, vendor_id, status, subtotal, total, vendor_payout, payment_method, payment_status')
-      .eq('id', id)
-      .maybeSingle();
-    if (!order || order.customer_id !== caller.userId) throw new HttpError(404, 'Order not found');
-    if (order.payment_method !== 'card') throw new HttpError(400, 'Order is not a card payment');
-    if (order.payment_status === 'paid') throw new HttpError(409, 'Order is already paid');
-    if (order.status === 'cancelled') throw new HttpError(400, 'Order was cancelled');
-
-    amount = Number(order.total) || 0;
-
-    const { data: vendor } = await admin
-      .from('vendors')
-      .select('paystack_subaccount_code')
-      .eq('id', order.vendor_id)
-      .maybeSingle();
-    if (!vendor?.paystack_subaccount_code) {
-      throw new HttpError(400, "This vendor can't accept card payments yet. Please pay with cash or choose another vendor.");
-    }
-
-    const { data: settings } = await admin
-      .from('platform_settings')
-      .select('platform_fee_percentage')
-      .order('id', { ascending: true })
-      .limit(1)
-      .maybeSingle();
-    const feePct = Number(settings?.platform_fee_percentage) || 10;
-    const subtotal = Number(order.subtotal) || 0;
-
-    // The vendor never receives more than subtotal minus the standard commission,
-    // whatever the app wrote into vendor_payout.
-    const maxVendorShare = subtotal - Math.round(subtotal * (feePct / 100));
-    const vendorShare = Math.max(0, Math.min(Number(order.vendor_payout) || 0, maxVendorShare, amount));
-    const platformShare = amount - vendorShare;
-
-    if (vendorShare > 0) {
-      split.subaccount = vendor.paystack_subaccount_code;
-      split.transaction_charge = Math.round(platformShare * 100);
-      split.bearer = 'account';
-    }
+    const charge = await orderCharge(caller, id);
+    amount = charge.amount;
+    Object.assign(split, charge.split);
   } else if (kind === 'promotion') {
     table = 'promotions';
     const { data: promo } = await admin
@@ -107,7 +72,7 @@ serve(handler(async (req) => {
   if (amount < 100) throw new HttpError(400, 'Amount is too small for card payment');
 
   const prefix = kind === 'order' ? 'VESP' : kind === 'promotion' ? 'PROMO' : 'PRO';
-  const reference = `${prefix}-${crypto.randomUUID().replace(/-/g, '').slice(0, 20)}`.toUpperCase();
+  const reference = newReference(prefix);
 
   const init = await paystack('/transaction/initialize', {
     method: 'POST',
@@ -117,7 +82,7 @@ serve(handler(async (req) => {
       currency: 'NGN',
       reference,
       callback_url: CALLBACK_URL,
-      metadata: { kind, id, user_id: caller.userId },
+      metadata: { kind, id, user_id: caller.userId, save_card: save_card === true },
       ...split,
     },
   });

@@ -79,6 +79,8 @@ export function CartScreen() {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loadingAddresses, setLoadingAddresses] = useState(false);
   const [discount, setDiscount] = useState(0);
+  // Keep the card on Paystack so next time (and voice orders) can pay without retyping it.
+  const [saveCard, setSaveCard] = useState(true);
   const [isFirstOrder, setIsFirstOrder] = useState(false);
   const [appliedPromoData, setAppliedPromoData] = useState<any>(null);
   const [processingPayment, setProcessingPayment] = useState(false);
@@ -840,7 +842,7 @@ const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
 
     let paymentConfirmed = paymentMethod !== 'card';
     if (paymentMethod === 'card') {
-      const result = await pay('order', order.id);
+      const result = await pay('order', order.id, { saveCard });
       if (result.status === 'cancelled' || result.status === 'failed') {
         // Nothing was charged: cancel the order so it never reaches the vendor.
         await supabase
@@ -1595,6 +1597,12 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
                   </TouchableOpacity>
                 </View>
 
+                {paymentMethod === 'card' && (
+                  <TouchableOpacity style={styles.saveCardRow} onPress={() => setSaveCard(v => !v)} activeOpacity={0.7}>
+                    <Feather name={saveCard ? 'check-square' : 'square'} size={18} color={saveCard ? '#f97316' : '#666'} />
+                    <Text style={styles.saveCardText}>Save this card for faster checkout and voice orders</Text>
+                  </TouchableOpacity>
+                )}
                 {paymentMethod === 'cash' && finalTotal < 10000 && (
                   <View style={styles.infoBox}>
                     <Feather name="info" size={16} color="#f97316" />
@@ -1833,6 +1841,8 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
 
 
 const styles = StyleSheet.create({
+  saveCardRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10, paddingVertical: 6 },
+  saveCardText: { color: '#ccc', fontSize: 13, flex: 1 },
   container: {
     flex: 1,
     backgroundColor: '#0a0a0a',

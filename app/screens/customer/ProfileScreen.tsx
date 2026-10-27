@@ -26,6 +26,7 @@ import { HEALTH_CONDITIONS, HealthCondition } from '../../contexts/HealthContext
 import { supabase } from '../../lib/supabase';
 import { confirmDeleteAccount } from '../../utils/account';
 import { RootStackParamList } from '../../navigation/types';
+import { VoiceAndCardsSection } from '../../components/customer/VoiceAndCardsSection';
 import type { Address } from '../../types';
 import Toast from 'react-native-toast-message';
 
@@ -801,6 +802,8 @@ const isLifestyleCondition = (id: HealthCondition) => {
             </TouchableOpacity>
           )}
         </View>
+
+        <VoiceAndCardsSection />
 
         {/* Menu Items */}
         <View style={styles.menuSection}>

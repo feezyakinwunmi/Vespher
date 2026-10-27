@@ -28,11 +28,12 @@ function FullLogo({ width, mono }: { width: number; mono?: boolean }) {
 
 // Just the wasp (top of the logo), for small sizes where the wordmark is unreadable.
 function Wasp({ width, mono }: { width: number; mono?: boolean }) {
-  // Wasp area within logo.png (615×405): x 150–540, y 30–215.
-  const crop = { x: 150, y: 30, w: 390, h: 185 };
+  // Wasp area within logo.png (615×405).
+  const crop = { x: 118, y: 28, w: 430, h: 190 };
   const scale = width / crop.w;
   return (
-    <div style={{ position: 'relative', width, height: crop.h * scale, overflow: 'hidden' }}>
+    // clip-path hides the top of the wordmark's "h", which pokes up beside the wasp's body.
+    <div style={{ position: 'relative', width, height: crop.h * scale, overflow: 'hidden', clipPath: 'polygon(0 0, 100% 0, 100% 82%, 71% 82%, 71% 100%, 0 100%)' }}>
       <Img
         src={staticFile('logo.png')}
         style={{
@@ -54,7 +55,7 @@ const center = { alignItems: 'center', justifyContent: 'center' } as const;
 export function AppIcon() {
   return (
     <AbsoluteFill style={{ ...center, background: 'radial-gradient(circle at 50% 40%, #1c1206, #0a0a0a 70%)' }}>
-      <FullLogo width={900} />
+      <FullLogo width={1180} />
     </AbsoluteFill>
   );
 }
@@ -70,9 +71,9 @@ export function AdaptiveForeground() {
 }
 
 // Android 13+ themed icon: white silhouette in the same position as the foreground.
-export function AdaptiveMonochrome() {
+export function AdaptiveMonochrome({ preview }: { preview?: boolean }) {
   return (
-    <AbsoluteFill style={center}>
+    <AbsoluteFill style={{ ...center, background: preview ? '#333' : undefined }}>
       <MonoFilter />
       <Wasp width={600} mono />
     </AbsoluteFill>
@@ -80,9 +81,9 @@ export function AdaptiveMonochrome() {
 }
 
 // Android notification small icon: white wasp on transparent, 96×96.
-export function NotificationIcon() {
+export function NotificationIcon({ preview }: { preview?: boolean }) {
   return (
-    <AbsoluteFill style={center}>
+    <AbsoluteFill style={{ ...center, background: preview ? '#333' : undefined }}>
       <MonoFilter />
       <Wasp width={88} mono />
     </AbsoluteFill>

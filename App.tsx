@@ -17,6 +17,9 @@ import './app/config/googleMaps';
 
 // ✅ Import the push notifications hook
 import { usePushNotifications } from './app/hooks/usePushNotifications';
+import { VoiceAssistantProvider } from './app/voice/VoiceAssistantContext';
+import { VoiceEntryPoints } from './app/voice/VoiceEntryPoints';
+import { FloatingMic } from './app/voice/FloatingMic';
 
 // Create a separate component that uses the hook
 function PushNotificationsHandler() {
@@ -34,10 +37,14 @@ export default function App() {
           <SubscriptionProvider>
           <CartProvider>
             <LocationProvider> 
-              <TrackingProvider> 
-                <AppNavigator />
-                {/* ✅ Add push notifications handler */}
-                <PushNotificationsHandler />
+              <TrackingProvider>
+                {/* Hands-free ordering: "Hey Vesphe", app-icon shortcut, vesphe://voice */}
+                <VoiceAssistantProvider>
+                  <AppNavigator />
+                  <PushNotificationsHandler />
+                  <VoiceEntryPoints />
+                  <FloatingMic />
+                </VoiceAssistantProvider>
               </TrackingProvider>
             </LocationProvider>
           </CartProvider>

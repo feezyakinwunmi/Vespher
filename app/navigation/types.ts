@@ -19,7 +19,7 @@ export type RootStackParamList = {
     selectedAddress?: any; // Add this
   };
   //common
-  Messaging:undefined;
+  Messaging: { conversationId?: string } | undefined;
 AnnouncementDetails: { announcementId: string };
   // Main Tabs
   CustomerTabs: NavigatorScreenParams<CustomerTabParamList> | undefined;
@@ -36,7 +36,7 @@ AnnouncementDetails: { announcementId: string };
   Privacy: undefined;
     AllVendorsMap: undefined
       MealPlanner: undefined;
-  Pro: undefined;
+  Pro: { tier?: 'pro' | 'pro_max' } | undefined;
 
 
   Addresses: { selectMode?: boolean; selectedAddress?: Address } | undefined;

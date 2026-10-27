@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
+    "@picovoice/porcupine-react-native": "^4.0.0",
+    "@picovoice/react-native-voice-processor": "^1.2.3",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/datetimepicker": "9.2.1",
     "@react-navigation/bottom-tabs": "^7.21.0",
@@ -31,6 +33,9 @@
     "expo-linking": "~58.0.14",
     "expo-location": "~58.0.18",
     "expo-notifications": "~58.1.6",
+    "expo-quick-actions": "^6.0.2",
+    "expo-speech": "~58.0.3",
+    "expo-speech-recognition": "^58.0.0",
     "expo-splash-screen": "~58.0.11",
     "expo-status-bar": "~58.0.4",
     "expo-web-browser": "~58.0.6",

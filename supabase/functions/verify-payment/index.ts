@@ -4,6 +4,7 @@
 // @ts-ignore - Deno remote import
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { getCaller, handler, json, paystack, readJson, HttpError } from '../_shared/http.ts';
+import { saveCard } from '../_shared/orderPayment.ts';
 
 interface Body {
   kind?: 'order' | 'promotion' | 'subscription';
@@ -103,12 +104,14 @@ serve(handler(async (req) => {
   };
   if (table === 'promotions') updates.status = 'pending_approval';
   if (table === 'subscriptions') {
-    const { data: sub } = await admin.from('subscriptions').select('plan').eq('id', id).single();
-    // Renewing early extends from the current expiry instead of losing paid days.
+    const { data: sub } = await admin.from('subscriptions').select('plan, tier').eq('id', id).single();
+    // Renewing the same tier early extends from its current expiry instead of losing paid
+    // days; upgrading to Pro Max starts now.
     const { data: current } = await admin
       .from('subscriptions')
       .select('expires_at')
       .eq('user_id', caller.userId)
+      .eq('tier', sub?.tier || 'pro')
       .eq('status', 'active')
       .gt('expires_at', new Date().toISOString())
       .order('expires_at', { ascending: false })
@@ -125,6 +128,12 @@ serve(handler(async (req) => {
 
   const { error } = await admin.from(table).update(updates).eq('id', id);
   if (error) throw new HttpError(500, 'Payment verified but record update failed');
+
+  // "Save card" was ticked at checkout: keep Paystack's reusable authorization.
+  const meta = typeof tx.metadata === 'string' ? (() => { try { return JSON.parse(tx.metadata); } catch { return {}; } })() : tx.metadata;
+  if (meta?.save_card === true && meta?.user_id === caller.userId) {
+    await saveCard(caller, tx).catch(e => console.error('save card failed', e));
+  }
 
   return json({
     status: true,

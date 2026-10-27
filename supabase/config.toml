@@ -38,3 +38,13 @@ entrypoint = "./functions/setup-subaccount/index.ts"
 enabled = true
 verify_jwt = true
 entrypoint = "./functions/init-payment/index.ts"
+
+[functions.charge-saved-card]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/charge-saved-card/index.ts"
+
+[functions.voice-assistant]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/voice-assistant/index.ts"

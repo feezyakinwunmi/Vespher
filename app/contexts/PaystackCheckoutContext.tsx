@@ -24,7 +24,8 @@ interface CheckoutSession {
 }
 
 interface PaystackCheckoutValue {
-  pay: (kind: PaymentKind, id: string) => Promise<PaymentResult>;
+  // saveCard: keep the card on Paystack for one-tap and voice checkout next time.
+  pay: (kind: PaymentKind, id: string, options?: { saveCard?: boolean }) => Promise<PaymentResult>;
 }
 
 const PaystackCheckoutContext = createContext<PaystackCheckoutValue | undefined>(undefined);
@@ -60,8 +61,10 @@ export function PaystackCheckoutProvider({ children }: { children: React.ReactNo
     resolver.current = null;
   };
 
-  const pay = useCallback(async (kind: PaymentKind, id: string): Promise<PaymentResult> => {
-    const { data, error } = await supabase.functions.invoke('init-payment', { body: { kind, id } });
+  const pay = useCallback(async (kind: PaymentKind, id: string, options?: { saveCard?: boolean }): Promise<PaymentResult> => {
+    const { data, error } = await supabase.functions.invoke('init-payment', {
+      body: { kind, id, save_card: options?.saveCard === true },
+    });
     if (error || !data?.status) {
       const message = error ? await functionErrorMessage(error, 'Could not start payment') : data?.message;
       return { status: 'failed', message: message || 'Could not start payment' };

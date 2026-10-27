@@ -45,6 +45,19 @@ interface Month {
 }
 
 const n = (v: Num | null | undefined) => Number(v) || 0;
+
+interface VoiceReport {
+  turns: Num;
+  users: Num;
+  input_tokens: Num;
+  output_tokens: Num;
+  cost_usd: Num;
+  cost_ngn: Num;
+  usd_ngn_rate: Num;
+  voice_orders: Num;
+  pro_max_revenue: Num;
+  pro_max_members_now: Num;
+}
 const count = (v: Num | null | undefined) => n(v).toLocaleString();
 const monthLabel = (m: string) => new Date(`${m}T00:00:00`).toLocaleDateString('en-NG', { month: 'short', year: 'numeric' });
 
@@ -58,6 +71,7 @@ export function AdminReports() {
   const [report, setReport] = useState<Report | null>(null);
   const [allTime, setAllTime] = useState<Report | null>(null);
   const [months, setMonths] = useState<Month[]>([]);
+  const [voice, setVoice] = useState<VoiceReport | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
@@ -73,6 +87,8 @@ export function AdminReports() {
     setReport((r.data as Report) || null);
     setAllTime(((all ? all.data : r.data) as Report) || null);
     setMonths((m.data as Month[]) || []);
+    const v = await supabase.rpc('admin_voice_report', { p_from: from, p_to: to });
+    setVoice((v.data as VoiceReport) || null);
     setLoading(false);
   }, [period, toast]);
 
@@ -197,6 +213,30 @@ export function AdminReports() {
               <Row label="New businesses" value={count(report.signups.businesses)} />
             </Breakdown>
           </div>
+
+          {voice && (
+            <Card className="p-5">
+              <h2 className="mb-1 font-semibold">Voice ordering (Pro Max)</h2>
+              <p className="mb-4 text-xs text-ink-3">
+                Claude AI cost estimated from tokens used, at the prices and dollar rate in Settings (₦{n(voice.usd_ngn_rate).toLocaleString()} per $1).
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <StatCard label="Pro Max revenue" value={naira(voice.pro_max_revenue)} tone="brand" hint={`${count(voice.pro_max_members_now)} members now`} />
+                <StatCard
+                  label="Voice AI cost (est.)"
+                  value={naira(voice.cost_ngn)}
+                  tone={n(voice.cost_ngn) > n(voice.pro_max_revenue) ? 'bad' : 'default'}
+                  hint={`${n(voice.cost_usd).toFixed(2)} · ${count(n(voice.input_tokens) + n(voice.output_tokens))} tokens`}
+                />
+                <StatCard label="Voice orders" value={count(voice.voice_orders)} hint={`${count(voice.turns)} replies · ${count(voice.users)} customers`} />
+                <StatCard
+                  label="AI cost per voice order"
+                  value={n(voice.voice_orders) ? naira(n(voice.cost_ngn) / n(voice.voice_orders)) : '—'}
+                  hint={n(voice.pro_max_revenue) - n(voice.cost_ngn) >= 0 ? `Covered: ${naira(n(voice.pro_max_revenue) - n(voice.cost_ngn))} left over` : 'Not covered: raise the Pro Max price or limits'}
+                />
+              </div>
+            </Card>
+          )}
 
           {milestones.length > 0 && (
             <Card className="p-5">
