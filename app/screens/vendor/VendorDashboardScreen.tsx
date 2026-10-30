@@ -1,5 +1,7 @@
 // app/screens/vendor/VendorDashboardScreen.tsx
-import React, { useState, useEffect } from 'react';
+// Vendor home: what needs doing right now (new orders, kitchen queue), the shop's
+// open/closed switch and today's numbers. Full lists live in the Orders tab.
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -8,1321 +10,710 @@ import {
   ActivityIndicator,
   ScrollView,
   RefreshControl,
+  Switch,
+  Image,
   Alert,
-  Dimensions,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { VendorLayout, VendorTab } from '../../components/vendor/VendorLayout';
-import { useVendorOrders } from '../../hooks/vendor/useVendorOrders';
-import { useVendorMenu } from '../../hooks/vendor/useVendorMenu';
-import { useVendorStats } from '../../hooks/vendor/useVendorStats';
-import { useVendorEarnings } from '../../hooks/vendor/useVendorEarnings';
-import { Image } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { formatDistanceToNow } from 'date-fns';
+import Toast from 'react-native-toast-message';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { useVendorOrders } from '../../hooks/vendor/useVendorOrders';
+import { useVendorStats } from '../../hooks/vendor/useVendorStats';
+import { useVendorEarnings } from '../../hooks/vendor/useVendorEarnings';
+import { useNotifications } from '../../hooks/useNotifications';
 import { RootStackParamList } from '../../navigation/types';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-const { width } = Dimensions.get('window');
-const cardWidth = (width - 48) / 2;
-type VendorAddressesScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type Nav = NativeStackNavigationProp<RootStackParamList>;
+type IconName = React.ComponentProps<typeof Feather>['name'];
+
+const C = {
+  bg: '#0a0a0a',
+  card: '#141414',
+  raised: '#1c1c1c',
+  border: 'rgba(255,255,255,0.06)',
+  text: '#ffffff',
+  muted: '#8a8a8a',
+  faint: '#5c5c5c',
+  orange: '#f97316',
+  rose: '#f43f5e',
+  green: '#10b981',
+  blue: '#3b82f6',
+  purple: '#8b5cf6',
+  amber: '#f59e0b',
+  red: '#ef4444',
+};
+
+const naira = (n?: number | null) => `₦${Math.round(n || 0).toLocaleString()}`;
+
+interface ShopInfo {
+  id: string;
+  name: string;
+  image_url: string | null;
+  is_open: boolean;
+  is_approved: boolean;
+  is_suspended: boolean;
+}
 
 export function VendorDashboardScreen() {
-  const [activeTab, setActiveTab] = useState<VendorTab>('overview');
-  const [refreshing, setRefreshing] = useState(false);
-  const navigation = useNavigation<VendorAddressesScreenNavigationProp>();
+  const navigation = useNavigation<Nav>();
   const { user } = useAuth();
-  const [vendorName, setVendorName] = useState('');
-  const [vendorStatus, setVendorStatus] = useState<{ approved: boolean; suspended: boolean } | null>(null);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [latestMessage, setLatestMessage] = useState<string | null>(null);
-  
-  // Add earnings hook
+  const { unreadCount: unreadNotifications } = useNotifications();
+  const { orders, ordersByStatus, isLoading: ordersLoading, refreshOrders, acceptOrder, rejectOrder, startPreparing, markAsReady } = useVendorOrders();
+  const { stats, refreshStats } = useVendorStats();
   const { earnings, isLoading: earningsLoading, refreshData: refreshEarnings } = useVendorEarnings();
 
-  const { 
-    orders, 
-    ordersByStatus, 
-    isLoading: ordersLoading, 
-    error: ordersError,
-    refreshOrders,
-    acceptOrder,
-    rejectOrder,
-  } = useVendorOrders();
-  
-  const { 
-    refreshMenu 
-  } = useVendorMenu();
-  
-  const { 
-    stats, 
-    isLoading: statsLoading,
-    refreshStats 
-  } = useVendorStats();
+  const [shop, setShop] = useState<ShopInfo | null>(null);
+  const [togglingOpen, setTogglingOpen] = useState(false);
+  const [unreadMessages, setUnreadMessages] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const [busyOrderId, setBusyOrderId] = useState<string | null>(null);
 
-  // Fetch unread messages
-  const fetchUnreadMessages = async () => {
+  const fetchShop = useCallback(async () => {
     if (!user?.id) return;
-    
-    try {
-      // Conversations store user ids (not store ids) as participants.
-      const { data: conversations } = await supabase
-        .from('conversations')
-        .select('id')
-        .contains('participants', [user.id]);
-      
-      if (!conversations || conversations.length === 0) {
-        setUnreadCount(0);
-        return;
-      }
-      
-      const conversationIds = conversations.map(c => c.id);
-      
-      const { count, error } = await supabase
-        .from('messages')
-        .select('*', { count: 'exact', head: true })
-        .in('conversation_id', conversationIds)
-        .eq('read', false)
-        .neq('sender_id', user.id);
-      
-      if (!error) {
-        setUnreadCount(count || 0);
-      }
-      
-      const { data: latest } = await supabase
-        .from('messages')
-        .select('content, created_at, sender_name')
-        .in('conversation_id', conversationIds)
-        .order('created_at', { ascending: false })
-        .limit(1);
-      
-      if (latest && latest.length > 0) {
-        const msg = latest[0];
-        const preview = msg.content.length > 40 ? msg.content.substring(0, 40) + '...' : msg.content;
-        setLatestMessage(`${msg.sender_name}: ${preview}`);
-      } else {
-        setLatestMessage(null);
-      }
-      
-    } catch (error) {
-      console.error('Error fetching messages:', error);
+    const { data } = await supabase
+      .from('vendors')
+      .select('id, name, image_url, is_open, is_approved, is_suspended')
+      .eq('owner_id', user.id)
+      .maybeSingle();
+    if (data) {
+      setShop({
+        id: data.id,
+        name: data.name,
+        image_url: data.image_url,
+        is_open: data.is_open ?? true,
+        is_approved: !!data.is_approved,
+        is_suspended: !!data.is_suspended,
+      });
     }
-  };
+  }, [user?.id]);
+
+  // Conversations store user ids (not store ids) as participants.
+  const fetchUnreadMessages = useCallback(async () => {
+    if (!user?.id) return;
+    const { data: conversations } = await supabase.from('conversations').select('id').contains('participants', [user.id]);
+    if (!conversations?.length) {
+      setUnreadMessages(0);
+      return;
+    }
+    const { count } = await supabase
+      .from('messages')
+      .select('*', { count: 'exact', head: true })
+      .in('conversation_id', conversations.map(c => c.id))
+      .eq('read', false)
+      .neq('sender_id', user.id);
+    setUnreadMessages(count || 0);
+  }, [user?.id]);
 
   useEffect(() => {
+    fetchShop();
     fetchUnreadMessages();
-    
-    const subscription = supabase
-      .channel('vendor-messages')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-        },
-        () => {
-          fetchUnreadMessages();
-        }
-      )
+    const channel = supabase
+      .channel(`vendor-home-messages-${user?.id}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, fetchUnreadMessages)
       .subscribe();
-    
     return () => {
-      subscription.unsubscribe();
+      channel.unsubscribe();
     };
-  }, [user?.id]);
+  }, [fetchShop, fetchUnreadMessages, user?.id]);
 
-  useEffect(() => {
-    fetchVendorName();
-  }, [user?.id]);
-
-  const fetchVendorName = async () => {
-    if (!user?.id) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('vendors')
-        .select('name, is_approved, is_suspended')
-        .eq('owner_id', user.id)
-        .single();
-      
-      if (!error && data) {
-        setVendorName(data.name);
-        setVendorStatus({ approved: !!data.is_approved, suspended: !!data.is_suspended });
-      } else {
-        setVendorName('Vendor');
-      }
-    } catch (error) {
-      console.error('Error fetching vendor:', error);
-      setVendorName('Vendor');
-    }
-  };
-
-  useEffect(() => {
-    refreshData();
-  }, [activeTab]);
-
-  const refreshData = async () => {
-    if (activeTab === 'orders') {
-      await refreshOrders();
-    } else if (activeTab === 'overview') {
-      await refreshStats();
-      await refreshEarnings();
-    } else if (activeTab === 'menu') {
-      await refreshMenu();
-    }
-  };
+  useFocusEffect(
+    useCallback(() => {
+      refreshOrders();
+      fetchUnreadMessages();
+    }, [fetchUnreadMessages]),
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await refreshData();
+    await Promise.all([fetchShop(), refreshOrders(), refreshStats(), refreshEarnings(), fetchUnreadMessages()]);
     setRefreshing(false);
   };
 
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      pending: '#f59e0b',
-      confirmed: '#3b82f6',
-      preparing: '#f97316',
-      ready: '#10b981',
-      delivered: '#10b981',
-      cancelled: '#ef4444',
-    };
-    return colors[status] || '#666';
+  const toggleOpen = async (open: boolean) => {
+    if (!shop) return;
+    setTogglingOpen(true);
+    const { error } = await supabase.from('vendors').update({ is_open: open }).eq('id', shop.id);
+    setTogglingOpen(false);
+    if (error) {
+      Toast.show({ type: 'error', text1: 'Could not update your shop', text2: error.message });
+      return;
+    }
+    setShop({ ...shop, is_open: open });
+    Toast.show({ type: 'success', text1: open ? 'Your shop is open' : 'Your shop is closed', text2: open ? 'Customers can order from you now.' : "Customers can't place new orders." });
   };
 
-  const getStatusBgColor = (status: string) => {
-    const colors: Record<string, string> = {
-      pending: 'rgba(245,158,11,0.1)',
-      confirmed: 'rgba(59,130,246,0.1)',
-      preparing: 'rgba(249,115,22,0.1)',
-      ready: 'rgba(16,185,129,0.1)',
-      delivered: 'rgba(16,185,129,0.1)',
-      cancelled: 'rgba(239,68,68,0.1)',
-    };
-    return colors[status] || 'rgba(255,255,255,0.05)';
+  // `success` is omitted for actions that already show their own alert (decline).
+  const runOrderAction = async (orderId: string, action: () => Promise<void>, success?: string) => {
+    setBusyOrderId(orderId);
+    try {
+      await action();
+      if (success) Toast.show({ type: 'success', text1: success });
+      refreshOrders();
+    } catch (error: any) {
+      if (success) Toast.show({ type: 'error', text1: 'Something went wrong', text2: error?.message });
+    } finally {
+      setBusyOrderId(null);
+    }
   };
 
-  const renderOverview = () => (
-    <SafeAreaView style={styles.container}>
+  const confirmDecline = (orderId: string, orderNumber: string) =>
+    Alert.alert('Decline order', `Decline order #${orderNumber}? If the customer paid by card, they will be refunded.`, [
+      { text: 'Keep order', style: 'cancel' },
+      { text: 'Decline', style: 'destructive', onPress: () => runOrderAction(orderId, () => rejectOrder(orderId)) },
+    ]);
+
+  const newOrders = ordersByStatus.pending;
+  const kitchen = [...ordersByStatus.confirmed, ...ordersByStatus.preparing];
+  const isLive = !!shop?.is_approved && !shop?.is_suspended;
+  const greeting = (() => {
+    const h = new Date().getHours();
+    return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  })();
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
+        contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#f97316" />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.orange} />}
       >
-        {/* Welcome Section */}
-        <View style={styles.welcomeSection}>
-          <View style={styles.welcomeLeft}>
-            <View>
-              <Text style={styles.welcomeText}>Welcome back, 👋</Text>
-              <Text style={styles.vendorName}>{vendorName || 'Vendor'}</Text>
-            </View>
-          </View>
-
-          <View style={styles.headerRight}>
-            <TouchableOpacity
-              onPress={() => navigation.navigate('Notifications')}
-              style={styles.iconButton}
-            >
-              <Feather name="bell" size={20} color="#fff" />
-              <View style={styles.notificationDot} />
-            </TouchableOpacity>
-            <TouchableOpacity 
-              onPress={() => navigation.navigate('Messaging')}
-              style={styles.messageButton}
-            >
-              <Feather name="message-circle" size={20} color="#f97316" />
-              {unreadCount > 0 && (
-                <View style={styles.unreadBadge}>
-                  <Text style={styles.unreadBadgeText}>
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Account status: customers only see approved, active vendors */}
-        {vendorStatus && (!vendorStatus.approved || vendorStatus.suspended) && (
-          <View style={styles.statusBanner}>
-            <Feather name={vendorStatus.suspended ? 'slash' : 'clock'} size={18} color="#f59e0b" />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.statusBannerTitle}>
-                {vendorStatus.suspended ? 'Store suspended' : 'Awaiting approval'}
-              </Text>
-              <Text style={styles.statusBannerText}>
-                {vendorStatus.suspended
-                  ? 'Your store is hidden from customers. Contact support to resolve this.'
-                  : 'Your store will be visible to customers once an admin approves it. You can set up your menu in the meantime.'}
-              </Text>
-            </View>
-          </View>
-        )}
-
-        {/* Earnings card: card payments are paid straight to the vendor's bank */}
-        <TouchableOpacity 
-          activeOpacity={0.9}
-          onPress={() => navigation.navigate('VendorTabs', { screen: 'Earnings' })}
-          style={styles.balanceCardWrapper}
-        >
-          <LinearGradient
-            colors={['#31302f', '#030201']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.balanceCard}
-          >
-            <View style={styles.balanceCardHeader}>
-              <View style={styles.balanceLabelContainer}>
-                <Feather name="briefcase" size={20} color="rgba(255,255,255,0.9)" />
-                <Text style={styles.balanceLabel}>This Week</Text>
-              </View>
-              <View style={styles.balanceBadge}>
-                <Feather name="trending-up" size={12} color="#10b981" />
-                <Text style={styles.balanceBadgeText}>
-                  {(earnings?.weeklyGrowth ?? 0) > 0 ? '+' : ''}{earnings?.weeklyGrowth ?? 0}%
-                </Text>
-              </View>
-            </View>
-
-            {earningsLoading ? (
-              <ActivityIndicator size="small" color="#fff" style={styles.balanceLoader} />
-            ) : (
-              <>
-                <Text style={styles.balanceAmount}>
-                  ₦{earnings?.weeklyEarnings?.toLocaleString() || '0'}
-                </Text>
-                <View style={styles.balanceCardFooter}>
-                  <View style={styles.balanceFooterItem}>
-                    <Text style={styles.balanceFooterLabel}>Total Earnings</Text>
-                    <Text style={styles.balanceFooterValue}>
-                      ₦{earnings?.totalEarnings?.toLocaleString() || '0'}
-                    </Text>
-                  </View>
-                  <View style={styles.balanceDivider} />
-                  <View style={styles.balanceFooterItem}>
-                    <Text style={styles.balanceFooterLabel}>Arriving soon</Text>
-                    <Text style={[styles.balanceFooterValue, { color: '#fcd34d' }]}>
-                      ₦{earnings?.settling?.toLocaleString() || '0'}
-                    </Text>
-                  </View>
-                </View>
-              </>
-            )}
-
-            <TouchableOpacity 
-              style={styles.withdrawButton}
-              onPress={() => navigation.navigate('VendorTabs', { screen: earnings && !earnings.payoutAccountReady ? 'Settings' : 'Earnings' })}
-            >
-              <Text style={styles.withdrawButtonText}>{earnings && !earnings.payoutAccountReady ? 'Add bank account' : 'View earnings'}</Text>
-              <Feather name="arrow-right" size={16} color="#fff" />
-            </TouchableOpacity>
-          </LinearGradient>
-        </TouchableOpacity>
-
-        {/* Latest Message Preview */}
-        {latestMessage && (
-          <TouchableOpacity 
-            style={styles.latestMessagePreview}
-            onPress={() => navigation.navigate('Messaging')}
-          >
-            <Feather name="message-square" size={14} color="#f97316" />
-            <Text style={styles.latestMessageText} numberOfLines={1}>
-              {latestMessage}
-            </Text>
-            <Feather name="chevron-right" size={14} color="#666" />
-          </TouchableOpacity>
-        )}
-
-        {/* Stats Grid - Horizontal Scroll */}
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          style={styles.statsScrollView}
-          contentContainerStyle={styles.statsScrollContent}
-        >
-          <View style={styles.statsGrid}>
-            <View style={styles.statCard}>
-              <View style={[styles.statIconContainer, { backgroundColor: 'rgba(59,130,246,0.1)' }]}>
-                <Feather name="shopping-bag" size={20} color="#3b82f6" />
-              </View>
-              <Text style={styles.statNumber}>{stats?.totalOrders || 0}</Text>
-              <Text style={styles.statLabel}>Total Orders</Text>
-            </View>
-
-            <View style={styles.statCard}>
-              <View style={[styles.statIconContainer, { backgroundColor: 'rgba(249,115,22,0.1)' }]}>
-                <Feather name="star" size={20} color="#f97316" />
-              </View>
-              <Text style={styles.statNumber}>{stats?.averageRating?.toFixed(1) || '0.0'}</Text>
-              <Text style={styles.statLabel}>Rating</Text>
-            </View>
-
-            <View style={styles.statCard}>
-              <View style={[styles.statIconContainer, { backgroundColor: 'rgba(139,92,246,0.1)' }]}>
-                <Feather name="message-circle" size={20} color="#8b5cf6" />
-              </View>
-              <Text style={styles.statNumber}>{stats?.reviewCount || 0}</Text>
-              <Text style={styles.statLabel}>Reviews</Text>
-            </View>
-
-            {/* Additional stat cards for horizontal scrolling */}
-            <View style={styles.statCard}>
-              <View style={[styles.statIconContainer, { backgroundColor: 'rgba(16,185,129,0.1)' }]}>
-                <Feather name="truck" size={20} color="#10b981" />
-              </View>
-              <Text style={styles.statNumber}>{(stats as any)?.deliveredOrders || 0}</Text>
-              <Text style={styles.statLabel}>Delivered</Text>
-            </View>
-
-            <View style={styles.statCard}>
-              <View style={[styles.statIconContainer, { backgroundColor: 'rgba(239,68,68,0.1)' }]}>
-                <Feather name="clock" size={20} color="#ef4444" />
-              </View>
-              <Text style={styles.statNumber}>{(stats as any)?.pendingOrders || 0}</Text>
-              <Text style={styles.statLabel}>Pending</Text>
-            </View>
-          </View>
-        </ScrollView>
-
-        {/* Order Status Summary */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Order Status</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('VendorTabs', { screen: 'Orders' })}>
-              <Text style={styles.seeAllText}>View All</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.statusGrid}>
-            <View style={styles.statusItem}>
-              <View style={[styles.statusDot, { backgroundColor: '#f59e0b' }]} />
-              <Text style={styles.statusLabel}>Pending</Text>
-              <Text style={styles.statusCount}>{ordersByStatus.pending.length}</Text>
-            </View>
-            <View style={styles.statusItem}>
-              <View style={[styles.statusDot, { backgroundColor: '#3b82f6' }]} />
-              <Text style={styles.statusLabel}>Confirmed</Text>
-              <Text style={styles.statusCount}>{ordersByStatus.confirmed.length}</Text>
-            </View>
-            <View style={styles.statusItem}>
-              <View style={[styles.statusDot, { backgroundColor: '#f97316' }]} />
-              <Text style={styles.statusLabel}>Preparing</Text>
-              <Text style={styles.statusCount}>{ordersByStatus.preparing.length}</Text>
-            </View>
-            <View style={styles.statusItem}>
-              <View style={[styles.statusDot, { backgroundColor: '#10b981' }]} />
-              <Text style={styles.statusLabel}>Ready</Text>
-              <Text style={styles.statusCount}>{ordersByStatus.ready.length}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Quick links */}
-        <View style={styles.quickLinks}>
-          {[
-            { label: 'History', icon: 'clock', onPress: () => navigation.navigate('History') },
-            { label: 'Analytics', icon: 'bar-chart-2', onPress: () => navigation.navigate('VendorAnalytics') },
-            { label: 'Promotions', icon: 'trending-up', onPress: () => navigation.navigate('Promotions') },
-          ].map(link => (
-            <TouchableOpacity key={link.label} style={styles.quickLink} onPress={link.onPress}>
-              <Feather name={link.icon as any} size={18} color="#f97316" />
-              <Text style={styles.quickLinkText}>{link.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Promotion Card */}
-        <TouchableOpacity 
-          activeOpacity={0.9}
-          onPress={() => navigation.navigate('Promotions')}
-          style={stylesCompact.container}
-        >
-          <LinearGradient
-            colors={['#f97316', '#f43f5e']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={stylesCompact.gradient}
-          >
-            <View style={stylesCompact.content}>
-              <View style={stylesCompact.iconContainer}>
-                <Feather name="phone" size={24} color="#fff" />
-              </View>
-              
-              <View style={stylesCompact.textContainer}>
-                <Text style={stylesCompact.title}>Promote Your Business! 🚀</Text>
-                <Text style={stylesCompact.subtitle}>
-                  Get featured on our homepage starting at ₦300/day
-                </Text>
-              </View>
-              
-              <View style={stylesCompact.button}>
-                <Text style={stylesCompact.buttonText}>Create</Text>
-                <Feather name="arrow-right" size={14} color="#fff" />
-              </View>
-            </View>
-          </LinearGradient>
-        </TouchableOpacity>
-
-        {/* Recent Orders */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recent Orders</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('VendorTabs', { screen: 'Orders' })}>
-              <Text style={styles.seeAllText}>See All</Text>
-            </TouchableOpacity>
-          </View>
-
-          {ordersLoading ? (
-            <ActivityIndicator size="small" color="#f97316" style={styles.loader} />
-          ) : orders.slice(0, 3).length === 0 ? (
-            <View style={styles.emptyState}>
-              <Feather name="package" size={32} color="#666" />
-              <Text style={styles.emptyStateText}>No orders yet</Text>
-            </View>
+        {/* Header */}
+        <View style={styles.header}>
+          {shop?.image_url ? (
+            <Image source={{ uri: shop.image_url }} style={styles.logo} />
           ) : (
-            orders.slice(0, 3).map((order) => {
-              const firstItem = order.items?.[0];
-              const itemImage = firstItem?.product?.image || firstItem?.image_url;
-              
-              return (
-                <TouchableOpacity 
-                  key={order.id} 
-                  style={styles.recentOrderCard}
-                  onPress={() => navigation.navigate('VendorOrderDetails', { orderId: order.id })}
-                >
-                  <View style={styles.recentOrderImageContainer}>
-                    {itemImage ? (
-                      <Image 
-                        source={{ uri: itemImage }} 
-                        style={styles.recentOrderImage}
-                      />
-                    ) : (
-                      <View style={styles.recentOrderImagePlaceholder}>
-                        <Feather name="package" size={20} color="#f97316" />
-                      </View>
-                    )}
-                  </View>
-
-                  <View style={styles.recentOrderDetails}>
-                    <View style={styles.recentOrderHeader}>
-                      <Text style={styles.recentOrderId}>#{order.order_number}</Text>
-                      <View style={[styles.recentOrderBadge, { backgroundColor: getStatusBgColor(order.status) }]}>
-                        <Text style={[styles.recentOrderBadgeText, { color: getStatusColor(order.status) }]}>
-                          {order.status}
-                        </Text>
-                      </View>
-                    </View>
-
-                    <Text style={styles.recentOrderCustomer}>{order.customer_name}</Text>
-                    
-                    <View style={styles.recentOrderItems}>
-                      {order.items.slice(0, 2).map((item: any, idx: number) => (
-                        <Text key={idx} style={styles.recentOrderItem} numberOfLines={1}>
-                          {item.quantity}x {item.name}
-                        </Text>
-                      ))}
-                      {order.items.length > 2 && (
-                        <Text style={styles.recentOrderMore}>
-                          +{order.items.length - 2} more
-                        </Text>
-                      )}
-                    </View>
-
-                    <Text style={styles.recentOrderTotal}>₦{order.total.toLocaleString()}</Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })
+            <View style={[styles.logo, styles.logoFallback]}>
+              <Text style={styles.logoText}>{(shop?.name || 'V').charAt(0).toUpperCase()}</Text>
+            </View>
           )}
+          <View style={{ flex: 1 }}>
+            <Text style={styles.greet}>{greeting}</Text>
+            <Text style={styles.shopName} numberOfLines={1}>{shop?.name || 'Your shop'}</Text>
+          </View>
+          <IconButton icon="message-circle" count={unreadMessages} onPress={() => navigation.navigate('Messaging')} />
+          <IconButton icon="bell" dot={unreadNotifications > 0} onPress={() => navigation.navigate('Notifications')} />
         </View>
 
-        {/* Popular Items */}
-        {stats?.popularItems && stats.popularItems.length > 0 && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Popular Items</Text>
+        {/* Approval / suspension */}
+        {shop && !isLive && (
+          <View style={styles.banner}>
+            <Feather name={shop.is_suspended ? 'slash' : 'clock'} size={18} color={C.amber} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.bannerTitle}>{shop.is_suspended ? 'Shop suspended' : 'Waiting for approval'}</Text>
+              <Text style={styles.bannerText}>
+                {shop.is_suspended
+                  ? 'Your shop is hidden from customers. Contact support to sort this out.'
+                  : "We're reviewing your shop. Add your menu now so you're ready the moment you're approved."}
+              </Text>
+              {!shop.is_suspended && (
+                <TouchableOpacity onPress={() => navigation.navigate('VendorTabs', { screen: 'Menu' })} style={styles.bannerBtn}>
+                  <Text style={styles.bannerBtnText}>Set up menu</Text>
+                  <Feather name="arrow-right" size={14} color={C.amber} />
+                </TouchableOpacity>
+              )}
             </View>
-            {stats.popularItems.map((item, index) => (
-              <View key={item.id} style={styles.popularItem}>
-                <View style={styles.popularItemLeft}>
-                  <View style={[styles.rankBadge, { backgroundColor: index === 0 ? '#f97316' : '#2a2a2a' }]}>
-                    <Text style={[styles.rankText, index === 0 && styles.rankTextFirst]}>
-                      #{index + 1}
+          </View>
+        )}
+
+        {/* Open / closed */}
+        {isLive && (
+          <View style={[styles.openCard, shop?.is_open ? styles.openCardOn : null]}>
+            <View style={[styles.openDot, { backgroundColor: shop?.is_open ? C.green : C.faint }]} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.openTitle}>{shop?.is_open ? 'Open for orders' : 'Shop closed'}</Text>
+              <Text style={styles.openSub}>{shop?.is_open ? 'Customers can see and order from you' : 'Turn on when you are ready to take orders'}</Text>
+            </View>
+            {togglingOpen ? (
+              <ActivityIndicator color={C.green} />
+            ) : (
+              <Switch
+                value={!!shop?.is_open}
+                onValueChange={toggleOpen}
+                trackColor={{ false: '#333', true: 'rgba(16,185,129,0.45)' }}
+                thumbColor={shop?.is_open ? C.green : '#888'}
+              />
+            )}
+          </View>
+        )}
+
+        {/* Today */}
+        <View style={styles.todayRow}>
+          <LinearGradient colors={['#f97316', '#f43f5e']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.todayMain}>
+            <Text style={styles.todayLabel}>Today's sales</Text>
+            <Text style={styles.todayValue}>{naira(stats?.todaySales)}</Text>
+            <Text style={styles.todaySub}>{stats?.todayOrders || 0} orders delivered</Text>
+          </LinearGradient>
+          <View style={styles.todaySide}>
+            <MiniStat icon="star" color={C.amber} value={stats?.averageRating ? stats.averageRating.toFixed(1) : '–'} label={`${stats?.reviewCount || 0} reviews`} />
+            <MiniStat icon="clock" color={C.blue} value={stats?.averagePrepTime ? `${Math.round(stats.averagePrepTime)}m` : '–'} label="avg prep" />
+          </View>
+        </View>
+
+        {/* Pipeline */}
+        <View style={styles.pipeline}>
+          <PipelineChip label="New" count={newOrders.length} color={C.amber} />
+          <PipelineChip label="Kitchen" count={kitchen.length} color={C.orange} />
+          <PipelineChip label="Ready" count={ordersByStatus.ready.length} color={C.green} />
+          <PipelineChip label="On the way" count={ordersByStatus.in_transit.length} color={C.purple} />
+        </View>
+
+        {/* New orders */}
+        <SectionHeader
+          title="New orders"
+          count={newOrders.length}
+          action="All orders"
+          onAction={() => navigation.navigate('VendorTabs', { screen: 'Orders' })}
+        />
+        {ordersLoading && orders.length === 0 ? (
+          <ActivityIndicator color={C.orange} style={{ marginVertical: 24 }} />
+        ) : newOrders.length === 0 ? (
+          <Empty icon="inbox" text={shop?.is_open === false && isLive ? 'Your shop is closed. Open it to start getting orders.' : 'No new orders right now. They will pop up here.'} />
+        ) : (
+          newOrders.map(order => (
+            <OrderRow
+              key={order.id}
+              order={order}
+              accent={C.amber}
+              onPress={() => navigation.navigate('VendorOrderDetails', { orderId: order.id })}
+              busy={busyOrderId === order.id}
+              secondary={{ label: 'Decline', onPress: () => confirmDecline(order.id, order.order_number ?? '') }}
+              primary={{ label: 'Accept', onPress: () => runOrderAction(order.id, () => acceptOrder(order.id), 'Order accepted') }}
+            />
+          ))
+        )}
+
+        {/* Kitchen */}
+        {kitchen.length > 0 && (
+          <>
+            <SectionHeader title="In the kitchen" count={kitchen.length} />
+            {kitchen.map(order => (
+              <OrderRow
+                key={order.id}
+                order={order}
+                accent={C.orange}
+                onPress={() => navigation.navigate('VendorOrderDetails', { orderId: order.id })}
+                busy={busyOrderId === order.id}
+                primary={
+                  order.status === 'confirmed'
+                    ? { label: 'Start preparing', onPress: () => runOrderAction(order.id, () => startPreparing(order.id), 'Marked as preparing') }
+                    : { label: 'Mark ready', onPress: () => runOrderAction(order.id, () => markAsReady(order.id), 'Order ready for pickup') }
+                }
+              />
+            ))}
+          </>
+        )}
+
+        {/* Ready, waiting for rider */}
+        {ordersByStatus.ready.length > 0 && (
+          <>
+            <SectionHeader title="Waiting for rider" count={ordersByStatus.ready.length} />
+            {ordersByStatus.ready.map(order => (
+              <OrderRow
+                key={order.id}
+                order={order}
+                accent={C.green}
+                note={order.rider_id ? 'Rider on the way to you' : 'Finding a rider…'}
+                onPress={() => navigation.navigate('VendorOrderDetails', { orderId: order.id })}
+              />
+            ))}
+          </>
+        )}
+
+        {/* Earnings */}
+        <SectionHeader title="Earnings" action="Details" onAction={() => navigation.navigate('VendorTabs', { screen: 'Earnings' })} />
+        <TouchableOpacity activeOpacity={0.9} style={styles.card} onPress={() => navigation.navigate('VendorTabs', { screen: 'Earnings' })}>
+          {earningsLoading ? (
+            <ActivityIndicator color={C.orange} />
+          ) : (
+            <>
+              <View style={styles.earnTop}>
+                <View>
+                  <Text style={styles.earnLabel}>This week</Text>
+                  <Text style={styles.earnValue}>{naira(earnings?.weeklyEarnings)}</Text>
+                </View>
+                {!!earnings && earnings.weeklyGrowth !== 0 && (
+                  <View style={[styles.growth, { backgroundColor: earnings.weeklyGrowth > 0 ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)' }]}>
+                    <Feather name={earnings.weeklyGrowth > 0 ? 'trending-up' : 'trending-down'} size={12} color={earnings.weeklyGrowth > 0 ? C.green : C.red} />
+                    <Text style={[styles.growthText, { color: earnings.weeklyGrowth > 0 ? C.green : C.red }]}>
+                      {earnings.weeklyGrowth > 0 ? '+' : ''}{earnings.weeklyGrowth}%
                     </Text>
                   </View>
-                  <Text style={styles.popularItemName}>{item.name}</Text>
-                </View>
-                <Text style={styles.popularItemCount}>{item.count} sold</Text>
+                )}
               </View>
-            ))}
-          </View>
+              <View style={styles.earnRow}>
+                <View style={styles.earnCell}>
+                  <Text style={styles.earnCellLabel}>All time</Text>
+                  <Text style={styles.earnCellValue}>{naira(earnings?.totalEarnings)}</Text>
+                </View>
+                <View style={styles.earnCell}>
+                  <Text style={styles.earnCellLabel}>Arriving soon</Text>
+                  <Text style={[styles.earnCellValue, { color: '#fcd34d' }]}>{naira(earnings?.settling)}</Text>
+                </View>
+              </View>
+              {earnings && !earnings.payoutAccountReady && (
+                <TouchableOpacity style={styles.payoutWarn} onPress={() => navigation.navigate('VendorTabs', { screen: 'Settings' })}>
+                  <Feather name="alert-circle" size={15} color={C.amber} />
+                  <Text style={styles.payoutWarnText}>Add your bank account to receive card payments</Text>
+                  <Feather name="chevron-right" size={15} color={C.amber} />
+                </TouchableOpacity>
+              )}
+            </>
+          )}
+        </TouchableOpacity>
+
+        {/* Shortcuts */}
+        <View style={styles.shortcuts}>
+          <Shortcut icon="coffee" label="Menu" onPress={() => navigation.navigate('VendorTabs', { screen: 'Menu' })} />
+          <Shortcut icon="trending-up" label="Promote" onPress={() => navigation.navigate('Promotions')} />
+          <Shortcut icon="bar-chart-2" label="Analytics" onPress={() => navigation.navigate('VendorAnalytics')} />
+          <Shortcut icon="clock" label="History" onPress={() => navigation.navigate('History')} />
+        </View>
+
+        {/* Best sellers */}
+        {!!stats?.popularItems?.length && (
+          <>
+            <SectionHeader title="Best sellers" />
+            <View style={styles.card}>
+              {stats.popularItems.slice(0, 5).map((item, i) => (
+                <View key={item.id} style={[styles.popular, i > 0 && styles.rowBorder]}>
+                  <Text style={[styles.rank, i === 0 && { color: C.orange }]}>{i + 1}</Text>
+                  <Text style={styles.popularName} numberOfLines={1}>{item.name}</Text>
+                  <Text style={styles.popularCount}>{item.count} sold</Text>
+                </View>
+              ))}
+            </View>
+          </>
         )}
       </ScrollView>
     </SafeAreaView>
   );
+}
 
-  const renderOrders = () => (
-    <ScrollView
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#f97316" />
-      }
-    >
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>All Orders</Text>
-        {ordersLoading ? (
-          <ActivityIndicator size="large" color="#f97316" style={styles.loader} />
-        ) : orders.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Feather name="package" size={48} color="#666" />
-            <Text style={styles.emptyStateTitle}>No orders found</Text>
-            <Text style={styles.emptyStateSubtitle}>Your orders will appear here</Text>
+// ---------------------------------------------------------------------------
+
+function IconButton({ icon, count, dot, onPress }: { icon: IconName; count?: number; dot?: boolean; onPress: () => void }) {
+  return (
+    <TouchableOpacity style={styles.iconBtn} onPress={onPress}>
+      <Feather name={icon} size={20} color={C.text} />
+      {!!count && count > 0 ? (
+        <View style={styles.countBadge}>
+          <Text style={styles.countBadgeText}>{count > 9 ? '9+' : count}</Text>
+        </View>
+      ) : dot ? (
+        <View style={styles.dot} />
+      ) : null}
+    </TouchableOpacity>
+  );
+}
+
+function MiniStat({ icon, color, value, label }: { icon: IconName; color: string; value: string; label: string }) {
+  return (
+    <View style={styles.mini}>
+      <Feather name={icon} size={15} color={color} />
+      <Text style={styles.miniValue}>{value}</Text>
+      <Text style={styles.miniLabel}>{label}</Text>
+    </View>
+  );
+}
+
+function PipelineChip({ label, count, color }: { label: string; count: number; color: string }) {
+  return (
+    <View style={styles.chip}>
+      <Text style={[styles.chipCount, { color: count > 0 ? color : C.faint }]}>{count}</Text>
+      <Text style={styles.chipLabel}>{label}</Text>
+    </View>
+  );
+}
+
+function SectionHeader({ title, count, action, onAction }: { title: string; count?: number; action?: string; onAction?: () => void }) {
+  return (
+    <View style={styles.sectionHeader}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        {!!count && (
+          <View style={styles.sectionCount}>
+            <Text style={styles.sectionCountText}>{count}</Text>
           </View>
-        ) : (
-          orders.map((order) => (
-            <View key={order.id} style={styles.orderCard}>
-              <View style={styles.orderCardHeader}>
-                <View>
-                  <Text style={styles.orderCardNumber}>#{order.order_number}</Text>
-                  <Text style={styles.orderCardTime}>
-                    {new Date(order.created_at).toLocaleString()}
-                  </Text>
-                </View>
-                <View style={[styles.orderCardBadge, { backgroundColor: getStatusBgColor(order.status) }]}>
-                  <Text style={[styles.orderCardBadgeText, { color: getStatusColor(order.status) }]}>
-                    {order.status.toUpperCase()}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.orderCardCustomer}>
-                <Feather name="user" size={14} color="#666" />
-                <Text style={styles.orderCardCustomerText}>{order.customer_name}</Text>
-              </View>
-
-              <View style={styles.orderCardItems}>
-                {order.items.slice(0, 3).map((item: any, idx: number) => (
-                  <Text key={idx} style={styles.orderCardItemText}>
-                    {item.quantity}x {item.name}
-                  </Text>
-                ))}
-                {order.items.length > 3 && (
-                  <Text style={styles.orderCardMoreText}>
-                    +{order.items.length - 3} more items
-                  </Text>
-                )}
-              </View>
-
-              <View style={styles.orderCardFooter}>
-                <Text style={styles.orderCardTotal}>₦{order.total.toLocaleString()}</Text>
-                
-                {order.status === 'pending' && (
-                  <View style={styles.orderCardActions}>
-                    <TouchableOpacity 
-                      style={[styles.orderCardAction, styles.rejectAction]}
-                      onPress={() => rejectOrder(order.id).catch(() => {})}
-                    >
-                      <Text style={styles.rejectActionText}>Decline</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={[styles.orderCardAction, styles.acceptAction]}
-                      onPress={() => acceptOrder(order.id).catch(() => {})}
-                    >
-                      <Text style={styles.acceptActionText}>Accept</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </View>
-            </View>
-          ))
         )}
       </View>
-    </ScrollView>
+      {action && (
+        <TouchableOpacity onPress={onAction} hitSlop={8}>
+          <Text style={styles.sectionAction}>{action}</Text>
+        </TouchableOpacity>
+      )}
+    </View>
   );
+}
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'overview':
-        return renderOverview();
-      case 'orders':
-        return renderOrders();
-      case 'menu':
-        return (
-          <View style={styles.placeholderContainer}>
-            <Feather name="coffee" size={48} color="#666" />
-            <Text style={styles.placeholderTitle}>Menu Management</Text>
-            <Text style={styles.placeholderText}>Coming soon</Text>
-          </View>
-        );
-      case 'earnings':
-        return (
-          <View style={styles.placeholderContainer}>
-            <Feather name="dollar-sign" size={48} color="#666" />
-            <Text style={styles.placeholderTitle}>Earnings Overview</Text>
-            <Text style={styles.placeholderText}>Coming soon</Text>
-          </View>
-        );
-      case 'history':
-        return (
-          <View style={styles.placeholderContainer}>
-            <Feather name="clock" size={48} color="#666" />
-            <Text style={styles.placeholderTitle}>Order History</Text>
-            <Text style={styles.placeholderText}>Coming soon</Text>
-          </View>
-        );
-      case 'settings':
-        return (
-          <View style={styles.placeholderContainer}>
-            <Feather name="settings" size={48} color="#666" />
-            <Text style={styles.placeholderTitle}>Settings</Text>
-            <Text style={styles.placeholderText}>Coming soon</Text>
-          </View>
-        );
-      default:
-        return renderOverview();
-    }
-  };
+function Empty({ icon, text }: { icon: IconName; text: string }) {
+  return (
+    <View style={styles.empty}>
+      <Feather name={icon} size={22} color={C.faint} />
+      <Text style={styles.emptyText}>{text}</Text>
+    </View>
+  );
+}
+
+function Shortcut({ icon, label, onPress }: { icon: IconName; label: string; onPress: () => void }) {
+  return (
+    <TouchableOpacity style={styles.shortcut} onPress={onPress} activeOpacity={0.8}>
+      <View style={styles.shortcutIcon}>
+        <Feather name={icon} size={19} color={C.orange} />
+      </View>
+      <Text style={styles.shortcutLabel}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+interface RowAction {
+  label: string;
+  onPress: () => void;
+}
+
+function OrderRow({
+  order,
+  accent,
+  onPress,
+  primary,
+  secondary,
+  busy,
+  note,
+}: {
+  order: any;
+  accent: string;
+  onPress: () => void;
+  primary?: RowAction;
+  secondary?: RowAction;
+  busy?: boolean;
+  note?: string;
+}) {
+  const items: any[] = order.items || [];
+  const summary = items.slice(0, 2).map(i => `${i.quantity}× ${i.name}`).join(', ');
+  const more = items.length > 2 ? ` +${items.length - 2} more` : '';
 
   return (
-    <VendorLayout
-      activeTab={activeTab}
-      onTabChange={setActiveTab}
-      title="Vendor Dashboard"
-    >
-      {renderContent()}
-    </VendorLayout>
+    <TouchableOpacity activeOpacity={0.85} onPress={onPress} style={[styles.order, { borderLeftColor: accent }]}>
+      <View style={styles.orderTop}>
+        <Text style={styles.orderNo}>#{order.order_number}</Text>
+        <Text style={styles.orderTime}>{formatDistanceToNow(new Date(order.created_at), { addSuffix: true })}</Text>
+      </View>
+      <Text style={styles.orderItems} numberOfLines={2}>{summary}{more}</Text>
+      <View style={styles.orderMeta}>
+        <Text style={styles.orderCustomer} numberOfLines={1}>{order.customer_name}</Text>
+        <Text style={styles.orderTotal}>{naira(order.subtotal || order.total)}</Text>
+      </View>
+      {note ? (
+        <View style={styles.orderNote}>
+          <Feather name="truck" size={13} color={C.green} />
+          <Text style={styles.orderNoteText}>{note}</Text>
+        </View>
+      ) : null}
+      {(primary || secondary) && (
+        <View style={styles.orderActions}>
+          {busy ? (
+            <ActivityIndicator color={C.orange} style={{ flex: 1, height: 40 }} />
+          ) : (
+            <>
+              {secondary && (
+                <TouchableOpacity style={[styles.orderBtn, styles.orderBtnGhost]} onPress={secondary.onPress}>
+                  <Text style={[styles.orderBtnText, { color: C.red }]}>{secondary.label}</Text>
+                </TouchableOpacity>
+              )}
+              {primary && (
+                <TouchableOpacity style={{ flex: 2 }} onPress={primary.onPress}>
+                  <LinearGradient colors={['#f97316', '#f43f5e']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.orderBtn}>
+                    <Text style={styles.orderBtnText}>{primary.label}</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              )}
+            </>
+          )}
+        </View>
+      )}
+    </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  statusBanner: {
-    flexDirection: 'row',
-    gap: 12,
-    marginHorizontal: 16,
-    marginBottom: 16,
-    padding: 14,
-    borderRadius: 12,
-    backgroundColor: 'rgba(245,158,11,0.1)',
+  container: { flex: 1, backgroundColor: C.bg },
+  content: { padding: 16, paddingBottom: 110 },
+
+  header: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
+  logo: { width: 46, height: 46, borderRadius: 14 },
+  logoFallback: { backgroundColor: C.orange, justifyContent: 'center', alignItems: 'center' },
+  logoText: { color: '#fff', fontSize: 20, fontWeight: '800' },
+  greet: { color: C.muted, fontSize: 13 },
+  shopName: { color: C.text, fontSize: 20, fontWeight: '800', marginTop: 1 },
+  iconBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: C.card,
     borderWidth: 1,
-    borderColor: 'rgba(245,158,11,0.3)',
-  },
-  statusBannerTitle: {
-    color: '#f59e0b',
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  statusBannerText: {
-    color: '#ccc',
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  quickLinks: {
-    flexDirection: 'row',
-    gap: 12,
-    marginHorizontal: 16,
-    marginBottom: 20,
-  },
-  quickLink: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: '#1a1a1a',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-  },
-  quickLinkText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  container: {
-    flex: 1,
-    paddingBottom: 60,
-  },
-  welcomeSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
-  welcomeLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  welcomeText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  vendorName: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#fff',
-    marginTop: 2,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    borderColor: C.border,
     justifyContent: 'center',
     alignItems: 'center',
-    position: 'relative',
   },
-  notificationDot: {
+  dot: { position: 'absolute', top: 10, right: 11, width: 8, height: 8, borderRadius: 4, backgroundColor: C.rose },
+  countBadge: {
     position: 'absolute',
-    top: 10,
-    right: 10,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#f97316',
-  },
-  messageButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#1a1a1a',
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-  },
-  unreadBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
+    top: -2,
+    right: -2,
     minWidth: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: '#ef4444',
-    justifyContent: 'center',
-    alignItems: 'center',
     paddingHorizontal: 4,
-  },
-  unreadBadgeText: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-
-  // 🎯 Balance Card Styles
-  balanceCardWrapper: {
-    paddingHorizontal: 16,
-    marginBottom: 16,
-  },
-  balanceCard: {
-    padding: 20,
-    borderRadius: 16,
-    shadowColor: '#1d1c1c',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  balanceCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  balanceLabelContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  balanceLabel: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.9)',
-    fontWeight: '500',
-  },
-  balanceBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.2)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
-  },
-  balanceBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#10b981',
-  },
-  balanceLoader: {
-    marginVertical: 20,
-  },
-  balanceAmount: {
-    fontSize: 36,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 16,
-  },
-  balanceCardFooter: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
-  },
-  balanceFooterItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  balanceFooterLabel: {
-    fontSize: 10,
-    color: 'rgba(255,255,255,0.7)',
-    marginBottom: 2,
-  },
-  balanceFooterValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  balanceDivider: {
-    width: 1,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-  },
-  withdrawButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    backgroundColor: C.rose,
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingVertical: 12,
-    borderRadius: 10,
-    gap: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  withdrawButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#fff',
-  },
-
-  latestMessagePreview: {
-    flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
-    marginHorizontal: 16,
-    marginBottom: 16,
-    padding: 12,
-    borderRadius: 12,
-    gap: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(249,115,22,0.2)',
   },
-  latestMessageText: {
-    flex: 1,
-    fontSize: 12,
-    color: '#fff',
-  },
+  countBadgeText: { color: '#fff', fontSize: 10, fontWeight: '700' },
 
-  // 🎯 Stats Grid - Horizontal Scroll
-  statsScrollView: {
-    paddingHorizontal: 16,
-    marginBottom: 16,
-  },
-  statsScrollContent: {
-    paddingRight: 4,
-  },
-  statsGrid: {
+  banner: {
     flexDirection: 'row',
     gap: 12,
-  },
-  statCard: {
-    width: 140,
-    backgroundColor: '#1a1a1a',
-    padding: 16,
-    borderRadius: 12,
+    padding: 14,
+    borderRadius: 16,
+    backgroundColor: 'rgba(245,158,11,0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-    minHeight: 120,
+    borderColor: 'rgba(245,158,11,0.25)',
+    marginBottom: 12,
   },
-  statIconContainer: {
+  bannerTitle: { color: C.amber, fontSize: 14, fontWeight: '700' },
+  bannerText: { color: '#d4d4d4', fontSize: 12.5, marginTop: 3, lineHeight: 18 },
+  bannerBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 },
+  bannerBtnText: { color: C.amber, fontSize: 13, fontWeight: '700' },
+
+  openCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
+    borderRadius: 16,
+    backgroundColor: C.card,
+    borderWidth: 1,
+    borderColor: C.border,
+    marginBottom: 12,
+  },
+  openCardOn: { borderColor: 'rgba(16,185,129,0.35)', backgroundColor: 'rgba(16,185,129,0.06)' },
+  openDot: { width: 10, height: 10, borderRadius: 5 },
+  openTitle: { color: C.text, fontSize: 15, fontWeight: '700' },
+  openSub: { color: C.muted, fontSize: 12, marginTop: 2 },
+
+  todayRow: { flexDirection: 'row', gap: 12 },
+  todayMain: { flex: 1.4, borderRadius: 20, padding: 16, justifyContent: 'space-between' },
+  todayLabel: { color: 'rgba(255,255,255,0.85)', fontSize: 12.5 },
+  todayValue: { color: '#fff', fontSize: 26, fontWeight: '800', marginVertical: 6 },
+  todaySub: { color: 'rgba(255,255,255,0.85)', fontSize: 12 },
+  todaySide: { flex: 1, gap: 12 },
+  mini: { flex: 1, backgroundColor: C.card, borderRadius: 16, borderWidth: 1, borderColor: C.border, padding: 12, justifyContent: 'center' },
+  miniValue: { color: C.text, fontSize: 17, fontWeight: '800', marginTop: 4 },
+  miniLabel: { color: C.muted, fontSize: 11, marginTop: 1 },
+
+  pipeline: {
+    flexDirection: 'row',
+    backgroundColor: C.card,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: C.border,
+    marginTop: 12,
+    paddingVertical: 12,
+  },
+  chip: { flex: 1, alignItems: 'center' },
+  chipCount: { fontSize: 20, fontWeight: '800' },
+  chipLabel: { color: C.muted, fontSize: 11, marginTop: 2 },
+
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, marginBottom: 10 },
+  sectionTitle: { color: C.text, fontSize: 17, fontWeight: '700' },
+  sectionCount: { backgroundColor: 'rgba(249,115,22,0.15)', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 1 },
+  sectionCountText: { color: C.orange, fontSize: 12, fontWeight: '700' },
+  sectionAction: { color: C.orange, fontSize: 13, fontWeight: '600' },
+
+  empty: {
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 22,
+    paddingHorizontal: 24,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: '#262626',
+  },
+  emptyText: { color: C.muted, fontSize: 13, textAlign: 'center', lineHeight: 19 },
+
+  order: {
+    backgroundColor: C.card,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderLeftWidth: 3,
+    padding: 14,
+    marginBottom: 10,
+  },
+  orderTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  orderNo: { color: C.text, fontSize: 15, fontWeight: '700' },
+  orderTime: { color: C.faint, fontSize: 12 },
+  orderItems: { color: '#d4d4d4', fontSize: 13.5, marginTop: 6, lineHeight: 19 },
+  orderMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
+  orderCustomer: { color: C.muted, fontSize: 12.5, flex: 1, marginRight: 8 },
+  orderTotal: { color: C.text, fontSize: 15, fontWeight: '800' },
+  orderNote: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 },
+  orderNoteText: { color: C.green, fontSize: 12.5, fontWeight: '600' },
+  orderActions: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  orderBtn: { height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  orderBtnGhost: { flex: 1, backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.25)' },
+  orderBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+
+  card: { backgroundColor: C.card, borderRadius: 18, borderWidth: 1, borderColor: C.border, padding: 16 },
+  earnTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  earnLabel: { color: C.muted, fontSize: 12.5 },
+  earnValue: { color: C.text, fontSize: 26, fontWeight: '800', marginTop: 4 },
+  growth: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
+  growthText: { fontSize: 12, fontWeight: '700' },
+  earnRow: { flexDirection: 'row', marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: C.border },
+  earnCell: { flex: 1 },
+  earnCellLabel: { color: C.muted, fontSize: 12 },
+  earnCellValue: { color: C.text, fontSize: 15, fontWeight: '700', marginTop: 3 },
+  payoutWarn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 14,
+    padding: 10,
+    borderRadius: 12,
+    backgroundColor: 'rgba(245,158,11,0.1)',
+  },
+  payoutWarnText: { color: C.amber, fontSize: 12.5, flex: 1, fontWeight: '600' },
+
+  shortcuts: { flexDirection: 'row', gap: 10, marginTop: 16 },
+  shortcut: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderRadius: 16,
+    backgroundColor: C.card,
+    borderWidth: 1,
+    borderColor: C.border,
+  },
+  shortcutIcon: {
     width: 40,
     height: 40,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  statNumber: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#666',
-  },
-  section: {
-    paddingHorizontal: 16,
-    marginBottom: 24,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  seeAllText: {
-    color: '#f97316',
-    fontSize: 14,
-  },
-  statusGrid: {
-    flexDirection: 'row',
-    backgroundColor: '#1a1a1a',
     borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-  },
-  statusItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginBottom: 8,
-  },
-  statusLabel: {
-    fontSize: 11,
-    color: '#666',
-    marginBottom: 4,
-  },
-  statusCount: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
-  },
-
-  // Recent Orders
-  recentOrderCard: {
-    flexDirection: 'row',
-    backgroundColor: '#1a1a1a',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-  },
-  recentOrderImageContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
-    overflow: 'hidden',
-    marginRight: 12,
-  },
-  recentOrderImage: {
-    width: '100%',
-    height: '100%',
-  },
-  recentOrderImagePlaceholder: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#2a2a2a',
+    backgroundColor: 'rgba(249,115,22,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  recentOrderDetails: {
-    flex: 1,
-  },
-  recentOrderHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  recentOrderId: {
-    fontSize: 12,
-    color: '#666',
-  },
-  recentOrderBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  recentOrderBadgeText: {
-    fontSize: 9,
-    fontWeight: '500',
-  },
-  recentOrderCustomer: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#fff',
-    marginBottom: 4,
-  },
-  recentOrderItems: {
-    marginBottom: 4,
-  },
-  recentOrderItem: {
-    fontSize: 11,
-    color: '#666',
-  },
-  recentOrderMore: {
-    fontSize: 10,
-    color: '#f97316',
-    marginTop: 2,
-  },
-  recentOrderTotal: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#f97316',
-  },
+  shortcutLabel: { color: C.text, fontSize: 12, fontWeight: '600', marginTop: 8 },
 
-  // Popular Items
-  popularItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#1a1a1a',
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 8,
-  },
-  popularItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  rankBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  rankText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  rankTextFirst: {
-    color: '#fff',
-  },
-  popularItemName: {
-    fontSize: 14,
-    color: '#fff',
-  },
-  popularItemCount: {
-    fontSize: 13,
-    color: '#f97316',
-    fontWeight: '500',
-  },
-
-  // Order Cards
-  orderCard: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-  },
-  orderCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  orderCardNumber: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#fff',
-    marginBottom: 4,
-  },
-  orderCardTime: {
-    fontSize: 11,
-    color: '#666',
-  },
-  orderCardBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  orderCardBadgeText: {
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  orderCardCustomer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 12,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
-  },
-  orderCardCustomerText: {
-    fontSize: 13,
-    color: '#666',
-  },
-  orderCardItems: {
-    marginBottom: 12,
-  },
-  orderCardItemText: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 2,
-  },
-  orderCardMoreText: {
-    fontSize: 11,
-    color: '#f97316',
-    marginTop: 4,
-  },
-  orderCardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
-  },
-  orderCardTotal: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#f97316',
-  },
-  orderCardActions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  orderCardAction: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  acceptAction: {
-    backgroundColor: '#10b981',
-  },
-  acceptActionText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  rejectAction: {
-    backgroundColor: '#ef4444',
-  },
-  rejectActionText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '500',
-  },
-
-  // Placeholders
-  loader: {
-    marginTop: 20,
-  },
-  emptyState: {
-    alignItems: 'center',
-    padding: 40,
-  },
-  emptyStateTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
-    marginTop: 12,
-    marginBottom: 4,
-  },
-  emptyStateSubtitle: {
-    fontSize: 14,
-    color: '#666',
-  },
-  emptyStateText: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 8,
-  },
-  placeholderContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  placeholderTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#fff',
-    marginTop: 16,
-    marginBottom: 4,
-  },
-  placeholderText: {
-    fontSize: 14,
-    color: '#666',
-  },
-});
-
-const stylesCompact = StyleSheet.create({
-  container: {
-    marginHorizontal: 16,
-    marginVertical: 8,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  gradient: {
-    padding: 16,
-  },
-  content: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  textContainer: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#fff',
-    marginBottom: 2,
-  },
-  subtitle: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.9)',
-  },
-  button: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
-  },
+  popular: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
+  rowBorder: { borderTopWidth: 1, borderTopColor: C.border },
+  rank: { color: C.faint, fontSize: 15, fontWeight: '800', width: 18 },
+  popularName: { color: C.text, fontSize: 14, flex: 1 },
+  popularCount: { color: C.muted, fontSize: 12.5 },
 });

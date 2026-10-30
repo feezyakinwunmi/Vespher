@@ -21,6 +21,7 @@ import { supabase } from '../../lib/supabase';
 import { detectAllergens, allergenById } from '../../services/foodSafety';
 import { findDishTemplate, MealTime } from '../../services/dishTemplates';
 import { functionErrorMessage } from '../../utils/paystack';
+import { EmojiIcon } from '../EmojiIcon';
 
 const MEAL_TIME_OPTIONS: { id: MealTime; label: string }[] = [
   { id: 'breakfast', label: 'Breakfast' },
@@ -375,10 +376,10 @@ export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuI
   }, {} as Record<string, HealthTag[]>);
 
   const categoryLabels: Record<string, string> = {
-    allergy: '🚫 Allergies & Intolerances',
-    dietary: '🥗 Dietary Preferences',
-    nutrition: '📊 Nutritional Info',
-    preparation: '🍳 Preparation Method',
+    allergy: 'Allergies & Intolerances',
+    dietary: 'Dietary Preferences',
+    nutrition: 'Nutritional Info',
+    preparation: 'Preparation Method',
   };
 
   return (
@@ -576,7 +577,7 @@ export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuI
                   {detectedAllergens.map(d => (
                     <View key={d.allergen.id} style={styles.allergenChip}>
                       <Text style={styles.allergenChipText}>
-                        {d.allergen.icon} {d.allergen.label}
+                        <EmojiIcon emoji={d.allergen.icon} size={12} color="#f59e0b" /> {d.allergen.label}
                       </Text>
                       <Text style={styles.allergenSource}>({d.matches.join(', ')})</Text>
                     </View>

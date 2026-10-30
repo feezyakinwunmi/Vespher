@@ -1,6 +1,5 @@
 // app/screens/CustomerSignupScreen.tsx
 import type { TextInputInstance } from 'react-native';
-import { GoogleSignInButton } from '../components/GoogleSignInButton';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -37,7 +36,7 @@ interface FormData {
   latitude: number | null;
   longitude: number | null;
   locationAddress: string;
-  referralCode: string; // ✅ Remove optional to make it required
+  referralCode: string; // Remove optional to make it required
 }
 
 export  function CustomerSignupScreen() {
@@ -74,7 +73,7 @@ const [checkingReferral, setCheckingReferral] = useState(false);
     latitude: null,
     longitude: null,
     locationAddress: '',
-    referralCode: '', // ✅ Add this
+    referralCode: '', // Add this
 
   });
 
@@ -574,7 +573,7 @@ const generateReferralCode = () => {
       value={formData.referralCode}
       onChangeText={(text) => {
         updateField('referralCode', text.toUpperCase());
-        verifyReferralCode(text); // ✅ Verify in real-time
+        verifyReferralCode(text); // Verify in real-time
       }}
       placeholder="Enter referral code (if you have one)"
       placeholderTextColor="#666"
@@ -609,14 +608,14 @@ const generateReferralCode = () => {
                   <Feather name="map" size={20} color="#f97316" />
                   <Text style={styles.locationPickerText}>
                     {formData.latitude !== null && formData.longitude !== null
-                      ? `📍 Location selected: ${formData.latitude.toFixed(6)}, ${formData.longitude.toFixed(6)}`
+                      ? `Location selected: ${formData.latitude.toFixed(6)}, ${formData.longitude.toFixed(6)}`
                       : 'Tap to set your delivery location on map'}
                   </Text>
                   <Feather name="chevron-right" size={20} color="#666" />
                 </TouchableOpacity>
                 {formData.latitude !== null && formData.longitude !== null && (
                   <Text style={styles.locationCoordsText}>
-                    📍 Coordinates: {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}
+                    Coordinates: {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}
                   </Text>
                 )}
               </View>
@@ -696,7 +695,7 @@ const generateReferralCode = () => {
             <View style={styles.successIcon}>
               <Feather name="check-circle" size={64} color="#10b981" />
             </View>
-            <Text style={styles.successTitle}>Account Created! 🎉</Text>
+            <Text style={styles.successTitle}>Account Created!</Text>
             <Text style={styles.successText}>
               Your account is now ready. Start exploring great food and vendors!
             </Text>
@@ -756,8 +755,6 @@ const generateReferralCode = () => {
                   )}
                 </LinearGradient>
               </TouchableOpacity>
-
-              {step === 'auth' && <GoogleSignInButton label="Sign up with Google" />}
 
               {step === 'auth' && (
                 <View style={styles.loginContainer}>

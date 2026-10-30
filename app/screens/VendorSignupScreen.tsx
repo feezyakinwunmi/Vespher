@@ -15,6 +15,7 @@ import {
   Image,
   Modal,
   FlatList,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -27,6 +28,8 @@ import { RootStackParamList } from '../navigation/types';
 import { verifyBankAccount } from '../utils/paystack';
 import ReuseLocationPicker from '../components/ReuseLocationPicker';
 import { BANKS } from '../constants/banks';
+import { useAuth } from '../contexts/AuthContext';
+import { supportLinks } from '../config/support';
 
 type RegistrationStep = 'auth' | 'business' | 'documents' | 'review' | 'success';
 
@@ -79,6 +82,7 @@ const banks = BANKS;
 
 export function VendorSignupScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { refreshProfile } = useAuth();
   
   // Step state
   const [step, setStep] = useState<RegistrationStep>('auth');
@@ -130,18 +134,16 @@ export function VendorSignupScreen() {
     locationAddress: '',
   });
 
-  // ✅ FIX: Move success navigation to component level
+  // The OTP step signs the vendor in, so after the success screen load their
+  // profile and the navigator opens the (pending approval) vendor dashboard.
   useEffect(() => {
     if (step === 'success') {
       const timer = setTimeout(() => {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Login' }],
-        });
-      }, 3500);
+        refreshProfile();
+      }, 2500);
       return () => clearTimeout(timer);
     }
-  }, [step, navigation]);
+  }, [step]);
 
   // Countdown timer for OTP resend
   useEffect(() => {
@@ -246,8 +248,12 @@ export function VendorSignupScreen() {
       }
       setStep('business');
     } else if (step === 'business') {
-      if (!formData.businessName || !formData.address) {
-        setError('Please fill in all required business fields');
+      if (!formData.businessName || !formData.address || !formData.category) {
+        setError('Please fill in your business name, category and address');
+        return;
+      }
+      if (formData.latitude === null || formData.longitude === null) {
+        setError('Please pin your shop location on the map so riders and customers can find you');
         return;
       }
       setStep('documents');
@@ -278,8 +284,17 @@ export function VendorSignupScreen() {
           emailRedirectTo: undefined
         }
       });
-      if (signUpError) throw signUpError;
+      if (signUpError) {
+        if (signUpError.message.toLowerCase().includes('already registered')) {
+          throw new Error('This email already has a Vesphe account. Please sign in instead.');
+        }
+        throw signUpError;
+      }
       if (!authData.user) throw new Error('Failed to create user account');
+      // Supabase returns a user with no identities when the email is already confirmed.
+      if (authData.user.identities && authData.user.identities.length === 0) {
+        throw new Error('This email already has a Vesphe account. Please sign in instead.');
+      }
       setPendingUserId(authData.user.id);
       setMaskedEmail(maskEmail(formData.email));
       setShowOTPModal(true);
@@ -348,62 +363,75 @@ export function VendorSignupScreen() {
     }
   };
 
-  // ✅ FIXED: Complete vendor registration with proper order
-  const completeVendorRegistration = async () => {
+  // Creates the profile and vendor rows. Safe to retry: rows that already exist are kept.
+  const completeVendorRegistration = async (): Promise<void> => {
     try {
-      // Upload logo if exists
-      let logoUrl = null;
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const userId = authUser?.id || pendingUserId;
+      if (!userId) throw new Error('Your session expired. Please sign in to finish registration.');
+
+      // Upload logo if exists (arrayBuffer: blob uploads can arrive empty on Android)
+      let logoUrl: string | null = null;
       if (formData.logo) {
-        const fileName = `vendor-${pendingUserId}-logo.jpg`;
-        const response = await fetch(formData.logo);
-        const blob = await response.blob();
-        const { error: uploadError } = await supabase.storage
-          .from('vendor-logos')
-          .upload(fileName, blob);
-        if (!uploadError) {
-          const { data: { publicUrl } } = supabase.storage
+        try {
+          const fileName = `vendor-${userId}-logo.jpg`;
+          const bytes = await (await fetch(formData.logo)).arrayBuffer();
+          const { error: uploadError } = await supabase.storage
             .from('vendor-logos')
-            .getPublicUrl(fileName);
-          logoUrl = publicUrl;
+            .upload(fileName, bytes, { contentType: 'image/jpeg', upsert: true });
+          if (!uploadError) {
+            logoUrl = supabase.storage.from('vendor-logos').getPublicUrl(fileName).data.publicUrl;
+          }
+        } catch (uploadErr) {
+          // The logo can be added later in Settings; don't block signup on it.
+          console.error('Logo upload failed:', uploadErr);
         }
       }
 
-      // 1. Insert user profile
-      const { error: profileError } = await supabase
-        .from('users')
-        .insert({
-          id: pendingUserId,
-          email: formData.email,
-          name: formData.ownerName,
-          phone: formData.phone,
-          role: 'vendor',
-          created_at: new Date().toISOString(),
-        });
-      if (profileError) throw profileError;
+      // 1. User profile
+      const { data: existingUser } = await supabase.from('users').select('id').eq('id', userId).maybeSingle();
+      if (!existingUser) {
+        const { error: profileError } = await supabase
+          .from('users')
+          .insert({
+            id: userId,
+            email: formData.email.trim(),
+            name: formData.ownerName.trim(),
+            phone: formData.phone.trim(),
+            role: 'vendor',
+            created_at: new Date().toISOString(),
+          });
+        if (profileError) throw profileError;
+      }
 
-      // 2. Insert vendor record
-      const { data: vendorData, error: vendorError } = await supabase
-        .from('vendors')
-        .insert({
-          owner_id: pendingUserId,
-          name: formData.businessName,
-          description: formData.description,
-          category: formData.category,
-          image_url: logoUrl,
-          address: formData.address,
-          phone: formData.phone,
-          email: formData.email,
-          is_approved: false,
-          bank_name: formData.bankName,
-          bank_code: formData.bankCode,
-          account_number: formData.accountNumber,
-          account_name: formData.accountName,
-          latitude: formData.latitude,
-          longitude: formData.longitude,
-        })
-        .select()
-        .single();
-      if (vendorError) throw vendorError;
+      // 2. Vendor record
+      const { data: existingVendor } = await supabase.from('vendors').select('id').eq('owner_id', userId).maybeSingle();
+      let vendorId = existingVendor?.id;
+      if (!vendorId) {
+        const { data: vendorData, error: vendorError } = await supabase
+          .from('vendors')
+          .insert({
+            owner_id: userId,
+            name: formData.businessName.trim(),
+            description: formData.description,
+            category: formData.category,
+            image_url: logoUrl,
+            address: formData.address,
+            phone: formData.phone.trim(),
+            email: formData.email.trim(),
+            is_approved: false,
+            bank_name: formData.bankName,
+            bank_code: formData.bankCode,
+            account_number: formData.accountNumber,
+            account_name: formData.accountName,
+            latitude: formData.latitude,
+            longitude: formData.longitude,
+          })
+          .select('id')
+          .single();
+        if (vendorError) throw vendorError;
+        vendorId = vendorData.id;
+      }
 
       // 3. Paystack subaccount: card payments settle straight to this bank account
       // (no wallet). If it fails, the vendor can finish it later in Settings.
@@ -415,14 +443,21 @@ export function VendorSignupScreen() {
             bank_name: formData.bankName,
           },
         });
-        if (subaccountError) console.error('Payout account setup failed:', vendorData.id, subaccountError);
+        if (subaccountError) console.error('Payout account setup failed:', vendorId, subaccountError);
       }
 
       setShowOTPModal(false);
       setStep('success');
     } catch (err: any) {
       console.error('Registration error:', err);
-      Alert.alert('Error', err.message || 'Failed to complete registration. Please contact support.');
+      Alert.alert(
+        "Couldn't finish setting up your shop",
+        err.message || 'Please check your connection and try again.',
+        [
+          { text: 'Contact support', style: 'cancel', onPress: () => Linking.openURL(supportLinks.whatsapp) },
+          { text: 'Try again', onPress: () => completeVendorRegistration() },
+        ],
+      );
     }
   };
 
@@ -614,14 +649,14 @@ export function VendorSignupScreen() {
                   <Feather name="map" size={20} color="#f97316" />
                   <Text style={styles.locationPickerText}>
                     {formData.latitude !== null && formData.longitude !== null
-                      ? `📍 Location selected: ${formData.latitude.toFixed(6)}, ${formData.longitude.toFixed(6)}`
+                      ? `Location selected: ${formData.latitude.toFixed(6)}, ${formData.longitude.toFixed(6)}`
                       : 'Tap to set your business location on map'}
                   </Text>
                   <Feather name="chevron-right" size={20} color="#666" />
                 </TouchableOpacity>
                 {formData.latitude !== null && formData.longitude !== null && (
                   <Text style={styles.locationCoordsText}>
-                    📍 Coordinates: {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}
+                    Coordinates: {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}
                   </Text>
                 )}
               </View>

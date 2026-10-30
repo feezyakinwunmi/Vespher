@@ -67,9 +67,9 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
       hasShellfish: false,
     },
     warnings: {
-      diabetic: '⚠️ High in carbohydrates - may spike blood sugar levels',
-      weight_loss: '⚠️ High calorie density - eat in moderation',
-      workout_mode: '⚠️ Good for energy but high carb - best for pre-workout',
+      diabetic: 'High in carbohydrates - may spike blood sugar levels',
+      weight_loss: 'High calorie density - eat in moderation',
+      workout_mode: 'Good for energy but high carb - best for pre-workout',
     }
   },
   {
@@ -90,8 +90,8 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
       hasShellfish: false,
     },
     warnings: {
-      diabetic: '⚠️ High in carbohydrates - may spike blood sugar',
-      weight_loss: '⚠️ High calorie - moderate portions',
+      diabetic: 'High in carbohydrates - may spike blood sugar',
+      weight_loss: 'High calorie - moderate portions',
     }
   },
   {
@@ -112,8 +112,8 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
       hasShellfish: false,
     },
     warnings: {
-      diabetic: '⚠️ High in carbohydrates',
-      weight_loss: '⚠️ Calorie dense',
+      diabetic: 'High in carbohydrates',
+      weight_loss: 'Calorie dense',
     }
   },
   {
@@ -134,7 +134,7 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
       hasShellfish: false,
     },
     warnings: {
-      diabetic: '⚠️ High in carbohydrates - may spike blood sugar',
+      diabetic: 'High in carbohydrates - may spike blood sugar',
     }
   },
   {
@@ -155,9 +155,9 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
       hasShellfish: false,
     },
     warnings: {
-      diabetic: '⚠️ High in carbohydrates',
-      gluten_free: '⚠️ Contains gluten - not safe for celiac',
-      celiac_disease: '⚠️ Contains gluten - strictly avoid',
+      diabetic: 'High in carbohydrates',
+      gluten_free: 'Contains gluten - not safe for celiac',
+      celiac_disease: 'Contains gluten - strictly avoid',
     }
   },
 
@@ -180,12 +180,12 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
       hasShellfish: false,
     },
     warnings: {
-      diabetic: '⚠️ May contain palm oil and thickeners that affect blood sugar',
-      hypertensive: '⚠️ Often high in salt and palm oil',
-      high_cholesterol: '⚠️ High in palm oil (saturated fat)',
-      nut_allergy: '⚠️ Contains egusi (melon seeds) - may trigger allergies',
-      weight_loss: '⚠️ High calorie - limit portion size',
-      workout_mode: '⚠️ High fat - not ideal for lean eating',
+      diabetic: 'May contain palm oil and thickeners that affect blood sugar',
+      hypertensive: 'Often high in salt and palm oil',
+      high_cholesterol: 'High in palm oil (saturated fat)',
+      nut_allergy: 'Contains egusi (melon seeds) - may trigger allergies',
+      weight_loss: 'High calorie - limit portion size',
+      workout_mode: 'High fat - not ideal for lean eating',
     }
   },
   {
@@ -206,10 +206,10 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
       hasShellfish: false,
     },
     warnings: {
-      diabetic: '⚠️ May affect blood sugar due to thickeners',
-      hypertensive: '⚠️ High in salt and oil',
-      high_cholesterol: '⚠️ Contains palm oil',
-      nut_allergy: '⚠️ Contains ogbono seeds',
+      diabetic: 'May affect blood sugar due to thickeners',
+      hypertensive: 'High in salt and oil',
+      high_cholesterol: 'Contains palm oil',
+      nut_allergy: 'Contains ogbono seeds',
     }
   },
   {
@@ -230,9 +230,9 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
       hasShellfish: false,
     },
     warnings: {
-      hypertensive: '⚠️ Often high in salt and palm oil',
-      high_cholesterol: '⚠️ Contains palm oil',
-      weight_loss: '⚠️ High calorie from oil',
+      hypertensive: 'Often high in salt and palm oil',
+      high_cholesterol: 'Contains palm oil',
+      weight_loss: 'High calorie from oil',
     }
   },
   {
@@ -253,8 +253,8 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
       hasShellfish: true,
     },
     warnings: {
-      hypertensive: '⚠️ High in salt',
-      shellfish_allergy: '⚠️ Often contains dried crayfish (shellfish)',
+      hypertensive: 'High in salt',
+      shellfish_allergy: 'Often contains dried crayfish (shellfish)',
     }
   },
   {
@@ -275,10 +275,10 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
       hasShellfish: true,
     },
     warnings: {
-      hypertensive: '⚠️ High in salt',
-      asthmatic: '⚠️ Very spicy - may trigger respiratory issues',
-      acid_reflux: '⚠️ Very spicy - may trigger heartburn',
-      shellfish_allergy: '⚠️ Often contains dried fish/crayfish',
+      hypertensive: 'High in salt',
+      asthmatic: 'Very spicy - may trigger respiratory issues',
+      acid_reflux: 'Very spicy - may trigger heartburn',
+      shellfish_allergy: 'Often contains dried fish/crayfish',
     }
   },
 
@@ -301,12 +301,12 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
       hasShellfish: false,
     },
     warnings: {
-      diabetic: '⚠️ High in carbs - may spike blood sugar',
-      hypertensive: '⚠️ High in salt and oil',
-      high_cholesterol: '⚠️ Contains cooking oil',
-      weight_loss: '⚠️ High calorie density',
-      low_sodium: '⚠️ Contains salt and seasoning',
-      workout_mode: '⚠️ Good for energy but high calorie',
+      diabetic: 'High in carbs - may spike blood sugar',
+      hypertensive: 'High in salt and oil',
+      high_cholesterol: 'Contains cooking oil',
+      weight_loss: 'High calorie density',
+      low_sodium: 'Contains salt and seasoning',
+      workout_mode: 'Good for energy but high calorie',
     }
   },
   {
@@ -327,12 +327,12 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
       hasShellfish: false,
     },
     warnings: {
-      diabetic: '⚠️ High in carbs',
-      hypertensive: '⚠️ High in salt and oil',
-      high_cholesterol: '⚠️ Fried and contains oil',
-      weight_loss: '⚠️ High calorie',
-      workout_mode: '⚠️ Fried food - not ideal',
-      egg_allergy: '⚠️ May contain eggs',
+      diabetic: 'High in carbs',
+      hypertensive: 'High in salt and oil',
+      high_cholesterol: 'Fried and contains oil',
+      weight_loss: 'High calorie',
+      workout_mode: 'Fried food - not ideal',
+      egg_allergy: 'May contain eggs',
     }
   },
 
@@ -355,14 +355,14 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
       hasShellfish: false,
     },
     warnings: {
-      diabetic: '⚠️ High in sugar and carbs - blood sugar spike',
-      weight_loss: '⚠️ High calorie, high sugar - limit intake',
-      workout_mode: '⚠️ Fried, sugary - not fitness friendly',
-      low_sugar: '⚠️ High in sugar',
-      gluten_free: '⚠️ Contains gluten',
-      celiac_disease: '⚠️ Contains gluten',
-      dairy_allergy: '⚠️ May contain milk',
-      egg_allergy: '⚠️ May contain eggs',
+      diabetic: 'High in sugar and carbs - blood sugar spike',
+      weight_loss: 'High calorie, high sugar - limit intake',
+      workout_mode: 'Fried, sugary - not fitness friendly',
+      low_sugar: 'High in sugar',
+      gluten_free: 'Contains gluten',
+      celiac_disease: 'Contains gluten',
+      dairy_allergy: 'May contain milk',
+      egg_allergy: 'May contain eggs',
     }
   },
   {
@@ -383,12 +383,12 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
       hasShellfish: false,
     },
     warnings: {
-      diabetic: '⚠️ High in carbs from pastry',
-      weight_loss: '⚠️ High calorie - deep fried',
-      workout_mode: '⚠️ Fried - not ideal',
-      gluten_free: '⚠️ Contains gluten',
-      celiac_disease: '⚠️ Contains gluten',
-      hypertensive: '⚠️ High in salt',
+      diabetic: 'High in carbs from pastry',
+      weight_loss: 'High calorie - deep fried',
+      workout_mode: 'Fried - not ideal',
+      gluten_free: 'Contains gluten',
+      celiac_disease: 'Contains gluten',
+      hypertensive: 'High in salt',
     }
   },
 
@@ -411,9 +411,9 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
       hasShellfish: false,
     },
     warnings: {
-      workout_mode: '⚠️ Fried - not ideal for workout days',
-      weight_loss: '⚠️ High in calories from frying',
-      hypertensive: '⚠️ Contains salt',
+      workout_mode: 'Fried - not ideal for workout days',
+      weight_loss: 'High in calories from frying',
+      hypertensive: 'Contains salt',
     }
   },
   {
@@ -434,8 +434,8 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
       hasShellfish: false,
     },
     warnings: {
-      workout_mode: '✅ Good protein from beans',
-      egg_allergy: '⚠️ May contain eggs',
+      workout_mode: 'Good protein from beans',
+      egg_allergy: 'May contain eggs',
     }
   },
 ];

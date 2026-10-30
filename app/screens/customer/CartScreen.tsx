@@ -60,7 +60,7 @@ export function CartScreen() {
     vendorId
   } = useCart();
   const { user } = useAuth();
-  const { vendors } = useVendors();
+  const { allVendors: vendors } = useVendors();
   const { calculateDeliveryToVendor, deliveryDistance } = useLocation();
 
   // UI States
@@ -249,7 +249,7 @@ useEffect(() => {
 useEffect(() => {
   if (!showCheckout || !user) return;
   fetchAddresses();
-  fetchCustomerRewards(); // ✅ Add this line
+  fetchCustomerRewards(); // Add this line
 }, [showCheckout, user]);
 
   const fetchAddresses = async () => {
@@ -351,7 +351,7 @@ useEffect(() => {
       code: promoData,
       discount: discountAmount,
       message: `Promo code applied! You saved ₦${discountAmount.toLocaleString()}`,
-      is_platform_promo: isPlatformPromo,  // ✅ Add this flag
+      is_platform_promo: isPlatformPromo,  // Add this flag
       vendor_id: promoData.vendor_id,
       created_by_admin: promoData.created_by_admin,
     };
@@ -1002,6 +1002,12 @@ const handleCardPayment = async () => {
       return;
     }
 
+    const { data: shop } = await supabase.from('vendors').select('name, is_open').eq('id', vendorId).maybeSingle();
+    if (shop?.is_open === false) {
+      showToast(`${shop.name} has just closed and isn't taking orders right now. Please try again later.`);
+      return;
+    }
+
     if (!calculatedDeliveryFee) {
       showToast('Unable to calculate delivery fee. Please ensure your address has valid coordinates.');
       return;
@@ -1232,11 +1238,11 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
           <Text style={styles.promoSuccess}>Promo code applied! You saved ₦{discount.toLocaleString()}</Text>
         )}
         {isFirstOrder && !promoApplied && subtotal > 10000 && (
-          <Text style={styles.firstOrderText}>🎉 First order over ₦10,000 gets 10% off + FREE delivery!</Text>
+          <Text style={styles.firstOrderText}>First order over ₦10,000 gets 10% off + FREE delivery!</Text>
         )}
         {isFirstOrder && !promoApplied && subtotal <= 10000 && (
           <Text style={styles.firstOrderTextSmall}>
-            🎉 Add ₦{(10000 - subtotal).toLocaleString()} more to get 10% off + FREE delivery on your first order!
+            Add ₦{(10000 - subtotal).toLocaleString()} more to get 10% off + FREE delivery on your first order!
           </Text>
         )}
 
@@ -1316,10 +1322,10 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
 
     {/* Notices */}
     {(freeDeliveryEligible || applyFreeDelivery) && (
-      <Text style={styles.modalFreeDeliveryNotice}>✨ Free delivery applied to this order!</Text>
+      <Text style={styles.modalFreeDeliveryNotice}>Free delivery applied to this order!</Text>
     )}
     {applyWallet && finalWalletUsedAmount > 0 && (
-      <Text style={styles.modalReferralNotice}>🎁 Referral bonus saved you ₦{finalWalletUsedAmount.toLocaleString()}</Text>
+      <Text style={styles.modalReferralNotice}>Referral bonus saved you ₦{finalWalletUsedAmount.toLocaleString()}</Text>
     )}
   </View>
 </View>
@@ -1646,7 +1652,7 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
         </Text>
         {customerRewards.freeDeliveryExpiresAt && (
           <Text style={styles.rewardExpiry}>
-            ⏰ Expires {new Date(customerRewards.freeDeliveryExpiresAt).toLocaleDateString()}
+            Expires {new Date(customerRewards.freeDeliveryExpiresAt).toLocaleDateString()}
           </Text>
         )}
       </View>
@@ -1765,10 +1771,10 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
 
     {/* Notices */}
     {(freeDeliveryEligible || applyFreeDelivery) && (
-      <Text style={styles.modalFreeDeliveryNotice}>✨ Free delivery applied to this order!</Text>
+      <Text style={styles.modalFreeDeliveryNotice}>Free delivery applied to this order!</Text>
     )}
     {applyWallet && finalWalletUsedAmount > 0 && (
-      <Text style={styles.modalReferralNotice}>🎁 Referral bonus saved you ₦{finalWalletUsedAmount.toLocaleString()}</Text>
+      <Text style={styles.modalReferralNotice}>Referral bonus saved you ₦{finalWalletUsedAmount.toLocaleString()}</Text>
     )}
   </View>
 </View>

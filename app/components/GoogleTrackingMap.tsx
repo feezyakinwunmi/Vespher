@@ -295,12 +295,12 @@ export default function GoogleTrackingMap({
       <View style={styles.statusBadge}>
         <Text style={styles.statusText}>
           {orderStatus === 'in_transit'
-            ? '🚚 Rider is on the way'
+            ? 'Rider is on the way'
             : orderStatus === 'picked_up'
-            ? '📦 Order picked up'
+            ? 'Order picked up'
             : orderStatus === 'ready'
-            ? '✅ Ready for pickup'
-            : '🍳 Preparing your order'}
+            ? 'Ready for pickup'
+            : 'Preparing your order'}
         </Text>
       </View>
 

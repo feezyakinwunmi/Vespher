@@ -14,7 +14,7 @@ import { useLocation } from '../contexts/LocationContext';
 import { useVendors } from '../hooks/customer/useVendors';
 
 interface VendorMapProps {
-  vendorId: string; // ✅ Change: pass vendorId instead of full location
+  vendorId: string; // Change: pass vendorId instead of full location
   onDistanceCalculated?: (distance: number, fee: number) => void;
 }
 
@@ -27,7 +27,7 @@ export function VendorMap({ vendorId, onDistanceCalculated }: VendorMapProps) {
   } = useLocation();
   
   // ✅ Get vendor data from the vendors hook
-  const { vendors } = useVendors();
+  const { allVendors: vendors } = useVendors();
   const vendor = vendors.find(v => v.id === vendorId);
   
   const mapRef = useRef<MapView>(null);

@@ -27,6 +27,7 @@ import { useHealth } from '../../contexts/HealthContext';
 import { CustomerHeader } from '../../components/customer/CustomerHeader';
 import { TimedFoodSuggestions } from '../../components/customer/TimedFoodSuggestions';
 import { LockInHintBanner } from '../../components/customer/LockInHintBanner';
+import { MEAL_TIME_ICONS } from '../../components/customer/TimedFoodSuggestions';
 import { HealthWarningModal } from '../../components/customer/HealthWarningModal';
 import { useCategories } from '../../hooks/customer/useCategories';
 import { useVendors } from '../../hooks/customer/useVendors';
@@ -172,6 +173,12 @@ const getHealthierAlternatives = (triggeredConditions: string[], currentProductN
 
   return alternatives;
 };
+  const referralPromotion = {
+    id: 'referral', title: 'Invite friends, earn ₦500',
+    description: 'Share your referral code. Your friend gets ₦500 off their first order and you earn ₦500 when they order.',
+    promotion_type: 'referral', vendor_id: null,
+  };
+
   const firstOrderPromotion = {
     id: 'first-order', title: 'First Order Offer',
     description: 'Get 10% off + FREE delivery on your first order',
@@ -377,7 +384,7 @@ function getEffectMessage(conditionId: string, label: string): string {
         .from('promotions')
         .select(`
           *,
-          vendor:vendor_id (name),
+          vendor:vendor_id (name, is_open),
           products:product_id (id, name, price),
           main_product:main_product_id (id, name, price),
           free_product:free_product_id (id, name, price)
@@ -389,7 +396,7 @@ function getEffectMessage(conditionId: string, label: string): string {
 
       if (error) throw error;
 
-      const processedPromos = data?.map(promo => {
+      const processedPromos = data?.filter(promo => promo.vendor?.is_open !== false).map(promo => {
         let mainProductName = promo.main_product?.name;
         let freeProductName = promo.free_product?.name;
         if (promo.promotion_type === 'combo') {
@@ -433,7 +440,8 @@ function getEffectMessage(conditionId: string, label: string): string {
     }
   };
 
-  const allSlides = isFirstOrder ? [firstOrderPromotion, ...promotions] : promotions;
+  // The referral slide is always there; vendor promotions follow it in the slider.
+  const allSlides = [referralPromotion, ...(isFirstOrder ? [firstOrderPromotion] : []), ...promotions];
 
   useEffect(() => {
     const checkFirstOrder = async () => {
@@ -448,16 +456,18 @@ function getEffectMessage(conditionId: string, label: string): string {
     fetchPromotions();
   }, []);
 
+  // Auto-advance through every slide (referral, first-order offer, vendor promotions).
+  const slideCount = allSlides.length;
   useEffect(() => {
-    if (promotions.length <= 1) return;
+    if (slideCount <= 1) return;
     const interval = setInterval(() => {
       let nextSlide = currentSlide + 1;
-      if (nextSlide >= promotions.length) nextSlide = 0;
+      if (nextSlide >= slideCount) nextSlide = 0;
       flatListRef.current?.scrollToIndex({ index: nextSlide, animated: true });
       setCurrentSlide(nextSlide);
     }, 4000);
     return () => clearInterval(interval);
-  }, [currentSlide, promotions.length]);
+  }, [currentSlide, slideCount]);
 
   useEffect(() => {
     if (verticalPromoSlides.length <= 1) return;
@@ -621,7 +631,10 @@ function getEffectMessage(conditionId: string, label: string): string {
         {/* ── Dynamic Greeting ── */}
         <View style={styles.greetingSection}>
           <View style={styles.greetingTextGroup}>
-            <Text style={styles.greetingText}>{greeting}</Text>
+            <View style={styles.greetingRow}>
+              <Feather name={MEAL_TIME_ICONS[mealTime]} size={20} color="#f97316" />
+              <Text style={styles.greetingText}>{greeting}</Text>
+            </View>
             <Text style={styles.subtitleText}>{subtitle}</Text>
           </View>
           <TouchableOpacity onPress={() => navigation.navigate('Messaging')} style={styles.messageButton}>
@@ -691,6 +704,34 @@ function getEffectMessage(conditionId: string, label: string): string {
               viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
               keyExtractor={(item) => item.id}
               renderItem={({ item }) => {
+                if (item.promotion_type === 'referral') {
+                  return (
+                    <TouchableOpacity activeOpacity={0.9} onPress={() => navigation.navigate('Rewards')} style={styles.slide}>
+                      <LinearGradient colors={['#f97316', '#f43f5e']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.slideOverlay, styles.referralSlide]}>
+                        <View style={styles.referralArt}>
+                          <Feather name="users" size={64} color="rgba(255,255,255,0.18)" />
+                        </View>
+                        <View style={styles.slideContent}>
+                          <View style={styles.textContent}>
+                            <View style={[styles.badgeContainer, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+                              <Feather name="gift" size={14} color="#fff" />
+                              <Text style={[styles.badgeText, { color: '#fff' }]}>REFERRAL BONUS</Text>
+                            </View>
+                            <Text style={styles.title}>{item.title}</Text>
+                            <Text style={styles.description} numberOfLines={3}>{item.description}</Text>
+                            <View style={styles.buttonContainer}>
+                              <View style={[styles.orderButton, { backgroundColor: '#fff' }]}>
+                                <Text style={[styles.orderButtonText, { color: '#f97316' }]}>Get my code</Text>
+                                <Feather name="arrow-right" size={16} color="#f97316" />
+                              </View>
+                            </View>
+                          </View>
+                        </View>
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  );
+                }
+
                 if (item.promotion_type === 'first_order') {
                   return (
                     <TouchableOpacity activeOpacity={0.9} onPress={() => navigation.navigate('CustomerTabs', { screen: 'Explore' })} style={styles.slide}>
@@ -1057,7 +1098,8 @@ const styles = StyleSheet.create({
   // Greeting
   greetingSection: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16 },
   greetingTextGroup: { flex: 1, marginRight: 12 },
-  greetingText: { fontSize: 20, fontWeight: '700', color: '#fff' },
+  greetingRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  greetingText: { fontSize: 20, fontWeight: '700', color: '#fff', flexShrink: 1 },
   subtitleText: { fontSize: 13, color: '#666', marginTop: 4, lineHeight: 18 },
   messageButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#1a1a1a', justifyContent: 'center', alignItems: 'center', position: 'relative' },
   unreadBadge: { position: 'absolute', top: -2, right: -2, minWidth: 18, height: 18, borderRadius: 9, backgroundColor: '#ef4444', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 4 },
@@ -1087,6 +1129,8 @@ const styles = StyleSheet.create({
   slide: { width: width - 32, height: 220, borderRadius: 20, overflow: 'hidden' },
   slideImage: { width: '100%', height: '100%' },
   slideOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center' },
+  referralSlide: { overflow: 'hidden' },
+  referralArt: { position: 'absolute', right: -6, bottom: -6 },
   slideContent: { flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 20 },
   textContent: { flex: 1, gap: 8 },
   badgeContainer: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(249,115,22,0.2)', alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },

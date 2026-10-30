@@ -776,7 +776,7 @@ export function ExploreScreen() {
                       <Image source={imageSource(vendor.image)} style={styles.vendorOptionImage} />
                       <View style={styles.vendorOptionInfo}>
                         <Text style={styles.vendorOptionName}>{vendor.name}</Text>
-                        <Text style={styles.vendorOptionRating}>⭐ {vendor.rating.toFixed(1)}</Text>
+                        <Text style={styles.vendorOptionRating}><Feather name="star" size={11} color="#f59e0b" /> {vendor.rating.toFixed(1)}</Text>
                       </View>
                       {tempFilters.vendors.includes(vendor.id) && <Feather name="check" size={18} color="#f97316" />}
                     </TouchableOpacity>

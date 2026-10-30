@@ -148,6 +148,7 @@ export function VoiceAssistantProvider({ children }: { children: React.ReactNode
           .eq('is_available', true)
           .maybeSingle();
         if (!p) return 'Error: that dish is not available.';
+        if ((p as any).vendor?.is_open === false) return `Error: ${(p as any).vendor?.name || 'that vendor'} is closed right now. Suggest a dish from an open vendor.`;
         if (c.vendorId && c.items.length && c.vendorId !== p.vendor_id) {
           return `Error: the cart has dishes from another vendor. Ask the customer if you should clear the cart first.`;
         }

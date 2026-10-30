@@ -15,7 +15,8 @@ import {
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as Location from 'expo-location';
+import * as Location from 'expo-location';
+import { ModalSafeArea } from './ModalSafeArea';
 
 const { width, height } = Dimensions.get('window');
 
@@ -223,7 +224,7 @@ export default function ReuseLocationPicker({
       transparent={false}
       onRequestClose={onClose}
     >
-      <View style={styles.container}>
+      <ModalSafeArea style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -350,7 +351,7 @@ export default function ReuseLocationPicker({
             </View>
           </View>
         )}
-      </View>
+      </ModalSafeArea>
     </Modal>
   );
 }

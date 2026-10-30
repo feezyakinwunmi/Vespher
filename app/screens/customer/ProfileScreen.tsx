@@ -29,6 +29,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { VoiceAndCardsSection } from '../../components/customer/VoiceAndCardsSection';
 import type { Address } from '../../types';
 import Toast from 'react-native-toast-message';
+import { EmojiIcon } from '../../components/EmojiIcon';
 
 const formatDate = (date: Date): string => {
   try {
@@ -92,6 +93,7 @@ const menuItems = [
   { icon: 'calendar', label: 'Meal Planner', path: 'MealPlanner', color: '#10b981' },
   { icon: 'heart', label: 'Favorites', path: 'Favorites', color: '#ef4444' },
   { icon: 'map-pin', label: 'Saved Addresses', path: 'Addresses', color: '#f97316' },
+  { icon: 'truck', label: 'Become a rider', path: 'RiderApplication', color: '#3b82f6' },
   { icon: 'shield', label: 'Privacy & Security', path: 'Privacy', color: '#10b981' },
   { icon: 'help-circle', label: 'Help & Support', path: 'Support', color: '#f59e0b' },
 ];
@@ -337,7 +339,7 @@ export function ProfileScreen() {
       await fetchHealthProfile();
       
       setShowLockInModal(false);
-      showToast('Health Lock-In saved successfully! 🔒');
+      showToast('Health Lock-In saved successfully!');
     } catch (error) {
       console.error('Error saving lock-in:', error);
       showToast('Failed to save settings. Please try again.', 'error');
@@ -668,7 +670,7 @@ const isLifestyleCondition = (id: HealthCondition) => {
                   if (!meta) return null;
                   return (
                     <View key={condId} style={[styles.conditionPill, { borderColor: meta.color }]}>
-                      <Text style={styles.conditionPillIcon}>{meta.icon}</Text>
+                      <EmojiIcon emoji={meta.icon} size={13} color={meta.color} />
                       <Text style={[styles.conditionPillLabel, { color: meta.color }]}>{meta.label}</Text>
                       <TouchableOpacity 
                         onPress={() => handleDeleteCondition(condId)}
@@ -745,14 +747,14 @@ const isLifestyleCondition = (id: HealthCondition) => {
                 style={styles.lockInEmptyGradient}
               >
                 <View style={styles.lockInEmptyIcon}>
-                  <Text style={styles.lockInEmptyEmoji}>🔒</Text>
+                  <Feather name="lock" size={26} color="#f97316" />
                 </View>
                 <Text style={styles.lockInEmptyTitle}>Set Up Health Lock-In</Text>
                 <Text style={styles.lockInEmptySubtitle}>
                   Tell us about your health goals or conditions. We'll warn you before you order something that doesn't suit you.
                 </Text>
                 <View style={styles.lockInEmptyExamples}>
-                  {['💪 Workout Mode', '🩺 Diabetic', '🥜 Nut Allergy', '🌱 Vegan'].map(tag => (
+                  {['Workout Mode', 'Diabetic', 'Nut Allergy', 'Vegan'].map(tag => (
                     <View key={tag} style={styles.lockInExampleTag}>
                       <Text style={styles.lockInExampleTagText}>{tag}</Text>
                     </View>
@@ -918,7 +920,7 @@ const isLifestyleCondition = (id: HealthCondition) => {
                         style={[styles.goalCard, selectedGoal === goal.id && styles.goalCardSelected]}
                         onPress={() => setSelectedGoal(goal.id)}
                       >
-                        <Text style={styles.goalIcon}>{goal.icon}</Text>
+                        <EmojiIcon emoji={goal.icon} size={26} color={selectedGoal === goal.id ? '#f97316' : '#aaa'} />
                         <Text style={[styles.goalLabel, selectedGoal === goal.id && styles.goalLabelSelected]}>
                           {goal.label}
                         </Text>
@@ -941,7 +943,7 @@ const isLifestyleCondition = (id: HealthCondition) => {
                   </Text>
 
                   {/* Lifestyle conditions */}
-                  <Text style={styles.conditionGroupLabel}>🏃 Lifestyle & Goals</Text>
+                  <Text style={styles.conditionGroupLabel}>Lifestyle & Goals</Text>
                   <View style={styles.conditionsGrid}>
                     {HEALTH_CONDITIONS.filter(c => LIFESTYLE_CONDITIONS.includes(c.id)).map(cond => {
                       const isSelected = selectedConditions.includes(cond.id);
@@ -951,7 +953,7 @@ const isLifestyleCondition = (id: HealthCondition) => {
                           style={[styles.conditionCard, isSelected && { borderColor: cond.color, backgroundColor: `${cond.color}15` }]}
                           onPress={() => toggleCondition(cond.id)}
                         >
-                          <Text style={styles.conditionCardIcon}>{cond.icon}</Text>
+                          <EmojiIcon emoji={cond.icon} size={22} color={cond.color} />
                           <Text style={[styles.conditionCardLabel, isSelected && { color: cond.color }]}>{cond.label}</Text>
                           <Text style={styles.conditionCardDesc} numberOfLines={2}>{cond.description}</Text>
                           {isSelected && (
@@ -965,7 +967,7 @@ const isLifestyleCondition = (id: HealthCondition) => {
                   </View>
 
                   {/* Health conditions */}
-                  <Text style={[styles.conditionGroupLabel, { marginTop: 20 }]}>🩺 Health Conditions & Allergies</Text>
+                  <Text style={[styles.conditionGroupLabel, { marginTop: 20 }]}>Health Conditions & Allergies</Text>
                   <View style={styles.conditionsGrid}>
                     {HEALTH_CONDITIONS.filter(c => !LIFESTYLE_CONDITIONS.includes(c.id)).map(cond => {
                       const isSelected = selectedConditions.includes(cond.id);
@@ -975,7 +977,7 @@ const isLifestyleCondition = (id: HealthCondition) => {
                           style={[styles.conditionCard, isSelected && { borderColor: cond.color, backgroundColor: `${cond.color}15` }]}
                           onPress={() => toggleCondition(cond.id)}
                         >
-                          <Text style={styles.conditionCardIcon}>{cond.icon}</Text>
+                          <EmojiIcon emoji={cond.icon} size={22} color={cond.color} />
                           <Text style={[styles.conditionCardLabel, isSelected && { color: cond.color }]}>{cond.label}</Text>
                           <Text style={styles.conditionCardDesc} numberOfLines={2}>{cond.description}</Text>
                           {isSelected && (
@@ -1043,7 +1045,7 @@ const isLifestyleCondition = (id: HealthCondition) => {
                         const meta = HEALTH_CONDITIONS.find(c => c.id === id);
                         return meta ? (
                           <View key={id} style={[styles.summaryPill, { borderColor: meta.color }]}>
-                            <Text style={styles.summaryPillText}>{meta.icon} {meta.label}</Text>
+                            <Text style={styles.summaryPillText}><EmojiIcon emoji={meta.icon} size={12} color={meta.color} /> {meta.label}</Text>
                           </View>
                         ) : null;
                       })}

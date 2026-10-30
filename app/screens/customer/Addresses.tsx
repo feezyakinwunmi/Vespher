@@ -248,7 +248,7 @@ const handleSelectAddress = (address: Address) => {
         <Feather name="navigation" size={20} color="#f97316" />
       </View>
       <View style={styles.addressInfo}>
-        <Text style={styles.addressLabel}>📍 Use Current Location</Text>
+        <Text style={styles.addressLabel}>Use Current Location</Text>
         {locationLoading ? (
           <View style={styles.locationLoadingContainer}>
             <ActivityIndicator size="small" color="#f97316" />
@@ -277,7 +277,7 @@ const handleSelectAddress = (address: Address) => {
         <Feather name="navigation" size={20} color="#f97316" />
       </View>
       <View style={styles.addressInfo}>
-        <Text style={styles.addressLabel}>📍 Save Current Location</Text>
+        <Text style={styles.addressLabel}>Save Current Location</Text>
         {locationLoading ? (
           <View style={styles.locationLoadingContainer}>
             <ActivityIndicator size="small" color="#f97316" />
@@ -338,7 +338,7 @@ const handleSelectAddress = (address: Address) => {
                     {/* 👇 ADD THIS RIGHT HERE - after phone number */}
   {(address.latitude && address.longitude) && (
     <Text style={styles.addressDetail}>
-      📍 Coordinates: {address.latitude.toFixed(6)}, {address.longitude.toFixed(6)}
+      Coordinates: {address.latitude.toFixed(6)}, {address.longitude.toFixed(6)}
     </Text>
   )}
                   </View>

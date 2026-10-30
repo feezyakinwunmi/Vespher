@@ -194,7 +194,7 @@ export function useVendorMenu() {
     pendingCount,
     approvedCount,
     outOfStockCount,
-    vendorId, // ✅ Add this
+    vendorId, // Add this
     addMenuItem,
     updateMenuItem,
     deleteMenuItem,

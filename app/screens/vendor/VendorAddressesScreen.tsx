@@ -22,7 +22,7 @@ import type { Address } from '../../types';
 import { useLocation } from '../../contexts/LocationContext';
 import { RootStackParamList } from '../../navigation/types';
 import Toast from 'react-native-toast-message';
-import MapAddressPicker from '../../components/MapAddressPicker'; // ✅ Already imported
+import MapAddressPicker from '../../components/MapAddressPicker'; // Already imported
 
 
 type VendorAddressesScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -313,7 +313,7 @@ const handleSetDefault = async (id: string) => {
                 <Feather name="navigation" size={20} color="#f97316" />
               </View>
               <View style={styles.addressInfo}>
-                <Text style={styles.addressLabel}>📍 Use Current Location</Text>
+                <Text style={styles.addressLabel}>Use Current Location</Text>
                 {locationLoading ? (
                   <View style={styles.locationLoadingContainer}>
                     <ActivityIndicator size="small" color="#f97316" />
@@ -342,7 +342,7 @@ const handleSetDefault = async (id: string) => {
                 <Feather name="navigation" size={20} color="#f97316" />
               </View>
               <View style={styles.addressInfo}>
-                <Text style={styles.addressLabel}>📍 Save Current Location</Text>
+                <Text style={styles.addressLabel}>Save Current Location</Text>
                 {locationLoading ? (
                   <View style={styles.locationLoadingContainer}>
                     <ActivityIndicator size="small" color="#f97316" />

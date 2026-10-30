@@ -16,7 +16,7 @@ export default {
         googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
       },
       infoPlist: {
-        NSLocationWhenInUseUsageDescription: "Vesphe uses your location to show nearby vendors and set your delivery address."
+        NSLocationWhenInUseUsageDescription: "Vesphe uses your location to show nearby vendors, set your delivery address and, for riders, share your position with customers during a delivery."
       }
     },
     android: {
@@ -63,9 +63,9 @@ export default {
       [
         "expo-location",
         {
-          // Foreground only: background location is for the rider app and gets
-          // store-rejected without a background feature that needs it.
-          locationWhenInUsePermission: "Allow Vesphe to use your location to find nearby vendors and set your delivery address.",
+          // Foreground only: riders share location while the app is open. Background
+          // location gets store-rejected without a feature that clearly needs it.
+          locationWhenInUsePermission: "Allow Vesphe to use your location to find nearby vendors, set your delivery address and, for riders, share your position during deliveries.",
           isIosBackgroundLocationEnabled: false,
           isAndroidBackgroundLocationEnabled: false
         }
@@ -94,7 +94,7 @@ export default {
         "expo-image-picker",
         {
           photosPermission: "Vesphe needs access to your photos so you can upload profile, store and menu images.",
-          cameraPermission: "Vesphe uses the camera so you can take photos for your profile, store and menu."
+          cameraPermission: "Vesphe uses the camera so you can take photos for your profile, store, menu and rider application documents."
         }
       ]
     ],

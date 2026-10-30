@@ -20,6 +20,7 @@ import { useCart } from '../../contexts/CartContext';
 import { useHealthCheck, HealthCheckResult } from '../../hooks/customer/useHealthCheck';
 import { reviewFood } from '../../services/foodSafety';
 import { imageSource } from '../../utils/images';
+import { EmojiIcon } from '../EmojiIcon';
 
 interface ProductDetailsModalProps {
   product: Product | null;
@@ -121,7 +122,7 @@ export function ProductDetailsModal({ product, onClose, onHealthWarning, vendorN
                   <View style={styles.chipRow}>
                     {allAllergens.map(a => (
                       <View key={a.id} style={[styles.chip, styles.allergenChip]}>
-                        <Text style={styles.chipText}>{a.icon} {a.label}</Text>
+                        <Text style={styles.chipText}><EmojiIcon emoji={a.icon} size={12} color="#f59e0b" /> {a.label}</Text>
                       </View>
                     ))}
                   </View>

@@ -633,8 +633,8 @@ const processAnalyticsData = (
             <Text style={styles.metricValue}>{formatNumber(analytics.totalOrders)}</Text>
             <Text style={styles.metricLabel}>Total Orders</Text>
             <View style={styles.metricSubtext}>
-              <Text style={styles.metricSubtextText}>🍔 {analytics.totalFoodOrders}</Text>
-              <Text style={styles.metricSubtextText}>📦 {analytics.totalBusinessOrders}</Text>
+              <Text style={styles.metricSubtextText}>Food {analytics.totalFoodOrders}</Text>
+              <Text style={styles.metricSubtextText}>Business {analytics.totalBusinessOrders}</Text>
             </View>
           </View>
 
@@ -644,8 +644,8 @@ const processAnalyticsData = (
             <Text style={styles.metricValue}>{formatCurrency(analytics.totalRevenue)}</Text>
             <Text style={styles.metricLabel}>Total Revenue</Text>
             <View style={styles.metricSubtext}>
-              <Text style={styles.metricSubtextText}>🍔 {formatCurrency(analytics.totalFoodRevenue)}</Text>
-              <Text style={styles.metricSubtextText}>📦 {formatCurrency(analytics.totalBusinessRevenue)}</Text>
+              <Text style={styles.metricSubtextText}>Food {formatCurrency(analytics.totalFoodRevenue)}</Text>
+              <Text style={styles.metricSubtextText}>Business {formatCurrency(analytics.totalBusinessRevenue)}</Text>
             </View>
           </View>
 
@@ -754,7 +754,7 @@ const processAnalyticsData = (
       width={width - 32}
       height={200}
       yAxisLabel=""
-      yAxisSuffix=""  // ✅ ADD THIS LINE
+      yAxisSuffix=""  // ADD THIS LINE
       chartConfig={chartConfig}
       showValuesOnTopOfBars
       fromZero
@@ -767,7 +767,7 @@ const processAnalyticsData = (
 
         {/* By Orders */}
         <View style={styles.topVendorsCard}>
-          <Text style={styles.topVendorsTitle}>🏆 Most Orders</Text>
+          <Text style={styles.topVendorsTitle}>Most Orders</Text>
           {analytics.topVendorsByOrders.map((vendor, index) => (
             <View key={vendor.id} style={styles.vendorRankItem}>
               <View style={styles.vendorRankLeft}>
@@ -792,7 +792,7 @@ const processAnalyticsData = (
 
         {/* By Revenue */}
         <View style={styles.topVendorsCard}>
-          <Text style={styles.topVendorsTitle}>💰 Highest Revenue</Text>
+          <Text style={styles.topVendorsTitle}>Highest Revenue</Text>
           {analytics.topVendorsByRevenue.map((vendor, index) => (
             <View key={vendor.id} style={styles.vendorRankItem}>
               <View style={styles.vendorRankLeft}>
@@ -818,7 +818,7 @@ const processAnalyticsData = (
         {/* ===== TOP RIDERS SECTION ===== */}
         <Text style={styles.sectionTitle}>Top Riders</Text>
         <View style={styles.topVendorsCard}>
-          <Text style={styles.topVendorsTitle}>🛵 Highest Earnings</Text>
+          <Text style={styles.topVendorsTitle}>Highest Earnings</Text>
           {analytics.topRidersByEarnings.map((rider, index) => (
             <View key={index} style={styles.vendorRankItem}>
               <View style={styles.vendorRankLeft}>
@@ -840,16 +840,16 @@ const processAnalyticsData = (
             <Text style={styles.statSummaryValue}>{analytics.totalVendors}</Text>
             <View style={styles.statSummaryBadges}>
               <Text style={[styles.statBadge, styles.approvedBadge]}>✓ {analytics.approvedVendors}</Text>
-              <Text style={[styles.statBadge, styles.pendingBadge]}>⏳ {analytics.pendingVendors}</Text>
-              <Text style={[styles.statBadge, styles.suspendedBadge]}>⚠️ {analytics.suspendedVendors}</Text>
+              <Text style={[styles.statBadge, styles.pendingBadge]}>Pending {analytics.pendingVendors}</Text>
+              <Text style={[styles.statBadge, styles.suspendedBadge]}>Suspended {analytics.suspendedVendors}</Text>
             </View>
           </View>
           <View style={styles.statSummaryItem}>
             <Text style={styles.statSummaryLabel}>Users</Text>
             <Text style={styles.statSummaryValue}>{analytics.totalUsers}</Text>
             <View style={styles.statSummaryBadges}>
-              <Text style={[styles.statBadge, styles.customerBadge]}>👤 {analytics.totalCustomers}</Text>
-              <Text style={[styles.statBadge, styles.riderBadge]}>🛵 {analytics.totalRiders}</Text>
+              <Text style={[styles.statBadge, styles.customerBadge]}>Customers {analytics.totalCustomers}</Text>
+              <Text style={[styles.statBadge, styles.riderBadge]}>Riders {analytics.totalRiders}</Text>
             </View>
           </View>
         </View>

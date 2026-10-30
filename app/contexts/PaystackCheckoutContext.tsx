@@ -8,7 +8,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { Feather } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
-import { functionErrorMessage } from '../utils/paystack';
+import { functionErrorMessage } from '../utils/paystack';
+import { ModalSafeArea } from '../components/ModalSafeArea';
 
 export type PaymentKind = 'order' | 'promotion' | 'subscription';
 // paid: confirmed by the server. pending: customer may have paid but it isn't confirmed
@@ -107,7 +108,7 @@ export function PaystackCheckoutProvider({ children }: { children: React.ReactNo
     <PaystackCheckoutContext.Provider value={{ pay }}>
       {children}
       <Modal visible={!!session} animationType="slide" onRequestClose={confirmClose}>
-        <SafeAreaView style={styles.container}>
+        <ModalSafeArea style={styles.container}>
           <View style={styles.header}>
             <View style={styles.headerTitleRow}>
               <Feather name="lock" size={14} color="#10b981" />
@@ -139,7 +140,7 @@ export function PaystackCheckoutProvider({ children }: { children: React.ReactNo
               <Text style={styles.verifyingText}>Confirming your payment…</Text>
             </View>
           )}
-        </SafeAreaView>
+        </ModalSafeArea>
       </Modal>
     </PaystackCheckoutContext.Provider>
   );

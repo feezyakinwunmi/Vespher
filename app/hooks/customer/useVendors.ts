@@ -1,5 +1,5 @@
 // app/hooks/customer/useVendors.ts
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -57,7 +57,11 @@ export interface Vendor {
 
 export function useVendors() {
   const { isReady } = useAuth();
-  const [vendors, setVendors] = useState<Vendor[]>([]);
+  // Every approved vendor, including closed ones (shop pages show a "closed" state).
+  const [allVendors, setAllVendors] = useState<Vendor[]>([]);
+  // Closed shops (vendor switched off "Open for orders") are unlisted for customers.
+  // Memoised: screens run effects on `vendors`, so a new array every render loops.
+  const vendors = useMemo(() => allVendors.filter(v => v.isOpen), [allVendors]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -82,7 +86,7 @@ export function useVendors() {
       if (error) throw error;
 
       if (!data || data.length === 0) {
-        setVendors([]);
+        setAllVendors([]);
         return;
       }
 
@@ -151,7 +155,7 @@ export function useVendors() {
           })),
       }));
 
-      setVendors(transformedVendors);
+      setAllVendors(transformedVendors);
     } catch (err: any) {
       console.error('Error fetching vendors:', err);
       setError(err.message);
@@ -166,8 +170,25 @@ export function useVendors() {
     fetchVendors();
   }, [isReady]);
 
+  // A vendor opening or closing updates customers' lists without a manual refresh.
+  useEffect(() => {
+    if (!isReady) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const channel = supabase
+      .channel(`customer-vendors-${Math.random().toString(36).slice(2)}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'vendors' }, () => {
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(fetchVendors, 800);
+      })
+      .subscribe();
+    return () => {
+      if (timer) clearTimeout(timer);
+      channel.unsubscribe();
+    };
+  }, [isReady]);
+
   const getVendorById = (id: string) => {
-    return vendors.find(v => v.id === id) || null;
+    return allVendors.find(v => v.id === id) || null;
   };
 
   const getVendorsByCategory = (category: string) => {
@@ -188,6 +209,7 @@ export function useVendors() {
 
   return {
     vendors,
+    allVendors,
     isLoading,
     error,
     refresh: fetchVendors,

@@ -22,6 +22,7 @@ import { useVendors } from '../../hooks/customer/useVendors';
 import { useCategories } from '../../hooks/customer/useCategories';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
+import { EmojiIcon } from '../../components/EmojiIcon';
 
 type VendorsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type SortOption = 'rating' | 'delivery' | 'price';
@@ -260,7 +261,7 @@ export function VendorsScreen() {
                         sortBy === option.value && styles.sortOptionSelected,
                       ]}
                     >
-                      <Text style={styles.sortOptionIcon}>{option.icon}</Text>
+                      <EmojiIcon emoji={option.icon} size={17} color="#f97316" />
                       <Text style={[
                         styles.sortOptionLabel,
                         sortBy === option.value && styles.sortOptionLabelSelected,

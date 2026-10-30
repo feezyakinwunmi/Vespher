@@ -165,7 +165,7 @@ export function HealthWarningModal({
               <Feather name={config.icon as any} size={32} color="#fff" />
             </View>
             <View style={styles.headerText}>
-              <Text style={styles.verdictLabel}>🔒 Lock-In Alert — {config.label}</Text>
+              <Text style={styles.verdictLabel}>Lock-In Alert — {config.label}</Text>
               <Text style={styles.productNameHeader} numberOfLines={2}>{productName}</Text>
             </View>
           </View>

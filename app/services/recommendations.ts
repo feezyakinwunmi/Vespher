@@ -99,28 +99,28 @@ export function scoreProduct<T extends RecommendableProduct>(
     if (meta && hit && goodMatches < 3) {
       goodMatches++;
       score += 12;
-      reasons.push(`${meta.icon} Good for ${meta.label}`);
+      reasons.push(`Good for ${meta.label}`);
     }
   }
   if (tags.has('high_protein') && ctx.conditions.some(c => PERFORMANCE_CONDITIONS.includes(c))) {
     score += 10;
-    reasons.push('💪 High in protein');
+    reasons.push('High in protein');
   }
   if ((tags.has('grilled') || tags.has('steamed')) && ctx.conditions.some(c => LIGHTER_CONDITIONS.includes(c))) {
     score += 8;
-    reasons.push(tags.has('grilled') ? '🔥 Grilled, lighter option' : '♨️ Steamed, lighter option');
+    reasons.push(tags.has('grilled') ? 'Grilled, lighter option' : 'Steamed, lighter option');
   }
 
   if (warning) {
     score -= 25;
   } else if (ctx.conditions.length) {
     score += 6;
-    if (reasons.length === 0) reasons.push('✅ Fits your health profile');
+    if (reasons.length === 0) reasons.push('Fits your health profile');
   }
 
   if (product.isPopular) {
     score += 5;
-    reasons.push('⭐ Popular');
+    reasons.push('Popular');
   }
   if (product.ingredients?.length) score += 3;
 

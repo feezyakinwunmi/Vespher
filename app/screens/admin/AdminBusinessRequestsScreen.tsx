@@ -573,7 +573,7 @@ export function AdminBusinessRequestsScreen() {
 
               {/* Package Info */}
               <View style={styles.packageSection}>
-                <Text style={styles.sectionTitle}>📦 Package</Text>
+                <Text style={styles.sectionTitle}>Package</Text>
                 <View style={styles.packageGrid}>
                   <View style={styles.packageItem}>
                     <Text style={styles.packageLabel}>Name</Text>

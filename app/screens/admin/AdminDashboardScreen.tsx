@@ -20,6 +20,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { supabase } from '../../lib/supabase';
 import { useFocusEffect } from '@react-navigation/native';
+import { countPendingApplications } from '../../services/riderApplications';
+import { countVendorsOwedCash } from '../../services/cashPayouts';
 
 
 type AdminLogisticsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -274,9 +276,16 @@ useEffect(() => {
     fetchFinancialData();
   }, []);
 
+  const [pendingRiderApps, setPendingRiderApps] = useState(0);
+  const loadRiderApps = () => countPendingApplications().then(setPendingRiderApps).catch(() => {});
+  const [vendorsOwedCash, setVendorsOwedCash] = useState(0);
+  const loadCashOwed = () => countVendorsOwedCash().then(setVendorsOwedCash);
+
   useFocusEffect(
   React.useCallback(() => {
     fetchUnreadMessages();
+    loadRiderApps();
+    loadCashOwed();
   }, [])
 );
 
@@ -285,6 +294,8 @@ useEffect(() => {
     await refresh();
     await fetchBusinessRequestStats();
     await fetchFinancialData();
+    await loadRiderApps();
+    await loadCashOwed();
     setRefreshing(false);
   };
 
@@ -301,6 +312,8 @@ useEffect(() => {
     vendors: pendingVendors?.length || 0,
     withdrawals: withdrawalRequests?.filter(w => w?.status === 'pending').length || 0,
     menu: stats?.pendingMenu || 0,
+    riders: pendingRiderApps,
+    cash: vendorsOwedCash,
   };
 
   const getStatusColor = (status: string) => {
@@ -394,8 +407,8 @@ useEffect(() => {
               <Text style={styles.statLabel}>Total Revenue</Text>
               {!loadingFinancials && (
                 <View style={styles.metricBreakdown}>
-                  <Text style={styles.metricBreakdownText}>🍔 {formatCurrency(financials.totalFoodRevenue).replace('₦', '')}</Text>
-                  <Text style={styles.metricBreakdownText}>📦 {formatCurrency(financials.totalBusinessRevenue).replace('₦', '')}</Text>
+                  <Text style={styles.metricBreakdownText}>Food {formatCurrency(financials.totalFoodRevenue).replace('₦', '')}</Text>
+                  <Text style={styles.metricBreakdownText}>Business {formatCurrency(financials.totalBusinessRevenue).replace('₦', '')}</Text>
                 </View>
               )}
             </LinearGradient>
@@ -581,7 +594,39 @@ useEffect(() => {
               <Text style={styles.quickActionValue}>{pendingCounts.menu} items to review</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
+              style={styles.quickActionCard}
+              onPress={() => navigation.navigate('AdminRiderApplications')}
+            >
+              <View style={styles.quickActionIcon}>
+                <Feather name="user-check" size={24} color="#3b82f6" />
+                {pendingCounts.riders > 0 && (
+                  <View style={styles.quickActionBadge}>
+                    <Text style={styles.quickActionBadgeText}>{pendingCounts.riders}</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={styles.quickActionTitle}>Rider Applications</Text>
+              <Text style={styles.quickActionValue}>{pendingCounts.riders} to review</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.quickActionCard}
+              onPress={() => navigation.navigate('AdminCashPayouts')}
+            >
+              <View style={styles.quickActionIcon}>
+                <Feather name="send" size={24} color="#f59e0b" />
+                {pendingCounts.cash > 0 && (
+                  <View style={styles.quickActionBadge}>
+                    <Text style={styles.quickActionBadgeText}>{pendingCounts.cash}</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={styles.quickActionTitle}>Cash Payouts</Text>
+              <Text style={styles.quickActionValue}>{pendingCounts.cash} vendor{pendingCounts.cash === 1 ? '' : 's'} to pay</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
               style={styles.quickActionCard}
               onPress={() => navigation.navigate('AdminUsers')}
             >

@@ -95,21 +95,21 @@ export const ALLERGENS: AllergenDef[] = [
 
 // Health tags (from health_tags_reference) and allergen ids → affected conditions.
 const TAG_TO_CONDITIONS: Record<string, { conditions: HealthCondition[]; effect: string }> = {
-  high_sugar: { conditions: ['low_sugar', 'diabetic_type1', 'diabetic_type2', 'pre_diabetic'], effect: '🍬 High in sugar - may spike blood sugar levels' },
-  high_sodium: { conditions: ['hypertensive', 'low_sodium', 'heart_disease', 'kidney_disease'], effect: '🧂 High in sodium - may raise blood pressure' },
-  high_fat: { conditions: ['high_cholesterol', 'heart_disease', 'weight_loss', 'low_fat'], effect: '🍔 High in fat - may raise cholesterol' },
-  high_carb: { conditions: ['diabetic_type2', 'weight_loss', 'low_carb', 'keto'], effect: '🍚 High in carbohydrates - may spike blood sugar' },
-  fried: { conditions: ['workout_mode', 'weight_loss', 'high_cholesterol', 'heart_disease', 'low_fat'], effect: '🍟 Fried - high in unhealthy fats' },
-  spicy: { conditions: ['asthma', 'acid_reflux', 'ibs'], effect: '🌶️ Spicy - may trigger heartburn or irritation' },
-  contains_peanuts: { conditions: ['peanut_allergy', 'nut_allergy'], effect: '🥜 Contains peanuts - severe allergic reaction possible' },
-  contains_nuts: { conditions: ['nut_allergy', 'tree_nut_allergy'], effect: '🌰 Contains tree nuts - severe allergic reaction possible' },
-  contains_dairy: { conditions: ['dairy_allergy', 'lactose_intolerant', 'lactose_intolerant_african', 'vegan'], effect: '🥛 Contains dairy' },
-  contains_eggs: { conditions: ['egg_allergy', 'vegan'], effect: '🥚 Contains eggs' },
-  contains_gluten: { conditions: ['celiac_disease', 'celiac'], effect: '🌾 Contains gluten - not safe for celiac' },
-  contains_shellfish: { conditions: ['shellfish_allergy', 'gout', 'vegetarian', 'vegan'], effect: '🦐 Contains shellfish - severe allergic reaction possible' },
-  contains_fish: { conditions: ['fish_allergy', 'vegetarian', 'vegan'], effect: '🐟 Contains fish' },
-  contains_soy: { conditions: ['soy_allergy'], effect: '🌱 Contains soy' },
-  contains_sesame: { conditions: ['sesame_allergy'], effect: '⚪ Contains sesame' },
+  high_sugar: { conditions: ['low_sugar', 'diabetic_type1', 'diabetic_type2', 'pre_diabetic'], effect: 'High in sugar - may spike blood sugar levels' },
+  high_sodium: { conditions: ['hypertensive', 'low_sodium', 'heart_disease', 'kidney_disease'], effect: 'High in sodium - may raise blood pressure' },
+  high_fat: { conditions: ['high_cholesterol', 'heart_disease', 'weight_loss', 'low_fat'], effect: 'High in fat - may raise cholesterol' },
+  high_carb: { conditions: ['diabetic_type2', 'weight_loss', 'low_carb', 'keto'], effect: 'High in carbohydrates - may spike blood sugar' },
+  fried: { conditions: ['workout_mode', 'weight_loss', 'high_cholesterol', 'heart_disease', 'low_fat'], effect: 'Fried - high in unhealthy fats' },
+  spicy: { conditions: ['asthma', 'acid_reflux', 'ibs'], effect: 'Spicy - may trigger heartburn or irritation' },
+  contains_peanuts: { conditions: ['peanut_allergy', 'nut_allergy'], effect: 'Contains peanuts - severe allergic reaction possible' },
+  contains_nuts: { conditions: ['nut_allergy', 'tree_nut_allergy'], effect: 'Contains tree nuts - severe allergic reaction possible' },
+  contains_dairy: { conditions: ['dairy_allergy', 'lactose_intolerant', 'lactose_intolerant_african', 'vegan'], effect: 'Contains dairy' },
+  contains_eggs: { conditions: ['egg_allergy', 'vegan'], effect: 'Contains eggs' },
+  contains_gluten: { conditions: ['celiac_disease', 'celiac'], effect: 'Contains gluten - not safe for celiac' },
+  contains_shellfish: { conditions: ['shellfish_allergy', 'gout', 'vegetarian', 'vegan'], effect: 'Contains shellfish - severe allergic reaction possible' },
+  contains_fish: { conditions: ['fish_allergy', 'vegetarian', 'vegan'], effect: 'Contains fish' },
+  contains_soy: { conditions: ['soy_allergy'], effect: 'Contains soy' },
+  contains_sesame: { conditions: ['sesame_allergy'], effect: 'Contains sesame' },
 };
 
 // Conditions where eating the wrong thing is dangerous, not just unwise.
@@ -185,7 +185,7 @@ export function reviewFood(info: FoodInfo): FoodReview {
   if (ingredients.length === 0) issues.push('No ingredients listed');
   if (!info.description?.trim()) issues.push('No description');
   for (const d of undeclaredAllergens) {
-    issues.push(`${d.allergen.icon} ${d.allergen.label} not declared (found: ${d.matches.join(', ')})`);
+    issues.push(`${d.allergen.label} not declared (found: ${d.matches.join(', ')})`);
   }
 
   const notes: string[] = [];
@@ -239,7 +239,7 @@ export function assessFood(info: FoodInfo, userConditions: string[]): HealthChec
     const meta = HEALTH_CONDITIONS.find(c => c.id === conditionId);
     if (!meta) continue;
     const hit = meta.avoidTags.find(tag => containsTerm(text, tag));
-    if (hit) trigger(meta.id, `${meta.icon} ${meta.label}: contains "${hit}"`);
+    if (hit) trigger(meta.id, `${meta.label}: contains "${hit}"`);
   }
 
   // 3. General nutrition knowledge for common Nigerian dishes.

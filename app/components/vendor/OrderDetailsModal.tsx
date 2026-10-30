@@ -211,7 +211,7 @@ const renderDiscountDetails = () => {
       <View style={styles.discountSection}>
         <View style={styles.discountHeader}>
           <Feather name="star" size={16} color="#f59e0b" />
-          <Text style={[styles.discountTitle, { color: '#f59e0b' }]}>🎉 First Order Discount</Text>
+          <Text style={[styles.discountTitle, { color: '#f59e0b' }]}>First Order Discount</Text>
         </View>
         <View style={styles.promoCodeCard}>
           <View style={styles.promoCodeRow}>
@@ -233,7 +233,7 @@ const renderDiscountDetails = () => {
           <View style={styles.promoCodeRow}>
             <Text style={styles.promoCodeLabel}>Type:</Text>
             <Text style={[styles.promoCodeType, styles.platformType]}>
-              🌍 Platform Promotion
+              Platform Promotion
             </Text>
           </View>
         </View>
@@ -257,7 +257,7 @@ const renderDiscountDetails = () => {
       <View style={styles.discountSection}>
         <View style={styles.discountHeader}>
           <Feather name="tag" size={16} color="#f43f5e" />
-          <Text style={styles.discountTitle}>🏷️ Promo Code Applied</Text>
+          <Text style={styles.discountTitle}>Promo Code Applied</Text>
         </View>
         <View style={styles.promoCodeCard}>
           <View style={styles.promoCodeRow}>
@@ -278,7 +278,7 @@ const renderDiscountDetails = () => {
               styles.promoCodeType,
               isVendorPromo ? styles.vendorType : styles.platformType
             ]}>
-              {isVendorPromo ? '🏪 Store Promo Code' : '🌍 Platform Promo Code'}
+              {isVendorPromo ? 'Store Promo Code' : 'Platform Promo Code'}
             </Text>
           </View>
           {discountMeta?.description && (

@@ -27,29 +27,9 @@ export function LockInHintBanner({ onPress }: Props) {
     }
   }, [hasAnyCondition]);
 
-  // If locked in and has conditions, show active state
+  // Already locked in: nothing to prompt, keep Home uncluttered (managed from Profile).
   if (healthProfile.isLocked && hasAnyCondition) {
-    return (
-      <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={styles.container}>
-        <LinearGradient
-          colors={['rgba(16,185,129,0.15)', 'rgba(16,185,129,0.05)']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.gradient}
-        >
-          <View style={[styles.iconBg, { backgroundColor: 'rgba(16,185,129,0.2)' }]}>
-            <Feather name="lock" size={16} color="#10b981" />
-          </View>
-          <View style={styles.textGroup}>
-            <Text style={[styles.title, { color: '#10b981' }]}>Lock-In Active 🔒</Text>
-            <Text style={styles.subtitle}>
-              {healthProfile.conditions.length} condition{healthProfile.conditions.length > 1 ? 's' : ''} monitored · Tap to manage
-            </Text>
-          </View>
-          <View style={[styles.activeDot, { backgroundColor: '#10b981' }]} />
-        </LinearGradient>
-      </TouchableOpacity>
-    );
+    return null;
   }
 
   // Has conditions but not locked
@@ -88,7 +68,7 @@ export function LockInHintBanner({ onPress }: Props) {
           <Feather name="shield" size={16} color="#f97316" />
         </Animated.View>
         <View style={styles.textGroup}>
-          <Text style={styles.title}>Set your Health Lock-In 🔒</Text>
+          <Text style={styles.title}>Set your Health Lock-In</Text>
           <Text style={styles.subtitle}>Get warnings for foods that don't suit your health</Text>
         </View>
         <Feather name="chevron-right" size={16} color="#f97316" />

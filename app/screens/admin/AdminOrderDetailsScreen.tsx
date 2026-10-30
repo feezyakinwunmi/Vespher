@@ -144,7 +144,7 @@ export function AdminOrderDetailsScreen() {
         <View style={styles.discountSection}>
           <View style={styles.discountHeader}>
             <Feather name="star" size={16} color="#f59e0b" />
-            <Text style={[styles.discountTitle, { color: '#f59e0b' }]}>🎉 First Order Discount</Text>
+            <Text style={[styles.discountTitle, { color: '#f59e0b' }]}>First Order Discount</Text>
           </View>
           <View style={styles.discountCard}>
             <View style={styles.discountRow}>
@@ -166,7 +166,7 @@ export function AdminOrderDetailsScreen() {
             <View style={styles.discountRow}>
               <Text style={styles.discountLabel}>Type:</Text>
               <Text style={[styles.discountTypeBadge, styles.platformTypeBadge]}>
-                🌍 Platform Promotion
+                Platform Promotion
               </Text>
             </View>
           </View>
@@ -188,7 +188,7 @@ export function AdminOrderDetailsScreen() {
         <View style={styles.discountSection}>
           <View style={styles.discountHeader}>
             <Feather name="tag" size={16} color="#f43f5e" />
-            <Text style={styles.discountTitle}>🏷️ Promo Code Applied</Text>
+            <Text style={styles.discountTitle}>Promo Code Applied</Text>
           </View>
           <View style={styles.discountCard}>
             <View style={styles.discountRow}>
@@ -209,7 +209,7 @@ export function AdminOrderDetailsScreen() {
                 styles.discountTypeBadge,
                 isVendorPromo ? styles.vendorTypeBadge : styles.platformTypeBadge
               ]}>
-                {isVendorPromo ? '🏪 Store Promo Code' : '🌍 Platform Promo Code'}
+                {isVendorPromo ? 'Store Promo Code' : 'Platform Promo Code'}
               </Text>
             </View>
             {vendorName && (

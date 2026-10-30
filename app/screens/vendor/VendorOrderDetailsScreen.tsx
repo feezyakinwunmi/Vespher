@@ -492,7 +492,7 @@ const renderDiscountDetails = () => {
       <View style={styles.discountSection}>
         <View style={styles.discountHeader}>
           <Feather name="star" size={16} color="#f59e0b" />
-          <Text style={[styles.discountTitle, { color: '#f59e0b' }]}>🎉 First Order Discount</Text>
+          <Text style={[styles.discountTitle, { color: '#f59e0b' }]}>First Order Discount</Text>
         </View>
         <View style={styles.discountCard}>
           <View style={styles.discountRow}>
@@ -514,7 +514,7 @@ const renderDiscountDetails = () => {
           <View style={styles.discountRow}>
             <Text style={styles.discountLabel}>Type:</Text>
             <Text style={[styles.discountTypeBadge, styles.platformTypeBadge]}>
-              🌍 Platform Promotion
+              Platform Promotion
             </Text>
           </View>
         </View>
@@ -536,7 +536,7 @@ const renderDiscountDetails = () => {
       <View style={styles.discountSection}>
         <View style={styles.discountHeader}>
           <Feather name="tag" size={16} color="#f43f5e" />
-          <Text style={styles.discountTitle}>🏷️ Promo Code Applied</Text>
+          <Text style={styles.discountTitle}>Promo Code Applied</Text>
         </View>
         <View style={styles.discountCard}>
           <View style={styles.discountRow}>
@@ -557,7 +557,7 @@ const renderDiscountDetails = () => {
               styles.discountTypeBadge,
               isVendorPromo ? styles.vendorTypeBadge : styles.platformTypeBadge
             ]}>
-              {isVendorPromo ? '🏪 Store Promo Code' : '🌍 Platform Promo Code'}
+              {isVendorPromo ? 'Store Promo Code' : 'Platform Promo Code'}
             </Text>
           </View>
           {vendorName && (
@@ -650,7 +650,7 @@ const renderEarningsBreakdown = () => {
           {discountCode && discountCode !== 'FIRST_ORDER' && (
             <View style={styles.discountInfoRow}>
               <Text style={styles.discountInfoText}>
-                {isVendorPromo ? '🏪 Store Promo Code' : '🌍 Platform Promo Code'}: {discountCode}
+                {isVendorPromo ? 'Store Promo Code' : 'Platform Promo Code'}: {discountCode}
               </Text>
               {discountMeta?.vendor_name && (
                 <Text style={styles.discountInfoSubtext}>
@@ -662,7 +662,7 @@ const renderEarningsBreakdown = () => {
           {isFirstOrder && (
             <View style={styles.discountInfoRow}>
               <Text style={styles.discountInfoText}>
-                🎉 First time customer - 10% off
+                First time customer - 10% off
               </Text>
             </View>
           )}

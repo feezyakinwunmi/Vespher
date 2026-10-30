@@ -1,5 +1,4 @@
 // app/screens/LoginScreen.tsx
-import { GoogleSignInButton } from '../components/GoogleSignInButton';
 import React, { useState } from 'react';
 import {
   View,
@@ -83,7 +82,7 @@ const handleSubmit = async () => {
 
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>Welcome Back! 👋</Text>
+            <Text style={styles.title}>Welcome Back!</Text>
             <Text style={styles.subtitle}>
               Sign in to continue to veshpe
             </Text>
@@ -200,7 +199,6 @@ const handleSubmit = async () => {
               </LinearGradient>
             </TouchableOpacity>
 
-            <GoogleSignInButton />
           </View>
 
           {/* Sign Up Link */}

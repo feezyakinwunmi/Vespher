@@ -24,6 +24,12 @@ AnnouncementDetails: { announcementId: string };
   // Main Tabs
   CustomerTabs: NavigatorScreenParams<CustomerTabParamList> | undefined;
   VendorTabs: NavigatorScreenParams<VendorTabParamList> | undefined;
+  RiderTabs: NavigatorScreenParams<RiderTabParamList> | undefined;
+
+  // Rider Screens
+  RiderDelivery: { orderId: string };
+  RiderWithdraw: undefined;
+  RiderApplication: undefined;
 
   
   // Customer Screens
@@ -71,6 +77,9 @@ AdminAllOrders: undefined;
   OutstandingPayments:undefined;
   AdminPromotions:undefined;
 AdminAnnouncements:undefined;
+  AdminRiderApplications: undefined;
+  AdminCashPayouts: undefined;
+  VendorCashPayouts: undefined;
 
 };
 export type AdminTabParamList = {
@@ -89,6 +98,16 @@ export type CustomerTabParamList = {
   Vendors: undefined;
   Orders: undefined;
 };
+
+export type RiderTabParamList = {
+  Home: undefined;
+  Jobs: { tab?: 'available' | 'active' | 'completed' } | undefined;
+  Earnings: undefined;
+  Profile: undefined;
+};
+
+// Rider screens live in the root stack (wrapped in RiderProvider).
+export type RiderStackParamList = RootStackParamList;
 
 export type VendorTabParamList = {
   Dashboard: undefined;

@@ -176,9 +176,9 @@ export function PromoCodeManager() {
 
   const getSampleDescription = () => {
     if (formData.discount_type === 'percentage') {
-      return `🎉 Special Offer! Get ${formData.discount_value || '20'}% OFF on all orders above ₦${parseInt(formData.min_order_amount || '0').toLocaleString()}. Don't miss out on this amazing deal! Valid for a limited time only. Share with friends and family.`;
+      return `Special Offer! Get ${formData.discount_value || '20'}% OFF on all orders above ₦${parseInt(formData.min_order_amount || '0').toLocaleString()}. Don't miss out on this amazing deal! Valid for a limited time only. Share with friends and family.`;
     } else {
-      return `💰 Limited Time Offer! Save ₦${parseInt(formData.discount_value || '1000').toLocaleString()} on your next order when you spend ₦${parseInt(formData.min_order_amount || '5000').toLocaleString()} or more. Perfect for family meals and group orders!`;
+      return `Limited Time Offer! Save ₦${parseInt(formData.discount_value || '1000').toLocaleString()} on your next order when you spend ₦${parseInt(formData.min_order_amount || '5000').toLocaleString()} or more. Perfect for family meals and group orders!`;
     }
   };
 
@@ -421,7 +421,7 @@ export function PromoCodeManager() {
         code.applies_to === 'all' ? styles.platformBadge : styles.vendorBadge
       ]}>
         <Text style={styles.badgeText}>
-          {code.applies_to === 'all' ? '🌍 Platform Wide' : '🏪 Store Only'}
+          {code.applies_to === 'all' ? 'Platform Wide' : 'Store Only'}
         </Text>
       </View>
       <View style={[
@@ -429,7 +429,7 @@ export function PromoCodeManager() {
         code.is_active ? styles.activeBadge : styles.inactiveBadge
       ]}>
         <Text style={styles.badgeText}>
-          {code.is_active ? '✅ Active' : '⏸ Inactive'}
+          {code.is_active ? 'Active' : 'Inactive'}
         </Text>
       </View>
     </View>
@@ -787,7 +787,7 @@ export function PromoCodeManager() {
 {/* Live Preview Section - Inline */}
 <View style={styles.previewSection}>
   <View style={styles.previewHeader}>
-    <Text style={styles.previewTitle}>📱 Live Preview</Text>
+    <Text style={styles.previewTitle}>Live Preview</Text>
     <TouchableOpacity
       onPress={() => {
         // Apply sample values
@@ -797,8 +797,8 @@ export function PromoCodeManager() {
         setFormData({
           ...formData,
           description: formData.discount_type === 'percentage' 
-            ? `🎉 Special Offer! Get ${formData.discount_value || '20'}% OFF on all orders above ₦${parseInt(formData.min_order_amount || '5000').toLocaleString()}. Don't miss out on this amazing deal! Valid for a limited time only.`
-            : `💰 Limited Time Offer! Save ₦${parseInt(formData.discount_value || '2000').toLocaleString()} on your next order when you spend ₦${parseInt(formData.min_order_amount || '15000').toLocaleString()} or more. Perfect for family meals!`,
+            ? `Special Offer! Get ${formData.discount_value || '20'}% OFF on all orders above ₦${parseInt(formData.min_order_amount || '5000').toLocaleString()}. Don't miss out on this amazing deal! Valid for a limited time only.`
+            : `Limited Time Offer! Save ₦${parseInt(formData.discount_value || '2000').toLocaleString()} on your next order when you spend ₦${parseInt(formData.min_order_amount || '15000').toLocaleString()} or more. Perfect for family meals!`,
           discount_value: formData.discount_value || discountVal,
           min_order_amount: formData.min_order_amount || minAmount,
         });
@@ -817,7 +817,7 @@ export function PromoCodeManager() {
         <Text style={styles.previewNotificationText}>Push Notification Preview</Text>
       </View>
       <Text style={styles.previewTitleText}>
-        🎉 {formData.code || 'SAVE20'} - {formData.discount_value || '20'}% off
+        {formData.code || 'SAVE20'} - {formData.discount_value || '20'}% off
       </Text>
       <Text style={styles.previewBodyText}>
         Your Store: {formData.discount_value || '20'}% off when you spend ₦{parseInt(formData.min_order_amount || '0').toLocaleString()}
@@ -874,7 +874,7 @@ export function PromoCodeManager() {
         <View style={styles.helpModalOverlay}>
           <View style={styles.helpModalContent}>
             <View style={styles.helpModalHeader}>
-              <Text style={styles.helpModalTitle}>📖 How Promo Codes Work</Text>
+              <Text style={styles.helpModalTitle}>How Promo Codes Work</Text>
               <TouchableOpacity onPress={() => setShowHelpModal(false)}>
                 <Feather name="x" size={24} color="#fff" />
               </TouchableOpacity>
@@ -923,11 +923,11 @@ export function PromoCodeManager() {
               <View style={styles.helpSection}>
                 <Feather name="info" size={20} color="#f97316" />
                 <Text style={styles.helpSectionTitle}>Pro Tips</Text>
-                <Text style={styles.helpText}>✨ Use short, memorable codes like "SAVE20" or "WELCOME"</Text>
-                <Text style={styles.helpText}>✨ Set a minimum order amount to increase average order value</Text>
-                <Text style={styles.helpText}>✨ Create urgency with expiration dates</Text>
-                <Text style={styles.helpText}>✨ Limited-time offers drive more conversions</Text>
-                <Text style={styles.helpText}>✨ Track usage to see which promotions work best</Text>
+                <Text style={styles.helpText}>Use short, memorable codes like "SAVE20" or "WELCOME"</Text>
+                <Text style={styles.helpText}>Set a minimum order amount to increase average order value</Text>
+                <Text style={styles.helpText}>Create urgency with expiration dates</Text>
+                <Text style={styles.helpText}>Limited-time offers drive more conversions</Text>
+                <Text style={styles.helpText}>Track usage to see which promotions work best</Text>
               </View>
             </ScrollView>
             <TouchableOpacity
@@ -955,7 +955,7 @@ export function PromoCodeManager() {
         <View style={styles.sampleModalOverlay}>
           <View style={styles.sampleModalContent}>
             <View style={styles.sampleModalHeader}>
-              <Text style={styles.sampleModalTitle}>✨ Sample Promo Code</Text>
+              <Text style={styles.sampleModalTitle}>Sample Promo Code</Text>
               <TouchableOpacity onPress={() => setShowSampleModal(false)}>
                 <Feather name="x" size={24} color="#fff" />
               </TouchableOpacity>
@@ -977,7 +977,7 @@ export function PromoCodeManager() {
                 </LinearGradient>
 
                 <View style={styles.sampleDisplayContent}>
-                  <Text style={styles.sampleDisplayTitle}>🎉 Special Offer!</Text>
+                  <Text style={styles.sampleDisplayTitle}>Special Offer!</Text>
                   <Text style={styles.sampleDisplayDescription}>
                     Get 20% OFF on all orders above ₦5,000. Don't miss out on this amazing deal! Valid for a limited time only.
                   </Text>

@@ -39,12 +39,12 @@ interface Announcement {
 }
 
 const ROLE_OPTIONS = [
-  { label: '👤 Customers', value: 'customer', color: '#f97316' },
-  { label: '🏪 Vendors', value: 'vendor', color: '#10b981' },
-  { label: '🏍️ Riders', value: 'rider', color: '#8b5cf6' },
-  { label: '💼 Business', value: 'business', color: '#f59e0b' },
-  { label: '👑 Admin', value: 'admin', color: '#ef4444' },
-  { label: '📢 All Users', value: 'all', color: '#f97316' },
+  { label: 'Customers', value: 'customer', color: '#f97316' },
+  { label: 'Vendors', value: 'vendor', color: '#10b981' },
+  { label: 'Riders', value: 'rider', color: '#8b5cf6' },
+  { label: 'Business', value: 'business', color: '#f59e0b' },
+  { label: 'Admin', value: 'admin', color: '#ef4444' },
+  { label: 'All Users', value: 'all', color: '#f97316' },
 ];
 
 const ACTION_LINKS = [
@@ -366,7 +366,7 @@ const handleSubmit = async () => {
   };
 
   const getRoleBadges = (roles: string[]) => {
-    if (roles.includes('all')) return '📢 All Users';
+    if (roles.includes('all')) return 'All Users';
     return roles.map(r => {
       const option = ROLE_OPTIONS.find(o => o.value === r);
       return option?.label.split(' ')[0] || r;

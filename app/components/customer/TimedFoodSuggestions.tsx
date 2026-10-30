@@ -26,11 +26,11 @@ interface Props {
   isPersonalised?: boolean;
 }
 
-const MEAL_TIME_ICONS: Record<MealTime, string> = {
-  breakfast: '☀️',
-  lunch: '🍽️',
-  dinner: '🌙',
-  snack: '🌆',
+export const MEAL_TIME_ICONS: Record<MealTime, React.ComponentProps<typeof Feather>['name']> = {
+  breakfast: 'sun',
+  lunch: 'coffee',
+  dinner: 'moon',
+  snack: 'sunset',
 };
 
 export function TimedFoodSuggestions({
@@ -50,7 +50,7 @@ export function TimedFoodSuggestions({
       {/* Section Header */}
       <View style={styles.sectionHeader}>
         <View style={styles.titleRow}>
-          <Text style={styles.mealIcon}>{MEAL_TIME_ICONS[mealTime]}</Text>
+          <Feather name={MEAL_TIME_ICONS[mealTime]} size={20} color="#f97316" style={styles.mealIcon} />
           <View>
             <Text style={styles.sectionTitle}>
               {getMealTimeLabel(mealTime)} Picks
@@ -135,7 +135,7 @@ export function TimedFoodSuggestions({
 
               {/* Why this was picked */}
               {item.hasWarning ? (
-                <Text style={styles.warningText} numberOfLines={1}>⚠️ Check health note</Text>
+                <Text style={styles.warningText} numberOfLines={1}><Feather name="alert-triangle" size={10} color="#f59e0b" /> Check health note</Text>
               ) : !!item.reasons?.length && (
                 <Text style={styles.reasonText} numberOfLines={2}>{item.reasons[0]}</Text>
               )}

@@ -391,10 +391,10 @@ export function getCurrentMealTime(): MealTime {
 
 export function getMealTimeLabel(mealTime: MealTime): string {
   const labels = {
-    breakfast: '☀️ Breakfast Picks',
-    lunch: '🍽️ Lunch Favorites',
-    dinner: '🌙 Dinner Specials',
-    snack: '🍿 Snacks & Small Chops',
+    breakfast: 'Breakfast Picks',
+    lunch: 'Lunch Favorites',
+    dinner: 'Dinner Specials',
+    snack: 'Snacks & Small Chops',
   };
   return labels[mealTime];
 }
@@ -402,19 +402,19 @@ export function getMealTimeLabel(mealTime: MealTime): string {
 export function getMealTimeGreeting(mealTime: MealTime, firstName: string): { greeting: string; subtitle: string } {
   const greetings = {
     breakfast: {
-      greeting: `Good morning, ${firstName}! ☀️`,
+      greeting: `Good morning, ${firstName}!`,
       subtitle: 'Start your day right — here are light breakfast picks for you',
     },
     lunch: {
-      greeting: `Hey ${firstName}, lunchtime! 🍽️`,
+      greeting: `Hey ${firstName}, lunchtime!`,
       subtitle: 'Hungry? Check out these hearty Nigerian lunch meals',
     },
     dinner: {
-      greeting: `Good evening, ${firstName}! 🌙`,
+      greeting: `Good evening, ${firstName}!`,
       subtitle: 'Wind down with a satisfying dinner',
     },
     snack: {
-      greeting: `Hey ${firstName}! 🌆`,
+      greeting: `Hey ${firstName}!`,
       subtitle: 'Feeling peckish? Here are some snacks for you',
     },
   };

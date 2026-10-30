@@ -18,7 +18,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
+import { ModalSafeArea } from './ModalSafeArea';
 
 export interface ComplaintSummary {
   id: string;
@@ -106,7 +107,7 @@ export function ComplaintChat({ complaint, onClose }: { complaint: ComplaintSumm
 
   return (
     <Modal visible animationType="slide" onRequestClose={onClose}>
-      <SafeAreaView style={styles.container}>
+      <ModalSafeArea style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.headerButton} accessibilityLabel="Back">
             <Feather name="arrow-left" size={22} color="#fff" />
@@ -170,7 +171,7 @@ export function ComplaintChat({ complaint, onClose }: { complaint: ComplaintSumm
             </Text>
           )}
         </KeyboardAvoidingView>
-      </SafeAreaView>
+      </ModalSafeArea>
     </Modal>
   );
 }

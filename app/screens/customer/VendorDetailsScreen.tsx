@@ -41,7 +41,7 @@ export function VendorDetailsScreen() {
   const { vendorId } = route.params as { vendorId: string };
   
   const { user } = useAuth();
-  const { vendors } = useVendors();
+  const { allVendors: vendors } = useVendors();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { items, getSubtotal, vendorId: cartVendorId, addItem } = useCart();
   
@@ -78,6 +78,22 @@ const [detailsProduct, setDetailsProduct] = useState<any>(null);
         <ActivityIndicator size="large" color="#f97316" />
         <Text style={styles.loadingText}>Loading vendor...</Text>
       </View>
+    );
+  }
+
+  // Opened from a favourite, old link or notification while the shop is closed.
+  if (!vendor.isOpen) {
+    return (
+      <SafeAreaView style={[styles.loadingContainer, { paddingHorizontal: 32 }]}>
+        <Feather name="moon" size={40} color="#f97316" />
+        <Text style={[styles.loadingText, { color: '#fff', fontSize: 18, fontWeight: '700', marginTop: 16 }]}>{vendor.name} is closed</Text>
+        <Text style={[styles.loadingText, { textAlign: 'center', marginTop: 6 }]}>
+          They aren't taking orders right now. Check back later or order from another shop.
+        </Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginTop: 20, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, backgroundColor: '#f97316' }}>
+          <Text style={{ color: '#fff', fontWeight: '700' }}>Browse other shops</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
     );
   }
 // Add this function before your component

@@ -33,7 +33,7 @@ import ReuseLocationPicker from '../../components/ReuseLocationPicker';
 import { BANKS } from '../../constants/banks';
 
 type VendorScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
-type SettingsTab = 'profile' | 'business' | 'bank' | 'preferences' | 'promos' | 'support' ; // ✅ Added 'payouts'
+type SettingsTab = 'profile' | 'business' | 'bank' | 'preferences' | 'promos' | 'support' ; // Added 'payouts'
 type NotificationKey = keyof VendorProfile['notifications'];
 
 // ✅ Paystack-compatible bank codes
@@ -482,7 +482,7 @@ bank_code: selectedBank.code,
 );
 
 console.log(
-'📦 Verification result:',
+'Verification result:',
 verifyResult
 );
 
@@ -526,18 +526,18 @@ const {
 
 // ✅ LOG EVERYTHING
 console.log(
-  '📦 Recipient response:',
+  'Recipient response:',
   recipientData
 );
 
 console.log(
-  '❌ Recipient error:',
+  'Recipient error:',
   error
 );
 
 if (error) {
   console.error(
-    '❌ Supabase invoke error:',
+    'Supabase invoke error:',
     error
   );
 
@@ -553,7 +553,7 @@ if (
   recipientData.status === false
 ) {
   console.error(
-    '❌ Paystack recipient failed:',
+    'Paystack recipient failed:',
     recipientData
   );
 
@@ -568,7 +568,7 @@ const recipientCode =
   recipientData.data.subaccount_code;
 
 console.log(
-  '🎉 Recipient code:',
+  'Recipient code:',
   recipientCode
 );
 
@@ -582,7 +582,7 @@ const updatedFormData = {
 setFormData(updatedFormData);
 
 console.log(
-  '💾 Updated formData with recipient'
+  'Updated formData with recipient'
 );
 
 setBankVerified(true);
@@ -592,14 +592,14 @@ showToast(
 );
 
 console.log(
-  '✅ Recipient created successfully:',
+  'Recipient created successfully:',
   recipientCode
 );
 
 
 } catch (error: any) {
 console.error(
-'❌ Verification error:',
+'Verification error:',
 error
 );
 
@@ -1035,7 +1035,7 @@ const renderBusinessTab = () => (
             <Feather name="map" size={20} color="#f97316" />
             <Text style={styles.mapPickerText}>
               {formData.latitude && formData.longitude 
-                ? `📍 Location selected: ${formData.latitude.toFixed(6)}, ${formData.longitude.toFixed(6)}`
+                ? `Location selected: ${formData.latitude.toFixed(6)}, ${formData.longitude.toFixed(6)}`
                 : 'Tap to set business location on map'}
             </Text>
             <Feather name="chevron-right" size={20} color="#666" />
@@ -1051,7 +1051,7 @@ const renderBusinessTab = () => (
           <Text style={styles.value}>{profile.businessAddress || 'Not provided'}</Text>
           {profile.latitude && profile.longitude && (
             <Text style={styles.coordsText}>
-              📍 {profile.latitude.toFixed(6)}, {profile.longitude.toFixed(6)}
+              {profile.latitude.toFixed(6)}, {profile.longitude.toFixed(6)}
             </Text>
           )}
         </>

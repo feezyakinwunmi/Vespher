@@ -24,6 +24,8 @@ import { supabase } from './supabase';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import Toast from 'react-native-toast-message';
+import { useFocusEffect } from '@react-navigation/native';
+import { countPendingApplications } from '../services/riderApplications';
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 
 type AdminLogisticsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -142,6 +144,13 @@ export function AdminLogisticsScreen() {
       }
     }
   }, [showMap, mapReady, filteredRiders]);
+
+  const [pendingApps, setPendingApps] = useState(0);
+  useFocusEffect(
+    React.useCallback(() => {
+      countPendingApplications().then(setPendingApps).catch(() => {});
+    }, [])
+  );
 
   const fetchRiders = async () => {
     try {
@@ -482,11 +491,12 @@ export function AdminLogisticsScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Logistics Management</Text>
         <View style={styles.headerActions}>
+          {/* Riders apply in the app; review their applications here. */}
           <TouchableOpacity 
-            onPress={() => navigation.navigate('AdminCreateLogistic')} 
+            onPress={() => navigation.navigate('AdminRiderApplications')} 
             style={styles.createButton}
           >
-            <Feather name="user-plus" size={20} color="#f97316" />
+            <Feather name="user-check" size={20} color="#f97316" />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setShowMap(!showMap)} style={styles.mapToggle}>
             <Feather name={showMap ? 'list' : 'map'} size={20} color="#f97316" />
@@ -496,6 +506,25 @@ export function AdminLogisticsScreen() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Rider applications */}
+      <TouchableOpacity style={styles.appsBanner} onPress={() => navigation.navigate('AdminRiderApplications')} activeOpacity={0.85}>
+        <View style={styles.appsBannerIcon}>
+          <Feather name="user-check" size={18} color="#3b82f6" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.appsBannerTitle}>Rider applications</Text>
+          <Text style={styles.appsBannerSub}>
+            {pendingApps > 0 ? `${pendingApps} waiting for review` : 'No new applications'}
+          </Text>
+        </View>
+        {pendingApps > 0 && (
+          <View style={styles.appsBannerCount}>
+            <Text style={styles.appsBannerCountText}>{pendingApps}</Text>
+          </View>
+        )}
+        <Feather name="chevron-right" size={18} color="#666" />
+      </TouchableOpacity>
 
       {/* Stats Cards */}
       <View style={styles.statsContainer}>
@@ -1012,6 +1041,38 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  appsBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: '#1a1a1a',
+    borderWidth: 1,
+    borderColor: 'rgba(59,130,246,0.3)',
+  },
+  appsBannerIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: 'rgba(59,130,246,0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  appsBannerTitle: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  appsBannerSub: { color: '#8a8a8a', fontSize: 12.5, marginTop: 2 },
+  appsBannerCount: {
+    minWidth: 24,
+    height: 24,
+    borderRadius: 12,
+    paddingHorizontal: 6,
+    backgroundColor: '#ef4444',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  appsBannerCountText: { color: '#fff', fontSize: 12, fontWeight: '700' },
   statsContainer: {
     padding: 16,
   },

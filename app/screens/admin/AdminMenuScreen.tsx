@@ -20,6 +20,7 @@ import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import Toast from 'react-native-toast-message';
 import { reviewFood, FoodReview } from '../../services/foodSafety';
+import { EmojiIcon } from '../../components/EmojiIcon';
 
 type MenuStatus = 'all' | 'pending' | 'approved' | 'rejected';
 
@@ -648,7 +649,7 @@ export function AdminMenuScreen() {
                           <View style={styles.chipRow}>
                             {review.allAllergens.map(a => (
                               <View key={a.id} style={[styles.chip, styles.allergenChip]}>
-                                <Text style={styles.chipText}>{a.icon} {a.label}</Text>
+                                <Text style={styles.chipText}><EmojiIcon emoji={a.icon} size={12} color="#f59e0b" /> {a.label}</Text>
                               </View>
                             ))}
                           </View>

@@ -33,6 +33,8 @@ import { SuspendedScreen } from '../screens/SuspendedScreen';
 import { CustomerTabs } from './CustomerTabs';
 import { VendorTabs } from './VendorTabs';
 import { AdminTabs } from './AdminTabs';
+import { RiderTabs } from './RiderTabs';
+import { RiderProvider } from '../contexts/RiderContext';
 import { AdminCodeScreen } from '../screens/admin/AdminCodeScreen';
 import { ComplaintsScreen } from '../screens/ComplaintsScreen';
 import { sessionHasRecentCode } from '../utils/adminCode';
@@ -60,6 +62,14 @@ import { PromotionsScreen } from '../screens/vendor/PromotionsScreen';
 import { PromotionDetailsScreen } from '../screens/vendor/PromotionDetailsScreen';
 import { VendorHistoryScreen } from '../screens/vendor/VendorHistoryScreen';
 
+// Rider Screens
+import { RiderDeliveryScreen } from '../screens/rider/RiderDeliveryScreen';
+import { RiderWithdrawScreen } from '../screens/rider/RiderWithdrawScreen';
+import { RiderApplicationScreen } from '../screens/rider/RiderApplicationScreen';
+import { AdminRiderApplicationsScreen } from '../screens/admin/AdminRiderApplicationsScreen';
+import { AdminCashPayoutsScreen } from '../screens/admin/AdminCashPayoutsScreen';
+import { VendorCashPayoutsScreen } from '../screens/vendor/VendorCashPayoutsScreen';
+
 // Admin Screens
 import { AdminOrderDetailsScreen } from '../screens/admin/AdminOrderDetailsScreen';
 import { AdminVendorsScreen } from '../screens/admin/AdminVendorsScreen';
@@ -77,7 +87,7 @@ import { navigationRef, onNavigationReady } from './RootNavigation';
 import { AdminAnnouncementsScreen } from '../screens/admin/AdminAnnouncementsScreen';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-// Warning Modal for Rider/Business users
+// Warning Modal for business accounts (they use the separate logistics app)
 function WrongAppWarningModal({ 
   visible, 
   onClose,
@@ -99,7 +109,7 @@ function WrongAppWarningModal({
     onClose();
   };
 
-  const roleText = userRole === 'rider' ? 'Rider' : 'Business';
+  const roleText = 'Business';
 
   return (
     <Modal
@@ -122,8 +132,9 @@ function WrongAppWarningModal({
           <Text style={styles.warningTitle}>Wrong App</Text>
           
           <Text style={styles.warningMessage}>
-            This app is for <Text style={styles.highlightText}>Customers</Text> and{' '}
-            <Text style={styles.highlightText}>Vendors</Text> only.
+            This app is for <Text style={styles.highlightText}>Customers</Text>,{' '}
+            <Text style={styles.highlightText}>Vendors</Text> and{' '}
+            <Text style={styles.highlightText}>Riders</Text>.
           </Text>
 
           <Text style={styles.warningDescription}>
@@ -171,8 +182,8 @@ function AppContent() {
     return <SuspendedScreen />;
   }
 
-  // Riders and business accounts belong in the logistics app
-  if (user && (user.role === 'rider' || user.role === 'business')) {
+  // Business accounts belong in the logistics app
+  if (user && user.role === 'business') {
     return (
       <>
         <LoadingSplash />
@@ -181,7 +192,7 @@ function AppContent() {
     );
   }
 
-  return (
+  const navigator = (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {!user ? (
         <>
@@ -213,6 +224,7 @@ function AppContent() {
           <Stack.Screen name="Notifications" component={NotificationsScreen} />
           <Stack.Screen name="AnnouncementDetails" component={AnnouncementDetailsScreen} />
           <Stack.Screen name="Messaging" component={MessagingScreen} />
+          <Stack.Screen name="RiderApplication" component={RiderApplicationScreen} />
         </>
       ) : user.role === 'vendor' ? (
         <>
@@ -224,7 +236,19 @@ function AppContent() {
           <Stack.Screen name="CreatePromotion" component={CreatePromotionScreen} />
           <Stack.Screen name="Promotions" component={PromotionsScreen} />
           <Stack.Screen name="PromotionDetails" component={PromotionDetailsScreen} />
+          <Stack.Screen name="VendorCashPayouts" component={VendorCashPayoutsScreen} />
           <Stack.Screen name="Complaints" component={ComplaintsScreen} />
+          <Stack.Screen name="Notifications" component={NotificationsScreen} />
+          <Stack.Screen name="AnnouncementDetails" component={AnnouncementDetailsScreen} />
+          <Stack.Screen name="Messaging" component={MessagingScreen} />
+        </>
+      ) : user.role === 'rider' ? (
+        <>
+          <Stack.Screen name="RiderTabs" component={RiderTabs} />
+          <Stack.Screen name="RiderDelivery" component={RiderDeliveryScreen} />
+          <Stack.Screen name="RiderWithdraw" component={RiderWithdrawScreen} options={{ presentation: 'modal' }} />
+          <Stack.Screen name="Complaints" component={ComplaintsScreen} />
+          <Stack.Screen name="Privacy" component={PrivacyScreen} />
           <Stack.Screen name="Notifications" component={NotificationsScreen} />
           <Stack.Screen name="AnnouncementDetails" component={AnnouncementDetailsScreen} />
           <Stack.Screen name="Messaging" component={MessagingScreen} />
@@ -243,6 +267,8 @@ function AppContent() {
           <Stack.Screen name="AdminCreateLogistic" component={AdminCreateLogisticScreen} />
           <Stack.Screen name="AdminPromotions" component={AdminPromotionsScreen} />
           <Stack.Screen name="AdminAnnouncements" component={AdminAnnouncementsScreen} />
+          <Stack.Screen name="AdminRiderApplications" component={AdminRiderApplicationsScreen} />
+          <Stack.Screen name="AdminCashPayouts" component={AdminCashPayoutsScreen} />
           <Stack.Screen name="OutstandingPayments" component={OutstandingPaymentsScreen} />
           <Stack.Screen name="AdminVendors" component={AdminVendorsScreen} />
           <Stack.Screen name="AdminWithdrawals" component={AdminWithdrawalsScreen} />
@@ -256,6 +282,9 @@ function AppContent() {
       )}
     </Stack.Navigator>
   );
+
+  // Rider screens share online status, location sharing and job lists.
+  return user?.role === 'rider' ? <RiderProvider>{navigator}</RiderProvider> : navigator;
 }
 
 export function AppNavigator() {

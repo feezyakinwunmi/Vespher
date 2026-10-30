@@ -8,6 +8,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Feather } from '@expo/vector-icons';
 import { CustomerTabParamList } from './types';
 import { useTabBarOptions, TAB_ICON_SIZE } from './tabBarOptions';
+import { takeRiderApplicationPending } from '../utils/riderIntent';
 
 // Cart and Profile live in the root stack and are opened from the CustomerHeader.
 import { HomeScreen } from '../screens/customer/HomeScreen';
@@ -36,6 +37,13 @@ export function CustomerTabs() {
     }, 400);
     return () => clearTimeout(timer);
   }, [isNewUser]);
+
+  // Signed up from "Rider" on the role screen: continue to the rider application.
+  useEffect(() => {
+    takeRiderApplicationPending().then(pending => {
+      if (pending) setTimeout(() => navigation.navigate('RiderApplication'), 500);
+    });
+  }, []);
 
 
   return (

@@ -426,7 +426,7 @@ Send Announcements to all users or targeted users                     </Text>
               
               <View style={styles.exampleDivider} />
               
-              <Text style={styles.riderTypeTitle}>🏢 Company Vehicle</Text>
+              <Text style={styles.riderTypeTitle}>Company Vehicle</Text>
               <View style={styles.exampleRow}>
                 <Text style={styles.exampleLabel}>Rider ({companyVehicleRiderPercent || 50}%):</Text>
                 <Text style={styles.exampleValue}>₦{companyRiderEarnings.toLocaleString()}</Text>
@@ -438,7 +438,7 @@ Send Announcements to all users or targeted users                     </Text>
               
               <View style={styles.exampleDivider} />
               
-              <Text style={styles.riderTypeTitle}>🚗 Personal Vehicle</Text>
+              <Text style={styles.riderTypeTitle}>Personal Vehicle</Text>
               <View style={styles.exampleRow}>
                 <Text style={styles.exampleLabel}>Rider ({personalVehicleRiderPercent || 80}%):</Text>
                 <Text style={styles.exampleValue}>₦{personalRiderEarnings.toLocaleString()}</Text>

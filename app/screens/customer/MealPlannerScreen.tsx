@@ -31,6 +31,7 @@ import { useSubscription } from '../../contexts/SubscriptionContext';
 import { assessFood } from '../../services/foodSafety';
 import { planWeek } from '../../services/recommendations';
 import { getCurrentMealTime } from '../../hooks/customer/useAIFoodSuggestions';
+import { EmojiIcon } from '../../components/EmojiIcon';
 
 const { width } = Dimensions.get('window');
 
@@ -545,7 +546,7 @@ const loadSavedPlan = async () => {
         </View>
         {MEAL_COLUMNS.map(meal => (
           <View key={meal.id} style={styles.mealColumnHeader}>
-            <Text style={styles.mealIcon}>{meal.icon}</Text>
+            <EmojiIcon emoji={meal.icon} size={15} color={meal.color} />
             <Text style={[styles.tableHeaderText, meal.id === currentMealTime && { color: meal.color }]}>{meal.label}</Text>
             {meal.id === currentMealTime && <Text style={[styles.nowLabel, { color: meal.color }]}>Now</Text>}
           </View>

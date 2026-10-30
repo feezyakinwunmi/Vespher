@@ -77,7 +77,7 @@ const { data: referralsData, error: referralsError } = await supabase
   .select('*')
   .eq('referrer_id', user.id)
   .eq('status', 'completed')
-  .eq('referrer_reward_claimed', false)  // ✅ Only count unclaimed
+  .eq('referrer_reward_claimed', false)  // Only count unclaimed
   .order('completed_at', { ascending: false });
 
     if (referralsError) throw referralsError;
@@ -104,7 +104,7 @@ const generateReferralCode = () => {
   };
 
   const handleShareReferral = async () => {
-    const message = `🎉 Join me on Vespher! Use my referral code: ${referralCode}\n\nGet ₦500 off your first order! Download the app: [Your App Link]`;
+    const message = `Join me on Vespher! Use my referral code: ${referralCode}\n\nGet ₦500 off your first order! Download the app: [Your App Link]`;
     
     try {
       await Share.share({

@@ -356,7 +356,7 @@ export function AddressModal({ isOpen, onClose, onSave, address }: AddressModalP
                 </TouchableOpacity>
                 {(formData.latitude && formData.longitude) && (
                   <Text style={styles.coordsText}>
-                    📍 Coordinates: {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}
+                    Coordinates: {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}
                   </Text>
                 )}
               </View>

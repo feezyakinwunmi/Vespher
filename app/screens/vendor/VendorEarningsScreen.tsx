@@ -279,7 +279,7 @@ function ReceiptModal({
                     {firstOrderDiscount > 0 && (
                       <View style={styles.receiptBreakdownRow}>
                         <Text style={[styles.receiptBreakdownLabel, styles.discountLabel]}>
-                          🎉 First Order Discount (20%)
+                          First Order Discount (20%)
                         </Text>
                         <Text style={[styles.receiptBreakdownValue, styles.receiptDeduction]}>
                           -₦{firstOrderDiscount.toLocaleString()}
@@ -291,7 +291,7 @@ function ReceiptModal({
                     {promoDiscount > 0 && promoCode && (
                       <View style={styles.receiptBreakdownRow}>
                         <Text style={[styles.receiptBreakdownLabel, styles.discountLabel]}>
-                          🏷️ Promo: {promoCode}
+                          Promo: {promoCode}
                           {discountType === 'percentage' && ` (${Math.round((promoDiscount / subtotal) * 100)}%)`}
                         </Text>
                         <Text style={[styles.receiptBreakdownValue, styles.receiptDeduction]}>
@@ -380,8 +380,8 @@ function ReceiptModal({
                   <View style={styles.discountNote}>
                     <Feather name="info" size={12} color="#f97316" />
                     <Text style={styles.discountNoteText}>
-                      {firstOrderDiscount > 0 && '🎉 First order discount applied • '}
-                      {promoDiscount > 0 && `🏷️ Promo code "${promoCode}" applied`}
+                      {firstOrderDiscount > 0 && 'First order discount applied • '}
+                      {promoDiscount > 0 && `Promo code "${promoCode}" applied`}
                     </Text>
                   </View>
                 )}
@@ -667,6 +667,22 @@ const fetchOrderDetails = async (orderId: string) => {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#f97316" />
         }
       >
+        {/* Cash orders are paid out by transfer; receipts live on their own screen. */}
+        <TouchableOpacity
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, marginBottom: 14, borderRadius: 14, backgroundColor: '#1a1a1a', borderWidth: 1, borderColor: 'rgba(245,158,11,0.3)' }}
+          onPress={() => (navigation as any).navigate('VendorCashPayouts')}
+          activeOpacity={0.85}
+        >
+          <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(245,158,11,0.12)', justifyContent: 'center', alignItems: 'center' }}>
+            <Feather name="send" size={17} color="#f59e0b" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>Cash order payouts</Text>
+            <Text style={{ color: '#8a8a8a', fontSize: 12.5, marginTop: 2 }}>See transfers for cash orders and their receipts</Text>
+          </View>
+          <Feather name="chevron-right" size={18} color="#666" />
+        </TouchableOpacity>
+
         {/* Total Earnings Card */}
         <LinearGradient
           colors={['#f97316', '#f43f5e']}

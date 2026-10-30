@@ -173,6 +173,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const appStateSubscription = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
         supabase.auth.startAutoRefresh();
+        // Picks up changes made elsewhere, e.g. an approved rider application or a suspension.
+        supabase.auth.getSession().then(({ data }) => {
+          if (data.session?.user && !recoveryInProgress.current) fetchUserProfile(data.session.user, false);
+        });
       } else {
         supabase.auth.stopAutoRefresh();
       }

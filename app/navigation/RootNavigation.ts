@@ -47,18 +47,21 @@ export type AppRole = string | null | undefined;
 
 export function openOrder(role: AppRole, orderId: string) {
   if (role === 'vendor') navigate('VendorOrderDetails', { orderId });
+  else if (role === 'rider') navigate('RiderDelivery', { orderId });
   else if (role === 'admin') navigate('AdminOrderDetails', { orderId });
   else navigate('OrderTracking', { orderId });
 }
 
 export function openHome(role: AppRole) {
   if (role === 'vendor') navigate('VendorTabs', { screen: 'Dashboard' });
+  else if (role === 'rider') navigate('RiderTabs', { screen: 'Home' });
   else if (role === 'admin') navigate('AdminTabs');
   else navigate('CustomerTabs', { screen: 'Home' });
 }
 
 export function openOrders(role: AppRole) {
   if (role === 'vendor') navigate('VendorTabs', { screen: 'Orders' });
+  else if (role === 'rider') navigate('RiderTabs', { screen: 'Jobs' });
   else if (role === 'admin') navigate('AdminAllOrders');
   else navigate('CustomerTabs', { screen: 'Orders' });
 }
@@ -87,7 +90,7 @@ export function openAppLink(role: AppRole, link?: string | null): boolean {
       navigate('CustomerTabs', { screen: 'Vendors' });
       return true;
     case '/complaints':
-      if (role !== 'customer' && role !== 'vendor') return false;
+      if (role !== 'customer' && role !== 'vendor' && role !== 'rider') return false;
       navigate('Complaints');
       return true;
     case '/rewards':
@@ -103,6 +106,10 @@ export function openAppLink(role: AppRole, link?: string | null): boolean {
       navigate('VendorTabs', { screen: 'Menu' });
       return true;
     case '/earnings':
+      if (role === 'rider') {
+        navigate('RiderTabs', { screen: 'Earnings' });
+        return true;
+      }
       if (role !== 'vendor') return false;
       navigate('VendorTabs', { screen: 'Earnings' });
       return true;

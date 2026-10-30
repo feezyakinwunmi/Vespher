@@ -10,7 +10,7 @@ import {
   Animated,
   Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -55,6 +55,8 @@ const slides = [
 
 export function OnboardingScreen() {
   const navigation = useNavigation<OnboardingScreenNavigationProp>();
+  // The Skip button is absolutely positioned, so it ignores the safe-area padding.
+  const insets = useSafeAreaInsets();
   const [currentIndex, setCurrentIndex] = useState(0);
   const scrollX = useRef(new Animated.Value(0)).current;
   const slidesRef = useRef<FlatList>(null);
@@ -111,7 +113,7 @@ export function OnboardingScreen() {
       {currentIndex < slides.length - 1 && (
         <TouchableOpacity 
           onPress={skip} 
-          style={styles.skipButton}
+          style={[styles.skipButton, { top: insets.top + 12 }]}
           activeOpacity={0.7}
         >
           <Text style={styles.skipText}>Skip</Text>

@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { clearRiderApplicationPending, markRiderApplicationPending } from '../utils/riderIntent';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -21,7 +22,7 @@ type RoleSelectionScreenNavigationProp = NativeStackNavigationProp<
   'RoleSelection'
 >;
 
-type UserRole = 'customer' | 'vendor';
+type UserRole = 'customer' | 'vendor' | 'rider';
 
 interface RoleOption {
   id: UserRole;
@@ -59,6 +60,19 @@ const roles: RoleOption[] = [
     ],
     colors: ['#f97316', '#f43f5e'],
   },
+  {
+    id: 'rider',
+    title: 'Rider',
+    description: 'Deliver food and earn on your own schedule',
+    icon: 'truck',
+    benefits: [
+      'Ride whenever you want',
+      'Get paid for every delivery',
+      'Withdraw to your bank anytime',
+      'Apply in about 10 minutes',
+    ],
+    colors: ['#f97316', '#f43f5e'],
+  },
 ];
 
 export function RoleSelectionScreen() {
@@ -69,9 +83,14 @@ export function RoleSelectionScreen() {
   const handleContinue = () => {
     if (selectedRole) {
       if (selectedRole === 'customer') {
+        clearRiderApplicationPending();
         navigation.navigate('CustomerSignup');
       } else if (selectedRole === 'vendor') {
         navigation.navigate('VendorSignup');
+      } else if (selectedRole === 'rider') {
+        // Riders create a normal account first; the application opens right after signup.
+        markRiderApplicationPending();
+        navigation.navigate('CustomerSignup');
       }
     }
   };

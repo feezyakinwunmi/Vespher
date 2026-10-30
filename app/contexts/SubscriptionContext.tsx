@@ -125,7 +125,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     if (result.status === 'paid') {
       await refresh();
       Alert.alert(
-        selectedTier === 'pro_max' ? 'Welcome to Vesphe Pro Max 🎉' : 'Welcome to Vesphe Pro 🎉',
+        selectedTier === 'pro_max' ? 'Welcome to Vesphe Pro Max' : 'Welcome to Vesphe Pro',
         selectedTier === 'pro_max'
           ? 'Voice ordering, personalised recommendations and your meal timetable are unlocked. Say "Hey Vesphe" or tap the mic.'
           : 'Your personalised recommendations and meal timetable are now unlocked.'

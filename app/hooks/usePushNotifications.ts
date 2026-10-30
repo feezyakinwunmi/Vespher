@@ -117,7 +117,7 @@ export function usePushNotifications() {
         navigate('AnnouncementDetails', { announcementId });
       } else if (orderId) {
         openOrder(role, orderId);
-      } else if (str(data.complaint_id) && (role === 'customer' || role === 'vendor')) {
+      } else if (str(data.complaint_id) && (role === 'customer' || role === 'vendor' || role === 'rider')) {
         navigate('Complaints');
       } else if (str(data.conversation_id)) {
         navigate('Messaging', { conversationId: str(data.conversation_id) });

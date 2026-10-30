@@ -431,14 +431,14 @@ const applyPromoCode = (code: string, vendorId: string) => {
               {/* Description */}
               {selectedPromo.description && (
                 <View style={styles.promoModalSection}>
-                  <Text style={styles.promoModalSectionTitle}>📝 Offer Details</Text>
+                  <Text style={styles.promoModalSectionTitle}>Offer Details</Text>
                   <Text style={styles.promoModalDescription}>{selectedPromo.description}</Text>
                 </View>
               )}
 
               {/* Terms */}
               <View style={styles.promoModalSection}>
-                <Text style={styles.promoModalSectionTitle}>📋 Terms & Conditions</Text>
+                <Text style={styles.promoModalSectionTitle}>Terms & Conditions</Text>
                 <View style={styles.promoModalTermsList}>
                   {selectedPromo.min_order_amount > 0 && (
                     <View style={styles.promoModalTermItem}>
@@ -473,7 +473,7 @@ const applyPromoCode = (code: string, vendorId: string) => {
 
               {/* How to Use */}
               <View style={styles.promoModalHowTo}>
-                <Text style={styles.promoModalHowToTitle}>✨ How to use:</Text>
+                <Text style={styles.promoModalHowToTitle}>How to use:</Text>
                 <View style={styles.promoModalStepItem}>
                   <View style={styles.promoModalStepNumber}><Text style={styles.promoModalStepNumberText}>1</Text></View>
                   <Text style={styles.promoModalStepText}>Add items to your cart</Text>
