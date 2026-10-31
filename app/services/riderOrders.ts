@@ -376,6 +376,41 @@ export interface AssignedBike {
   assigned_at: string;
 }
 
+// Riders need a bike (unless they bring their own) and a Vesphe delivery bag
+// before they can go online or accept orders. Enforced in the database too.
+export type MissingGear = 'bike' | 'bag' | 'bike_and_bag' | null;
+
+export async function fetchMissingGear(riderId: string): Promise<MissingGear> {
+  const { data, error } = await supabase.rpc('rider_missing_gear', { p_rider_id: riderId });
+  // If the check itself isn't available yet, don't lock riders out.
+  if (error) return null;
+  return (data as MissingGear) || null;
+}
+
+export function missingGearMessage(missing: MissingGear): string {
+  const what = missing === 'bike_and_bag' ? 'a Vesphe bike and delivery bag' : missing === 'bike' ? 'a Vesphe bike' : 'a Vesphe delivery bag';
+  return `You don't have ${what} assigned yet. You can go online once ${missing === 'bike_and_bag' ? 'they are' : 'it is'} assigned to you.`;
+}
+
+export interface AssignedBag {
+  bag_code: string;
+  size: string | null;
+  color: string | null;
+  assigned_at: string;
+}
+
+export async function fetchMyBag(riderId: string): Promise<AssignedBag | null> {
+  const { data, error } = await supabase
+    .from('bag_assignments')
+    .select('assigned_at, bag:bag_id (bag_code, size, color)')
+    .eq('rider_id', riderId)
+    .is('returned_at', null)
+    .maybeSingle();
+  if (error || !data) return null;
+  const bag: any = Array.isArray((data as any).bag) ? (data as any).bag[0] : (data as any).bag;
+  return bag ? { ...bag, assigned_at: (data as any).assigned_at } : null;
+}
+
 export async function fetchMyBike(riderId: string): Promise<AssignedBike | null> {
   const { data, error } = await supabase
     .from('bike_assignments')

@@ -14,6 +14,9 @@ import {
   fetchDeliveredOrders,
   getRiderAvailability,
   setRiderAvailability,
+  MissingGear,
+  fetchMissingGear,
+  missingGearMessage,
   touchRiderPresence,
   updateRiderLocation,
 } from '../services/riderOrders';
@@ -35,6 +38,8 @@ interface RiderContextType {
   refreshing: boolean;
   refresh: () => Promise<void>;
   acceptOrder: (order: RiderOrder) => Promise<{ ok: boolean; message?: string }>;
+  // What the rider still needs (bike and/or bag) before they can go online or accept orders.
+  missingGear: MissingGear;
 }
 
 const RiderContext = createContext<RiderContextType | undefined>(undefined);
@@ -45,6 +50,7 @@ export function RiderProvider({ children }: { children: React.ReactNode }) {
 
   const [isOnline, setIsOnline] = useState(false);
   const [togglingOnline, setTogglingOnline] = useState(false);
+  const [missingGear, setMissingGear] = useState<MissingGear>(null);
   const [locationDenied, setLocationDenied] = useState(false);
   const [available, setAvailable] = useState<RiderOrder[]>([]);
   const [active, setActive] = useState<RiderOrder[]>([]);
@@ -84,6 +90,7 @@ export function RiderProvider({ children }: { children: React.ReactNode }) {
     if (!riderId) return;
     load();
     getRiderAvailability(riderId).then(setIsOnline);
+    fetchMissingGear(riderId).then(setMissingGear);
 
     let timer: ReturnType<typeof setTimeout> | null = null;
     const debouncedLoad = () => {
@@ -97,7 +104,12 @@ export function RiderProvider({ children }: { children: React.ReactNode }) {
       .subscribe();
 
     const appState = AppState.addEventListener('change', s => {
-      if (s === 'active') load();
+      if (s === 'active') {
+        load();
+        // A bike or bag may have been assigned or taken back while the app was closed.
+        fetchMissingGear(riderId).then(setMissingGear);
+        getRiderAvailability(riderId).then(setIsOnline);
+      }
     });
 
     return () => {
@@ -171,6 +183,11 @@ export function RiderProvider({ children }: { children: React.ReactNode }) {
     if (!online && active.length > 0) {
       return { ok: false, message: 'Finish your active deliveries before going offline.' };
     }
+    if (online) {
+      const missing = await fetchMissingGear(riderId);
+      setMissingGear(missing);
+      if (missing) return { ok: false, message: missingGearMessage(missing) };
+    }
     setTogglingOnline(true);
     try {
       await setRiderAvailability(riderId, online);
@@ -185,6 +202,7 @@ export function RiderProvider({ children }: { children: React.ReactNode }) {
 
   const acceptOrder = useCallback(async (order: RiderOrder) => {
     if (!riderId) return { ok: false };
+    if (missingGear) return { ok: false, message: missingGearMessage(missingGear) };
     if (!isOnline) return { ok: false, message: 'Go online to accept deliveries.' };
     try {
       const ok = await acceptOrderRequest(order.id, riderId, order.delivery_fee);
@@ -193,7 +211,7 @@ export function RiderProvider({ children }: { children: React.ReactNode }) {
     } catch (error: any) {
       return { ok: false, message: error?.message || 'Could not accept this order.' };
     }
-  }, [riderId, isOnline, load]);
+  }, [riderId, isOnline, missingGear, load]);
 
   return (
     <RiderContext.Provider
@@ -201,6 +219,7 @@ export function RiderProvider({ children }: { children: React.ReactNode }) {
         isOnline,
         togglingOnline,
         setOnline,
+        missingGear,
         locationDenied,
         available,
         active,

@@ -13,7 +13,7 @@ import { supportLinks, SUPPORT } from '../../config/support';
 import { confirmDeleteAccount } from '../../utils/account';
 import { R } from '../../components/rider/ui';
 import type { RiderStackParamList } from '../../navigation/types';
-import { AssignedBike, fetchMyBike } from '../../services/riderOrders';
+import { AssignedBag, AssignedBike, fetchMyBag, fetchMyBike } from '../../services/riderOrders';
 import { format } from 'date-fns';
 
 type Nav = NativeStackNavigationProp<RiderStackParamList>;
@@ -45,8 +45,10 @@ export function RiderProfileScreen() {
   const { user, signOut } = useAuth();
   const { delivered, active, setOnline } = useRider();
   const [bike, setBike] = useState<AssignedBike | null | undefined>(undefined);
+  const [bag, setBag] = useState<AssignedBag | null | undefined>(undefined);
   useEffect(() => {
     if (user?.id) fetchMyBike(user.id).then(setBike);
+    if (user?.id) fetchMyBag(user.id).then(setBag);
   }, [user?.id]);
   const { unreadCount } = useNotifications();
 
@@ -114,7 +116,7 @@ export function RiderProfileScreen() {
           </View>
         </View>
 
-        <Text style={styles.group}>Your bike</Text>
+        <Text style={styles.group}>Your bike and bag</Text>
         <View style={[styles.card, styles.bikeCard]}>
           <View style={styles.bikeIcon}>
             <Feather name="zap" size={18} color={bike ? R.orange : R.faint} />
@@ -130,6 +132,22 @@ export function RiderProfileScreen() {
             <Text style={[styles.bikeSub, { flex: 1 }]}>
               {bike === undefined ? 'Loading…' : "No bike assigned yet. We'll notify you when your Vesphe bike is ready to collect."}
             </Text>
+          )}
+        </View>
+
+        <View style={[styles.card, styles.bikeCard, { marginTop: 10 }]}>
+          <View style={styles.bikeIcon}>
+            <Feather name="shopping-bag" size={18} color={bag ? R.orange : R.faint} />
+          </View>
+          {bag ? (
+            <View style={{ flex: 1 }}>
+              <Text style={styles.bikePlate}>{bag.bag_code}</Text>
+              <Text style={styles.bikeSub}>
+                Delivery bag{[bag.color, bag.size].filter(Boolean).length ? ` · ${[bag.color, bag.size].filter(Boolean).join(' ')}` : ''} · since {format(new Date(bag.assigned_at), 'd MMM yyyy')}
+              </Text>
+            </View>
+          ) : (
+            <Text style={[styles.bikeSub, { flex: 1 }]}>{bag === undefined ? 'Loading…' : 'No delivery bag assigned yet.'}</Text>
           )}
         </View>
 

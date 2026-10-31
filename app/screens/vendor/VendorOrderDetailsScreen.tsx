@@ -54,6 +54,7 @@ export function VendorOrderDetailsScreen() {
   const [riderId, setRiderId] = useState<string | null>(null);
   const [riderLocation, setRiderLocation] = useState<{ latitude: number; longitude: number; timestamp?: string } | null>(null);
   const [rider, setRider] = useState<any>(null);
+  const [riderGear, setRiderGear] = useState<{ bag_code: string | null; plate_number: string | null } | null>(null);
   const [customer, setCustomer] = useState<any>(null);
   const [updating, setUpdating] = useState(false);
   const [platformSettings, setPlatformSettings] = useState<any>(null);
@@ -157,6 +158,9 @@ export function VendorOrderDetailsScreen() {
       if (data.rider_id) {
         setRiderId(data.rider_id);
         setRider(data.rider);
+        supabase
+          .rpc('order_rider_gear', { p_order_id: String(data.id) })
+          .then(({ data: gear }) => setRiderGear(Array.isArray(gear) ? gear[0] || null : gear || null));
 
         const { data: riderLocData, error: locError } = await supabase
           .from('users')
@@ -1028,7 +1032,7 @@ const renderScheduledDetails = () => {
                 <Text style={styles.riderName}>{rider.name}</Text>
                 <Text style={styles.riderPhone}>{rider.phone}</Text>
                 {rider.vehicle_type && (
-                  <Text style={styles.riderVehicle}>{rider.vehicle_type}</Text>
+                  <Text style={styles.riderVehicle}>{rider.vehicle_type}{riderGear?.plate_number ? ` · ${riderGear.plate_number}` : ''}</Text>
                 )}
               </View>
               <View style={styles.riderActions}>
@@ -1038,6 +1042,19 @@ const renderScheduledDetails = () => {
                 <TouchableOpacity onPress={handleWhatsAppRider} style={styles.riderAction}>
                   <Feather name="message-circle" size={18} color="#25D366" />
                 </TouchableOpacity>
+              </View>
+            </View>
+            <View style={[styles.gearBox, !riderGear?.bag_code && styles.gearBoxWarn]}>
+              <Feather name="shopping-bag" size={16} color={riderGear?.bag_code ? '#10b981' : '#f59e0b'} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.gearTitle}>
+                  {riderGear?.bag_code ? `Vesphe bag ${riderGear.bag_code}` : 'No Vesphe bag on record'}
+                </Text>
+                <Text style={styles.gearText}>
+                  {riderGear?.bag_code
+                    ? 'Only hand the order to this rider if their bag shows this code.'
+                    : "Don't hand over the order. Contact Vesphe support."}
+                </Text>
               </View>
             </View>
             {riderLocation && (
@@ -1769,6 +1786,19 @@ comboFreeText: {
   riderDetails: {
     flex: 1,
   },
+  gearBox: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: 'rgba(16,185,129,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(16,185,129,0.3)',
+  },
+  gearBoxWarn: { backgroundColor: 'rgba(245,158,11,0.08)', borderColor: 'rgba(245,158,11,0.3)' },
+  gearTitle: { color: '#fff', fontSize: 14, fontWeight: '700', letterSpacing: 0.3 },
+  gearText: { color: '#aaa', fontSize: 12, marginTop: 2, lineHeight: 17 },
   riderName: {
     fontSize: 15,
     fontWeight: '600',

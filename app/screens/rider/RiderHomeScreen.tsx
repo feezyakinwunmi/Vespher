@@ -33,7 +33,7 @@ export function RiderHomeScreen() {
   const navigation = useNavigation<Nav>();
   const { user } = useAuth();
   const { unreadCount } = useNotifications();
-  const { isOnline, togglingOnline, setOnline, locationDenied, available, active, delivered, refreshing, refresh, acceptOrder } = useRider();
+  const { isOnline, togglingOnline, setOnline, locationDenied, available, active, delivered, refreshing, refresh, acceptOrder, missingGear } = useRider();
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
 
   const stats = useMemo(() => {
@@ -96,6 +96,21 @@ export function RiderHomeScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Riders can't work until they have a Vesphe bike and delivery bag. */}
+        {missingGear && (
+          <View style={styles.noBike}>
+            <Feather name="alert-circle" size={18} color={R.amber} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.noBikeTitle}>
+                {missingGear === 'bike_and_bag' ? 'No bike or delivery bag yet' : missingGear === 'bike' ? 'No bike assigned yet' : 'No delivery bag yet'}
+              </Text>
+              <Text style={styles.noBikeText}>
+                You can go online and accept orders once {missingGear === 'bike_and_bag' ? 'your Vesphe bike and delivery bag are' : missingGear === 'bike' ? 'your Vesphe bike is' : 'your Vesphe delivery bag is'} assigned. We'll notify you when it's ready to collect.
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* Online switch */}
         <LinearGradient
           colors={isOnline ? ['#f97316', '#f43f5e'] : ['#1c1c1c', '#161616']}
@@ -119,6 +134,7 @@ export function RiderHomeScreen() {
               <Switch
                 value={isOnline}
                 onValueChange={handleToggle}
+                disabled={!!missingGear && !isOnline}
                 trackColor={{ false: '#333', true: 'rgba(255,255,255,0.35)' }}
                 thumbColor={isOnline ? '#fff' : '#888'}
               />
@@ -216,6 +232,18 @@ const styles = StyleSheet.create({
   statusIcon: { width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center' },
   statusTitle: { color: '#fff', fontSize: 17, fontWeight: '700' },
   statusSub: { color: R.muted, fontSize: 13, marginTop: 2 },
+  noBike: {
+    flexDirection: 'row',
+    gap: 12,
+    padding: 14,
+    marginBottom: 12,
+    borderRadius: 16,
+    backgroundColor: 'rgba(245,158,11,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,158,11,0.3)',
+  },
+  noBikeTitle: { color: R.amber, fontSize: 15, fontWeight: '700' },
+  noBikeText: { color: '#d4d4d4', fontSize: 12.5, marginTop: 3, lineHeight: 18 },
   warn: {
     flexDirection: 'row',
     alignItems: 'center',
