@@ -24,6 +24,7 @@ import { supabase } from './supabase';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import Toast from 'react-native-toast-message';
+import { riderStatus, RIDER_STATUS_COLOR } from '../utils/riderPresence';
 import { useFocusEffect } from '@react-navigation/native';
 import { countPendingApplications } from '../services/riderApplications';
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
@@ -32,7 +33,7 @@ type AdminLogisticsScreenNavigationProp = NativeStackNavigationProp<RootStackPar
 
 const { width, height } = Dimensions.get('window');
 
-type RiderStatus = 'all' | 'available' | 'busy' | 'suspended';
+type RiderStatus = 'all' | 'available' | 'busy' | 'offline' | 'suspended';
 // Types for Supabase real-time payloads
 interface RealtimePayload<T> {
   new: T;
@@ -130,9 +131,16 @@ export function AdminLogisticsScreen() {
     subscribeToRiderLocations();
   }, []);
 
+  // Re-evaluate presence every 30s: a rider whose app stops checking in drops to offline.
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(t);
+  }, []);
+
   useEffect(() => {
     filterRiders();
-  }, [riders, searchQuery, statusFilter, vehicleFilter]);
+  }, [riders, searchQuery, statusFilter, vehicleFilter, now]);
 
   useEffect(() => {
     if (showMap && mapReady && filteredRiders.length > 0) {
@@ -205,7 +213,7 @@ export function AdminLogisticsScreen() {
           current_latitude: rider.current_latitude ? Number(rider.current_latitude) : undefined,
           current_longitude: rider.current_longitude ? Number(rider.current_longitude) : undefined,
           total_deliveries: stats.total_deliveries,
-          is_available: rider.is_available && !isBusy && !rider.is_suspended,
+          is_available: rider.is_available,
           active_order_count: stats.active_orders,
         };
       });
@@ -251,7 +259,7 @@ export function AdminLogisticsScreen() {
                     ...payload.new,
                     current_latitude: payload.new.current_latitude ? Number(payload.new.current_latitude) : undefined,
                     current_longitude: payload.new.current_longitude ? Number(payload.new.current_longitude) : undefined,
-                    is_available: payload.new.is_available && !hasActiveOrders && !payload.new.is_suspended,
+                    is_available: payload.new.is_available,
                     active_order_count: activeOrders?.length || 0,
                   }
                 : rider
@@ -293,7 +301,6 @@ export function AdminLogisticsScreen() {
                     ...rider,
                     total_deliveries: totalDeliveries,
                     active_order_count: activeOrders.length,
-                    is_available: rider.is_available && activeOrders.length === 0 && !rider.is_suspended,
                   }
                 : rider
             )
@@ -376,13 +383,7 @@ export function AdminLogisticsScreen() {
     }
 
     if (statusFilter !== 'all') {
-      if (statusFilter === 'available') {
-        filtered = filtered.filter(r => r.is_available && !r.is_suspended);
-      } else if (statusFilter === 'busy') {
-        filtered = filtered.filter(r => !r.is_available && !r.is_suspended);
-      } else if (statusFilter === 'suspended') {
-        filtered = filtered.filter(r => r.is_suspended);
-      }
+      filtered = filtered.filter(r => riderStatus(r, now) === statusFilter);
     }
 
     if (vehicleFilter !== 'all') {
@@ -439,18 +440,16 @@ export function AdminLogisticsScreen() {
     }
   };
 
-  const getStatusColor = (rider: Rider) => {
-    if (rider.is_suspended) return '#ef4444';
-    if (!rider.is_available || (rider.active_order_count && rider.active_order_count > 0)) return '#f59e0b';
-    return '#10b981';
-  };
+  const getStatusColor = (rider: Rider) => RIDER_STATUS_COLOR[riderStatus(rider, now)];
 
   const getStatusText = (rider: Rider) => {
-    if (rider.is_suspended) return 'Suspended';
-    if (!rider.is_available || (rider.active_order_count && rider.active_order_count > 0)) {
-      return `Busy (${rider.active_order_count || 1} order${rider.active_order_count !== 1 ? 's' : ''})`;
+    const status = riderStatus(rider, now);
+    if (status === 'suspended') return 'Suspended';
+    if (status === 'busy') {
+      const n = rider.active_order_count || 1;
+      return `Busy (${n} order${n !== 1 ? 's' : ''})`;
     }
-    return 'Available';
+    return status === 'available' ? 'Online' : 'Offline';
   };
 
   const getMarkerIcon = (type: string): keyof typeof Feather.glyphMap => {
@@ -478,8 +477,9 @@ export function AdminLogisticsScreen() {
   }
 
   // Calculate stats for display
-  const availableRiders = riders.filter(r => r.is_available && !r.is_suspended && (!r.active_order_count || r.active_order_count === 0)).length;
-  const busyRiders = riders.filter(r => !r.is_suspended && (!r.is_available || (r.active_order_count && r.active_order_count > 0))).length;
+  const availableRiders = riders.filter(r => riderStatus(r, now) === 'available').length;
+  const busyRiders = riders.filter(r => riderStatus(r, now) === 'busy').length;
+  const offlineRiders = riders.filter(r => riderStatus(r, now) === 'offline').length;
   const suspendedRiders = riders.filter(r => r.is_suspended).length;
 
   return (
@@ -540,13 +540,19 @@ export function AdminLogisticsScreen() {
           <View style={styles.statCardSecondary}>
             <Feather name="truck" size={20} color="#10b981" />
             <Text style={styles.statNumber}>{availableRiders}</Text>
-            <Text style={styles.statLabelSmall}>Available</Text>
+            <Text style={styles.statLabelSmall}>Online</Text>
           </View>
 
           <View style={styles.statCardSecondary}>
             <Feather name="clock" size={20} color="#f59e0b" />
             <Text style={styles.statNumber}>{busyRiders}</Text>
             <Text style={styles.statLabelSmall}>Busy</Text>
+          </View>
+
+          <View style={styles.statCardSecondary}>
+            <Feather name="moon" size={20} color="#6b7280" />
+            <Text style={styles.statNumber}>{offlineRiders}</Text>
+            <Text style={styles.statLabelSmall}>Offline</Text>
           </View>
 
           <View style={styles.statCardSecondary}>
@@ -617,6 +623,20 @@ export function AdminLogisticsScreen() {
               styles.filterChipText,
               statusFilter === 'busy' && styles.filterChipTextActive,
             ]}>Busy</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => setStatusFilter('offline')}
+            style={[
+              styles.filterChip,
+              statusFilter === 'offline' && styles.filterChipActive,
+            ]}
+          >
+            <View style={[styles.statusDot, { backgroundColor: '#6b7280' }]} />
+            <Text style={[
+              styles.filterChipText,
+              statusFilter === 'offline' && styles.filterChipTextActive,
+            ]}>Offline</Text>
           </TouchableOpacity>
 
           <TouchableOpacity

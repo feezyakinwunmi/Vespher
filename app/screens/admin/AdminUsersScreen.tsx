@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
+import { isRiderOnline } from '../../utils/riderPresence';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
@@ -627,7 +628,7 @@ export function AdminUsersScreen() {
               )}
               
               {/* Online/Offline indicator */}
-              {user.is_online && <View style={styles.onlineDot} />}
+              {user.role === 'rider' && isRiderOnline(user) && <View style={styles.onlineDot} />}
             </View>
 
             {/* User Info */}
@@ -797,7 +798,7 @@ export function AdminUsersScreen() {
                       <Text style={styles.modalStatusTextPending}>Pending Approval</Text>
                     </View>
                   )}
-                  {selectedUser.is_online && (
+                  {selectedUser.role === 'rider' && isRiderOnline(selectedUser) && (
                     <View style={styles.modalStatusBadgeOnline}>
                       <View style={styles.onlineDotLarge} />
                       <Text style={styles.modalStatusTextOnline}>Online</Text>

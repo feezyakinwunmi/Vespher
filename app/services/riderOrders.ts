@@ -307,9 +307,18 @@ export async function completeDelivery(orderId: string, riderId: string, code: s
   return { ok: true };
 }
 
+// last_location_update doubles as the presence heartbeat (see utils/riderPresence).
 export async function setRiderAvailability(riderId: string, available: boolean) {
-  const { error } = await supabase.from('users').update({ is_available: available }).eq('id', riderId);
+  const { error } = await supabase
+    .from('users')
+    .update({ is_available: available, last_location_update: new Date().toISOString() })
+    .eq('id', riderId);
   if (error) throw error;
+}
+
+// Heartbeat while online, so admins can tell a live rider from a closed app.
+export async function touchRiderPresence(riderId: string) {
+  await supabase.from('users').update({ last_location_update: new Date().toISOString() }).eq('id', riderId);
 }
 
 export async function getRiderAvailability(riderId: string): Promise<boolean> {

@@ -14,11 +14,14 @@ import {
   fetchDeliveredOrders,
   getRiderAvailability,
   setRiderAvailability,
+  touchRiderPresence,
   updateRiderLocation,
 } from '../services/riderOrders';
 
 // How often the rider's position is written while they are online.
 const LOCATION_WRITE_INTERVAL_MS = 15000;
+// Presence heartbeat: location writes only happen when the rider moves.
+const HEARTBEAT_INTERVAL_MS = 60000;
 
 interface RiderContextType {
   isOnline: boolean;
@@ -149,6 +152,18 @@ export function RiderProvider({ children }: { children: React.ReactNode }) {
       watchRef.current?.remove();
       watchRef.current = null;
     };
+  }, [shouldTrack, riderId]);
+
+  // Keep "online" fresh for admins even when the rider is standing still.
+  useEffect(() => {
+    if (!shouldTrack || !riderId) return;
+    const timer = setInterval(() => {
+      if (Date.now() - lastWriteRef.current >= HEARTBEAT_INTERVAL_MS) {
+        lastWriteRef.current = Date.now();
+        touchRiderPresence(riderId);
+      }
+    }, HEARTBEAT_INTERVAL_MS);
+    return () => clearInterval(timer);
   }, [shouldTrack, riderId]);
 
   const setOnline = useCallback(async (online: boolean) => {
