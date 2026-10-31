@@ -75,6 +75,11 @@ export type ApplicationInput = Omit<
 
 const BUCKET = 'rider-documents';
 
+// Riders use Vesphe's motorcycles for now. Set to true to let applicants bring
+// their own vehicle (adds the Vehicle step back; they're paid the "own vehicle"
+// share from Admin → Settings instead of the company-vehicle share).
+export const RIDERS_BRING_OWN_VEHICLE = false;
+
 export const labelFor = (list: readonly { value: string; label: string }[], value?: string | null) =>
   list.find(i => i.value === value)?.label || value || '—';
 

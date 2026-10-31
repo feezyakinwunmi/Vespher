@@ -67,13 +67,13 @@ export function RiderDeliveryScreen() {
 
   const load = useCallback(async () => {
     try {
-      setOrder(await fetchOrder(orderId));
+      setOrder(await fetchOrder(orderId, user?.id));
     } catch (error) {
       console.error('Error loading delivery:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [orderId]);
+  }, [orderId, user?.id]);
 
   useEffect(() => {
     load();

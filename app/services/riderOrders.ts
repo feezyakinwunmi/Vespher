@@ -9,8 +9,10 @@ export type RiderOrderStatus = 'confirmed' | 'preparing' | 'ready' | 'picked_up'
 export const CLAIMABLE_STATUSES: RiderOrderStatus[] = ['preparing', 'ready'];
 export const ACTIVE_STATUSES: RiderOrderStatus[] = ['confirmed', 'preparing', 'ready', 'picked_up', 'in_transit'];
 
-// Used when platform_settings has no rider_percentage.
-const DEFAULT_RIDER_PERCENTAGE = 50;
+// Rider's share of the delivery fee, set in Admin → Settings. Defaults match the
+// admin screen when a setting is missing.
+const DEFAULT_COMPANY_VEHICLE_SHARE = 50;
+const DEFAULT_OWN_VEHICLE_SHARE = 80;
 
 // Signature of the server-side code check that marks an order as delivered.
 const VERIFY_CODE_RPC = 'verify_delivery_code';
@@ -82,18 +84,43 @@ const num = (v: unknown): number | null => {
   return Number.isFinite(n) ? n : null;
 };
 
-let riderPercentageCache: number | null = null;
+export interface RiderShares {
+  company: number; // rider rides a Vesphe bike
+  own: number; // rider brings their own (or rented) vehicle
+}
 
-export async function getRiderPercentage(): Promise<number> {
-  if (riderPercentageCache !== null) return riderPercentageCache;
-  const { data } = await supabase
-    .from('platform_settings')
-    .select('rider_percentage')
-    .order('id', { ascending: true })
-    .limit(1)
-    .maybeSingle();
-  riderPercentageCache = num(data?.rider_percentage) ?? DEFAULT_RIDER_PERCENTAGE;
-  return riderPercentageCache;
+const SETTINGS_TTL_MS = 5 * 60 * 1000;
+let sharesCache: { value: RiderShares; at: number } | null = null;
+const ownershipCache = new Map<string, string | null>();
+
+export async function getRiderShares(): Promise<RiderShares> {
+  if (sharesCache && Date.now() - sharesCache.at < SETTINGS_TTL_MS) return sharesCache.value;
+  const { data } = await supabase.from('platform_settings').select('*').order('id', { ascending: true }).limit(1).maybeSingle();
+  const value = {
+    company: num(data?.company_vehicle_rider_percentage) ?? DEFAULT_COMPANY_VEHICLE_SHARE,
+    own: num(data?.personal_vehicle_rider_percentage) ?? DEFAULT_OWN_VEHICLE_SHARE,
+  };
+  sharesCache = { value, at: Date.now() };
+  return value;
+}
+
+// "Own vehicle" pay applies to riders who bring a bike (owned or rented);
+// everyone else rides a company bike.
+export const usesOwnVehicle = (ownership?: string | null) => ownership === 'personal' || ownership === 'rented';
+
+async function riderOwnership(riderId: string): Promise<string | null> {
+  if (ownershipCache.has(riderId)) return ownershipCache.get(riderId) ?? null;
+  const { data } = await supabase.from('users').select('vehicle_ownership').eq('id', riderId).maybeSingle();
+  const ownership = data?.vehicle_ownership ?? null;
+  ownershipCache.set(riderId, ownership);
+  return ownership;
+}
+
+// The share (%) of the delivery fee this rider earns, based on their vehicle.
+export async function getRiderPercentage(riderId?: string): Promise<number> {
+  const shares = await getRiderShares();
+  if (!riderId) return shares.company;
+  return usesOwnVehicle(await riderOwnership(riderId)) ? shares.own : shares.company;
 }
 
 // What the rider takes home: the stored figure once accepted, otherwise an estimate.
@@ -154,9 +181,9 @@ export function mapOrder(row: any, percentage: number): RiderOrder {
   };
 }
 
-export async function fetchAvailableOrders(): Promise<RiderOrder[]> {
+export async function fetchAvailableOrders(riderId?: string): Promise<RiderOrder[]> {
   const [pct, { data, error }] = await Promise.all([
-    getRiderPercentage(),
+    getRiderPercentage(riderId),
     supabase
       .from('orders')
       .select(ORDER_SELECT)
@@ -171,7 +198,7 @@ export async function fetchAvailableOrders(): Promise<RiderOrder[]> {
 
 export async function fetchActiveOrders(riderId: string): Promise<RiderOrder[]> {
   const [pct, { data, error }] = await Promise.all([
-    getRiderPercentage(),
+    getRiderPercentage(riderId),
     supabase
       .from('orders')
       .select(ORDER_SELECT)
@@ -185,7 +212,7 @@ export async function fetchActiveOrders(riderId: string): Promise<RiderOrder[]> 
 
 export async function fetchDeliveredOrders(riderId: string, limit = 200): Promise<RiderOrder[]> {
   const [pct, { data, error }] = await Promise.all([
-    getRiderPercentage(),
+    getRiderPercentage(riderId),
     supabase
       .from('orders')
       .select(ORDER_SELECT)
@@ -201,16 +228,16 @@ export async function fetchDeliveredOrders(riderId: string, limit = 200): Promis
 // Lifetime total across every delivered order (light query, used for the balance).
 export async function fetchLifetimeEarnings(riderId: string): Promise<number> {
   const [pct, { data, error }] = await Promise.all([
-    getRiderPercentage(),
+    getRiderPercentage(riderId),
     supabase.from('orders').select('delivery_fee, rider_earnings').eq('rider_id', riderId).eq('status', 'delivered'),
   ]);
   if (error) throw error;
   return (data || []).reduce((sum, r) => sum + riderShare(num(r.delivery_fee) ?? 0, num(r.rider_earnings), pct), 0);
 }
 
-export async function fetchOrder(orderId: string): Promise<RiderOrder | null> {
+export async function fetchOrder(orderId: string, riderId?: string): Promise<RiderOrder | null> {
   const [pct, { data, error }] = await Promise.all([
-    getRiderPercentage(),
+    getRiderPercentage(riderId),
     supabase.from('orders').select(ORDER_SELECT).eq('id', orderId).maybeSingle(),
   ]);
   if (error) throw error;
@@ -229,12 +256,15 @@ export async function fetchOrder(orderId: string): Promise<RiderOrder | null> {
 
 // Claims an order. Fails (returns false) when another rider got it first.
 export async function acceptOrder(orderId: string, riderId: string, deliveryFee: number): Promise<boolean> {
-  const pct = await getRiderPercentage();
+  const pct = await getRiderPercentage(riderId);
+  const riderCut = riderShare(deliveryFee, null, pct);
   const { data, error } = await supabase
     .from('orders')
     .update({
       rider_id: riderId,
-      rider_earnings: riderShare(deliveryFee, null, pct),
+      rider_earnings: riderCut,
+      // Vesphe keeps the rest of the delivery fee (counted in admin revenue reports).
+      platform_delivery_earnings: Math.max(0, deliveryFee - riderCut),
       updated_at: new Date().toISOString(),
     })
     .eq('id', orderId)
@@ -335,6 +365,27 @@ export async function updateRiderLocation(riderId: string, latitude: number, lon
       last_location_update: new Date().toISOString(),
     })
     .eq('id', riderId);
+}
+
+// The company bike assigned to this rider, if any (see the Fleet page on the web).
+export interface AssignedBike {
+  plate_number: string;
+  make: string | null;
+  model: string | null;
+  color: string | null;
+  assigned_at: string;
+}
+
+export async function fetchMyBike(riderId: string): Promise<AssignedBike | null> {
+  const { data, error } = await supabase
+    .from('bike_assignments')
+    .select('assigned_at, bike:bike_id (plate_number, make, model, color)')
+    .eq('rider_id', riderId)
+    .is('returned_at', null)
+    .maybeSingle();
+  if (error || !data) return null;
+  const bike: any = Array.isArray((data as any).bike) ? (data as any).bike[0] : (data as any).bike;
+  return bike ? { ...bike, assigned_at: (data as any).assigned_at } : null;
 }
 
 // ---------------------------------------------------------------------------

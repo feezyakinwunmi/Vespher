@@ -59,7 +59,7 @@ export function RiderProvider({ children }: { children: React.ReactNode }) {
     if (!riderId) return;
     try {
       const [a, b, c] = await Promise.all([
-        fetchAvailableOrders(),
+        fetchAvailableOrders(riderId),
         fetchActiveOrders(riderId),
         fetchDeliveredOrders(riderId),
       ]);

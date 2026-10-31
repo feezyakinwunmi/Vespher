@@ -40,13 +40,18 @@ import {
   fetchMyLatestApplication,
   submitApplication,
   uploadApplicationPhoto,
+  RIDERS_BRING_OWN_VEHICLE,
 } from '../../services/riderApplications';
+import { getRiderShares } from '../../services/riderOrders';
 import { R } from '../../components/rider/ui';
 import { ModalSafeArea } from '../../components/ModalSafeArea';
 
 type IconName = React.ComponentProps<typeof Feather>['name'];
 
-const STEPS = ['You', 'Vehicle', 'Licence & ID', 'Guarantor', 'Bank', 'Review'] as const;
+const ALL_STEPS = ['You', 'Vehicle', 'Licence & ID', 'Guarantor', 'Bank', 'Review'] as const;
+type StepKey = (typeof ALL_STEPS)[number];
+// No Vehicle step while riders use company bikes.
+const STEPS: StepKey[] = RIDERS_BRING_OWN_VEHICLE ? [...ALL_STEPS] : ALL_STEPS.filter(s => s !== 'Vehicle');
 
 interface Form {
   full_name: string;
@@ -191,8 +196,16 @@ export function RiderApplicationScreen() {
     setError(null);
   };
 
-  const isBicycle = form.vehicle_type === 'bicycle';
-  const needsOwner = !!form.vehicle_ownership && form.vehicle_ownership !== 'personal';
+  const key = STEPS[step];
+  const goTo = (k: StepKey) => setStep(Math.max(0, STEPS.indexOf(k)));
+  const isBicycle = RIDERS_BRING_OWN_VEHICLE && form.vehicle_type === 'bicycle';
+  const needsOwner = RIDERS_BRING_OWN_VEHICLE && !!form.vehicle_ownership && form.vehicle_ownership !== 'personal';
+
+  // What riders on company bikes earn, from Admin → Settings.
+  const [companyShare, setCompanyShare] = useState<number | null>(null);
+  useEffect(() => {
+    getRiderShares().then(s => setCompanyShare(s.company)).catch(() => {});
+  }, []);
 
   // Resolve the account name once there's a bank and 10 digits.
   useEffect(() => {
@@ -214,8 +227,8 @@ export function RiderApplicationScreen() {
   const validate = (): string | null => {
     const f = form;
     const phoneOk = (p: string) => p.replace(/\D/g, '').length >= 10;
-    switch (step) {
-      case 0:
+    switch (key) {
+      case 'You':
         if (f.full_name.trim().split(/\s+/).length < 2) return 'Enter your full name (first and last name).';
         if (!phoneOk(f.phone)) return 'Enter a valid phone number.';
         if (!f.date_of_birth) return 'Add your date of birth.';
@@ -223,7 +236,7 @@ export function RiderApplicationScreen() {
         if (!f.address.trim() || !f.city.trim()) return 'Add your home address and city.';
         if (!f.selfie) return 'Take a clear selfie so customers can recognise you.';
         return null;
-      case 1:
+      case 'Vehicle':
         if (!f.vehicle_type) return 'Choose your vehicle type.';
         if (!isBicycle) {
           if (!f.vehicle_make.trim() || !f.vehicle_model.trim()) return 'Add the vehicle make and model.';
@@ -237,7 +250,7 @@ export function RiderApplicationScreen() {
         if (!f.vehicle_photo) return 'Add a photo of the vehicle with the plate number visible.';
         if (!isBicycle && !f.vehicle_papers) return 'Add a photo of the vehicle papers (registration or proof of ownership).';
         return null;
-      case 2:
+      case 'Licence & ID':
         if (!isBicycle) {
           if (!f.license_number.trim()) return "Add your driver's licence number.";
           if (!f.license_expiry) return 'Add the licence expiry date.';
@@ -247,12 +260,12 @@ export function RiderApplicationScreen() {
         if (!f.id_type || !f.id_number.trim()) return 'Choose an ID type and enter its number.';
         if (!f.id_photo) return 'Add a photo of your ID.';
         return null;
-      case 3:
+      case 'Guarantor':
         if (!f.guarantor_name.trim() || !phoneOk(f.guarantor_phone)) return "Add your guarantor's name and phone number.";
         if (f.guarantor_phone.replace(/\D/g, '').slice(-10) === f.phone.replace(/\D/g, '').slice(-10)) return 'Your guarantor needs a different phone number from yours.';
         if (!f.guarantor_relationship.trim() || !f.guarantor_address.trim()) return "Add how you know them and their address.";
         return null;
-      case 4:
+      case 'Bank':
         if (!f.bank || f.account_number.length !== 10) return 'Choose your bank and enter your 10-digit account number.';
         if (!f.account_name) return 'Wait for your account to be verified.';
         return null;
@@ -302,13 +315,13 @@ export function RiderApplicationScreen() {
         address: form.address.trim(),
         city: form.city.trim(),
         selfie_url,
-        vehicle_type: form.vehicle_type,
+        vehicle_type: RIDERS_BRING_OWN_VEHICLE ? form.vehicle_type : 'motorcycle',
         vehicle_make: form.vehicle_make.trim() || null,
         vehicle_model: form.vehicle_model.trim() || null,
         vehicle_year: parseInt(form.vehicle_year, 10) || null,
-        vehicle_color: form.vehicle_color.trim(),
+        vehicle_color: form.vehicle_color.trim() || null,
         vehicle_number: form.vehicle_number.trim().toUpperCase() || null,
-        vehicle_ownership: form.vehicle_ownership,
+        vehicle_ownership: RIDERS_BRING_OWN_VEHICLE ? form.vehicle_ownership : 'company',
         vehicle_owner_name: needsOwner ? form.vehicle_owner_name.trim() : null,
         vehicle_owner_phone: needsOwner ? form.vehicle_owner_phone.trim() : null,
         vehicle_photo_url,
@@ -395,12 +408,28 @@ export function RiderApplicationScreen() {
                 <Text style={styles.heroBody}>Choose when you ride, get paid for every delivery, and withdraw to your bank anytime.</Text>
               </LinearGradient>
 
+              {!RIDERS_BRING_OWN_VEHICLE && (
+                <View style={[styles.card, styles.bikeCard]}>
+                  <View style={styles.bikeIcon}>
+                    <Feather name="zap" size={18} color={R.orange} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.bikeTitle}>We provide the motorcycle</Text>
+                    <Text style={styles.bikeBody}>
+                      You ride a Vesphe bike, so you don't need your own vehicle.
+                      {companyShare !== null ? ` You earn ${companyShare}% of the delivery fee on every order.` : ''}
+                    </Text>
+                  </View>
+                </View>
+              )}
+
               <Text style={styles.group}>What you'll need</Text>
               <View style={styles.card}>
                 {[
                   ['user', 'A clear selfie and a valid ID (NIN, voter\'s card, passport or licence)'],
-                  ['truck', 'Your vehicle details, a photo of it and its papers'],
-                  ['credit-card', "A driver's licence (not needed for bicycles)"],
+                  ...(RIDERS_BRING_OWN_VEHICLE
+                    ? [['truck', 'Your vehicle details, a photo of it and its papers'], ['credit-card', "A driver's licence (not needed for bicycles)"]]
+                    : [['credit-card', 'A valid motorcycle riding licence']]),
                   ['users', 'A guarantor who can vouch for you'],
                   ['briefcase', 'A Nigerian bank account in your name'],
                 ].map(([icon, text]) => (
@@ -439,7 +468,7 @@ export function RiderApplicationScreen() {
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          {step === 0 && (
+          {key === 'You' && (
             <>
               <PhotoField label="Selfie" hint="Face the camera in good light, no sunglasses or cap." value={form.selfie} onChange={v => set('selfie', v)} camera="front" round />
               <Input label="Full name" value={form.full_name} onChangeText={v => set('full_name', v)} placeholder="As it appears on your ID" autoCapitalize="words" />
@@ -450,7 +479,7 @@ export function RiderApplicationScreen() {
             </>
           )}
 
-          {step === 1 && (
+          {key === 'Vehicle' && (
             <>
               <Label text="Vehicle type" />
               <View style={styles.chips}>
@@ -492,8 +521,14 @@ export function RiderApplicationScreen() {
             </>
           )}
 
-          {step === 2 && (
+          {key === 'Licence & ID' && (
             <>
+              {!RIDERS_BRING_OWN_VEHICLE && (
+                <View style={styles.note}>
+                  <Feather name="info" size={15} color={R.blue} />
+                  <Text style={styles.noteText}>You'll ride a Vesphe motorcycle, so you need a valid licence to ride one.</Text>
+                </View>
+              )}
               {isBicycle ? (
                 <View style={styles.note}>
                   <Feather name="info" size={15} color={R.blue} />
@@ -517,7 +552,7 @@ export function RiderApplicationScreen() {
             </>
           )}
 
-          {step === 3 && (
+          {key === 'Guarantor' && (
             <>
               <View style={styles.note}>
                 <Feather name="info" size={15} color={R.blue} />
@@ -530,7 +565,7 @@ export function RiderApplicationScreen() {
             </>
           )}
 
-          {step === 4 && (
+          {key === 'Bank' && (
             <>
               <Text style={styles.small}>Your earnings are paid into this account. It must be in your name.</Text>
               <Label text="Bank" />
@@ -549,30 +584,32 @@ export function RiderApplicationScreen() {
             </>
           )}
 
-          {step === 5 && (
+          {key === 'Review' && (
             <>
-              <ReviewBlock title="You" onEdit={() => setStep(0)} rows={[
+              <ReviewBlock title="You" onEdit={() => goTo('You')} rows={[
                 ['Name', form.full_name],
                 ['Phone', form.phone],
                 ['Date of birth', form.date_of_birth ? format(form.date_of_birth, 'd MMM yyyy') : ''],
                 ['Address', `${form.address}, ${form.city}`],
               ]} />
-              <ReviewBlock title="Vehicle" onEdit={() => setStep(1)} rows={[
-                ['Type', labelFor(VEHICLE_TYPES, form.vehicle_type)],
-                ['Make & model', [form.vehicle_make, form.vehicle_model].filter(Boolean).join(' ') || '—'],
-                ['Year / colour', [form.vehicle_year, form.vehicle_color].filter(Boolean).join(' · ')],
-                ['Plate', form.vehicle_number || '—'],
-                ['Ownership', labelFor(OWNERSHIP_TYPES, form.vehicle_ownership) + (needsOwner ? ` (${form.vehicle_owner_name})` : '')],
-              ]} />
-              <ReviewBlock title="Licence & ID" onEdit={() => setStep(2)} rows={[
+              {RIDERS_BRING_OWN_VEHICLE && (
+                <ReviewBlock title="Vehicle" onEdit={() => goTo('Vehicle')} rows={[
+                  ['Type', labelFor(VEHICLE_TYPES, form.vehicle_type)],
+                  ['Make & model', [form.vehicle_make, form.vehicle_model].filter(Boolean).join(' ') || '—'],
+                  ['Year / colour', [form.vehicle_year, form.vehicle_color].filter(Boolean).join(' · ')],
+                  ['Plate', form.vehicle_number || '—'],
+                  ['Ownership', labelFor(OWNERSHIP_TYPES, form.vehicle_ownership) + (needsOwner ? ` (${form.vehicle_owner_name})` : '')],
+                ]} />
+              )}
+              <ReviewBlock title="Licence & ID" onEdit={() => goTo('Licence & ID')} rows={[
                 ['Licence', isBicycle ? 'Not needed' : `${form.license_number} · expires ${form.license_expiry ? format(form.license_expiry, 'd MMM yyyy') : ''}`],
                 ['ID', `${labelFor(ID_TYPES, form.id_type)} · ${form.id_number}`],
               ]} />
-              <ReviewBlock title="Guarantor" onEdit={() => setStep(3)} rows={[
+              <ReviewBlock title="Guarantor" onEdit={() => goTo('Guarantor')} rows={[
                 ['Name', `${form.guarantor_name} (${form.guarantor_relationship})`],
                 ['Phone', form.guarantor_phone],
               ]} />
-              <ReviewBlock title="Bank" onEdit={() => setStep(4)} rows={[
+              <ReviewBlock title="Bank" onEdit={() => goTo('Bank')} rows={[
                 ['Account', `${form.account_name} · ${form.bank?.label} · ${form.account_number}`],
               ]} />
               <TouchableOpacity style={styles.agree} onPress={() => { setAgreed(!agreed); setError(null); }}>
@@ -801,6 +838,10 @@ const styles = StyleSheet.create({
   heroBody: { color: 'rgba(255,255,255,0.9)', fontSize: 14, marginTop: 6, lineHeight: 20 },
   group: { color: R.muted, fontSize: 12, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase', marginTop: 20, marginBottom: 8 },
   card: { backgroundColor: R.card, borderRadius: 18, borderWidth: 1, borderColor: R.border, padding: 16 },
+  bikeCard: { flexDirection: 'row', gap: 12, marginTop: 12, borderColor: 'rgba(249,115,22,0.3)' },
+  bikeIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(249,115,22,0.12)', justifyContent: 'center', alignItems: 'center' },
+  bikeTitle: { color: R.text, fontSize: 15, fontWeight: '700' },
+  bikeBody: { color: '#d4d4d4', fontSize: 13, marginTop: 3, lineHeight: 19 },
   needRow: { flexDirection: 'row', gap: 12, paddingVertical: 8, alignItems: 'flex-start' },
   needText: { color: '#e5e5e5', fontSize: 14, flex: 1, lineHeight: 20 },
   small: { color: R.muted, fontSize: 12.5, marginTop: 8, lineHeight: 18 },

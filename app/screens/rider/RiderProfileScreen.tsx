@@ -1,5 +1,5 @@
 // app/screens/rider/RiderProfileScreen.tsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Linking, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -13,6 +13,8 @@ import { supportLinks, SUPPORT } from '../../config/support';
 import { confirmDeleteAccount } from '../../utils/account';
 import { R } from '../../components/rider/ui';
 import type { RiderStackParamList } from '../../navigation/types';
+import { AssignedBike, fetchMyBike } from '../../services/riderOrders';
+import { format } from 'date-fns';
 
 type Nav = NativeStackNavigationProp<RiderStackParamList>;
 type IconName = React.ComponentProps<typeof Feather>['name'];
@@ -42,6 +44,10 @@ export function RiderProfileScreen() {
   const navigation = useNavigation<Nav>();
   const { user, signOut } = useAuth();
   const { delivered, active, setOnline } = useRider();
+  const [bike, setBike] = useState<AssignedBike | null | undefined>(undefined);
+  useEffect(() => {
+    if (user?.id) fetchMyBike(user.id).then(setBike);
+  }, [user?.id]);
   const { unreadCount } = useNotifications();
 
   const monthStart = new Date();
@@ -108,6 +114,25 @@ export function RiderProfileScreen() {
           </View>
         </View>
 
+        <Text style={styles.group}>Your bike</Text>
+        <View style={[styles.card, styles.bikeCard]}>
+          <View style={styles.bikeIcon}>
+            <Feather name="zap" size={18} color={bike ? R.orange : R.faint} />
+          </View>
+          {bike ? (
+            <View style={{ flex: 1 }}>
+              <Text style={styles.bikePlate}>{bike.plate_number}</Text>
+              <Text style={styles.bikeSub}>
+                {[bike.color, bike.make, bike.model].filter(Boolean).join(' ') || 'Vesphe motorcycle'} · since {format(new Date(bike.assigned_at), 'd MMM yyyy')}
+              </Text>
+            </View>
+          ) : (
+            <Text style={[styles.bikeSub, { flex: 1 }]}>
+              {bike === undefined ? 'Loading…' : "No bike assigned yet. We'll notify you when your Vesphe bike is ready to collect."}
+            </Text>
+          )}
+        </View>
+
         <Text style={styles.group}>Activity</Text>
         <View style={styles.card}>
           <Row icon="bell" label="Notifications" badge={unreadCount} onPress={() => navigation.navigate('Notifications')} />
@@ -162,6 +187,10 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   roleText: { color: R.orange, fontSize: 11, fontWeight: '700' },
+  bikeCard: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 },
+  bikeIcon: { width: 38, height: 38, borderRadius: 11, backgroundColor: 'rgba(249,115,22,0.1)', justifyContent: 'center', alignItems: 'center' },
+  bikePlate: { color: R.text, fontSize: 17, fontWeight: '800', letterSpacing: 1 },
+  bikeSub: { color: R.muted, fontSize: 12.5, marginTop: 2, lineHeight: 18 },
   statsRow: {
     flexDirection: 'row',
     backgroundColor: R.card,
