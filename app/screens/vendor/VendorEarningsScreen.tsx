@@ -73,8 +73,8 @@ function ReceiptModal({
   const discount = orderDetails?.discount || 0;
   const deliveryFee = orderDetails?.delivery_fee || 0;
   const platformCommission = orderDetails?.platform_commission || Math.round(subtotal * 0.1);
-  const flutterwaveFee = orderDetails?.flutterwave_fee ?? estimatePaystackFee(orderDetails?.total || 0);
-  const vatOnFee = orderDetails?.vat_on_fee || Math.round(flutterwaveFee * 0.075);
+  const paystackFee = orderDetails?.flutterwave_fee ?? estimatePaystackFee(orderDetails?.total || 0);
+  const vatOnFee = orderDetails?.vat_on_fee || Math.round(paystackFee * 0.075);
   const stampDuty = orderDetails?.stamp_duty || (subtotal >= 10000 ? 50 : 0);
   const netPayout = orderDetails?.vendor_payout || transaction.amount;
 
@@ -163,7 +163,7 @@ function ReceiptModal({
               >
                 <Text style={styles.receiptLogoText}>V</Text>
               </LinearGradient>
-              <Text style={styles.receiptBrandName}>Vespher</Text>
+              <Text style={styles.receiptBrandName}>Vesphe</Text>
             </View>
 
             {/* Status Badge */}
@@ -344,7 +344,7 @@ function ReceiptModal({
                 <View style={styles.receiptBreakdownRow}>
                   <Text style={styles.receiptBreakdownLabel}>Paystack Fee</Text>
                   <Text style={[styles.receiptBreakdownValue, styles.receiptDeduction]}>
-                    -₦{flutterwaveFee.toLocaleString()}
+                    -₦{paystackFee.toLocaleString()}
                   </Text>
                 </View>
 
@@ -398,7 +398,7 @@ function ReceiptModal({
                   ? 'Withdrawal is being processed'
                   : transaction.status === 'completed'
                   ? 'Funds have been sent to your bank account'
-                  : 'Thank you for using Vespher'}
+                  : 'Thank you for using Vesphe'}
               </Text>
             </View>
 

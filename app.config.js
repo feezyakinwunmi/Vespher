@@ -1,3 +1,6 @@
+// Keep in step with app/config/features.ts.
+const VOICE_ORDERING_ENABLED = false;
+
 export default {
   expo: {
     
@@ -10,12 +13,15 @@ export default {
     icon: "./assets/icon.png",
     userInterfaceStyle: "dark",
     ios: {
-      supportsTablet: true,
+      // Phone-only for now, so Apple doesn't review the layouts on iPad.
+      supportsTablet: false,
       bundleIdentifier: "com.femi-ceo.Vespher",
+      usesAppleSignIn: true,
       config: {
         googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
       },
       infoPlist: {
+        ITSAppUsesNonExemptEncryption: false,
         NSLocationWhenInUseUsageDescription: "Vesphe uses your location to show nearby vendors, set your delivery address and, for riders, share your position with customers during a delivery."
       }
     },
@@ -29,6 +35,8 @@ export default {
         monochromeImage: "./assets/android-icon-monochrome.png"
       },
       predictiveBackGestureEnabled: false,
+      // Voice ordering is off, so the release must not ask for the microphone.
+      blockedPermissions: VOICE_ORDERING_ENABLED ? [] : ["android.permission.RECORD_AUDIO"],
       package: "com.femi_ceo.Vespher",
       permissions: [
         "ACCESS_COARSE_LOCATION",
@@ -60,6 +68,7 @@ export default {
       "@react-native-community/datetimepicker",
       "expo-font",
       "expo-web-browser",
+      "expo-apple-authentication",
       [
         "expo-location",
         {
@@ -89,7 +98,7 @@ export default {
       ],
       "expo-quick-actions",
       // Copies the "Hey Vesphe" wake-word files into the native projects (see VOICE.md).
-      "./plugins/withWakeWord",
+      ...(VOICE_ORDERING_ENABLED ? ["./plugins/withWakeWord"] : []),
       [
         "expo-image-picker",
         {

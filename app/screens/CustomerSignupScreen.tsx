@@ -22,6 +22,8 @@ import { supabase } from '../lib/supabase';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import ReuseLocationPicker from '../components/ReuseLocationPicker';
+import { GoogleSignInButton } from '../components/GoogleSignInButton';
+import { AppleSignInButton } from '../components/AppleSignInButton';
 
 type RegistrationStep = 'auth' | 'details' | 'success';
 
@@ -168,26 +170,18 @@ const [checkingReferral, setCheckingReferral] = useState(false);
 
     try {
       // ✅ Check if email already exists in users table
-      const { data: existingUser, error: checkError } = await supabase
-        .from('users')
-        .select('email')
-        .eq('email', formData.email)
-        .maybeSingle();
+      const { data: existing } = await supabase.rpc('account_exists', {
+        p_email: formData.email,
+        p_phone: formData.phone,
+      });
 
-      if (existingUser) {
+      if (existing === 'email') {
         setError('An account with this email already exists. Please login instead.');
         setIsSubmitting(false);
         return;
       }
 
-      // ✅ Check if phone already exists
-      const { data: existingPhone, error: phoneCheckError } = await supabase
-        .from('users')
-        .select('phone')
-        .eq('phone', formData.phone)
-        .maybeSingle();
-
-      if (existingPhone) {
+      if (existing === 'phone') {
         setError('This phone number is already registered. Please use a different number.');
         setIsSubmitting(false);
         return;
@@ -755,6 +749,13 @@ const generateReferralCode = () => {
                   )}
                 </LinearGradient>
               </TouchableOpacity>
+
+              {step === 'auth' && (
+                <>
+                  <GoogleSignInButton label="Sign up with Google" />
+                  <AppleSignInButton signUp />
+                </>
+              )}
 
               {step === 'auth' && (
                 <View style={styles.loginContainer}>

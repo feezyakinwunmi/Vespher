@@ -13,9 +13,8 @@ eas login
 
 ## 1. Rotate leaked keys
 
-`EXPO_PUBLIC_PAYSTACK_SECRET_KEY` and `EXPO_PUBLIC_FLUTTERWAVE_SECRET_KEY` were bundled into
-earlier app builds. In Paystack → Settings → API Keys, **generate a new secret key**.
-Revoke the Flutterwave keys (no longer used).
+`EXPO_PUBLIC_PAYSTACK_SECRET_KEY` was bundled into earlier app builds. In Paystack →
+Settings → API Keys, **generate a new secret key**. Vesphe uses Paystack for all payments.
 
 ## 2. App environment (.env + EAS)
 

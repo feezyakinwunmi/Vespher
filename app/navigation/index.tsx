@@ -85,6 +85,7 @@ import { OutstandingPaymentsScreen } from '../screens/admin/OutstandingPaymentsS
 import { AllVendorsMapScreen } from '../screens/customer/AllVendorsMapScreen';
 import { navigationRef, onNavigationReady } from './RootNavigation';
 import { AdminAnnouncementsScreen } from '../screens/admin/AdminAnnouncementsScreen';
+import { supportLinks } from '../config/support';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 // Warning Modal for business accounts (they use the separate logistics app)
@@ -100,8 +101,7 @@ function WrongAppWarningModal({
   const { signOut } = useAuth();
 
   const handleDownloadApp = () => {
-    // Open app store link - replace with your actual app store URL
-    Linking.openURL('https://play.google.com/store/apps/details?id=com.vespher.logistics');
+    Linking.openURL(supportLinks.whatsapp);
   };
 
   const handleSignOut = async () => {
@@ -129,7 +129,7 @@ function WrongAppWarningModal({
             </LinearGradient>
           </View>
 
-          <Text style={styles.warningTitle}>Wrong App</Text>
+          <Text style={styles.warningTitle}>Business account</Text>
           
           <Text style={styles.warningMessage}>
             This app is for <Text style={styles.highlightText}>Customers</Text>,{' '}
@@ -139,7 +139,7 @@ function WrongAppWarningModal({
 
           <Text style={styles.warningDescription}>
             You are logged in as a <Text style={styles.roleText}>{roleText}</Text>. 
-            Please download the Vespher Logistics app for {roleText.toLowerCase()} services.
+            Business deliveries aren't available in this app yet. Please contact Vesphe support.
           </Text>
 
           <TouchableOpacity
@@ -152,8 +152,8 @@ function WrongAppWarningModal({
               end={{ x: 1, y: 0 }}
               style={styles.downloadButtonGradient}
             >
-              <Feather name="download" size={18} color="#fff" />
-              <Text style={styles.downloadButtonText}>Download Vespher Logistics</Text>
+              <Feather name="message-circle" size={18} color="#fff" />
+              <Text style={styles.downloadButtonText}>Contact support</Text>
             </LinearGradient>
           </TouchableOpacity>
 

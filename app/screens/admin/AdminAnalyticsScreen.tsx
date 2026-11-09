@@ -53,7 +53,7 @@ interface AnalyticsData {
   };
   
   // ===== FEES =====
-  flutterwaveFees: {
+  paystackFees: {
     total: number;
     fromFoodOrders: number;
     fromBusinessOrders: number;
@@ -119,7 +119,7 @@ export function AdminAnalyticsScreen() {
     totalRiderEarnings: 0,
     riderEarningsBreakdown: [],
     platformEarnings: { total: 0, fromFoodCommission: 0, fromDeliveryShare: 0, fromBusinessOrders: 0 },
-    flutterwaveFees: { total: 0, fromFoodOrders: 0, fromBusinessOrders: 0 },
+    paystackFees: { total: 0, fromFoodOrders: 0, fromBusinessOrders: 0 },
     stampDutyTotal: 0,
     totalVendors: 0,
     approvedVendors: 0,
@@ -342,8 +342,8 @@ const processAnalyticsData = (
   const totalDeliveryFees = foodOrders.reduce((sum, order) => sum + (order.delivery_fee || 0), 0);
   const deliveryShare = totalDeliveryFees * 0.5;
   
-  // Flutterwave fees from food orders
-  const flutterwaveFeesFood = foodOrders.reduce((sum, order) => {
+  // Paystack fees from food orders
+  const paystackFeesFood = foodOrders.reduce((sum, order) => {
     const fee = typeof order.flutterwave_fee === 'string' 
       ? parseFloat(order.flutterwave_fee) 
       : (order.flutterwave_fee || 0);
@@ -375,8 +375,8 @@ const processAnalyticsData = (
     return sum + share;
   }, 0);
   
-  // Flutterwave fees from business orders (estimate 2% of total)
-  const flutterwaveFeesBusiness = totalBusinessRevenue * 0.02;
+  // Paystack fees from business orders (estimate 2% of total)
+  const paystackFeesBusiness = totalBusinessRevenue * 0.02;
   
   // ===== TOTAL CALCULATIONS =====
   const totalOrders = totalFoodOrders + totalBusinessOrders;
@@ -385,17 +385,17 @@ const processAnalyticsData = (
   
   // Platform earnings breakdown
   const platformEarnings = {
-    total: platformCommissionFromFood + deliveryShare + platformEarningsFromBusiness - flutterwaveFeesFood - flutterwaveFeesBusiness - stampDutyTotal,
+    total: platformCommissionFromFood + deliveryShare + platformEarningsFromBusiness - paystackFeesFood - paystackFeesBusiness - stampDutyTotal,
     fromFoodCommission: platformCommissionFromFood,
     fromDeliveryShare: deliveryShare,
     fromBusinessOrders: platformEarningsFromBusiness,
   };
   
-  // Flutterwave fees breakdown
-  const flutterwaveFees = {
-    total: flutterwaveFeesFood + flutterwaveFeesBusiness,
-    fromFoodOrders: flutterwaveFeesFood,
-    fromBusinessOrders: flutterwaveFeesBusiness,
+  // Paystack fees breakdown
+  const paystackFees = {
+    total: paystackFeesFood + paystackFeesBusiness,
+    fromFoodOrders: paystackFeesFood,
+    fromBusinessOrders: paystackFeesBusiness,
   };
   
   // ===== VENDOR EARNINGS BREAKDOWN =====
@@ -503,7 +503,7 @@ const processAnalyticsData = (
     { name: 'Vendor Payouts', amount: totalVendorEarnings, color: colors.success },
     { name: 'Rider Earnings', amount: totalRiderEarnings, color: colors.warning },
     { name: 'Platform Earnings', amount: platformEarnings.total, color: colors.primary },
-    { name: 'Paystack Fees', amount: flutterwaveFees.total, color: colors.danger },
+    { name: 'Paystack Fees', amount: paystackFees.total, color: colors.danger },
   ].filter(r => r.amount > 0);
   
   return {
@@ -518,7 +518,7 @@ const processAnalyticsData = (
     totalRiderEarnings,
     riderEarningsBreakdown,
     platformEarnings,
-    flutterwaveFees,
+    paystackFees,
     stampDutyTotal,
     totalVendors,
     approvedVendors,
@@ -678,11 +678,11 @@ const processAnalyticsData = (
           {/* Paystack Fees */}
           <View style={styles.metricCard}>
             <Feather name="credit-card" size={20} color={colors.danger} />
-            <Text style={[styles.metricValue, { color: colors.danger }]}>{formatCurrency(analytics.flutterwaveFees.total)}</Text>
+            <Text style={[styles.metricValue, { color: colors.danger }]}>{formatCurrency(analytics.paystackFees.total)}</Text>
             <Text style={styles.metricLabel}>Paystack Fees</Text>
             <View style={styles.metricSubtext}>
-              <Text style={styles.metricSubtextText}>Food: {formatCurrency(analytics.flutterwaveFees.fromFoodOrders)}</Text>
-              <Text style={styles.metricSubtextText}>Business: {formatCurrency(analytics.flutterwaveFees.fromBusinessOrders)}</Text>
+              <Text style={styles.metricSubtextText}>Food: {formatCurrency(analytics.paystackFees.fromFoodOrders)}</Text>
+              <Text style={styles.metricSubtextText}>Business: {formatCurrency(analytics.paystackFees.fromBusinessOrders)}</Text>
             </View>
           </View>
 

@@ -157,7 +157,7 @@ export function SupportScreen() {
 
         {/* Version */}
         <View style={styles.versionContainer}>
-          <Text style={styles.versionText}>Vespher v1.0.0</Text>
+          <Text style={styles.versionText}>Vesphe v1.0.0</Text>
         </View>
         <View style={styles.bottomPadding} />
       </ScrollView>

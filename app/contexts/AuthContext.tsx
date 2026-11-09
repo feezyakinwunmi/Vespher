@@ -54,12 +54,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const recoveryInProgress = useRef(false);
   const [isNewUser, setIsNewUser] = useState(false);
 
-  // First Google sign-in: the auth user exists but has no profile row yet.
-  // Google sign-up is for customers; vendors register with business details.
+  // First Google or Apple sign-in: the auth user exists but has no profile row yet.
+  // These are for customers; vendors register with business details.
   const createProfileForOAuthUser = async (authUser: User): Promise<boolean> => {
     const providers: string[] = authUser.app_metadata?.providers
       || (authUser.app_metadata?.provider ? [authUser.app_metadata.provider] : []);
-    if (!providers.includes('google')) return false;
+    if (!providers.includes('google') && !providers.includes('apple')) return false;
 
     const meta = authUser.user_metadata || {};
     const email = authUser.email || '';

@@ -199,10 +199,7 @@ useEffect(() => {
     setLoadingFinancials(true);
     try {
       // Fetch food orders (delivered)
-      const { data: foodOrders, error: foodError } = await supabase
-        .from('orders')
-        .select('total, delivery_fee, service_fee, status')
-        .in('status', ['delivered']);
+      const { data: foodSums, error: foodError } = await supabase.rpc('admin_order_sums');
 
       if (foodError) throw foodError;
 
@@ -215,8 +212,8 @@ useEffect(() => {
       if (businessError) throw businessError;
 
       // Calculate food metrics
-      const totalFoodRevenue = foodOrders?.reduce((sum, order) => sum + (order.total || 0), 0) || 0;
-      const totalFoodDeliveryFees = foodOrders?.reduce((sum, order) => sum + (order.delivery_fee || 0), 0) || 0;
+      const totalFoodRevenue = Number(foodSums?.delivered_total) || 0;
+      const totalFoodDeliveryFees = Number(foodSums?.delivered_delivery_fees) || 0;
       const foodPlatformFees = totalFoodDeliveryFees * 0.5;
 
       // Calculate business metrics

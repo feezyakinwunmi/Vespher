@@ -17,6 +17,7 @@ import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafetyVerdict, HealthCheckResult } from '../../hooks/customer/useHealthCheck';
 import { HEALTH_CONDITIONS } from '../../contexts/HealthContext';
+import { MEDICAL_DISCLAIMER } from '../../config/legal';
 
 const { height, width } = Dimensions.get('window');
 
@@ -225,7 +226,7 @@ export function HealthWarningModal({
           )}
 
           <Text style={styles.disclaimer}>
-            Based on your Lock-In health preferences
+            Based on your Lock-In health preferences. {MEDICAL_DISCLAIMER}
           </Text>
         </ScrollView>
 

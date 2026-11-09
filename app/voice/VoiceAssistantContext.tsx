@@ -16,6 +16,7 @@ import { navigate, openOrder } from '../navigation/RootNavigation';
 import { buildVoiceCheckout, cancelUnpaid, loadSavedCards, placeVoiceOrder, addressLabel, type VoiceCheckout } from '../services/voiceOrder';
 import type { Product } from '../types';
 import { speechRecognition } from './native';
+import { VOICE_ORDERING_ENABLED } from '../config/features';
 
 type Phase = 'idle' | 'listening' | 'thinking' | 'speaking' | 'error';
 
@@ -62,8 +63,8 @@ export function VoiceAssistantProvider({ children }: { children: React.ReactNode
   const { calculateDeliveryToVendor } = useLocation();
   const { pay } = usePaystackCheckout();
   const sr = speechRecognition();
-  const available = !!sr && user?.role === 'customer';
-  const visible = user?.role === 'customer';
+  const available = VOICE_ORDERING_ENABLED && !!sr && user?.role === 'customer';
+  const visible = VOICE_ORDERING_ENABLED && user?.role === 'customer';
 
   const [isOpen, setIsOpen] = useState(false);
   const [phase, setPhase] = useState<Phase>('idle');

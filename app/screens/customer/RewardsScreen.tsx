@@ -104,12 +104,12 @@ const generateReferralCode = () => {
   };
 
   const handleShareReferral = async () => {
-    const message = `Join me on Vespher! Use my referral code: ${referralCode}\n\nGet ₦500 off your first order! Download the app: [Your App Link]`;
+    const message = `Join me on Vesphe! Use my referral code: ${referralCode}\n\nGet ₦500 off your first order! Search for Vesphe on the App Store or Google Play.`;
     
     try {
       await Share.share({
         message: message,
-        title: 'Invite Friends to Vespher',
+        title: 'Invite Friends to Vesphe',
       });
     } catch (error) {
       console.error('Error sharing:', error);

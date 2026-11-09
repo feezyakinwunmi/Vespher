@@ -20,11 +20,14 @@ interface Body {
   id?: string;
   // Keep the card on Paystack for one-tap and voice checkout next time.
   save_card?: boolean;
+  // Web checkout returns here; the app intercepts CALLBACK_URL instead.
+  return_url?: string;
 }
 
 serve(handler(async (req) => {
   const caller = await getCaller(req);
-  const { kind = 'order', id, save_card } = await readJson<Body>(req);
+  const { kind = 'order', id, save_card, return_url } = await readJson<Body>(req);
+  const callbackUrl = return_url && /^(https:\/\/|http:\/\/localhost)/.test(return_url) ? return_url : CALLBACK_URL;
   if (!id || typeof id !== 'string') throw new HttpError(400, 'id is required');
   if (!caller.email) throw new HttpError(400, 'Your account needs an email address to pay by card');
 
@@ -81,7 +84,7 @@ serve(handler(async (req) => {
       amount: Math.round(amount * 100),
       currency: 'NGN',
       reference,
-      callback_url: CALLBACK_URL,
+      callback_url: callbackUrl,
       metadata: { kind, id, user_id: caller.userId, save_card: save_card === true },
       ...split,
     },
@@ -97,7 +100,7 @@ serve(handler(async (req) => {
     data: {
       authorization_url: init.data.data.authorization_url,
       reference,
-      callback_url: CALLBACK_URL,
+      callback_url: callbackUrl,
       amount,
     },
   });

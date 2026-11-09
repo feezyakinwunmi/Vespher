@@ -1,6 +1,6 @@
 // app/components/customer/VoiceAndCardsSection.tsx
 // Profile settings for voice ordering (Pro Max / free trial, "Hey Vesphe", Siri
-// shortcut) and the cards saved for one-tap and voice checkout. Matches the Profile
+// shortcut) and the cards saved for one-tap checkout. Matches the Profile
 // screen's 16px side padding and card style.
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, Switch, TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
@@ -15,6 +15,7 @@ import { wakeWordConfigured } from '../../voice/native';
 import { getWakeWordEnabled, setWakeWordEnabled } from '../../voice/wakeWordSetting';
 import { loadSavedCards, type SavedCard } from '../../services/voiceOrder';
 import type { RootStackParamList } from '../../navigation/types';
+import { VOICE_ORDERING_ENABLED } from '../../config/features';
 
 const ORANGE = '#f97316';
 const PURPLE = '#a78bfa';
@@ -68,6 +69,7 @@ export function VoiceAndCardsSection() {
 
   return (
     <>
+      {VOICE_ORDERING_ENABLED && (
       <View style={styles.section}>
         <View style={styles.titleRow}>
           <Text style={styles.title}>Voice ordering</Text>
@@ -135,6 +137,7 @@ export function VoiceAndCardsSection() {
           )}
         </View>
       </View>
+      )}
 
       <View style={styles.section}>
         <View style={styles.titleRow}>
@@ -144,7 +147,7 @@ export function VoiceAndCardsSection() {
           <View style={[styles.card, styles.emptyCard]}>
             <Feather name="credit-card" size={22} color="#666" />
             <Text style={styles.emptyText}>No saved cards yet</Text>
-            <Text style={styles.sub}>Pay by card once and tick "Save this card" for one-tap and voice checkout.</Text>
+            <Text style={styles.sub}>Pay by card once and tick "Save this card" for one-tap checkout.</Text>
           </View>
         ) : (
           <View style={styles.card}>

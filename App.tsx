@@ -20,6 +20,8 @@ import { usePushNotifications } from './app/hooks/usePushNotifications';
 import { VoiceAssistantProvider } from './app/voice/VoiceAssistantContext';
 import { VoiceEntryPoints } from './app/voice/VoiceEntryPoints';
 import { FloatingMic } from './app/voice/FloatingMic';
+import { VOICE_ORDERING_ENABLED } from './app/config/features';
+import { ErrorBoundary } from './app/components/ErrorBoundary';
 
 // Create a separate component that uses the hook
 function PushNotificationsHandler() {
@@ -40,10 +42,12 @@ export default function App() {
               <TrackingProvider>
                 {/* Hands-free ordering: "Hey Vesphe", app-icon shortcut, vesphe://voice */}
                 <VoiceAssistantProvider>
-                  <AppNavigator />
+                  <ErrorBoundary>
+                    <AppNavigator />
+                  </ErrorBoundary>
                   <PushNotificationsHandler />
-                  <VoiceEntryPoints />
-                  <FloatingMic />
+                  {VOICE_ORDERING_ENABLED && <VoiceEntryPoints />}
+                  {VOICE_ORDERING_ENABLED && <FloatingMic />}
                 </VoiceAssistantProvider>
               </TrackingProvider>
             </LocationProvider>

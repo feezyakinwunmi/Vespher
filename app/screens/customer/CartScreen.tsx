@@ -569,12 +569,12 @@ const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
     const customerDeliveryFee = freeDeliveryEligible ? 0 : finalDeliveryFeeAmount;
 
     // Amount charged through Paystack
-    const flutterwaveTotal = subtotal - totalDiscount + customerDeliveryFee;
+    const paystackTotal = subtotal - totalDiscount + customerDeliveryFee;
 
     // Paystack processing fee (estimate; only card payments incur it). Stored in the
     // legacy flutterwave_fee columns.
-    const flutterwaveFeePercentage = paymentMethod === 'card' ? PAYSTACK_FEE_PERCENTAGE : 0;
-    const flutterwaveFee = paymentMethod === 'card' ? estimatePaystackFee(flutterwaveTotal) : 0;
+    const paystackFeePercentage = paymentMethod === 'card' ? PAYSTACK_FEE_PERCENTAGE : 0;
+    const paystackFee = paymentMethod === 'card' ? estimatePaystackFee(paystackTotal) : 0;
 
     // For database constraint: total must equal subtotal + delivery_fee - discount
     let discountForDB = totalDiscountForDB;
@@ -643,16 +643,16 @@ const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
     }
 
     // Stamp duty (₦50 for transactions ₦10,000 and above)
-    const stampDuty = flutterwaveTotal >= 10000 ? 50 : 0;
+    const stampDuty = paystackTotal >= 10000 ? 50 : 0;
 
     // Calculate platform net earnings
     let platformNetEarnings = 0;
 
     if ((isPlatformPromo && discount > 0) || firstOrderDiscount > 0) {
-      platformNetEarnings = platformCommission + platformDeliveryEarnings - effectiveDiscount - flutterwaveFee - stampDuty - finalWalletUsedAmount;
+      platformNetEarnings = platformCommission + platformDeliveryEarnings - effectiveDiscount - paystackFee - stampDuty - finalWalletUsedAmount;
       console.log('📉 Platform bears discount: Net earnings reduced by ₦', effectiveDiscount);
     } else {
-      platformNetEarnings = platformCommission + platformDeliveryEarnings - flutterwaveFee - stampDuty - finalWalletUsedAmount;
+      platformNetEarnings = platformCommission + platformDeliveryEarnings - paystackFee - stampDuty - finalWalletUsedAmount;
       console.log('📈 Vendor bears discount: Platform keeps full commission');
     }
 
@@ -661,10 +661,10 @@ const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
       discount: effectiveDiscount,
       delivery_fee: finalDeliveryFeeAmount,
       wallet_used: finalWalletUsedAmount,
-      customer_pays: flutterwaveTotal,
+      customer_pays: paystackTotal,
       platform_commission: platformCommission,
       vendor_payout: vendorPayout,
-      flutterwave_fee: flutterwaveFee,
+      flutterwave_fee: paystackFee,
       stamp_duty: stampDuty,
       platform_net: platformNetEarnings,
       is_platform_promo: isPlatformPromo,
@@ -814,8 +814,8 @@ const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
           quantity: item.quantity,
         })),
         stamp_duty: stampDuty,
-        flutterwave_fee: flutterwaveFee,
-        flutterwave_fee_percentage: flutterwaveFeePercentage,
+        flutterwave_fee: paystackFee,
+        flutterwave_fee_percentage: paystackFeePercentage,
         flutterwave_transaction_id: gatewayTransactionId,
         platform_commission: platformCommission,
         platform_commission_percentage: platformFeePercentage,
@@ -901,7 +901,7 @@ const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
       fee_amount: platformCommission,
       delivery_earnings: platformDeliveryEarnings,
       stamp_duty: stampDuty,
-      flutterwave_fee: flutterwaveFee,
+      flutterwave_fee: paystackFee,
       vendor_payout: vendorPayout,
       platform_net: platformNetEarnings,
       created_at: new Date().toISOString(),
@@ -1606,7 +1606,7 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
                 {paymentMethod === 'card' && (
                   <TouchableOpacity style={styles.saveCardRow} onPress={() => setSaveCard(v => !v)} activeOpacity={0.7}>
                     <Feather name={saveCard ? 'check-square' : 'square'} size={18} color={saveCard ? '#f97316' : '#666'} />
-                    <Text style={styles.saveCardText}>Save this card for faster checkout and voice orders</Text>
+                    <Text style={styles.saveCardText}>Save this card for faster checkout</Text>
                   </TouchableOpacity>
                 )}
                 {paymentMethod === 'cash' && finalTotal < 10000 && (

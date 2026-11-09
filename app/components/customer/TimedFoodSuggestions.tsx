@@ -56,7 +56,7 @@ export function TimedFoodSuggestions({
               {getMealTimeLabel(mealTime)} Picks
             </Text>
             <Text style={styles.sectionSubtitle}>
-              {isPersonalised ? 'Picked for your health profile' : 'Picked for this time of day'}
+              {isPersonalised ? 'Food suggestions only, not medical advice' : 'Picked for this time of day'}
             </Text>
           </View>
         </View>

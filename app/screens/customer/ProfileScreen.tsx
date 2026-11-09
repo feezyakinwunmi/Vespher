@@ -30,6 +30,9 @@ import { VoiceAndCardsSection } from '../../components/customer/VoiceAndCardsSec
 import type { Address } from '../../types';
 import Toast from 'react-native-toast-message';
 import { EmojiIcon } from '../../components/EmojiIcon';
+import { PRO_SUBSCRIPTIONS_ENABLED } from '../../config/features';
+import { MEDICAL_DISCLAIMER } from '../../config/legal';
+import { ensureHealthConsent, recordHealthConsent } from '../../utils/healthConsent';
 
 const formatDate = (date: Date): string => {
   try {
@@ -286,6 +289,8 @@ export function ProfileScreen() {
       return;
     }
 
+    if (user?.id && !(await ensureHealthConsent(user.id))) return;
+
     setIsSavingLockIn(true);
 
     try {
@@ -339,6 +344,7 @@ export function ProfileScreen() {
       await fetchHealthProfile();
       
       setShowLockInModal(false);
+      if (user?.id) await recordHealthConsent(user.id);
       showToast('Health Lock-In saved successfully!');
     } catch (error) {
       console.error('Error saving lock-in:', error);
@@ -582,7 +588,7 @@ const isLifestyleCondition = (id: HealthCondition) => {
         )}
 
         {/* Vesphe Pro */}
-        {!isPro && (
+        {PRO_SUBSCRIPTIONS_ENABLED && !isPro && (
           <TouchableOpacity onPress={() => navigation.navigate('Pro')} style={styles.proCard} activeOpacity={0.85}>
             <LinearGradient colors={['#f97316', '#f43f5e']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.proCardGradient}>
               <Feather name="award" size={22} color="#fff" />
@@ -805,11 +811,13 @@ const isLifestyleCondition = (id: HealthCondition) => {
           )}
         </View>
 
+        <Text style={styles.medicalNote}>{MEDICAL_DISCLAIMER}</Text>
+
         <VoiceAndCardsSection />
 
         {/* Menu Items */}
         <View style={styles.menuSection}>
-          {menuItems.map((item, index) => (
+          {menuItems.filter(item => PRO_SUBSCRIPTIONS_ENABLED || (item.path !== 'Pro' && item.path !== 'MealPlanner')).map((item, index) => (
             <TouchableOpacity key={index} onPress={() => navigation.navigate(item.path as never)} style={styles.menuItem}>
               <View style={[styles.menuIcon, { backgroundColor: `${item.color}20` }]}>
                 <Feather name={item.icon as any} size={20} color={item.color} />
@@ -1199,6 +1207,7 @@ const styles = StyleSheet.create({
   emptyAddressesSubtext: { fontSize: 12, color: '#f97316' },
 
   menuSection: { paddingHorizontal: 16, marginBottom: 24 },
+  medicalNote: { color: '#777', fontSize: 11.5, lineHeight: 17, marginHorizontal: 20, marginBottom: 16 },
   menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12 },
   menuIcon: { width: 40, height: 40, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
   menuLabel: { flex: 1, fontSize: 14, color: '#fff' },

@@ -26,6 +26,8 @@ import Toast from 'react-native-toast-message';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import type { RootStackParamList } from '../navigation/types';
+import { navigate } from '../navigation/RootNavigation';
+import { blockUser, fetchBlockedIds, unblockUser } from '../services/blocks';
 
 const BUCKET = 'chat-media';
 const ORANGE = '#f97316';
@@ -141,9 +143,10 @@ export function MessagingScreen() {
       return [];
     }
     const otherIds = [...new Set((convs || []).map(c => (c.participants as string[]).find(p => p !== user.id)).filter(Boolean))] as string[];
-    const [{ data: people }, { data: unreadRows }] = await Promise.all([
+    const [{ data: people }, { data: unreadRows }, blocked] = await Promise.all([
       otherIds.length ? supabase.rpc('conversation_people', { p_ids: otherIds }) : Promise.resolve({ data: [] as Person[] }),
       supabase.from('messages').select('conversation_id').eq('read', false).neq('sender_id', user.id),
+      fetchBlockedIds(user.id),
     ]);
     const unread = new Map<string, number>();
     (unreadRows || []).forEach((r: { conversation_id: string }) => unread.set(r.conversation_id, (unread.get(r.conversation_id) || 0) + 1));
@@ -160,7 +163,7 @@ export function MessagingScreen() {
         };
       })
       // Hide empty conversations someone opened but never wrote in.
-      .filter(c => c.last_message || openRef.current?.id === c.id);
+      .filter(c => (c.last_message || openRef.current?.id === c.id) && !blocked.has(c.other.id));
     setConversations(list);
     setLoading(false);
     return list;
@@ -476,6 +479,23 @@ function ChatThread({ conversation, onBack }: { conversation: Conversation; onBa
     setText('');
     send(content);
   };
+
+
+  const openSafetyMenu = async () => {
+    if (!user) return;
+    const isBlocked = (await fetchBlockedIds(user.id)).has(other.id);
+    Alert.alert(other.name, undefined, [
+      { text: 'Report a problem', onPress: () => navigate('Complaints') },
+      isBlocked
+        ? { text: 'Unblock', onPress: () => unblockUser(user.id, other.id).catch(() => undefined) }
+        : {
+            text: 'Block',
+            style: 'destructive',
+            onPress: () => blockUser(user.id, other.id).then(onBack).catch(() => Alert.alert('Could not block', 'Please try again.')),
+          },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
 
   const pickPhoto = async (source: 'camera' | 'library') => {
     const permission =
@@ -580,6 +600,11 @@ function ChatThread({ conversation, onBack }: { conversation: Conversation; onBa
           <Text style={styles.threadName} numberOfLines={1}>{other.name}</Text>
           <Text style={styles.headerSub}>{other.role === 'admin' ? 'Usually replies within a few hours' : ROLE_LABEL[other.role] || other.role}</Text>
         </View>
+        {other.role !== 'admin' && (
+          <TouchableOpacity onPress={openSafetyMenu} style={styles.iconButton} accessibilityLabel="Report or block">
+            <Feather name="flag" size={20} color="#fff" />
+          </TouchableOpacity>
+        )}
       </View>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}>

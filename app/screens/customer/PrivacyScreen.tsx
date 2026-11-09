@@ -31,55 +31,31 @@ export function PrivacyScreen() {
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
-          <Text style={styles.lastUpdated}>Last Updated: March 2024</Text>
-          
-          <Text style={styles.paragraph}>
-            Your privacy is important to us. This Privacy Policy explains how we collect, use, and protect your personal information when you use Vespher.
-          </Text>
+          <Text style={styles.lastUpdated}>Last Updated: November 2026</Text>
 
-          <Text style={styles.subtitle}>Information We Collect</Text>
-          <Text style={styles.paragraph}>
-            • Account information (name, email, phone number){'\n'}
-            • Delivery addresses{'\n'}
-            • Order history{'\n'}
-            • Payment information (processed securely by our payment partners){'\n'}
-            • Device information and location data
-          </Text>
+          <Text style={styles.subtitle}>Information we collect</Text>
+          <Text style={styles.paragraph}>Account details (name, email, phone). Delivery addresses and your device location while you use the app. Order and payment records; card details are handled by Paystack and never stored by us. Messages you send in the app. Health details you choose to add, such as conditions, allergies, diets and goals. For vendors: business and bank details. For riders: identity documents, licence, guarantor and bank details, and live location while online or on a delivery.</Text>
 
-          <Text style={styles.subtitle}>How We Use Your Information</Text>
-          <Text style={styles.paragraph}>
-            • To process and deliver your orders{'\n'}
-            • To communicate about your orders{'\n'}
-            • To improve our services{'\n'}
-            • To send you promotional offers (with your consent){'\n'}
-            • To prevent fraud and ensure security
-          </Text>
+          <Text style={styles.subtitle}>Health details</Text>
+          <Text style={styles.paragraph}>Health details are optional and only stored after you agree. They are used only to personalise food suggestions and warn you about meals that may not suit you. They are private to your account, are not shown to vendors or riders, are not used for advertising and are never sold. You can edit or remove them in your Profile at any time. Vesphe does not provide medical advice, diagnosis or treatment.</Text>
 
-          <Text style={styles.subtitle}>Information Sharing</Text>
-          <Text style={styles.paragraph}>
-            We share your information with:
-          </Text>
-          <Text style={styles.paragraph}>
-            • Vendors and riders to fulfill your orders{'\n'}
-            • Payment processors to handle transactions{'\n'}
-            • Service providers who assist in our operations
-          </Text>
+          <Text style={styles.subtitle}>Location</Text>
+          <Text style={styles.paragraph}>We use your location while the app is open to find nearby vendors and set delivery addresses. Riders share their location while the app is open and they are online or delivering, so customers and vendors can follow an order. We do not track location when the app is closed.</Text>
 
-          <Text style={styles.subtitle}>Data Security</Text>
-          <Text style={styles.paragraph}>
-            We implement appropriate security measures to protect your personal information. However, no method of transmission over the internet is 100% secure.
-          </Text>
+          <Text style={styles.subtitle}>How we use your information</Text>
+          <Text style={styles.paragraph}>To process and deliver orders, take payments, verify riders and vendors, provide support, send order updates and keep the service secure.</Text>
 
-          <Text style={styles.subtitle}>Your Rights</Text>
-          <Text style={styles.paragraph}>
-            You have the right to:
-          </Text>
-          <Text style={styles.paragraph}>
-            • Access your personal data{'\n'}
-            • Correct inaccurate data{'\n'}
-            • Request deletion of your data{'\n'}
-            • Opt-out of marketing communications
-          </Text>
+          <Text style={styles.subtitle}>Who we share it with</Text>
+          <Text style={styles.paragraph}>Vendors and riders receive what they need to fulfil your order, such as your name, phone number and delivery address. Our service providers process data for us: Supabase (hosting), Paystack (payments), Google (maps and sign-in), Apple (sign-in) and Expo (push notifications). We do not sell your personal data.</Text>
+
+          <Text style={styles.subtitle}>Security and retention</Text>
+          <Text style={styles.paragraph}>Data is encrypted in transit and at rest, and access is restricted. We keep your data while your account is active. Anonymised order records are kept for accounting and legal reasons after an account is deleted.</Text>
+
+          <Text style={styles.subtitle}>Your rights and account deletion</Text>
+          <Text style={styles.paragraph}>You can access, correct or delete your data, and withdraw consent, under the Nigeria Data Protection Act 2023. To delete your account, go to Profile and tap Delete account. This permanently removes your profile, addresses, health details, saved cards, bank details and rider documents.</Text>
+
+          <Text style={styles.subtitle}>Children</Text>
+          <Text style={styles.paragraph}>Vesphe is not intended for children under 18.</Text>
 
           <Text style={styles.subtitle}>Contact Us</Text>
           <Text style={styles.paragraph}>

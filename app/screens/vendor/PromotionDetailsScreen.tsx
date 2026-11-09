@@ -188,7 +188,7 @@ export function PromotionDetailsScreen() {
     
     try {
       await Share.share({
-        message: `Check out our promotion: ${promotion.title}!\n\n${promotion.description || 'Limited time offer!'}\n\nAvailable on Vespher App`,
+        message: `Check out our promotion: ${promotion.title}!\n\n${promotion.description || 'Limited time offer!'}\n\nAvailable on Vesphe App`,
         url: promotion.image_url,
       });
     } catch (error) {

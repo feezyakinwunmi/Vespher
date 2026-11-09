@@ -37,7 +37,6 @@ const categories: Category[] = [
   { id: 'all', name: 'All', icon: 'grid', color: '#f97316' },
   { id: 'restaurant', name: 'Restaurants', icon: 'coffee', color: '#f43f5e' },
   { id: 'fastfood', name: 'Fast Food', icon: 'zap', color: '#f97316' },
-  { id: 'pharmacy', name: 'Pharmacy', icon: 'crosshair', color: '#10b981' },
   { id: 'groceries', name: 'Groceries', icon: 'shopping-bag', color: '#f43f5e' },
   { id: 'local', name: 'Local Cuisine', icon: 'home', color: '#f97316' },
   { id: 'seafood', name: 'Seafood', icon: 'anchor', color: '#10b981' },

@@ -117,7 +117,6 @@ export interface Vendor {
   created_at?: string;
   latitude?: number;      // Add this
   longitude?: number; 
-  flutterwave_subaccount_id?: string | null;  // Add this!
 
 }
 // Product Types

@@ -20,6 +20,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { Feather } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
+import { GoogleSignInButton } from '../components/GoogleSignInButton';
+import { AppleSignInButton } from '../components/AppleSignInButton';
 type ScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export function LoginScreen() {
@@ -199,6 +201,9 @@ const handleSubmit = async () => {
               </LinearGradient>
             </TouchableOpacity>
 
+
+            <GoogleSignInButton />
+            <AppleSignInButton />
           </View>
 
           {/* Sign Up Link */}

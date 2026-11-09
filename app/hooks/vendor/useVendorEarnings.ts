@@ -347,15 +347,15 @@ const fetchOrderDetails = useCallback(async (orderId: string) => {
         const platformFeePercentage = settings?.platform_fee_percentage ? settings.platform_fee_percentage / 100 : 0.1;
         const subtotal = basicData.subtotal || 0;
         const platformCommission = Math.round(subtotal * platformFeePercentage);
-        const flutterwaveFee = basicData.payment_method === 'card' ? estimatePaystackFee(basicData.total || 0) : 0;
-        const vatOnFee = Math.round(flutterwaveFee * 0.075);
+        const paystackFee = basicData.payment_method === 'card' ? estimatePaystackFee(basicData.total || 0) : 0;
+        const vatOnFee = Math.round(paystackFee * 0.075);
         const stampDuty = basicData.total >= 10000 ? 50 : 0;
         const vendorPayout = subtotal - platformCommission;
         
         return {
           ...basicData,
           platform_commission: platformCommission,
-          flutterwave_fee: flutterwaveFee,
+          flutterwave_fee: paystackFee,
           vat_on_fee: vatOnFee,
           stamp_duty: stampDuty,
           vendor_payout: vendorPayout,

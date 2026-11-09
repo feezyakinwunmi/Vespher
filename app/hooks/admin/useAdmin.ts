@@ -95,19 +95,19 @@ export function useAdmin() {
         { count: vendorsCount },
         { count: ridersCount },
         { count: ordersCount },
-        { data: orders },
+        { data: orderSums },
         { count: pendingVendorsCount }
       ] = await Promise.all([
         supabase.from('users').select('*', { count: 'exact', head: true }),
         supabase.from('vendors').select('*', { count: 'exact', head: true }),
         supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'rider'),
         supabase.from('orders').select('*', { count: 'exact', head: true }).neq('status', 'cancelled'),
-        supabase.from('orders').select('total').neq('status', 'cancelled'),
+        supabase.rpc('admin_order_sums'),
         supabase.from('vendors').select('*', { count: 'exact', head: true }).eq('is_approved', false)
       ]);
 
-      const totalRevenue = orders?.reduce((sum, o) => sum + (o.total || 0), 0) || 0;
-      const platformFees = orders?.reduce((sum, o) => sum + Math.round((o.total || 0) * 0.1), 0) || 0;
+      const totalRevenue = Number(orderSums?.live_total) || 0;
+      const platformFees = Math.round(totalRevenue * 0.1);
 
       // Fetch pending menu count
       const { count: pendingMenuCount } = await supabase

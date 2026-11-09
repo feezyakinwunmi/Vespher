@@ -64,7 +64,7 @@ export async function addOrderToCalendar(order: any) {
       if (Platform.OS === 'android') {
         // On Android, we can create a new calendar
         const calendarId = await Calendar.createCalendarAsync({
-          title: 'Vespher Orders',
+          title: 'Vesphe Orders',
           color: '#f97316',
           entityType: Calendar.EntityTypes.EVENT,
           sourceId: calendars[0]?.source?.id,

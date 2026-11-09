@@ -14,7 +14,7 @@ import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
-const LOCATIONIQ_KEY = 'pk.your_locationiq_key_here'; // Replace with your key
+const LOCATIONIQ_KEY = 'pk.0af27b1ba256a5946cc3366d07bc90d7';
 
 export function AddressPickerScreen() {
   const navigation = useNavigation();

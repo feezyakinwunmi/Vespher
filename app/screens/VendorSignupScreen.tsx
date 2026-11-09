@@ -66,7 +66,6 @@ const categories = [
   { label: 'Fresh Produce', value: 'produce' },
   { label: 'Meat & Fish', value: 'meat' },
   { label: 'Beverages', value: 'beverages' },
-  { label: 'Pharmacy', value: 'pharmacy' },
   { label: 'Electronics', value: 'electronics' },
   { label: 'Fashion', value: 'fashion' },
   { label: 'Home & Kitchen', value: 'home' },

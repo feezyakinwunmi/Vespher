@@ -29,7 +29,7 @@ type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'ready' | 'picked_up'
 interface FeeBreakdown {
   subtotal: number;
   platformCommission: number;
-  flutterwaveFee: number;
+  paystackFee: number;
   vatOnFee: number;
   stampDuty: number;
   vendorPayout: number;
@@ -105,16 +105,16 @@ export function VendorOrderDetailsScreen() {
     const platformCommission = orderData.platform_commission || Math.round(subtotal * 0.1);
     const vendorPayout = orderData.vendor_payout || (subtotal - platformCommission);
     
-    const flutterwaveFee = orderData.flutterwave_fee ?? (orderData.payment_method === 'card' ? estimatePaystackFee(orderData.total || 0) : 0);
-    const vatOnFee = orderData.vat_on_fee || Math.round(flutterwaveFee * 0.075);
+    const paystackFee = orderData.flutterwave_fee ?? (orderData.payment_method === 'card' ? estimatePaystackFee(orderData.total || 0) : 0);
+    const vatOnFee = orderData.vat_on_fee || Math.round(paystackFee * 0.075);
     const stampDuty = orderData.stamp_duty || (orderData.total >= 10000 ? 50 : 0);
     const platformNetEarnings = orderData.platform_net_earnings || 
-      (platformCommission - flutterwaveFee - vatOnFee - stampDuty);
+      (platformCommission - paystackFee - vatOnFee - stampDuty);
 
     return {
       subtotal,
       platformCommission,
-      flutterwaveFee,
+      paystackFee,
       vatOnFee,
       stampDuty,
       vendorPayout,
@@ -685,7 +685,7 @@ const renderEarningsBreakdown = () => {
       <View style={styles.earningsRow}>
         <Text style={styles.earningsLabel}>Paystack Fee:</Text>
         <Text style={[styles.earningsValue, styles.deduction]}>
-          -₦{feeBreakdown.flutterwaveFee.toLocaleString()}
+          -₦{feeBreakdown.paystackFee.toLocaleString()}
         </Text>
       </View>
 

@@ -21,6 +21,7 @@ import { useHealthCheck, HealthCheckResult } from '../../hooks/customer/useHealt
 import { reviewFood } from '../../services/foodSafety';
 import { imageSource } from '../../utils/images';
 import { EmojiIcon } from '../EmojiIcon';
+import { MEDICAL_DISCLAIMER } from '../../config/legal';
 
 interface ProductDetailsModalProps {
   product: Product | null;
@@ -143,7 +144,7 @@ export function ProductDetailsModal({ product, onClose, onHealthWarning, vendorN
               )}
 
               <Text style={styles.disclaimer}>
-                Allergen information is provided by the vendor and checked automatically. If you have a severe allergy, confirm with the vendor before ordering.
+                Allergen information is provided by the vendor and checked automatically. If you have a severe allergy, confirm with the vendor before ordering. {MEDICAL_DISCLAIMER}
               </Text>
             </View>
           </ScrollView>

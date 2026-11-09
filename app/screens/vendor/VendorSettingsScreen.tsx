@@ -48,7 +48,6 @@ const businessCategories = [
   { value: 'local', label: 'Local Cuisine' },
   { value: 'seafood', label: 'Seafood' },
   { value: 'groceries', label: 'Groceries' },
-  { value: 'pharmacy', label: 'Pharmacy' },
 ];
 
 const days: { key: DayKey; label: string }[] = [
@@ -84,7 +83,7 @@ function TermsConditionsScreen({ onClose }: { onClose: () => void }) {
         <ScrollView style={styles.modalContent}>
           <Text style={styles.modalSectionTitle}>1. Acceptance of Terms</Text>
           <Text style={styles.modalText}>
-            By accessing and using Vespher as a vendor, you agree to be bound by these Terms and Conditions. 
+            By accessing and using Vesphe as a vendor, you agree to be bound by these Terms and Conditions. 
             If you do not agree with any part of these terms, you may not use our platform.
           </Text>
 
@@ -99,7 +98,7 @@ function TermsConditionsScreen({ onClose }: { onClose: () => void }) {
 
           <Text style={styles.modalSectionTitle}>3. Commission and Fees</Text>
           <Text style={styles.modalText}>
-            Vespher charges a commission on each order processed through our platform. The current commission 
+            Vesphe charges a commission on each order processed through our platform. The current commission 
             rate is displayed in your dashboard. This rate may be subject to change with prior notice.
           </Text>
 
@@ -112,24 +111,24 @@ function TermsConditionsScreen({ onClose }: { onClose: () => void }) {
           <Text style={styles.modalSectionTitle}>5. Cancellation and Refunds</Text>
           <Text style={styles.modalText}>
             Vendors may cancel orders only in exceptional circumstances. Refunds are handled according to 
-            Vespher's refund policy. Repeated cancellations may affect your vendor standing.
+            Vesphe's refund policy. Repeated cancellations may affect your vendor standing.
           </Text>
 
           <Text style={styles.modalSectionTitle}>6. Platform Usage</Text>
           <Text style={styles.modalText}>
             You agree not to misuse the platform, attempt to circumvent commission fees, or engage in any 
-            fraudulent activities. Vespher reserves the right to suspend accounts violating these terms.
+            fraudulent activities. Vesphe reserves the right to suspend accounts violating these terms.
           </Text>
 
           <Text style={styles.modalSectionTitle}>7. Limitation of Liability</Text>
           <Text style={styles.modalText}>
-            Vespher is not liable for any indirect, incidental, or consequential damages arising from your 
+            Vesphe is not liable for any indirect, incidental, or consequential damages arising from your 
             use of the platform. Our total liability is limited to the commissions earned from your account.
           </Text>
 
           <Text style={styles.modalSectionTitle}>8. Modifications</Text>
           <Text style={styles.modalText}>
-            Vespher reserves the right to modify these terms at any time. Continued use of the platform 
+            Vesphe reserves the right to modify these terms at any time. Continued use of the platform 
             constitutes acceptance of modified terms.
           </Text>
 

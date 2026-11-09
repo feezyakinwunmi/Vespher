@@ -20,6 +20,7 @@ import {
   touchRiderPresence,
   updateRiderLocation,
 } from '../services/riderOrders';
+import { CLAIMABLE_STATUSES } from '../services/riderOrders';
 
 // How often the rider's position is written while they are online.
 const LOCATION_WRITE_INTERVAL_MS = 15000;
@@ -100,7 +101,16 @@ export function RiderProvider({ children }: { children: React.ReactNode }) {
 
     const channel = supabase
       .channel(`rider-orders-${riderId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, debouncedLoad)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, payload => {
+        const row = payload.new as { id?: string; rider_id?: string | null; status?: string };
+        const before = payload.old as { rider_id?: string | null };
+        if (row.rider_id && row.rider_id !== riderId) {
+          // Claimed by someone else: drop it locally instead of refetching.
+          setAvailable(list => list.filter(o => o.id !== row.id));
+        } else if (row.rider_id === riderId || before.rider_id === riderId || CLAIMABLE_STATUSES.includes(row.status as any)) {
+          debouncedLoad();
+        }
+      })
       .subscribe();
 
     const appState = AppState.addEventListener('change', s => {

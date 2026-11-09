@@ -42,6 +42,7 @@ import { HealthCondition, HEALTH_CONDITIONS } from '../../contexts/HealthContext
 import { SafetyVerdict } from '../../hooks/customer/useHealthCheck';
 import { useLocation } from '../../contexts/LocationContext';
 import { calculateDistance } from '../../services/locationService';
+import { PRO_SUBSCRIPTIONS_ENABLED } from '../../config/features';
 
 
 const { width } = Dimensions.get('window');
@@ -479,10 +480,6 @@ function getEffectMessage(conditionId: string, label: string): string {
 
   useEffect(() => {
     fetchUnreadMessages();
-    const subscription = supabase.channel('customer-messages')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => { fetchUnreadMessages(); })
-      .subscribe();
-    return () => { subscription.unsubscribe(); };
   }, [user?.id]);
 
   useFocusEffect(React.useCallback(() => { fetchUnreadMessages(); }, []));
@@ -849,7 +846,7 @@ function getEffectMessage(conditionId: string, label: string): string {
           mealTime={mealTime}
           onProductPress={(product) => navigation.navigate('VendorDetails', { vendorId: product.vendorId })}
           onViewAll={() => navigation.navigate('CustomerTabs', { screen: 'Explore', params: { mealTimeFilter: mealTime } })}
-          lockedCount={lockedCount}
+          lockedCount={PRO_SUBSCRIPTIONS_ENABLED ? lockedCount : 0}
           isPersonalised={isPersonalised}
           onUnlock={() => navigation.navigate('Pro')}
         />

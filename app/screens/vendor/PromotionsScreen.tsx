@@ -20,6 +20,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import Toast from 'react-native-toast-message';
 import { RootStackParamList } from '../../navigation/types';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { PROMOTION_PURCHASE_IN_APP } from '../../config/features';
 
 type VendorAddressesScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -282,9 +283,13 @@ const calculateActualConversions = async (promotionId: string) => {
           <Feather name="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>My Promotions</Text>
-        <TouchableOpacity onPress={handleCreatePromotion} style={styles.createButton}>
-          <Feather name="plus" size={24} color="#f97316" />
-        </TouchableOpacity>
+        {PROMOTION_PURCHASE_IN_APP ? (
+          <TouchableOpacity onPress={handleCreatePromotion} style={styles.createButton}>
+            <Feather name="plus" size={24} color="#f97316" />
+          </TouchableOpacity>
+        ) : (
+          <View style={{ width: 40 }} />
+        )}
       </View>
 
       {/* Vendor Name */}
@@ -381,18 +386,20 @@ const calculateActualConversions = async (promotionId: string) => {
             <Feather name="speaker" size={48} color="#666" />
             <Text style={styles.emptyTitle}>No Promotions Yet</Text>
             <Text style={styles.emptyText}>
-              Create your first promotion to attract more customers
+              {PROMOTION_PURCHASE_IN_APP ? 'Create your first promotion to attract more customers' : 'Promotions you run will appear here.'}
             </Text>
-            <TouchableOpacity onPress={handleCreatePromotion} style={styles.emptyButton}>
-              <LinearGradient
-                colors={['#f97316', '#f43f5e']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.emptyButtonGradient}
-              >
-                <Text style={styles.emptyButtonText}>Create Promotion</Text>
-              </LinearGradient>
-            </TouchableOpacity>
+            {PROMOTION_PURCHASE_IN_APP && (
+              <TouchableOpacity onPress={handleCreatePromotion} style={styles.emptyButton}>
+                <LinearGradient
+                  colors={['#f97316', '#f43f5e']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.emptyButtonGradient}
+                >
+                  <Text style={styles.emptyButtonText}>Create Promotion</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            )}
           </View>
         ) : (
           <View style={styles.listContainer}>

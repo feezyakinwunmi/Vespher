@@ -40,7 +40,7 @@ const roles: RoleOption[] = [
     description: 'Order food and groceries from your favorite vendors',
     icon: 'shopping-bag',
     benefits: [
-      'Browse 50+ local vendors',
+      'Browse local vendors near you',
       'Fast delivery to your doorstep',
       'Exclusive discounts & offers',
       'Track orders in real-time',
@@ -142,7 +142,7 @@ export function RoleSelectionScreen() {
         <View style={styles.titleContainer}>
           <Text style={styles.title}>How would you like to join?</Text>
           <Text style={styles.subtitle}>
-            Select your role to get started with Vespher
+            Select your role to get started with Vesphe
           </Text>
         </View>
 
