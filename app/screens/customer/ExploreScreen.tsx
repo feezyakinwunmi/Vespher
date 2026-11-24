@@ -33,6 +33,8 @@ import { RootStackParamList, CustomerTabParamList } from '../../navigation/types
 import Toast from 'react-native-toast-message';
 import { useLocation } from '../../contexts/LocationContext';
 import { calculateDistance } from '../../services/locationService';
+import { TAB_BAR_SPACE } from '../../navigation/tabBarOptions';
+import { TC } from '../../theme/palette';
 
 type ExploreScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type ExploreScreenRouteProp = RouteProp<CustomerTabParamList, 'Explore'>;
@@ -509,7 +511,7 @@ export function ExploreScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <CustomerHeader showSearch={false} />
 
       <HealthWarningModal
@@ -551,7 +553,7 @@ export function ExploreScreen() {
               selectedMealTimeTab === tab.id && { backgroundColor: `${tab.color}20`, borderColor: tab.color }
             ]}
           >
-            <Feather name={tab.icon as any} size={14} color={selectedMealTimeTab === tab.id ? tab.color : '#666'} />
+            <Feather name={tab.icon as any} size={14} color={selectedMealTimeTab === tab.id ? tab.color : TC.muted} />
             <Text style={[styles.tabChipText, selectedMealTimeTab === tab.id && { color: tab.color }]}>
               {tab.label}
             </Text>
@@ -578,7 +580,7 @@ export function ExploreScreen() {
               selectedSuggestionTab === tab.id && { backgroundColor: `${tab.color}20`, borderColor: tab.color }
             ]}
           >
-            <Feather name={tab.icon as any} size={14} color={selectedSuggestionTab === tab.id ? tab.color : '#666'} />
+            <Feather name={tab.icon as any} size={14} color={selectedSuggestionTab === tab.id ? tab.color : TC.muted} />
             <Text style={[styles.tabChipText, selectedSuggestionTab === tab.id && { color: tab.color }]}>
               {tab.label}
             </Text>
@@ -642,17 +644,17 @@ export function ExploreScreen() {
       <View style={styles.searchContainer}>
         <View style={styles.searchWrapper}>
           <View style={styles.searchInputContainer}>
-            <Feather name="search" size={18} color="#666" style={styles.searchIcon} />
+            <Feather name="search" size={18} color={TC.muted} style={styles.searchIcon} />
             <TextInput
               style={styles.searchInput}
               value={searchQuery}
               onChangeText={setSearchQuery}
               placeholder="Search for food, vendors..."
-              placeholderTextColor="#666"
+              placeholderTextColor={TC.muted}
             />
             {searchQuery && (
               <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
-                <Feather name="x" size={16} color="#666" />
+                <Feather name="x" size={16} color={TC.muted} />
               </TouchableOpacity>
             )}
           </View>
@@ -661,7 +663,7 @@ export function ExploreScreen() {
             onPress={() => { setTempFilters(filters); setShowFilters(true); }}
             style={[styles.filterButton, getActiveFilterCount() > 0 && styles.filterButtonActive]}
           >
-            <Feather name="sliders" size={18} color={getActiveFilterCount() > 0 ? '#f97316' : '#666'} />
+            <Feather name="sliders" size={18} color={getActiveFilterCount() > 0 ? '#f97316' : TC.muted} />
             {getActiveFilterCount() > 0 && (
               <View style={styles.filterBadge}>
                 <Text style={styles.filterBadgeText}>{getActiveFilterCount()}</Text>
@@ -684,7 +686,7 @@ export function ExploreScreen() {
       </View>
 
       {/* Products Grid */}
-      <ScrollView
+      <ScrollView contentContainerStyle={{ paddingBottom: TAB_BAR_SPACE }}
         style={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#f97316" />}
@@ -726,7 +728,7 @@ export function ExploreScreen() {
           </View>
         ) : (
           <View style={styles.emptyContainer}>
-            <View style={styles.emptyIconContainer}><Feather name="search" size={40} color="#666" /></View>
+            <View style={styles.emptyIconContainer}><Feather name="search" size={40} color={TC.muted} /></View>
             <Text style={styles.emptyTitle}>No items found</Text>
             <Text style={styles.emptyText}>Try adjusting your search or filters</Text>
           </View>
@@ -739,14 +741,14 @@ export function ExploreScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Filter Items</Text>
+              <Text style={styles.modalTitle}>Filter items</Text>
               <TouchableOpacity onPress={() => setShowFilters(false)} style={styles.modalCloseButton}>
-                <Feather name="x" size={20} color="#fff" />
+                <Feather name="x" size={20} color={TC.text} />
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
               <View style={styles.modalSection}>
-                <Text style={styles.modalSectionTitle}>Sort By</Text>
+                <Text style={styles.modalSectionTitle}>Sort by</Text>
                 <View style={styles.sortOptions}>
                   {[{ value: 'popular', label: 'Most Popular' }, { value: 'price_low', label: 'Price: Low to High' }, { value: 'price_high', label: 'Price: High to Low' }, { value: 'newest', label: 'Newest First' }].map((option) => (
                     <TouchableOpacity key={option.value} onPress={() => setTempFilters(prev => ({ ...prev, sortBy: option.value as any }))} style={[styles.sortOption, tempFilters.sortBy === option.value && styles.sortOptionSelected]}>
@@ -785,16 +787,16 @@ export function ExploreScreen() {
               </View>
 
               <View style={styles.modalSection}>
-                <Text style={styles.modalSectionTitle}>Price Range</Text>
+                <Text style={styles.modalSectionTitle}>Price range</Text>
                 <View style={styles.priceRangeContainer}>
                   <View style={styles.priceInputContainer}>
                     <Text style={styles.priceInputLabel}>Min</Text>
-                    <TextInput style={styles.priceInput} value={tempFilters.priceRange.min.toString()} onChangeText={(text) => setTempFilters(prev => ({ ...prev, priceRange: { ...prev.priceRange, min: parseInt(text) || 0 } }))} keyboardType="numeric" placeholder="0" placeholderTextColor="#666" />
+                    <TextInput style={styles.priceInput} value={tempFilters.priceRange.min.toString()} onChangeText={(text) => setTempFilters(prev => ({ ...prev, priceRange: { ...prev.priceRange, min: parseInt(text) || 0 } }))} keyboardType="numeric" placeholder="0" placeholderTextColor={TC.muted} />
                   </View>
                   <View style={styles.priceSeparator}><Text style={styles.priceSeparatorText}>to</Text></View>
                   <View style={styles.priceInputContainer}>
                     <Text style={styles.priceInputLabel}>Max</Text>
-                    <TextInput style={styles.priceInput} value={tempFilters.priceRange.max.toString()} onChangeText={(text) => setTempFilters(prev => ({ ...prev, priceRange: { ...prev.priceRange, max: parseInt(text) || 1000000000 } }))} keyboardType="numeric" placeholder="₦" placeholderTextColor="#666" />
+                    <TextInput style={styles.priceInput} value={tempFilters.priceRange.max.toString()} onChangeText={(text) => setTempFilters(prev => ({ ...prev, priceRange: { ...prev.priceRange, max: parseInt(text) || 1000000000 } }))} keyboardType="numeric" placeholder="₦" placeholderTextColor={TC.muted} />
                   </View>
                 </View>
               </View>
@@ -803,9 +805,9 @@ export function ExploreScreen() {
             <View style={styles.modalFooter}>
               <TouchableOpacity onPress={resetFilters} style={styles.resetButton}><Text style={styles.resetButtonText}>Reset</Text></TouchableOpacity>
               <TouchableOpacity onPress={applyFilters} style={styles.applyButton}>
-                <LinearGradient colors={['#f97316', '#10b981']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.applyGradient}>
-                  <Text style={styles.applyText}>Apply Filters</Text>
-                </LinearGradient>
+                <View style={[styles.applyGradient, { backgroundColor: '#ea580c' }]}>
+                  <Text style={styles.applyText}>Apply filters</Text>
+                </View>
               </TouchableOpacity>
             </View>
           </View>
@@ -816,98 +818,98 @@ export function ExploreScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0a0a0a', paddingBottom: 60 },
-  loadingContainer: { flex: 1, backgroundColor: '#0a0a0a', justifyContent: 'center', alignItems: 'center' },
-  loadingText: { color: '#666', marginTop: 12, fontSize: 14 },
+  container: { flex: 1, backgroundColor: TC.bg, },
+  loadingContainer: { flex: 1, backgroundColor: TC.bg, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { color: TC.muted, marginTop: 12, fontSize: 14 },
   
   tabsContainer: { maxHeight: 44, marginTop: 12, marginBottom: 8 },
   tabsContent: { paddingHorizontal: 16, gap: 10, alignItems: 'center' },
-  tabChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 6, backgroundColor: '#1a1a1a', borderRadius: 20, borderWidth: 1, borderColor: '#2a2a2a' },
-  tabChipText: { fontSize: 13, color: '#666' },
+  tabChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 6, backgroundColor: TC.surface, borderRadius: 20, borderWidth: 1, borderColor: TC.raised },
+  tabChipText: { fontSize: 13, color: TC.muted },
   
   suggestedSection: { marginBottom: 16 },
   sectionHeader: { paddingHorizontal: 16, marginBottom: 8 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#fff' },
-  sectionSubtitle: { fontSize: 11, color: '#666', marginTop: 2 },
+  sectionTitle: { fontSize: 16, fontWeight: '600', color: TC.text },
+  sectionSubtitle: { fontSize: 11, color: TC.muted, marginTop: 2 },
   suggestedList: { paddingLeft: 16, gap: 12 },
   
-  horizontalProductCard: { width: 160, height: 180, borderRadius: 12, overflow: 'hidden', backgroundColor: '#1a1a1a', marginRight: 12 },
+  horizontalProductCard: { width: 160, height: 180, borderRadius: 12, overflow: 'hidden', backgroundColor: TC.surface, marginRight: 12 },
   horizontalProductImage: { width: '100%', height: '100%', position: 'absolute' },
   
-  productCard: { width: '47%', height: 200, marginBottom: 12, borderRadius: 12, overflow: 'hidden', backgroundColor: '#1a1a1a' },
+  productCard: { width: '47%', height: 200, marginBottom: 12, borderRadius: 12, overflow: 'hidden', backgroundColor: TC.surface },
   productImage: { width: '100%', height: '100%', position: 'absolute' },
   
   productGradient: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 10, paddingBottom: 8 },
   productInfo: { gap: 4 },
-  productName: { fontSize: 13, fontWeight: '600', color: '#fff' },
-  productVendor: { fontSize: 10, color: '#aaa' },
+  productName: { fontSize: 13, fontWeight: '600', color: TC.text },
+  productVendor: { fontSize: 10, color: TC.subtle },
   productFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
   productPriceContainer: { flexDirection: 'row', alignItems: 'center', gap: 4, flexWrap: 'wrap' },
-  productPrice: { fontSize: 13, fontWeight: '700', color: '#f97316' },
+  productPrice: { fontSize: 13, fontWeight: '600', color: '#f97316' },
   deliveryBadge: { flexDirection: 'row', alignItems: 'center', gap: 2, backgroundColor: 'rgba(16,185,129,0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 },
   deliveryText: { fontSize: 9, color: '#10b981' },
-  addButton: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#f97316', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 3 },
+  addButton: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#ea580c', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 3 },
   
-  searchContainer: { paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
+  searchContainer: { paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: TC.hairline },
   searchWrapper: { flexDirection: 'row', gap: 8 },
-  searchInputContainer: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#1a1a1a', borderRadius: 12, paddingHorizontal: 12 },
+  searchInputContainer: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: TC.surface, borderRadius: 12, paddingHorizontal: 12 },
   searchIcon: { marginRight: 8 },
-  searchInput: { flex: 1, height: 44, color: '#fff', fontSize: 14 },
+  searchInput: { flex: 1, height: 44, color: TC.text, fontSize: 14 },
   clearButton: { padding: 4 },
   
-  filterButton: { width: 44, height: 44, backgroundColor: '#1a1a1a', borderRadius: 12, justifyContent: 'center', alignItems: 'center', position: 'relative' },
+  filterButton: { width: 44, height: 44, backgroundColor: TC.surface, borderRadius: 12, justifyContent: 'center', alignItems: 'center', position: 'relative' },
   filterButtonActive: { borderWidth: 1, borderColor: '#f97316', backgroundColor: 'rgba(249,115,22,0.1)' },
-  filterBadge: { position: 'absolute', top: -4, right: -4, backgroundColor: '#f97316', borderRadius: 10, minWidth: 18, height: 18, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 4 },
+  filterBadge: { position: 'absolute', top: -4, right: -4, backgroundColor: '#ea580c', borderRadius: 10, minWidth: 18, height: 18, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 4 },
   filterBadgeText: { color: '#fff', fontSize: 10, fontWeight: '600' },
   
   resultsContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
-  resultsText: { fontSize: 13, color: '#666' },
+  resultsText: { fontSize: 13, color: TC.muted },
   clearFiltersText: { fontSize: 13, color: '#f97316' },
   
   content: { flex: 1 },
   productsGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12, gap: 12 },
   
   emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60, paddingHorizontal: 20 },
-  emptyIconContainer: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#1a1a1a', justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
-  emptyTitle: { fontSize: 18, fontWeight: '600', color: '#fff', marginBottom: 8 },
-  emptyText: { fontSize: 14, color: '#666', textAlign: 'center' },
+  emptyIconContainer: { width: 80, height: 80, borderRadius: 40, backgroundColor: TC.surface, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
+  emptyTitle: { fontSize: 18, fontWeight: '600', color: TC.text, marginBottom: 8 },
+  emptyText: { fontSize: 14, color: TC.muted, textAlign: 'center' },
   bottomPadding: { height: 20 },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: '#1a1a1a', borderTopLeftRadius: 20, borderTopRightRadius: 20, height: '90%' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
-  modalTitle: { fontSize: 18, fontWeight: '600', color: '#fff' },
+  modalContent: { backgroundColor: TC.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, height: '90%' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: TC.hairline },
+  modalTitle: { fontSize: 18, fontWeight: '600', color: TC.text },
   modalCloseButton: { padding: 4 },
   modalBody: { flex: 1, padding: 16 },
   modalSection: { marginBottom: 24 },
-  modalSectionTitle: { fontSize: 16, fontWeight: '600', color: '#fff', marginBottom: 12 },
+  modalSectionTitle: { fontSize: 16, fontWeight: '600', color: TC.text, marginBottom: 12 },
   sortOptions: { gap: 8 },
-  sortOption: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 12, backgroundColor: '#2a2a2a', borderRadius: 8 },
+  sortOption: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 12, backgroundColor: TC.raised, borderRadius: 8 },
   sortOptionSelected: { backgroundColor: 'rgba(249,115,22,0.1)', borderWidth: 1, borderColor: '#f97316' },
-  sortOptionLabel: { fontSize: 14, color: '#fff' },
+  sortOptionLabel: { fontSize: 14, color: TC.text },
   sortOptionLabelSelected: { color: '#f97316' },
   categoryOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  categoryOption: { paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#2a2a2a', borderRadius: 20 },
+  categoryOption: { paddingHorizontal: 12, paddingVertical: 8, backgroundColor: TC.raised, borderRadius: 20 },
   categoryOptionSelected: { backgroundColor: 'rgba(249,115,22,0.1)', borderWidth: 1, borderColor: '#f97316' },
-  categoryOptionText: { fontSize: 13, color: '#fff' },
+  categoryOptionText: { fontSize: 13, color: TC.text },
   categoryOptionTextSelected: { color: '#f97316' },
   vendorOptions: { gap: 8 },
-  vendorOption: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, backgroundColor: '#2a2a2a', borderRadius: 8 },
+  vendorOption: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, backgroundColor: TC.raised, borderRadius: 8 },
   vendorOptionSelected: { backgroundColor: 'rgba(59,130,246,0.1)', borderWidth: 1, borderColor: '#f97316' },
   vendorOptionImage: { width: 40, height: 40, borderRadius: 8 },
   vendorOptionInfo: { flex: 1 },
-  vendorOptionName: { fontSize: 14, fontWeight: '500', color: '#fff', marginBottom: 2 },
-  vendorOptionRating: { fontSize: 12, color: '#666' },
+  vendorOptionName: { fontSize: 14, fontWeight: '500', color: TC.text, marginBottom: 2 },
+  vendorOptionRating: { fontSize: 12, color: TC.muted },
   priceRangeContainer: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   priceInputContainer: { flex: 1 },
-  priceInputLabel: { fontSize: 12, color: '#666', marginBottom: 4 },
-  priceInput: { height: 44, backgroundColor: '#2a2a2a', borderRadius: 8, paddingHorizontal: 12, color: '#fff', fontSize: 14 },
+  priceInputLabel: { fontSize: 12, color: TC.muted, marginBottom: 4 },
+  priceInput: { height: 44, backgroundColor: TC.raised, borderRadius: 8, paddingHorizontal: 12, color: TC.text, fontSize: 14 },
   priceSeparator: { paddingHorizontal: 8 },
-  priceSeparatorText: { color: '#666', fontSize: 14 },
-  modalFooter: { flexDirection: 'row', gap: 12, padding: 16, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' },
-  resetButton: { flex: 1, height: 48, backgroundColor: '#2a2a2a', borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  resetButtonText: { color: '#666', fontSize: 15, fontWeight: '600' },
+  priceSeparatorText: { color: TC.muted, fontSize: 14 },
+  modalFooter: { flexDirection: 'row', gap: 12, padding: 16, borderTopWidth: 1, borderTopColor: TC.hairline },
+  resetButton: { flex: 1, height: 48, backgroundColor: TC.raised, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  resetButtonText: { color: TC.muted, fontSize: 15, fontWeight: '600' },
   applyButton: { flex: 2, height: 48, borderRadius: 12, overflow: 'hidden' },
   applyGradient: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  applyText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  applyText: { color: TC.text, fontSize: 15, fontWeight: '600' },
 });

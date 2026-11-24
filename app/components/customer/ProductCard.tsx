@@ -10,11 +10,11 @@ import {
   Dimensions,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useCart } from '../../contexts/CartContext';
 import { useHealthCheck, HealthCheckResult } from '../../hooks/customer/useHealthCheck';
 import type { Product } from '../../types';
 import { ActivityIndicator } from 'react-native';
+import { TC } from '../../theme/palette';
 
 
 interface ProductCardProps {
@@ -134,7 +134,7 @@ export function ProductCard({
               quantity > 0 ? (
                 <View style={styles.quantityControl}>
                   <TouchableOpacity onPress={handleDecrement} style={styles.quantityButton}>
-                    <Feather name="minus" size={14} color="#fff" />
+                    <Feather name="minus" size={14} color={TC.text} />
                   </TouchableOpacity>
                   <Text style={styles.quantityText}>{quantity}</Text>
                   <TouchableOpacity onPress={handleIncrement} style={[styles.quantityButton, styles.primaryButton]}>
@@ -234,7 +234,7 @@ export function ProductCard({
 
         {product.preparationTime && (
           <View style={styles.prepTimeContainer}>
-            <Feather name="clock" size={12} color="#666" />
+            <Feather name="clock" size={12} color={TC.muted} />
             <Text style={styles.prepTimeText}>{product.preparationTime}</Text>
           </View>
         )}
@@ -253,7 +253,7 @@ export function ProductCard({
             quantity > 0 ? (
               <View style={styles.defaultQuantityControl}>
                 <TouchableOpacity onPress={handleDecrement} style={styles.defaultQtyButton}>
-                  <Feather name="minus" size={14} color="#fff" />
+                  <Feather name="minus" size={14} color={TC.text} />
                 </TouchableOpacity>
                 <Text style={styles.defaultQtyText}>{quantity}</Text>
                 <TouchableOpacity onPress={handleIncrement} style={[styles.defaultQtyButton, styles.defaultPrimaryButton]}>
@@ -282,12 +282,12 @@ const styles = StyleSheet.create({
   // Horizontal variant
   horizontalCard: {
     flexDirection: 'row',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     padding: 12,
     gap: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   horizontalImageContainer: {
     width: 80,
@@ -307,12 +307,12 @@ const styles = StyleSheet.create({
   horizontalName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 4,
   },
   horizontalDescription: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   horizontalFooter: {
     flexDirection: 'row',
@@ -332,14 +332,14 @@ const styles = StyleSheet.create({
   },
   originalPrice: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
     textDecorationLine: 'line-through',
   },
   addButtonSmall: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -352,15 +352,15 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     justifyContent: 'center',
     alignItems: 'center',
   },
   primaryButton: {
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
   },
   quantityText: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
     fontWeight: '500',
     minWidth: 20,
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
   // Compact variant
   compactCard: {
     width: CARD_WIDTH,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
   compactName: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 4,
   },
   compactFooter: {
@@ -406,18 +406,18 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     justifyContent: 'center',
     alignItems: 'center',
   },
 
   // Default variant
   defaultCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   defaultImageContainer: {
     width: '100%',
@@ -434,12 +434,12 @@ const styles = StyleSheet.create({
   defaultName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 4,
   },
   defaultDescription: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 8,
   },
   prepTimeContainer: {
@@ -450,7 +450,7 @@ const styles = StyleSheet.create({
   },
   prepTimeText: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
   },
   defaultFooter: {
     flexDirection: 'row',
@@ -459,22 +459,22 @@ const styles = StyleSheet.create({
   },
   defaultPrice: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#f97316',
   },
   defaultOriginalPrice: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
     textDecorationLine: 'line-through',
   },
   defaultAddButton: {
     paddingHorizontal: 16,
     paddingVertical: 6,
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     borderRadius: 16,
   },
   defaultAddText: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 12,
     fontWeight: '600',
   },
@@ -487,15 +487,15 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     justifyContent: 'center',
     alignItems: 'center',
   },
   defaultPrimaryButton: {
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
   },
   defaultQtyText: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 13,
     fontWeight: '500',
     minWidth: 20,
@@ -509,16 +509,16 @@ const styles = StyleSheet.create({
     left: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
     gap: 4,
   },
   popularText: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   popularBadgeSmall: {
     position: 'absolute',
@@ -526,16 +526,16 @@ const styles = StyleSheet.create({
     left: 4,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 8,
     gap: 2,
   },
   popularTextSmall: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 8,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   popularBadgeCompact: {
     position: 'absolute',
@@ -543,16 +543,16 @@ const styles = StyleSheet.create({
     left: 4,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     paddingHorizontal: 4,
     paddingVertical: 2,
     borderRadius: 6,
     gap: 2,
   },
   popularTextCompact: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 8,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   discountBadge: {
     position: 'absolute',
@@ -566,7 +566,7 @@ const styles = StyleSheet.create({
   discountText: {
     color: '#fff',
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   unavailableOverlay: {
     position: 'absolute',
@@ -579,9 +579,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   unavailableText: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 11,
-    fontWeight: '700',
-    textTransform: 'uppercase',
+    fontWeight: '600',
   },
 });

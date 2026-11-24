@@ -111,7 +111,7 @@ export function useNotifications() {
     if (!user) return;
 
     Alert.alert(
-      'Delete Notification',
+      'Delete notification',
       'Are you sure you want to delete this notification?',
       [
         { text: 'Cancel', style: 'cancel' },

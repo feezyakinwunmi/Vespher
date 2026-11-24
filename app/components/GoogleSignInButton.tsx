@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { TouchableOpacity, Text, View, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { signInWithGoogle } from '../lib/googleAuth';
+import { TC } from '../theme/palette';
 
 interface Props {
   label?: string;
@@ -31,7 +32,7 @@ export function GoogleSignInButton({ label = 'Continue with Google' }: Props) {
       </View>
       <TouchableOpacity style={styles.button} onPress={handlePress} disabled={loading} activeOpacity={0.85}>
         {loading ? (
-          <ActivityIndicator color="#1f1f1f" />
+          <ActivityIndicator color={TC.surface} />
         ) : (
           <>
             <Text style={styles.gLogo}>G</Text>
@@ -53,10 +54,10 @@ const styles = StyleSheet.create({
   divider: {
     flex: 1,
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: TC.hairline3,
   },
   dividerText: {
-    color: '#777',
+    color: TC.muted,
     fontSize: 12,
   },
   button: {
@@ -70,11 +71,11 @@ const styles = StyleSheet.create({
   },
   gLogo: {
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: '600',
     color: '#4285F4',
   },
   label: {
-    color: '#1f1f1f',
+    color: TC.surface,
     fontSize: 15,
     fontWeight: '600',
   },

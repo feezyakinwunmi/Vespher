@@ -7,7 +7,7 @@ import type { RootStackParamList } from './types';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Feather } from '@expo/vector-icons';
 import { CustomerTabParamList } from './types';
-import { useTabBarOptions, TAB_ICON_SIZE } from './tabBarOptions';
+import { useTabBarOptions, renderGlassTabBar, TAB_ICON_SIZE } from './tabBarOptions';
 import { takeRiderApplicationPending } from '../utils/riderIntent';
 
 // Cart and Profile live in the root stack and are opened from the CustomerHeader.
@@ -47,7 +47,7 @@ export function CustomerTabs() {
 
 
   return (
-    <Tab.Navigator screenOptions={screenOptions}>
+    <Tab.Navigator screenOptions={screenOptions} tabBar={renderGlassTabBar}>
       <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarIcon: icon('home') }} />
       <Tab.Screen name="Explore" component={ExploreScreen} options={{ tabBarIcon: icon('search') }} />
       <Tab.Screen name="Vendors" component={VendorsScreen} options={{ tabBarIcon: icon('grid') }} />

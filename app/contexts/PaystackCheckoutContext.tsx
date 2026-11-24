@@ -10,6 +10,7 @@ import { Feather } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import { functionErrorMessage } from '../utils/paystack';
 import { ModalSafeArea } from '../components/ModalSafeArea';
+import { TC } from '../theme/palette';
 
 export type PaymentKind = 'order' | 'promotion' | 'subscription';
 // paid: confirmed by the server. pending: customer may have paid but it isn't confirmed
@@ -115,7 +116,7 @@ export function PaystackCheckoutProvider({ children }: { children: React.ReactNo
               <Text style={styles.headerTitle}>Secure payment by Paystack</Text>
             </View>
             <TouchableOpacity onPress={confirmClose} style={styles.closeButton} disabled={verifying}>
-              <Feather name="x" size={20} color="#fff" />
+              <Feather name="x" size={20} color={TC.text} />
             </TouchableOpacity>
           </View>
           {session && (
@@ -153,7 +154,7 @@ export function usePaystackCheckout() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0a0a0a' },
+  container: { flex: 1, backgroundColor: TC.bg },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -161,13 +162,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
+    borderBottomColor: TC.hairline2,
   },
   headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  headerTitle: { color: '#fff', fontSize: 15, fontWeight: '600' },
-  closeButton: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#1a1a1a', justifyContent: 'center', alignItems: 'center' },
+  headerTitle: { color: TC.text, fontSize: 15, fontWeight: '600' },
+  closeButton: { width: 36, height: 36, borderRadius: 18, backgroundColor: TC.surface, justifyContent: 'center', alignItems: 'center' },
   webview: { flex: 1, backgroundColor: '#fff' },
-  loading: { ...StyleSheet.absoluteFill, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0a0a0a' },
+  loading: { ...StyleSheet.absoluteFill, justifyContent: 'center', alignItems: 'center', backgroundColor: TC.bg },
   verifyingOverlay: {
     ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.85)',
@@ -175,5 +176,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  verifyingText: { color: '#fff', fontSize: 15 },
+  verifyingText: { color: TC.text, fontSize: 15 },
 });

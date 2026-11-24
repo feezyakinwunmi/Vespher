@@ -21,6 +21,7 @@ import { useLocation } from '../../contexts/LocationContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
+import { TC } from '../../theme/palette';
 
 const { width, height } = Dimensions.get('window');
 
@@ -167,9 +168,9 @@ export function AllVendorsMapScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Feather name="arrow-left" size={24} color="#fff" />
+          <Feather name="arrow-left" size={24} color={TC.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Nearby Vendors</Text>
+        <Text style={styles.headerTitle}>Nearby vendors</Text>
         <TouchableOpacity onPress={fitToMarkers} style={styles.fitButton}>
           <Feather name="maximize-2" size={20} color="#f97316" />
         </TouchableOpacity>
@@ -178,17 +179,17 @@ export function AllVendorsMapScreen() {
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchInputContainer}>
-          <Feather name="search" size={18} color="#666" style={styles.searchIcon} />
+          <Feather name="search" size={18} color={TC.muted} style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder="Search vendors..."
-            placeholderTextColor="#666"
+            placeholderTextColor={TC.muted}
           />
           {searchQuery ? (
             <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
-              <Feather name="x" size={16} color="#666" />
+              <Feather name="x" size={16} color={TC.muted} />
             </TouchableOpacity>
           ) : null}
         </View>
@@ -256,12 +257,9 @@ export function AllVendorsMapScreen() {
                 tracksViewChanges={false}
               >
                 <View style={styles.markerContainer}>
-                  <LinearGradient
-                    colors={[getCategoryColor(vendor.category), `${getCategoryColor(vendor.category)}CC`]}
-                    style={styles.markerGradient}
-                  >
+                  <View style={[styles.markerGradient, { backgroundColor: getCategoryColor(vendor.category) }]}>
                     <Feather name={getCategoryIcon(vendor.category)} size={16} color="#fff" />
-                  </LinearGradient>
+                  </View>
                   <View style={styles.markerLabel}>
                     <Text style={styles.markerLabelText} numberOfLines={1}>
                       {vendor.name}
@@ -311,7 +309,7 @@ export function AllVendorsMapScreen() {
                     style={styles.modalCover}
                   />
                   <LinearGradient
-                    colors={['transparent', '#0a0a0a']}
+                    colors={['transparent', TC.bg]}
                     style={styles.modalCoverGradient}
                   />
                   
@@ -333,30 +331,27 @@ export function AllVendorsMapScreen() {
                       <Text style={styles.modalStatText}>{selectedVendor.rating?.toFixed(1) || '0.0'}</Text>
                     </View>
                     <View style={styles.modalStat}>
-                      <Feather name="clock" size={14} color="#666" />
+                      <Feather name="clock" size={14} color={TC.muted} />
                       <Text style={styles.modalStatText}>{selectedVendor.deliveryTime || '30-45 min'}</Text>
                     </View>
                     <View style={styles.modalStat}>
-                      <Feather name="truck" size={14} color="#666" />
+                      <Feather name="truck" size={14} color={TC.muted} />
                       <Text style={styles.modalStatText}>₦{selectedVendor.deliveryFee || 500}</Text>
                     </View>
                   </View>
                   
                   <Text style={styles.modalDescription} numberOfLines={2}>
-                    {selectedVendor.description || 'Discover delicious meals from this vendor'}
+                    {selectedVendor.description || selectedVendor.category || 'Restaurant'}
                   </Text>
 
                   <TouchableOpacity 
                     style={styles.viewDetailsButton}
                     onPress={navigateToVendorDetails}
                   >
-                    <LinearGradient
-                      colors={['#f97316', '#f43f5e']}
-                      style={styles.viewDetailsGradient}
-                    >
-                      <Text style={styles.viewDetailsText}>View Menu & Order</Text>
+                    <View style={[styles.viewDetailsGradient, { backgroundColor: '#ea580c' }]}>
+                      <Text style={styles.viewDetailsText}>View menu & order</Text>
                       <Feather name="arrow-right" size={16} color="#fff" />
-                    </LinearGradient>
+                    </View>
                   </TouchableOpacity>
                 </View>
               </>
@@ -371,16 +366,16 @@ export function AllVendorsMapScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    color: '#666',
+    color: TC.muted,
     marginTop: 12,
     fontSize: 14,
   },
@@ -391,26 +386,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   fitButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -424,7 +419,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     paddingHorizontal: 12,
   },
@@ -434,7 +429,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     height: 44,
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
   },
   clearButton: {
@@ -443,7 +438,7 @@ const styles = StyleSheet.create({
   locationButton: {
     width: 44,
     height: 44,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
@@ -461,18 +456,18 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   categoryChipActive: {
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     borderColor: '#f97316',
   },
   categoryChipText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   categoryChipTextActive: {
     color: '#fff',
@@ -514,7 +509,7 @@ const styles = StyleSheet.create({
     maxWidth: 100,
   },
   markerLabelText: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 10,
     fontWeight: '500',
   },
@@ -527,7 +522,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: TC.hairline3,
   },
   resultsBadgeText: {
     color: '#fff',
@@ -540,7 +535,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -557,7 +552,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 40,
   },
   modalContent: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderTopLeftRadius: 40,
     borderTopRightRadius: 40,
     height: height * 0.5,
@@ -601,9 +596,9 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 12,
     borderWidth: 3,
-    borderColor: '#1a1a1a',
+    borderColor: TC.surface,
     overflow: 'hidden',
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
   },
   modalLogo: {
     width: '100%',
@@ -615,8 +610,8 @@ const styles = StyleSheet.create({
   },
   modalVendorName: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
     marginBottom: 8,
   },
   modalStats: {
@@ -631,11 +626,11 @@ const styles = StyleSheet.create({
   },
   modalStatText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   modalDescription: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
     lineHeight: 18,
     marginBottom: 20,
   },
@@ -651,7 +646,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   viewDetailsText: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
     fontWeight: '600',
   },

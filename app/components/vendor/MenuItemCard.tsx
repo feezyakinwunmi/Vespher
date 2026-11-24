@@ -11,8 +11,8 @@ import {
   Alert,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import type { MenuItem } from '../../hooks/vendor/useVendorMenu';
+import { TC } from '../../theme/palette';
 
 interface MenuItemCardProps {
   item: MenuItem;
@@ -48,7 +48,7 @@ export function MenuItemCard({
   };
 
   const getStockColor = () => {
-    if (!item.track_stock) return '#666';
+    if (!item.track_stock) return TC.muted;
     const stock = item.stock_quantity || item.quantity_available || 0;
     if (stock <= 0) return '#ef4444';
     if (stock <= 5) return '#f59e0b';
@@ -58,7 +58,7 @@ export function MenuItemCard({
   const getStatusColor = () => {
     if (item.approval_status === 'pending') return '#f59e0b';
     if (item.approval_status === 'rejected') return '#ef4444';
-    if (!item.is_available) return '#666';
+    if (!item.is_available) return TC.muted;
     if (isOutOfStock) return '#ef4444';
     return '#10b981';
   };
@@ -102,12 +102,9 @@ export function MenuItemCard({
               }}
             />
           ) : (
-            <LinearGradient
-              colors={['#f97316', '#f43f5e']}
-              style={styles.imagePlaceholder}
-            >
+            <View style={[styles.imagePlaceholder, { backgroundColor: '#ea580c' }]}>
               <Feather name="image" size={24} color="#fff" />
-            </LinearGradient>
+            </View>
           )}
           
           {/* Out of Stock Overlay */}
@@ -145,7 +142,7 @@ export function MenuItemCard({
               onPress={() => setShowActions(!showActions)}
               style={styles.menuButton}
             >
-              <Feather name="more-vertical" size={20} color="#666" />
+              <Feather name="more-vertical" size={20} color={TC.muted} />
             </TouchableOpacity>
           </View>
 
@@ -189,7 +186,7 @@ export function MenuItemCard({
           {/* Preparation Time */}
           {item.preparation_time && (
             <View style={styles.prepTime}>
-              <Feather name="clock" size={12} color="#666" />
+              <Feather name="clock" size={12} color={TC.muted} />
               <Text style={styles.prepTimeText}>{item.preparation_time}</Text>
             </View>
           )}
@@ -229,7 +226,7 @@ export function MenuItemCard({
                 style={styles.actionItem}
               >
                 <Feather name="edit-2" size={16} color="#f97316" />
-                <Text style={styles.actionText}>Edit Item</Text>
+                <Text style={styles.actionText}>Edit item</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -240,7 +237,7 @@ export function MenuItemCard({
                 style={[styles.actionItem, styles.deleteAction]}
               >
                 <Feather name="trash-2" size={16} color="#ef4444" />
-                <Text style={[styles.actionText, styles.deleteText]}>Delete Item</Text>
+                <Text style={[styles.actionText, styles.deleteText]}>Delete item</Text>
               </TouchableOpacity>
             </View>
           </>
@@ -256,7 +253,7 @@ export function MenuItemCard({
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Update Stock Quantity</Text>
+            <Text style={styles.modalTitle}>Update stock quantity</Text>
             <Text style={styles.modalSubtitle}>
               Set available quantity (0 = out of stock, leave empty for unlimited)
             </Text>
@@ -267,7 +264,7 @@ export function MenuItemCard({
               onChangeText={setQuantity}
               keyboardType="numeric"
               placeholder="Enter quantity"
-              placeholderTextColor="#666"
+              placeholderTextColor={TC.muted}
             />
 
             <View style={styles.modalActions}>
@@ -281,12 +278,9 @@ export function MenuItemCard({
                 onPress={handleQuantityUpdate}
                 style={[styles.modalButton, styles.saveButton]}
               >
-                <LinearGradient
-                  colors={['#f97316', '#f43f5e']}
-                  style={styles.saveButtonGradient}
-                >
+                <View style={[styles.saveButtonGradient, { backgroundColor: '#ea580c' }]}>
                   <Text style={styles.saveButtonText}>Update</Text>
-                </LinearGradient>
+                </View>
               </TouchableOpacity>
             </View>
           </View>
@@ -314,19 +308,19 @@ const styles = StyleSheet.create({
   },
   card: {
     flexDirection: 'row',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
     position: 'relative',
   },
   disabledCard: {
     opacity: 0.6,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
   },
   disabledText: {
-    color: '#666',
+    color: TC.muted,
   },
   imageContainer: {
     width: 80,
@@ -359,7 +353,7 @@ const styles = StyleSheet.create({
   outOfStockOverlayText: {
     color: '#ef4444',
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: '600',
     backgroundColor: 'rgba(239,68,68,0.2)',
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -382,7 +376,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 4,
   },
   badgeContainer: {
@@ -417,7 +411,7 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 8,
     lineHeight: 16,
   },
@@ -434,12 +428,12 @@ const styles = StyleSheet.create({
   },
   price: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#f97316',
   },
   originalPrice: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
     textDecorationLine: 'line-through',
   },
   quantityBadge: {
@@ -461,7 +455,7 @@ const styles = StyleSheet.create({
   },
   prepTimeText: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
   },
   overlay: {
     position: 'absolute',
@@ -475,7 +469,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 40,
     right: 10,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 8,
     padding: 4,
     minWidth: 180,
@@ -495,11 +489,11 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontSize: 13,
-    color: '#fff',
+    color: TC.text,
   },
   deleteAction: {
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   deleteText: {
     color: '#ef4444',
@@ -512,26 +506,26 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: '80%',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     padding: 20,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 8,
   },
   modalSubtitle: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 16,
   },
   quantityInput: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 8,
     padding: 12,
-    color: '#fff',
+    color: TC.text,
     fontSize: 16,
     marginBottom: 20,
   },
@@ -546,12 +540,12 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   cancelButton: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     justifyContent: 'center',
     alignItems: 'center',
   },
   cancelButtonText: {
-    color: '#666',
+    color: TC.muted,
     fontSize: 14,
     fontWeight: '500',
   },

@@ -14,12 +14,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { useVendorOrders } from '../../hooks/vendor/useVendorOrders';
 import { OrderCard } from '../../components/vendor/OrderCard';
 import { OrderDetailsModal } from '../../components/vendor/OrderDetailsModal';
 import Toast from 'react-native-toast-message';
+import { TAB_BAR_SPACE } from '../../navigation/tabBarOptions';
+import { TC } from '../../theme/palette';
 
 type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'ready' | 'in_transit' | 'completed';
 type OrderStatusType = 'pending' | 'confirmed' | 'preparing' | 'ready' | 'in_transit' | 'completed';
@@ -30,7 +31,7 @@ const statusTabs = [
   { id: 'preparing', label: 'Preparing', icon: 'coffee', color: '#f97316' },
   { id: 'ready', label: 'Ready', icon: 'package', color: '#10b981' },
   { id: 'in_transit', label: 'In Transit', icon: 'truck', color: '#8b5cf6' },
-  { id: 'completed', label: 'Completed', icon: 'check-square', color: '#6b7280' },
+  { id: 'completed', label: 'Completed', icon: 'check-square', color: TC.subtle },
 ];
 
 export function VendorOrdersScreen() {
@@ -80,7 +81,7 @@ export function VendorOrdersScreen() {
 
   const handleRejectOrder = async (orderId: string) => {
     Alert.alert(
-      'Reject Order',
+      'Reject order',
       'Are you sure you want to reject this order?',
       [
         { text: 'Cancel', style: 'cancel' },
@@ -129,11 +130,11 @@ export function VendorOrdersScreen() {
   const currentOrders = ordersByStatus[activeTab] || [];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Feather name="arrow-left" size={24} color="#fff" />
+          <Feather name="arrow-left" size={24} color={TC.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Orders</Text>
         <TouchableOpacity onPress={refreshOrders} style={styles.refreshButton}>
@@ -178,7 +179,7 @@ export function VendorOrdersScreen() {
       </ScrollView>
 
       {/* Orders List */}
-      <ScrollView
+      <ScrollView contentContainerStyle={{ paddingBottom: TAB_BAR_SPACE }}
         style={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -188,7 +189,7 @@ export function VendorOrdersScreen() {
         {currentOrders.length === 0 ? (
           <View style={styles.emptyContainer}>
             <View style={styles.emptyIconContainer}>
-              <Feather name="package" size={40} color="#666" />
+              <Feather name="package" size={40} color={TC.muted} />
             </View>
             <Text style={styles.emptyTitle}>No orders</Text>
             <Text style={styles.emptyText}>
@@ -231,13 +232,12 @@ export function VendorOrdersScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
-        paddingBottom:60,
+    backgroundColor: TC.bg,
 
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -248,33 +248,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   refreshButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   tabsContainer: {
     maxHeight: 70,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   tabsContent: {
     paddingHorizontal: 16,
@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
   tab: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
@@ -294,12 +294,12 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   activeTab: {
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     borderColor: '#f97316',
   },
   tabText: {
     fontSize: 13,
-    color: '#fff',
+    color: TC.text,
   },
   activeTabText: {
     color: '#fff',
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -341,12 +341,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 14,
-    color: '#666',
+    color: TC.muted,
     textAlign: 'center',
   },
   bottomPadding: {

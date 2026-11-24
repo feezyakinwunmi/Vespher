@@ -21,7 +21,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation } from '@react-navigation/native';
@@ -45,6 +44,8 @@ import {
 import { getRiderShares } from '../../services/riderOrders';
 import { R } from '../../components/rider/ui';
 import { ModalSafeArea } from '../../components/ModalSafeArea';
+import { fill } from '../../theme/colors';
+import { TC } from '../../theme/palette';
 
 type IconName = React.ComponentProps<typeof Feather>['name'];
 
@@ -391,7 +392,7 @@ export function RiderApplicationScreen() {
               body={`We received your application on ${format(new Date(latest!.created_at), 'd MMM yyyy')}. Reviews usually take 1–3 working days. We'll notify you as soon as it's done. Pull down to check for updates.`}
             />
           ) : status === 'approved' ? (
-            <StatusCard icon="check-circle" color={R.green} title="You're approved!" body="Opening your rider dashboard…" />
+            <StatusCard icon="check-circle" color={R.green} title="You're approved" body="Opening your rider dashboard…" />
           ) : (
             <>
               {status === 'rejected' && (
@@ -402,11 +403,11 @@ export function RiderApplicationScreen() {
                   body={latest?.rejection_reason ? `Reason: ${latest.rejection_reason}` : 'Contact support to find out why, then apply again.'}
                 />
               )}
-              <LinearGradient colors={['#f97316', '#f43f5e']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
+              <View style={[styles.hero, { backgroundColor: '#ea580c' }]}>
                 <Feather name="truck" size={30} color="#fff" />
                 <Text style={styles.heroTitle}>Earn delivering food in your city</Text>
                 <Text style={styles.heroBody}>Choose when you ride, get paid for every delivery, and withdraw to your bank anytime.</Text>
-              </LinearGradient>
+              </View>
 
               {!RIDERS_BRING_OWN_VEHICLE && (
                 <View style={[styles.card, styles.bikeCard]}>
@@ -614,7 +615,7 @@ export function RiderApplicationScreen() {
               ]} />
               <TouchableOpacity style={styles.agree} onPress={() => { setAgreed(!agreed); setError(null); }}>
                 <View style={[styles.checkbox, agreed && styles.checkboxOn]}>
-                  {agreed && <Feather name="check" size={14} color="#fff" />}
+                  {agreed && <Feather name="check" size={14} color={TC.text} />}
                 </View>
                 <Text style={styles.agreeText}>I confirm these details are true and belong to me, and I agree to Vesphe's rider terms.</Text>
               </TouchableOpacity>
@@ -698,7 +699,7 @@ function Footer({ label, onPress, busy, busyText }: { label: string; onPress: ()
   return (
     <View style={styles.footer}>
       <TouchableOpacity onPress={onPress} disabled={busy} activeOpacity={0.85}>
-        <LinearGradient colors={R.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.footerBtn}>
+        <View style={[styles.footerBtn, { backgroundColor: fill(R.gradient) }]}>
           {busy ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <ActivityIndicator color="#fff" />
@@ -707,7 +708,7 @@ function Footer({ label, onPress, busy, busyText }: { label: string; onPress: ()
           ) : (
             <Text style={styles.footerText}>{label}</Text>
           )}
-        </LinearGradient>
+        </View>
       </TouchableOpacity>
     </View>
   );
@@ -753,8 +754,8 @@ function DateField({ label, value, onPress }: { label: string; value: Date | nul
 function Chip({ label, icon, active, onPress }: { label: string; icon?: IconName; active: boolean; onPress: () => void }) {
   return (
     <TouchableOpacity style={[styles.chip, active && styles.chipOn]} onPress={onPress}>
-      {icon && <Feather name={icon} size={14} color={active ? '#fff' : R.muted} />}
-      <Text style={[styles.chipText, active && { color: '#fff' }]}>{label}</Text>
+      {icon && <Feather name={icon} size={14} color={active ? TC.text : R.muted} />}
+      <Text style={[styles.chipText, active && { color: TC.text }]}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -828,29 +829,29 @@ const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 40 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 10 },
   back: { width: 40, height: 40, borderRadius: 20, backgroundColor: R.card, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { color: R.text, fontSize: 18, fontWeight: '800' },
+  headerTitle: { color: R.text, fontSize: 18, fontWeight: '600' },
   headerSub: { color: R.muted, fontSize: 12, marginTop: 1 },
   progressTrack: { height: 3, backgroundColor: R.card, marginHorizontal: 16, borderRadius: 2 },
   progressFill: { height: 3, backgroundColor: R.orange, borderRadius: 2 },
 
   hero: { borderRadius: 22, padding: 22, marginBottom: 6 },
-  heroTitle: { color: '#fff', fontSize: 22, fontWeight: '800', marginTop: 12 },
+  heroTitle: { color: '#fff', fontSize: 22, fontWeight: '600', marginTop: 12 },
   heroBody: { color: 'rgba(255,255,255,0.9)', fontSize: 14, marginTop: 6, lineHeight: 20 },
-  group: { color: R.muted, fontSize: 12, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase', marginTop: 20, marginBottom: 8 },
+  group: { color: R.muted, fontSize: 12, fontWeight: '600', marginTop: 20, marginBottom: 8 },
   card: { backgroundColor: R.card, borderRadius: 18, borderWidth: 1, borderColor: R.border, padding: 16 },
   bikeCard: { flexDirection: 'row', gap: 12, marginTop: 12, borderColor: 'rgba(249,115,22,0.3)' },
   bikeIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(249,115,22,0.12)', justifyContent: 'center', alignItems: 'center' },
-  bikeTitle: { color: R.text, fontSize: 15, fontWeight: '700' },
-  bikeBody: { color: '#d4d4d4', fontSize: 13, marginTop: 3, lineHeight: 19 },
+  bikeTitle: { color: R.text, fontSize: 15, fontWeight: '600' },
+  bikeBody: { color: TC.text2, fontSize: 13, marginTop: 3, lineHeight: 19 },
   needRow: { flexDirection: 'row', gap: 12, paddingVertical: 8, alignItems: 'flex-start' },
-  needText: { color: '#e5e5e5', fontSize: 14, flex: 1, lineHeight: 20 },
+  needText: { color: TC.text2, fontSize: 14, flex: 1, lineHeight: 20 },
   small: { color: R.muted, fontSize: 12.5, marginTop: 8, lineHeight: 18 },
   linkRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 18, justifyContent: 'center' },
   linkText: { color: R.orange, fontSize: 14, fontWeight: '600' },
 
   statusCard: { borderRadius: 18, borderWidth: 1, padding: 18, alignItems: 'center', marginBottom: 16 },
-  statusTitle: { fontSize: 18, fontWeight: '800', marginTop: 10, textAlign: 'center' },
-  statusBody: { color: '#d4d4d4', fontSize: 13.5, marginTop: 6, textAlign: 'center', lineHeight: 20 },
+  statusTitle: { fontSize: 18, fontWeight: '600', marginTop: 10, textAlign: 'center' },
+  statusBody: { color: TC.text2, fontSize: 13.5, marginTop: 6, textAlign: 'center', lineHeight: 20 },
 
   label: { color: R.muted, fontSize: 13, fontWeight: '600', marginBottom: 8 },
   input: {
@@ -858,7 +859,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: R.card,
     borderWidth: 1,
-    borderColor: '#2a2a2a',
+    borderColor: TC.raised,
     paddingHorizontal: 14,
     flexDirection: 'row',
     alignItems: 'center',
@@ -876,7 +877,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: R.card,
     borderWidth: 1,
-    borderColor: '#2a2a2a',
+    borderColor: TC.raised,
   },
   chipOn: { backgroundColor: R.orange, borderColor: R.orange },
   chipText: { color: R.text, fontSize: 13, fontWeight: '600' },
@@ -885,7 +886,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1.5,
     borderStyle: 'dashed',
-    borderColor: '#333',
+    borderColor: TC.raised,
     backgroundColor: R.card,
     justifyContent: 'center',
     alignItems: 'center',
@@ -898,19 +899,19 @@ const styles = StyleSheet.create({
   resolved: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: -4 },
   resolvedText: { color: R.faint, fontSize: 13 },
   reviewHead: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  reviewTitle: { color: R.text, fontSize: 15, fontWeight: '700' },
+  reviewTitle: { color: R.text, fontSize: 15, fontWeight: '600' },
   reviewRow: { flexDirection: 'row', paddingVertical: 5, gap: 12 },
   reviewKey: { color: R.muted, fontSize: 13, width: 100 },
   reviewValue: { color: R.text, fontSize: 13, flex: 1 },
   agree: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', marginTop: 8 },
-  checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, borderColor: '#444', justifyContent: 'center', alignItems: 'center', marginTop: 1 },
+  checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, borderColor: TC.muted, justifyContent: 'center', alignItems: 'center', marginTop: 1 },
   checkboxOn: { backgroundColor: R.orange, borderColor: R.orange },
-  agreeText: { color: '#d4d4d4', fontSize: 13, flex: 1, lineHeight: 19 },
+  agreeText: { color: TC.text2, fontSize: 13, flex: 1, lineHeight: 19 },
   error: { flexDirection: 'row', gap: 10, alignItems: 'flex-start', padding: 12, borderRadius: 12, backgroundColor: 'rgba(239,68,68,0.1)', marginTop: 12 },
   errorText: { color: '#fca5a5', fontSize: 13, flex: 1, lineHeight: 19 },
   footer: { padding: 16, borderTopWidth: 1, borderTopColor: R.border },
   footerBtn: { height: 54, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
-  footerText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  footerText: { color: TC.text, fontSize: 16, fontWeight: '600' },
   iosDone: { alignItems: 'flex-end', paddingHorizontal: 20, paddingVertical: 10, backgroundColor: R.card },
   bankOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: R.border },
 });

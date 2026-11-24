@@ -11,7 +11,7 @@ export default {
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/icon.png",
-    userInterfaceStyle: "dark",
+    userInterfaceStyle: "automatic",
     ios: {
       // Phone-only for now, so Apple doesn't review the layouts on iPad.
       supportsTablet: false,

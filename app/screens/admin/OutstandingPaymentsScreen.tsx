@@ -15,10 +15,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import Toast from 'react-native-toast-message';
+import { humanize } from '../../utils/text';
+import { TC } from '../../theme/palette';
 
 const { width } = Dimensions.get('window');
 
@@ -362,7 +363,7 @@ const fetchWithdrawalHistory = async (userId: string, userType: 'vendor' | 'ride
     const historyText = withdrawalHistory.map(w => {
       const date = new Date(w.created_at).toLocaleDateString();
       const amount = `₦${(Number(w.amount) || 0).toLocaleString()}`;
-      const status = (w.status || 'unknown').toUpperCase();
+      const status = humanize(w.status || 'unknown');
       return `${date} - ${amount} - ${status} - Ref: ${w.reference}`;
     }).join('\n');
     
@@ -437,9 +438,9 @@ Generated: ${new Date().toLocaleString()}
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Feather name="arrow-left" size={24} color="#fff" />
+          <Feather name="arrow-left" size={24} color={TC.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Outstanding Payments</Text>
+        <Text style={styles.headerTitle}>Outstanding payments</Text>
         <TouchableOpacity onPress={onRefresh} style={styles.refreshButton}>
           <Feather name="refresh-cw" size={20} color="#f97316" />
         </TouchableOpacity>
@@ -448,25 +449,19 @@ Generated: ${new Date().toLocaleString()}
       {/* Summary Cards */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.summaryContainer}>
         <View style={styles.summaryCard}>
-          <LinearGradient
-            colors={['#f97316', '#f43f5e']}
-            style={styles.summaryGradient}
-          >
-            <Text style={styles.summaryLabel}>Total Vendor Outstanding</Text>
+          <View style={[styles.summaryGradient, { backgroundColor: '#ea580c' }]}>
+            <Text style={styles.summaryLabel}>Total vendor outstanding</Text>
             <Text style={styles.summaryValue}>{formatCurrency(totalVendorOutstanding)}</Text>
             <Text style={styles.summarySubtext}>{vendors.length} vendors with pending balance</Text>
-          </LinearGradient>
+          </View>
         </View>
 
         <View style={styles.summaryCard}>
-          <LinearGradient
-            colors={['#3b82f6', '#8b5cf6']}
-            style={styles.summaryGradient}
-          >
-            <Text style={styles.summaryLabel}>Total Rider Outstanding</Text>
+          <View style={[styles.summaryGradient, { backgroundColor: '#3b82f6' }]}>
+            <Text style={styles.summaryLabel}>Total rider outstanding</Text>
             <Text style={styles.summaryValue}>{formatCurrency(totalRiderOutstanding)}</Text>
             <Text style={styles.summarySubtext}>{riders.length} riders with pending balance</Text>
-          </LinearGradient>
+          </View>
         </View>
       </ScrollView>
 
@@ -476,7 +471,7 @@ Generated: ${new Date().toLocaleString()}
           style={[styles.tab, activeTab === 'vendors' && styles.tabActive]}
           onPress={() => setActiveTab('vendors')}
         >
-          <Feather name="home" size={18} color={activeTab === 'vendors' ? '#f97316' : '#666'} />
+          <Feather name="home" size={18} color={activeTab === 'vendors' ? '#f97316' : TC.muted} />
           <Text style={[styles.tabText, activeTab === 'vendors' && styles.tabTextActive]}>
             Vendors
           </Text>
@@ -489,7 +484,7 @@ Generated: ${new Date().toLocaleString()}
           style={[styles.tab, activeTab === 'riders' && styles.tabActive]}
           onPress={() => setActiveTab('riders')}
         >
-          <Feather name="truck" size={18} color={activeTab === 'riders' ? '#f97316' : '#666'} />
+          <Feather name="truck" size={18} color={activeTab === 'riders' ? '#f97316' : TC.muted} />
           <Text style={[styles.tabText, activeTab === 'riders' && styles.tabTextActive]}>
             Riders
           </Text>
@@ -511,7 +506,7 @@ Generated: ${new Date().toLocaleString()}
           vendors.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Feather name="check-circle" size={48} color="#10b981" />
-              <Text style={styles.emptyTitle}>No Outstanding Vendors</Text>
+              <Text style={styles.emptyTitle}>No outstanding vendors</Text>
               <Text style={styles.emptyText}>All vendors have been paid out</Text>
             </View>
           ) : (
@@ -546,7 +541,7 @@ Generated: ${new Date().toLocaleString()}
           riders.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Feather name="check-circle" size={48} color="#10b981" />
-              <Text style={styles.emptyTitle}>No Outstanding Riders</Text>
+              <Text style={styles.emptyTitle}>No outstanding riders</Text>
               <Text style={styles.emptyText}>All riders have been paid out</Text>
             </View>
           ) : (
@@ -595,7 +590,7 @@ Generated: ${new Date().toLocaleString()}
                 {selectedType === 'vendor' ? 'Vendor' : 'Rider'} Withdrawal History
               </Text>
               <TouchableOpacity onPress={() => setShowHistoryModal(false)}>
-                <Feather name="x" size={24} color="#fff" />
+                <Feather name="x" size={24} color={TC.text} />
               </TouchableOpacity>
             </View>
 
@@ -606,19 +601,19 @@ Generated: ${new Date().toLocaleString()}
     
     <View style={styles.modalStatsRow}>
       <View style={styles.modalStat}>
-        <Text style={styles.modalStatLabel}>Total Earned</Text>
+        <Text style={styles.modalStatLabel}>Total earned</Text>
         <Text style={styles.modalStatValue}>
           {formatCurrency(selectedUser.totalEarned)}
         </Text>
       </View>
       <View style={styles.modalStat}>
-        <Text style={styles.modalStatLabel}>Available Balance</Text>
+        <Text style={styles.modalStatLabel}>Available balance</Text>
         <Text style={[styles.modalStatValue, { color: '#10b981' }]}>
           {formatCurrency(selectedUser.walletBalance)}
         </Text>
       </View>
       <View style={styles.modalStat}>
-        <Text style={styles.modalStatLabel}>Pending Withdrawal</Text>
+        <Text style={styles.modalStatLabel}>Pending withdrawal</Text>
         <Text style={[styles.modalStatValue, { color: '#f59e0b' }]}>
           {formatCurrency(selectedUser.pendingWithdrawals)}
         </Text>
@@ -643,7 +638,7 @@ Generated: ${new Date().toLocaleString()}
 )}
 
             <View style={styles.modalHistoryHeader}>
-              <Text style={styles.modalHistoryTitle}>Transaction History</Text>
+              <Text style={styles.modalHistoryTitle}>Transaction history</Text>
               <TouchableOpacity onPress={handleShareHistory} style={styles.shareButton}>
                 <Feather name="share-2" size={16} color="#f97316" />
                 <Text style={styles.shareButtonText}>Share</Text>
@@ -654,7 +649,7 @@ Generated: ${new Date().toLocaleString()}
               <ActivityIndicator size="large" color="#f97316" style={styles.modalLoader} />
             ) : withdrawalHistory.length === 0 ? (
               <View style={styles.modalEmpty}>
-                <Feather name="inbox" size={40} color="#666" />
+                <Feather name="inbox" size={40} color={TC.muted} />
                 <Text style={styles.modalEmptyText}>No withdrawal history</Text>
               </View>
             ) : (
@@ -697,7 +692,7 @@ Generated: ${new Date().toLocaleString()}
                           item.status === 'failed' ? styles.historyStatusTextFailed :
                           styles.historyStatusTextPending
                         ]}>
-                          {(item.status || 'unknown').toUpperCase()}
+                          {humanize((item.status || 'unknown'))}
                         </Text>
                       </View>
                       {item.processed_at && (
@@ -728,17 +723,17 @@ Generated: ${new Date().toLocaleString()}
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     minHeight:'100%'
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    color: '#666',
+    color: TC.muted,
     marginTop: 12,
   },
   header: {
@@ -748,26 +743,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   refreshButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -796,8 +791,8 @@ const styles = StyleSheet.create({
   },
   summaryValue: {
     fontSize: 28,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
     marginBottom: 0,
   },
   summarySubtext: {
@@ -817,10 +812,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 10,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   tabActive: {
     backgroundColor: 'rgba(249,115,22,0.1)',
@@ -828,13 +823,13 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 14,
-    color: '#666',
+    color: TC.muted,
   },
   tabTextActive: {
     color: '#f97316',
   },
   tabBadge: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 10,
@@ -851,12 +846,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     padding: 16,
     borderRadius: 12,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   listItemLeft: {
     flexDirection: 'row',
@@ -868,7 +863,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -877,30 +872,30 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#fff',
   },
   listItemName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 2,
   },
   listItemEmail: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   listItemRight: {
     alignItems: 'flex-end',
   },
   listItemAmount: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#f97316',
   },
   listItemSubtext: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
     marginTop: 2,
   },
   pendingBadge: {
@@ -922,13 +917,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginTop: 16,
     marginBottom: 4,
   },
   emptyText: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
     textAlign: 'center',
   },
   bottomPadding: {
@@ -943,7 +938,7 @@ const styles = StyleSheet.create({
   modalContent: {
     width: '90%',
     maxHeight: '85%',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 20,
     overflow: 'hidden',
   },
@@ -953,12 +948,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   pendingInfoBox: {
   flexDirection: 'row',
@@ -976,18 +971,18 @@ pendingInfoText: {
 },
   modalUserInfo: {
     padding: 16,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     marginBottom: 16,
   },
   modalUserName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 4,
   },
   modalUserEmail: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 12,
   },
   modalStatsRow: {
@@ -1001,17 +996,17 @@ pendingInfoText: {
   },
   modalStatLabel: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 4,
   },
   modalStatValue: {
     fontSize: 14,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
   },
   lastWithdrawalText: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
     marginTop: 12,
     textAlign: 'center',
   },
@@ -1025,7 +1020,7 @@ pendingInfoText: {
   modalHistoryTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   shareButton: {
     flexDirection: 'row',
@@ -1045,7 +1040,7 @@ pendingInfoText: {
   },
   modalEmptyText: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
     marginTop: 12,
   },
   modalHistoryList: {
@@ -1058,7 +1053,7 @@ pendingInfoText: {
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   historyLeft: {
     flexDirection: 'row',
@@ -1084,16 +1079,16 @@ pendingInfoText: {
   historyAmount: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   historyDate: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
     marginTop: 2,
   },
   historyReference: {
     fontSize: 9,
-    color: '#666',
+    color: TC.muted,
     marginTop: 2,
   },
   historyRight: {
@@ -1128,22 +1123,22 @@ pendingInfoText: {
   },
   historyProcessed: {
     fontSize: 8,
-    color: '#666',
+    color: TC.muted,
     marginTop: 2,
   },
   modalFooter: {
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   modalCloseButton: {
     paddingVertical: 12,
     alignItems: 'center',
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 8,
   },
   modalCloseText: {
     fontSize: 14,
-    color: '#fff',
+    color: TC.text,
   },
 });

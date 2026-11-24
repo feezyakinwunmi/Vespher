@@ -14,9 +14,9 @@ import {
 } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import { ModalSafeArea } from './ModalSafeArea';
+import { TC } from '../theme/palette';
 
 const { width, height } = Dimensions.get('window');
 
@@ -228,29 +228,24 @@ export default function ReuseLocationPicker({
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Feather name="arrow-left" size={24} color="#fff" />
+            <Feather name="arrow-left" size={24} color={TC.text} />
           </TouchableOpacity>
           <Text style={styles.title}>{title}</Text>
           <TouchableOpacity onPress={confirmLocation} style={styles.confirmButton}>
-            <LinearGradient
-              colors={['#f97316', '#f43f5e']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.confirmGradient}
-            >
+            <View style={[styles.confirmGradient, { backgroundColor: '#ea580c' }]}>
               <Text style={styles.confirmText}>Confirm</Text>
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
         </View>
 
         {/* Search Bar */}
         <View style={styles.searchContainer}>
           <View style={styles.searchInputWrapper}>
-            <Feather name="search" size={20} color="#666" style={styles.searchIcon} />
+            <Feather name="search" size={20} color={TC.muted} style={styles.searchIcon} />
             <TextInput
               style={styles.searchInput}
               placeholder="Search address, street, or city..."
-              placeholderTextColor="#666"
+              placeholderTextColor={TC.muted}
               value={searchText}
               onChangeText={(text) => {
                 setSearchText(text);
@@ -332,7 +327,7 @@ export default function ReuseLocationPicker({
           
           {/* Map Hint */}
           <View style={styles.mapHint}>
-            <Feather name="info" size={14} color="#fff" />
+            <Feather name="info" size={14} color={TC.text} />
             <Text style={styles.mapHintText}>
               Tap anywhere on map to drop a pin
             </Text>
@@ -344,7 +339,7 @@ export default function ReuseLocationPicker({
           <View style={styles.addressCard}>
             <Feather name="check-circle" size={18} color="#10b981" />
             <View style={styles.addressTextContainer}>
-              <Text style={styles.addressLabel}>Selected Location</Text>
+              <Text style={styles.addressLabel}>Selected location</Text>
               <Text style={styles.addressValue} numberOfLines={2}>
                 {selectedAddress}
               </Text>
@@ -359,7 +354,7 @@ export default function ReuseLocationPicker({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
   },
   header: {
     flexDirection: 'row',
@@ -368,20 +363,20 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: 16,
     paddingHorizontal: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   closeButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -401,12 +396,12 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     padding: 16,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
   },
   searchInputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 12,
     paddingHorizontal: 16,
     height: 52,
@@ -418,13 +413,13 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#fff',
+    color: TC.text,
   },
   loader: {
     marginLeft: 8,
   },
   suggestionsContainer: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 12,
     marginHorizontal: 16,
     maxHeight: 250,
@@ -435,7 +430,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
     gap: 12,
   },
   suggestionTextContainer: {
@@ -444,12 +439,12 @@ const styles = StyleSheet.create({
   suggestionMainText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 2,
   },
   suggestionSecondaryText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   mapContainer: {
     flex: 1,
@@ -481,7 +476,7 @@ const styles = StyleSheet.create({
   },
   mapHintText: {
     fontSize: 11,
-    color: '#fff',
+    color: TC.text,
   },
   addressCard: {
     flexDirection: 'row',
@@ -504,6 +499,6 @@ const styles = StyleSheet.create({
   },
   addressValue: {
     fontSize: 13,
-    color: '#fff',
+    color: TC.text,
   },
 });

@@ -13,7 +13,6 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import Toast from 'react-native-toast-message';
 import type { Product } from '../../types';
 import { useCart } from '../../contexts/CartContext';
@@ -22,6 +21,7 @@ import { reviewFood } from '../../services/foodSafety';
 import { imageSource } from '../../utils/images';
 import { EmojiIcon } from '../EmojiIcon';
 import { MEDICAL_DISCLAIMER } from '../../config/legal';
+import { TC } from '../../theme/palette';
 
 interface ProductDetailsModalProps {
   product: Product | null;
@@ -79,7 +79,7 @@ export function ProductDetailsModal({ product, onClose, onHealthWarning, vendorN
               <Text style={styles.name}>{product.name}</Text>
               {!!vendorName && (
                 <View style={styles.vendorRow}>
-                  <Feather name="shopping-bag" size={12} color="#aaa" />
+                  <Feather name="shopping-bag" size={12} color={TC.subtle} />
                   <Text style={styles.metaText}>{vendorName}</Text>
                 </View>
               )}
@@ -91,7 +91,7 @@ export function ProductDetailsModal({ product, onClose, onHealthWarning, vendorN
                 )}
                 {!!prepTime && (
                   <View style={styles.metaPill}>
-                    <Feather name="clock" size={12} color="#aaa" />
+                    <Feather name="clock" size={12} color={TC.subtle} />
                     <Text style={styles.metaText}>{String(prepTime)}</Text>
                   </View>
                 )}
@@ -150,12 +150,7 @@ export function ProductDetailsModal({ product, onClose, onHealthWarning, vendorN
           </ScrollView>
 
           <TouchableOpacity onPress={handleAdd} disabled={isAdding} style={styles.addButton}>
-            <LinearGradient
-              colors={['#f97316', '#f43f5e']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.addGradient}
-            >
+            <View style={[styles.addGradient, { backgroundColor: '#ea580c' }]}>
               {isAdding ? (
                 <ActivityIndicator color="#fff" />
               ) : (
@@ -164,7 +159,7 @@ export function ProductDetailsModal({ product, onClose, onHealthWarning, vendorN
                   <Text style={styles.addText}>Add to cart · ₦{product.price.toLocaleString()}</Text>
                 </>
               )}
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
         </View>
       </View>
@@ -179,7 +174,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: '#121212',
+    backgroundColor: TC.surface2,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '90%',
@@ -189,7 +184,7 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: 220,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
   },
   closeButton: {
     position: 'absolute',
@@ -206,9 +201,9 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   name: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '600',
     marginBottom: 8,
   },
   vendorRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
@@ -222,10 +217,10 @@ const styles = StyleSheet.create({
   price: {
     color: '#f97316',
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   originalPrice: {
-    color: '#666',
+    color: TC.muted,
     fontSize: 14,
     textDecorationLine: 'line-through',
   },
@@ -236,20 +231,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 10,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
   },
   metaText: {
-    color: '#aaa',
+    color: TC.subtle,
     fontSize: 12,
   },
   description: {
-    color: '#ccc',
+    color: TC.text2,
     fontSize: 14,
     lineHeight: 20,
     marginBottom: 8,
   },
   sectionTitle: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
     fontWeight: '600',
     marginTop: 16,
@@ -264,27 +259,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 14,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: TC.hairline2,
   },
   allergenChip: {
     backgroundColor: 'rgba(245,158,11,0.12)',
     borderColor: 'rgba(245,158,11,0.3)',
   },
   chipText: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 12,
   },
   capitalize: {
     textTransform: 'capitalize',
   },
   mutedText: {
-    color: '#888',
+    color: TC.subtle,
     fontSize: 13,
   },
   disclaimer: {
-    color: '#777',
+    color: TC.muted,
     fontSize: 11,
     lineHeight: 16,
     marginTop: 20,
@@ -302,7 +297,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   addText: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 15,
     fontWeight: '600',
   },

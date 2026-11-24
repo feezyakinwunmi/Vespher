@@ -4,7 +4,7 @@ import { View, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Feather } from '@expo/vector-icons';
 import { RiderTabParamList } from './types';
-import { useTabBarOptions, TAB_ICON_SIZE } from './tabBarOptions';
+import { useTabBarOptions, renderGlassTabBar, TAB_ICON_SIZE } from './tabBarOptions';
 import { useRider } from '../contexts/RiderContext';
 
 // Delivery details and withdraw are stack screens opened from these tabs.
@@ -12,6 +12,7 @@ import { RiderHomeScreen } from '../screens/rider/RiderHomeScreen';
 import { RiderJobsScreen } from '../screens/rider/RiderJobsScreen';
 import { RiderEarningsScreen } from '../screens/rider/RiderEarningsScreen';
 import { RiderProfileScreen } from '../screens/rider/RiderProfileScreen';
+import { TC } from '../theme/palette';
 
 const Tab = createBottomTabNavigator<RiderTabParamList>();
 
@@ -31,7 +32,7 @@ export function RiderTabs() {
   const hasJobs = active.length > 0 || (isOnline && available.length > 0);
 
   return (
-    <Tab.Navigator screenOptions={screenOptions}>
+    <Tab.Navigator screenOptions={screenOptions} tabBar={renderGlassTabBar}>
       <Tab.Screen name="Home" component={RiderHomeScreen} options={{ tabBarIcon: icon('home') }} />
       <Tab.Screen name="Jobs" component={RiderJobsScreen} options={{ tabBarIcon: icon('package', hasJobs), title: 'Deliveries' }} />
       <Tab.Screen name="Earnings" component={RiderEarningsScreen} options={{ tabBarIcon: icon('dollar-sign') }} />
@@ -56,6 +57,6 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: '#ef4444',
     borderWidth: 1.5,
-    borderColor: '#0a0a0a',
+    borderColor: TC.bg,
   },
 });

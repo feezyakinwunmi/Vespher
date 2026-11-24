@@ -20,6 +20,7 @@ import Toast from 'react-native-toast-message';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { ModalSafeArea } from './ModalSafeArea';
+import { TC } from '../theme/palette';
 
 export interface ComplaintSummary {
   id: string;
@@ -110,7 +111,7 @@ export function ComplaintChat({ complaint, onClose }: { complaint: ComplaintSumm
       <ModalSafeArea style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.headerButton} accessibilityLabel="Back">
-            <Feather name="arrow-left" size={22} color="#fff" />
+            <Feather name="arrow-left" size={22} color={TC.text} />
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
             <Text style={styles.headerTitle} numberOfLines={1}>{complaint.title}</Text>
@@ -152,7 +153,7 @@ export function ComplaintChat({ complaint, onClose }: { complaint: ComplaintSumm
                 value={text}
                 onChangeText={setText}
                 placeholder="Write a message…"
-                placeholderTextColor="#666"
+                placeholderTextColor={TC.muted}
                 multiline
                 maxLength={4000}
               />
@@ -162,7 +163,7 @@ export function ComplaintChat({ complaint, onClose }: { complaint: ComplaintSumm
                 disabled={!text.trim() || sending}
                 accessibilityLabel="Send"
               >
-                {sending ? <ActivityIndicator color="#fff" size="small" /> : <Feather name="send" size={18} color="#fff" />}
+                {sending ? <ActivityIndicator color={TC.text} size="small" /> : <Feather name="send" size={18} color={TC.text} />}
               </TouchableOpacity>
             </View>
           ) : (
@@ -177,7 +178,7 @@ export function ComplaintChat({ complaint, onClose }: { complaint: ComplaintSumm
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0a0a0a' },
+  container: { flex: 1, backgroundColor: TC.bg },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -185,35 +186,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1f1f1f',
+    borderBottomColor: TC.surface,
   },
   headerButton: { padding: 6 },
-  headerTitle: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  headerSub: { color: '#888', fontSize: 12 },
+  headerTitle: { color: TC.text, fontSize: 16, fontWeight: '600' },
+  headerSub: { color: TC.subtle, fontSize: 12 },
   list: { padding: 16, gap: 10 },
   bubbleRow: { flexDirection: 'row' },
   left: { justifyContent: 'flex-start' },
   right: { justifyContent: 'flex-end' },
   bubble: { maxWidth: '82%', borderRadius: 16, paddingHorizontal: 14, paddingVertical: 10 },
-  mine: { backgroundColor: '#f97316', borderBottomRightRadius: 4 },
-  theirs: { backgroundColor: '#1a1a1a', borderWidth: 1, borderColor: '#2a2a2a', borderBottomLeftRadius: 4 },
+  mine: { backgroundColor: '#ea580c', borderBottomRightRadius: 4 },
+  theirs: { backgroundColor: TC.surface, borderWidth: 1, borderColor: TC.raised, borderBottomLeftRadius: 4 },
   sender: { color: '#f97316', fontSize: 11, fontWeight: '600', marginBottom: 2 },
-  body: { color: '#fff', fontSize: 14, lineHeight: 20 },
-  time: { color: '#777', fontSize: 10, marginTop: 4 },
+  body: { color: TC.text, fontSize: 14, lineHeight: 20 },
+  time: { color: TC.muted, fontSize: 10, marginTop: 4 },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: 8,
     padding: 12,
     borderTopWidth: 1,
-    borderTopColor: '#1f1f1f',
+    borderTopColor: TC.surface,
   },
   input: {
     flex: 1,
     maxHeight: 120,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
-    color: '#fff',
+    color: TC.text,
     paddingHorizontal: 14,
     paddingVertical: 10,
     fontSize: 14,
@@ -222,9 +223,9 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  closed: { color: '#888', textAlign: 'center', padding: 16, fontSize: 13 },
+  closed: { color: TC.subtle, textAlign: 'center', padding: 16, fontSize: 13 },
 });

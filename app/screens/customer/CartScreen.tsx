@@ -16,7 +16,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -30,6 +29,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useLocation } from '../../contexts/LocationContext';
 import type { Address, CartItem } from '../../types';
 import Toast from 'react-native-toast-message';
+import { TC } from '../../theme/palette';
 
 type CartScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type CartScreenRouteProp = RouteProp<RootStackParamList, 'Cart'>;
@@ -952,14 +952,14 @@ const processOrder = async (paymentRef?: string, gatewayResponse?: any) => {
     clearCart();
 
     const successMessage = orderType === 'schedule'
-      ? 'Order scheduled successfully!'
-      : 'Order placed successfully!';
+      ? 'Order scheduled successfully'
+      : 'Order placed successfully';
 
     if (paymentConfirmed) {
       showToast(successMessage);
     } else {
       Alert.alert(
-        'Payment Pending',
+        'Payment pending',
         `Your order was placed but we could not confirm your payment yet. Reference: ${paymentRef}. If you were charged, it will be confirmed shortly — contact support if it is not.`
       );
     }
@@ -1082,15 +1082,15 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
       <SafeAreaView style={styles.container}>
         <View style={styles.emptyHeader}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Feather name="arrow-left" size={24} color="#fff" />
+            <Feather name="arrow-left" size={24} color={TC.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Your Cart</Text>
+          <Text style={styles.headerTitle}>Your cart</Text>
           <View style={styles.headerRight} />
         </View>
 
         <View style={styles.emptyContainer}>
           <View style={styles.emptyIconContainer}>
-            <Feather name="shopping-bag" size={40} color="#666" />
+            <Feather name="shopping-bag" size={40} color={TC.muted} />
           </View>
           <Text style={styles.emptyTitle}>Your cart is empty</Text>
           <Text style={styles.emptyText}>
@@ -1100,14 +1100,9 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
             onPress={() => navigation.navigate('CustomerTabs', { screen: 'Vendors' })}
             style={styles.emptyButton}
           >
-            <LinearGradient
-              colors={['#f97316', '#f43f5e']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.emptyButtonGradient}
-            >
-              <Text style={styles.emptyButtonText}>Browse Vendors</Text>
-            </LinearGradient>
+            <View style={[styles.emptyButtonGradient, { backgroundColor: '#ea580c' }]}>
+              <Text style={styles.emptyButtonText}>Browse vendors</Text>
+            </View>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -1120,10 +1115,10 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Feather name="arrow-left" size={24} color="#fff" />
+            <Feather name="arrow-left" size={24} color={TC.text} />
           </TouchableOpacity>
           <View>
-            <Text style={styles.headerTitle}>Your Cart</Text>
+            <Text style={styles.headerTitle}>Your cart</Text>
             <Text style={styles.headerSubtitle}>{vendor?.name}</Text>
           </View>
         </View>
@@ -1178,7 +1173,7 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
     ]}
     disabled={item.product.is_combo_main || item.product.is_free_item}
   >
-    <Feather name="minus" size={14} color={(item.product.is_combo_main || item.product.is_free_item) ? "#666" : "#fff"} />
+    <Feather name="minus" size={14} color={(item.product.is_combo_main || item.product.is_free_item) ? TC.muted : "#fff"} />
   </TouchableOpacity>
   <Text style={styles.quantityText}>{item.quantity}</Text>
   <TouchableOpacity
@@ -1191,7 +1186,7 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
     ]}
     disabled={item.product.is_combo_main || item.product.is_free_item}
   >
-    <Feather name="plus" size={14} color={(item.product.is_combo_main || item.product.is_free_item) ? "#666" : "#fff"} />
+    <Feather name="plus" size={14} color={(item.product.is_combo_main || item.product.is_free_item) ? TC.muted : "#fff"} />
   </TouchableOpacity>
 </View>
         </View>
@@ -1200,7 +1195,7 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
         onPress={() => removeItem(item.product.id)}
         style={styles.removeButton}
       >
-        <Feather name="trash-2" size={18} color="#666" />
+        <Feather name="trash-2" size={18} color={TC.muted} />
       </TouchableOpacity>
     </View>
   ))}
@@ -1209,13 +1204,13 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
         {/* Promo Code */}
         <View style={styles.promoContainer}>
           <View style={styles.promoInputContainer}>
-            <Feather name="tag" size={18} color="#666" style={styles.promoIcon} />
+            <Feather name="tag" size={18} color={TC.muted} style={styles.promoIcon} />
             <TextInput
               style={styles.promoInput}
               value={promoCode}
               onChangeText={setPromoCode}
               placeholder="Enter promo code"
-              placeholderTextColor="#666"
+              placeholderTextColor={TC.muted}
             />
           </View>
           <TouchableOpacity
@@ -1238,7 +1233,7 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
           <Text style={styles.promoSuccess}>Promo code applied! You saved ₦{discount.toLocaleString()}</Text>
         )}
         {isFirstOrder && !promoApplied && subtotal > 10000 && (
-          <Text style={styles.firstOrderText}>First order over ₦10,000 gets 10% off + FREE delivery!</Text>
+          <Text style={styles.firstOrderText}>First order over ₦10,000 gets 10% off + FREE delivery</Text>
         )}
         {isFirstOrder && !promoApplied && subtotal <= 10000 && (
           <Text style={styles.firstOrderTextSmall}>
@@ -1248,7 +1243,7 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
 
 {/* Order Summary */}
 <View style={styles.modalSection}>
-  <Text style={styles.modalSectionTitle}>Order Summary</Text>
+  <Text style={styles.modalSectionTitle}>Order summary</Text>
   <View style={styles.modalSummary}>
     <View style={styles.modalSummaryRow}>
       <Text style={styles.modalSummaryLabel}>Items ({items.length})</Text>
@@ -1274,7 +1269,7 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
           </View>
         )}
         <View style={styles.modalSummaryRow}>
-          <Text style={styles.modalSummaryLabel}>Delivery Fee</Text>
+          <Text style={styles.modalSummaryLabel}>Delivery fee</Text>
           <Text style={[
             styles.modalSummaryValue,
             (freeDeliveryEligible || applyFreeDelivery) && styles.modalDiscountValue
@@ -1285,7 +1280,7 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
       </>
     ) : (
       <View style={styles.modalSummaryRow}>
-        <Text style={styles.modalSummaryLabel}>Delivery Fee</Text>
+        <Text style={styles.modalSummaryLabel}>Delivery fee</Text>
         <Text style={styles.modalSummaryValue}>Select address to calculate</Text>
       </View>
     )}
@@ -1301,7 +1296,7 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
     {/* Promo Discount */}
     {discount > 0 && (
       <View style={[styles.modalSummaryRow, styles.modalDiscountRow]}>
-        <Text style={styles.modalDiscountLabel}>Promo Discount</Text>
+        <Text style={styles.modalDiscountLabel}>Promo discount</Text>
         <Text style={styles.modalDiscountValue}>-₦{discount.toLocaleString()}</Text>
       </View>
     )}
@@ -1309,7 +1304,7 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
     {/* Referral Bonus Applied */}
     {applyWallet && finalWalletUsedAmount > 0 && (
       <View style={[styles.modalSummaryRow, styles.modalDiscountRow]}>
-        <Text style={styles.modalDiscountLabel}>Referral Bonus</Text>
+        <Text style={styles.modalDiscountLabel}>Referral bonus</Text>
         <Text style={styles.modalDiscountValue}>-₦{finalWalletUsedAmount.toLocaleString()}</Text>
       </View>
     )}
@@ -1322,7 +1317,7 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
 
     {/* Notices */}
     {(freeDeliveryEligible || applyFreeDelivery) && (
-      <Text style={styles.modalFreeDeliveryNotice}>Free delivery applied to this order!</Text>
+      <Text style={styles.modalFreeDeliveryNotice}>Free delivery applied to this order</Text>
     )}
     {applyWallet && finalWalletUsedAmount > 0 && (
       <Text style={styles.modalReferralNotice}>Referral bonus saved you ₦{finalWalletUsedAmount.toLocaleString()}</Text>
@@ -1337,15 +1332,10 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
           onPress={() => setShowCheckout(true)}
           style={styles.checkoutButton}
         >
-          <LinearGradient
-            colors={['#f97316', '#f43f5e']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.checkoutGradient}
-          >
-            <Text style={styles.checkoutText}>Proceed to Checkout</Text>
+          <View style={[styles.checkoutGradient, { backgroundColor: '#ea580c' }]}>
+            <Text style={styles.checkoutText}>Proceed to checkout</Text>
             <Feather name="chevron-right" size={20} color="#fff" />
-          </LinearGradient>
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -1361,14 +1351,14 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Checkout</Text>
               <TouchableOpacity onPress={() => setShowCheckout(false)} style={styles.modalCloseButton}>
-                <Feather name="x" size={20} color="#fff" />
+                <Feather name="x" size={20} color={TC.text} />
               </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
               {/* Delivery Address */}
               <View style={styles.modalSection}>
-                <Text style={styles.modalSectionTitle}>Delivery Address</Text>
+                <Text style={styles.modalSectionTitle}>Delivery address</Text>
                 {loadingAddresses ? (
                   <ActivityIndicator size="small" color="#f97316" />
                 ) : addresses.length > 0 ? (
@@ -1410,7 +1400,7 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
 
               {/* Order Type - Schedule Option */}
               <View style={styles.modalSection}>
-                <Text style={styles.modalSectionTitle}>Order Type</Text>
+                <Text style={styles.modalSectionTitle}>Order type</Text>
                 <View style={styles.orderTypeContainer}>
                   <TouchableOpacity
                     onPress={() => {
@@ -1425,7 +1415,7 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
                     <Feather
                       name="clock"
                       size={20}
-                      color={orderType === 'now' ? '#f97316' : '#666'}
+                      color={orderType === 'now' ? '#f97316' : TC.muted}
                     />
                     <Text style={[
                       styles.orderTypeText,
@@ -1445,7 +1435,7 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
                     <Feather
                       name="calendar"
                       size={20}
-                      color={orderType === 'schedule' ? '#f97316' : '#666'}
+                      color={orderType === 'schedule' ? '#f97316' : TC.muted}
                     />
                     <Text style={[
                       styles.orderTypeText,
@@ -1510,7 +1500,7 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
                         <Feather
                           name={category.icon as any}
                           size={14}
-                          color={selectedRequestCategory === category.value ? '#fff' : '#666'}
+                          color={selectedRequestCategory === category.value ? TC.text : TC.muted}
                         />
                         <Text style={[
                           styles.requestChipText,
@@ -1528,7 +1518,7 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
                   value={specialRequest}
                   onChangeText={setSpecialRequest}
                   placeholder="Tell us about any special requirements..."
-                  placeholderTextColor="#666"
+                  placeholderTextColor={TC.muted}
                   multiline
                   numberOfLines={3}
                   textAlignVertical="top"
@@ -1537,7 +1527,7 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
 
               {/* Payment Method */}
               <View style={styles.modalSection}>
-                <Text style={styles.modalSectionTitle}>Payment Method</Text>
+                <Text style={styles.modalSectionTitle}>Payment method</Text>
                 <View style={styles.paymentList}>
                   {/* Cash on Delivery - Only for orders below ₦10,000 */}
                   <TouchableOpacity
@@ -1556,13 +1546,13 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
                   >
                     <View style={styles.paymentCardContent}>
                       <View style={styles.paymentLeft}>
-                        <Feather name="dollar-sign" size={18} color={total >= 10000 ? "#666" : "#f97316"} />
+                        <Feather name="dollar-sign" size={18} color={total >= 10000 ? TC.muted : "#f97316"} />
                         <View>
                           <Text style={[
                             styles.paymentLabel,
                             total >= 10000 && styles.textDisabled
                           ]}>
-                            Cash on Delivery
+                            Cash on delivery
                           </Text>
                           <Text style={styles.paymentDescription}>
                             {total >= 10000
@@ -1590,7 +1580,7 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
                       <View style={styles.paymentLeft}>
                         <Feather name="credit-card" size={18} color="#f97316" />
                         <View>
-                          <Text style={styles.paymentLabel}>Card Payment</Text>
+                          <Text style={styles.paymentLabel}>Card payment</Text>
                           <Text style={styles.paymentDescription}>
                             Pay securely with your card
                           </Text>
@@ -1605,7 +1595,7 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
 
                 {paymentMethod === 'card' && (
                   <TouchableOpacity style={styles.saveCardRow} onPress={() => setSaveCard(v => !v)} activeOpacity={0.7}>
-                    <Feather name={saveCard ? 'check-square' : 'square'} size={18} color={saveCard ? '#f97316' : '#666'} />
+                    <Feather name={saveCard ? 'check-square' : 'square'} size={18} color={saveCard ? '#f97316' : TC.muted} />
                     <Text style={styles.saveCardText}>Save this card for faster checkout</Text>
                   </TouchableOpacity>
                 )}
@@ -1630,7 +1620,7 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
               {/* Rewards Section */}
 {(customerRewards?.availableFreeDelivery || walletBalance > 0) && (
   <View style={styles.modalSection}>
-    <Text style={styles.modalSectionTitle}>Available Rewards</Text>
+    <Text style={styles.modalSectionTitle}>Available rewards</Text>
 
    {/* Free Delivery Reward with expiration */}
 {customerRewards?.availableFreeDelivery && (
@@ -1646,7 +1636,7 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
         <Feather name="truck" size={20} color="#10b981" />
       </View>
       <View style={styles.rewardInfo}>
-        <Text style={styles.rewardTitle}>Free Delivery</Text>
+        <Text style={styles.rewardTitle}>Free delivery</Text>
         <Text style={styles.rewardDescription}>
           Use your free delivery reward on this order
         </Text>
@@ -1679,7 +1669,7 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
             <Feather name="gift" size={20} color="#f97316" />
           </View>
           <View style={styles.rewardInfo}>
-            <Text style={styles.rewardTitle}>Referral Bonus</Text>
+            <Text style={styles.rewardTitle}>Referral bonus</Text>
             <Text style={styles.rewardDescription}>
               ₦{walletBalance.toLocaleString()} available from referrals
             </Text>
@@ -1697,7 +1687,7 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
 
  {/* Order Summary */}
 <View style={styles.modalSection}>
-  <Text style={styles.modalSectionTitle}>Order Summary</Text>
+  <Text style={styles.modalSectionTitle}>Order summary</Text>
   <View style={styles.modalSummary}>
     <View style={styles.modalSummaryRow}>
       <Text style={styles.modalSummaryLabel}>Items ({items.length})</Text>
@@ -1723,7 +1713,7 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
           </View>
         )}
         <View style={styles.modalSummaryRow}>
-          <Text style={styles.modalSummaryLabel}>Delivery Fee</Text>
+          <Text style={styles.modalSummaryLabel}>Delivery fee</Text>
           <Text style={[
             styles.modalSummaryValue,
             (freeDeliveryEligible || applyFreeDelivery) && styles.modalDiscountValue
@@ -1734,7 +1724,7 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
       </>
     ) : (
       <View style={styles.modalSummaryRow}>
-        <Text style={styles.modalSummaryLabel}>Delivery Fee</Text>
+        <Text style={styles.modalSummaryLabel}>Delivery fee</Text>
         <Text style={styles.modalSummaryValue}>Select address to calculate</Text>
       </View>
     )}
@@ -1750,7 +1740,7 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
     {/* Promo Discount */}
     {discount > 0 && (
       <View style={[styles.modalSummaryRow, styles.modalDiscountRow]}>
-        <Text style={styles.modalDiscountLabel}>Promo Discount</Text>
+        <Text style={styles.modalDiscountLabel}>Promo discount</Text>
         <Text style={styles.modalDiscountValue}>-₦{discount.toLocaleString()}</Text>
       </View>
     )}
@@ -1758,7 +1748,7 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
     {/* Referral Bonus Applied */}
     {applyWallet && finalWalletUsedAmount > 0 && (
       <View style={[styles.modalSummaryRow, styles.modalDiscountRow]}>
-        <Text style={styles.modalDiscountLabel}>Referral Bonus</Text>
+        <Text style={styles.modalDiscountLabel}>Referral bonus</Text>
         <Text style={styles.modalDiscountValue}>-₦{finalWalletUsedAmount.toLocaleString()}</Text>
       </View>
     )}
@@ -1771,7 +1761,7 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
 
     {/* Notices */}
     {(freeDeliveryEligible || applyFreeDelivery) && (
-      <Text style={styles.modalFreeDeliveryNotice}>Free delivery applied to this order!</Text>
+      <Text style={styles.modalFreeDeliveryNotice}>Free delivery applied to this order</Text>
     )}
     {applyWallet && finalWalletUsedAmount > 0 && (
       <Text style={styles.modalReferralNotice}>Referral bonus saved you ₦{finalWalletUsedAmount.toLocaleString()}</Text>
@@ -1787,12 +1777,7 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
                 disabled={!selectedAddress || !calculatedDeliveryFee || isPlacingOrder || processingPayment || isCalculatingFee || loadingSettings}
                 style={styles.placeOrderButton}
               >
-                <LinearGradient
-                  colors={['#f97316', '#f43f5e']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.placeOrderGradient}
-                >
+                <View style={[styles.placeOrderGradient, { backgroundColor: '#ea580c' }]}>
                   {processingPayment ? (
                     <View style={styles.buttonContent}>
                       <ActivityIndicator color="#fff" />
@@ -1813,7 +1798,7 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
   {orderType === 'schedule' ? 'Schedule Order' : 'Place Order'} • ₦{finalTotal.toLocaleString()}
 </Text>
                   )}
-                </LinearGradient>
+                </View>
               </TouchableOpacity>
             </View>
           </View>
@@ -1848,10 +1833,10 @@ if (paymentMethod === 'cash' && finalTotal >= 10000) {
 
 const styles = StyleSheet.create({
   saveCardRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10, paddingVertical: 6 },
-  saveCardText: { color: '#ccc', fontSize: 13, flex: 1 },
+  saveCardText: { color: TC.text2, fontSize: 13, flex: 1 },
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     paddingBottom: 60,
   },
   header: {
@@ -1861,7 +1846,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -1872,18 +1857,18 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   headerSubtitle: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   headerRight: {
     width: 40,
@@ -1902,7 +1887,7 @@ const styles = StyleSheet.create({
   },
   cartItem: {
     flexDirection: 'row',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     padding: 12,
     gap: 12,
@@ -1914,7 +1899,7 @@ const styles = StyleSheet.create({
   marginBottom: 2,
 },
 rewardCard: {
-  backgroundColor: '#2a2a2a',
+  backgroundColor: TC.raised,
   borderRadius: 12,
   padding: 12,
   marginBottom: 8,
@@ -1944,12 +1929,12 @@ rewardInfo: {
 rewardTitle: {
   fontSize: 14,
   fontWeight: '600',
-  color: '#fff',
+  color: TC.text,
   marginBottom: 2,
 },
 rewardDescription: {
   fontSize: 12,
-  color: '#666',
+  color: TC.muted,
 },
 rewardCheck: {
   width: 24,
@@ -1974,12 +1959,12 @@ promoBadgeText: {
 },
 originalPriceText: {
   fontSize: 10,
-  color: '#666',
+  color: TC.muted,
   textDecorationLine: 'line-through',
   marginTop: 2,
 },
 disabledButton: {
-  backgroundColor: '#2a2a2a',
+  backgroundColor: TC.raised,
   opacity: 0.5,
 },
   itemImage: {
@@ -1999,12 +1984,12 @@ disabledButton: {
   itemName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 2,
   },
   itemDescription: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 6,
   },
   itemFooter: {
@@ -2026,13 +2011,13 @@ disabledButton: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalStrikethrough: {
   fontSize: 11,
-  color: '#666',
+  color: TC.muted,
   textDecorationLine: 'line-through',
   marginLeft: 4,
 },
@@ -2043,10 +2028,10 @@ modalReferralNotice: {
   marginTop: 8,
 },
   primaryButton: {
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
   },
   quantityText: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 13,
     fontWeight: '500',
     minWidth: 20,
@@ -2065,7 +2050,7 @@ modalReferralNotice: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     paddingHorizontal: 12,
   },
@@ -2080,7 +2065,7 @@ modalReferralNotice: {
   },
   applyButton: {
     paddingHorizontal: 20,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
@@ -2089,7 +2074,7 @@ modalReferralNotice: {
     backgroundColor: 'rgba(249,115,22,0.1)',
   },
   applyButtonText: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
     fontWeight: '500',
   },
@@ -2122,7 +2107,7 @@ modalReferralNotice: {
     textAlign: 'center',
   },
   summaryContainer: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     margin: 16,
     marginTop: 0,
     padding: 16,
@@ -2131,7 +2116,7 @@ modalReferralNotice: {
   summaryTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 12,
   },
   summaryRow: {
@@ -2142,11 +2127,11 @@ modalReferralNotice: {
   },
   summaryLabel: {
     fontSize: 14,
-    color: '#666',
+    color: TC.muted,
   },
   summaryValue: {
     fontSize: 14,
-    color: '#fff',
+    color: TC.text,
   },
   discountRow: {
     marginBottom: 4,
@@ -2163,22 +2148,22 @@ modalReferralNotice: {
     marginTop: 8,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   totalLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   totalValue: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#f97316',
   },
   footer: {
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   checkoutButton: {
     height: 56,
@@ -2203,7 +2188,7 @@ modalReferralNotice: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   emptyContainer: {
     flex: 1,
@@ -2215,7 +2200,7 @@ modalReferralNotice: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -2223,12 +2208,12 @@ modalReferralNotice: {
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 14,
-    color: '#666',
+    color: TC.muted,
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -2254,7 +2239,7 @@ modalReferralNotice: {
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     height: '90%',
@@ -2265,12 +2250,12 @@ modalReferralNotice: {
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   modalCloseButton: {
     padding: 4,
@@ -2285,7 +2270,7 @@ modalReferralNotice: {
   modalSectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 12,
   },
   addressList: {
@@ -2296,7 +2281,7 @@ modalReferralNotice: {
     alignItems: 'center',
     gap: 12,
     padding: 12,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'transparent',
@@ -2311,16 +2296,16 @@ modalReferralNotice: {
   addressLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 2,
   },
   addressText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   addAddressButton: {
     padding: 12,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 12,
     alignItems: 'center',
     marginTop: 8,
@@ -2341,7 +2326,7 @@ modalReferralNotice: {
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     padding: 12,
     borderRadius: 8,
     borderWidth: 1,
@@ -2353,7 +2338,7 @@ modalReferralNotice: {
   },
   orderTypeText: {
     fontSize: 14,
-    color: '#666',
+    color: TC.muted,
   },
   orderTypeTextActive: {
     color: '#f97316',
@@ -2365,7 +2350,7 @@ modalReferralNotice: {
   dateTimeButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     padding: 16,
     borderRadius: 8,
     gap: 12,
@@ -2373,7 +2358,7 @@ modalReferralNotice: {
   },
   dateTimeButtonText: {
     fontSize: 16,
-    color: '#fff',
+    color: TC.text,
     flex: 1,
   },
   selectedDateTimeText: {
@@ -2385,7 +2370,7 @@ modalReferralNotice: {
   },
   requestLabel: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 8,
   },
   requestCategories: {
@@ -2402,26 +2387,26 @@ modalReferralNotice: {
     gap: 4,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: 'transparent',
   },
   requestChipSelected: {
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
   },
   requestChipText: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
   },
   requestChipTextSelected: {
     color: '#fff',
   },
   requestInput: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 8,
     padding: 12,
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
     height: 80,
     textAlignVertical: 'top',
@@ -2434,7 +2419,7 @@ modalReferralNotice: {
     alignItems: 'center',
     gap: 12,
     padding: 12,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'transparent',
@@ -2445,8 +2430,8 @@ modalReferralNotice: {
   },
   paymentCardUnavailable: {
     opacity: 0.6,
-    backgroundColor: '#1a1a1a',
-    borderColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: TC.surface,
+    borderColor: TC.hairline,
   },
   paymentCardContent: {
     flex: 1,
@@ -2462,21 +2447,21 @@ modalReferralNotice: {
   },
   paymentLabel: {
     fontSize: 14,
-    color: '#fff',
+    color: TC.text,
   },
   paymentDescription: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
     marginTop: 2,
   },
   paymentSelectedDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
   },
   textDisabled: {
-    color: '#666',
+    color: TC.muted,
   },
   infoBox: {
     flexDirection: 'row',
@@ -2509,7 +2494,7 @@ modalReferralNotice: {
     flex: 1,
   },
   modalSummary: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     padding: 12,
     borderRadius: 12,
   },
@@ -2521,11 +2506,11 @@ modalReferralNotice: {
   },
   modalSummaryLabel: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
   },
   modalSummaryValue: {
     fontSize: 13,
-    color: '#fff',
+    color: TC.text,
   },
   modalDiscountRow: {
     marginBottom: 4,
@@ -2542,16 +2527,16 @@ modalReferralNotice: {
     marginTop: 6,
     paddingTop: 6,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   modalTotalLabel: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   modalTotalValue: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#f97316',
   },
   modalFreeDeliveryNotice: {
@@ -2563,7 +2548,7 @@ modalReferralNotice: {
   modalFooter: {
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   placeOrderButton: {
     height: 56,
@@ -2576,7 +2561,7 @@ modalReferralNotice: {
     alignItems: 'center',
   },
   placeOrderText: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 16,
     fontWeight: '600',
   },

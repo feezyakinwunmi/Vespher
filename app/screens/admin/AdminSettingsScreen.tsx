@@ -13,10 +13,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import Toast from 'react-native-toast-message';
+import { TAB_BAR_SPACE } from '../../navigation/tabBarOptions';
+import { TC } from '../../theme/palette';
+import { AppearanceSetting } from '../../components/AppearanceSetting';
 
 interface PlatformSettings {
   id: number;
@@ -240,7 +242,7 @@ export function AdminSettingsScreen() {
 
   const handleSignOut = async () => {
     Alert.alert(
-      'Sign Out',
+      'Sign out',
       'Are you sure you want to sign out?',
       [
         { text: 'Cancel', style: 'cancel' },
@@ -285,16 +287,11 @@ export function AdminSettingsScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
-      <LinearGradient
-        colors={['#f97316', '#f43f5e']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={styles.header}
-      >
+      <View style={[styles.header, { backgroundColor: '#ea580c' }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Feather name="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Platform Settings</Text>
+        <Text style={styles.headerTitle}>Platform settings</Text>
         <TouchableOpacity onPress={handleSave} disabled={saving} style={styles.saveButton}>
           {saving ? (
             <ActivityIndicator color="#fff" size="small" />
@@ -302,13 +299,13 @@ export function AdminSettingsScreen() {
             <Text style={styles.saveButtonText}>Save</Text>
           )}
         </TouchableOpacity>
-      </LinearGradient>
+      </View>
 
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.content}
       >
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={{ paddingBottom: TAB_BAR_SPACE }} showsVerticalScrollIndicator={false}>
           {/* Info Card */}
           <View style={styles.infoCard}>
             <Feather name="info" size={20} color="#f97316" />
@@ -321,25 +318,22 @@ export function AdminSettingsScreen() {
                    style={styles.menuCard}
                    onPress={() => navigation.navigate('AdminAnnouncements' as never)}
                  >
-                   <LinearGradient
-                     colors={['#8b5cf6', '#f97316']}
-                     style={styles.menuIcon}
-                   >
+                   <View style={[styles.menuIcon, { backgroundColor: '#8b5cf6' }]}>
                      <Feather name="mic" size={24} color="#fff" />
-                   </LinearGradient>
+                   </View>
                    <View style={styles.menuInfo}>
-                     <Text style={styles.menuTitle}>Create Announcement</Text>
+                     <Text style={styles.menuTitle}>Create announcement</Text>
                      <Text style={styles.menuDescription}>
 Send Announcements to all users or targeted users                     </Text>
                    </View>
-                   <Feather name="chevron-right" size={20} color="#666" />
+                   <Feather name="chevron-right" size={20} color={TC.muted} />
                  </TouchableOpacity>
 
           {/* Platform Fee Section */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Feather name="percent" size={20} color="#f97316" />
-              <Text style={styles.sectionTitle}>Platform Fee</Text>
+              <Text style={styles.sectionTitle}>Platform fee</Text>
             </View>
             <Text style={styles.sectionDescription}>
               Percentage charged on each order total
@@ -353,7 +347,7 @@ Send Announcements to all users or targeted users                     </Text>
                   value={platformFee}
                   onChangeText={setPlatformFee}
                   placeholder="10.00"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={TC.muted}
                   keyboardType="decimal-pad"
                 />
                 <Text style={styles.inputSuffix}>%</Text>
@@ -369,7 +363,7 @@ Send Announcements to all users or targeted users                     </Text>
             <View style={styles.sectionHeader}>
               <Feather name="user" size={20} color="#f97316" />
               <Feather name="truck" size={20} color="#f97316" />
-              <Text style={styles.sectionTitle}>Rider Earnings</Text>
+              <Text style={styles.sectionTitle}>Rider earnings</Text>
             </View>
             <Text style={styles.sectionDescription}>
               Percentage of delivery fee that riders earn based on vehicle ownership
@@ -383,7 +377,7 @@ Send Announcements to all users or targeted users                     </Text>
                   value={companyVehicleRiderPercent}
                   onChangeText={(text) => setCompanyVehicleRiderPercent(formatCurrency(text))}
                   placeholder="50"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={TC.muted}
                   keyboardType="number-pad"
                 />
                 <Text style={styles.inputSuffix}>%</Text>
@@ -405,7 +399,7 @@ Send Announcements to all users or targeted users                     </Text>
                   value={personalVehicleRiderPercent}
                   onChangeText={(text) => setPersonalVehicleRiderPercent(formatCurrency(text))}
                   placeholder="80"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={TC.muted}
                   keyboardType="number-pad"
                 />
                 <Text style={styles.inputSuffix}>%</Text>
@@ -421,12 +415,12 @@ Send Announcements to all users or targeted users                     </Text>
 
             {/* Rider Earnings Example Card */}
             <View style={styles.riderExampleCard}>
-              <Text style={styles.exampleTitle}>Rider Earnings Breakdown</Text>
+              <Text style={styles.exampleTitle}>Rider earnings breakdown</Text>
               <Text style={styles.exampleSubtitle}>For a ₦{exampleDeliveryFee.toLocaleString()} delivery fee</Text>
               
               <View style={styles.exampleDivider} />
               
-              <Text style={styles.riderTypeTitle}>Company Vehicle</Text>
+              <Text style={styles.riderTypeTitle}>Company vehicle</Text>
               <View style={styles.exampleRow}>
                 <Text style={styles.exampleLabel}>Rider ({companyVehicleRiderPercent || 50}%):</Text>
                 <Text style={styles.exampleValue}>₦{companyRiderEarnings.toLocaleString()}</Text>
@@ -438,7 +432,7 @@ Send Announcements to all users or targeted users                     </Text>
               
               <View style={styles.exampleDivider} />
               
-              <Text style={styles.riderTypeTitle}>Personal Vehicle</Text>
+              <Text style={styles.riderTypeTitle}>Personal vehicle</Text>
               <View style={styles.exampleRow}>
                 <Text style={styles.exampleLabel}>Rider ({personalVehicleRiderPercent || 80}%):</Text>
                 <Text style={styles.exampleValue}>₦{personalRiderEarnings.toLocaleString()}</Text>
@@ -454,7 +448,7 @@ Send Announcements to all users or targeted users                     </Text>
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Feather name="truck" size={20} color="#f97316" />
-              <Text style={styles.sectionTitle}>Delivery Fees</Text>
+              <Text style={styles.sectionTitle}>Delivery fees</Text>
             </View>
             <Text style={styles.sectionDescription}>
               Base delivery charges calculated by distance and weight
@@ -469,7 +463,7 @@ Send Announcements to all users or targeted users                     </Text>
                   value={deliveryFeePerKm}
                   onChangeText={(text) => setDeliveryFeePerKm(formatCurrency(text))}
                   placeholder="300"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={TC.muted}
                   keyboardType="number-pad"
                 />
               </View>
@@ -487,7 +481,7 @@ Send Announcements to all users or targeted users                     </Text>
                   value={weightRatePerKg}
                   onChangeText={(text) => setWeightRatePerKg(formatCurrency(text))}
                   placeholder="0"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={TC.muted}
                   keyboardType="number-pad"
                 />
               </View>
@@ -506,7 +500,7 @@ Send Announcements to all users or targeted users                     </Text>
                     value={minDeliveryFee}
                     onChangeText={(text) => setMinDeliveryFee(formatCurrency(text))}
                     placeholder="500"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                     keyboardType="number-pad"
                   />
                 </View>
@@ -524,7 +518,7 @@ Send Announcements to all users or targeted users                     </Text>
                     value={maxDeliveryFee}
                     onChangeText={(text) => setMaxDeliveryFee(formatCurrency(text))}
                     placeholder="5000"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                     keyboardType="number-pad"
                   />
                 </View>
@@ -539,7 +533,7 @@ Send Announcements to all users or targeted users                     </Text>
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Feather name="phone" size={20} color="#f97316" />
-              <Text style={styles.sectionTitle}>Promotion Settings</Text>
+              <Text style={styles.sectionTitle}>Promotion settings</Text>
             </View>
             <Text style={styles.sectionDescription}>
               Cost for vendors to run promotions on the home screen banner slider
@@ -554,7 +548,7 @@ Send Announcements to all users or targeted users                     </Text>
                   value={promotionCostPerDay}
                   onChangeText={(text) => setPromotionCostPerDay(formatCurrency(text))}
                   placeholder="300"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={TC.muted}
                   keyboardType="number-pad"
                 />
               </View>
@@ -565,7 +559,7 @@ Send Announcements to all users or targeted users                     </Text>
 
             {/* Promotion Cost Example */}
             <View style={styles.exampleCard}>
-              <Text style={styles.exampleTitle}>Promotion Cost Example</Text>
+              <Text style={styles.exampleTitle}>Promotion cost example</Text>
               <Text style={styles.exampleSubtitle}>7-day promotion campaign</Text>
               
               <View style={styles.exampleRow}>
@@ -603,7 +597,7 @@ Send Announcements to all users or targeted users                     </Text>
                   value={proMonthlyPrice}
                   onChangeText={(text) => setProMonthlyPrice(formatCurrency(text))}
                   placeholder="1500"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={TC.muted}
                   keyboardType="number-pad"
                 />
               </View>
@@ -618,7 +612,7 @@ Send Announcements to all users or targeted users                     </Text>
                   value={proYearlyPrice}
                   onChangeText={(text) => setProYearlyPrice(formatCurrency(text))}
                   placeholder="15000"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={TC.muted}
                   keyboardType="number-pad"
                 />
               </View>
@@ -636,7 +630,7 @@ Send Announcements to all users or targeted users                     </Text>
                 value={freeRecommendationLimit}
                 onChangeText={(text) => setFreeRecommendationLimit(formatCurrency(text))}
                 placeholder="3"
-                placeholderTextColor="#666"
+                placeholderTextColor={TC.muted}
                 keyboardType="number-pad"
               />
               <Text style={styles.hint}>How many personalised picks free customers see per meal time</Text>
@@ -644,11 +638,8 @@ Send Announcements to all users or targeted users                     </Text>
           </View>
 
           {/* Example Calculation Card */}
-          <LinearGradient
-            colors={['#1a1a1a', '#0a0a0a']}
-            style={styles.exampleCard}
-          >
-            <Text style={styles.exampleTitle}>Fee Calculation Example</Text>
+          <View style={[styles.exampleCard, { backgroundColor: TC.surface }]}>
+            <Text style={styles.exampleTitle}>Fee calculation example</Text>
             <Text style={styles.exampleSubtitle}>Order: ₦10,000 | Distance: 5km | Weight: 2kg</Text>
             
             <View style={styles.exampleRow}>
@@ -668,7 +659,9 @@ Send Announcements to all users or targeted users                     </Text>
               <Text style={styles.exampleLabelTotal}>Customer Pays:</Text>
               <Text style={styles.exampleValueTotal}>₦{totalCustomerPay.toLocaleString()}</Text>
             </View>
-          </LinearGradient>
+          </View>
+
+          <AppearanceSetting style={{ marginHorizontal: 16, marginBottom: 16 }} />
 
           {/* Sign Out Button */}
           <TouchableOpacity 
@@ -676,7 +669,7 @@ Send Announcements to all users or targeted users                     </Text>
             onPress={handleSignOut}
           >
             <Feather name="log-out" size={20} color="#ef4444" />
-            <Text style={styles.signOutFooterText}>Sign Out</Text>
+            <Text style={styles.signOutFooterText}>Sign out</Text>
           </TouchableOpacity>
 
           {/* Last Updated Info */}
@@ -698,17 +691,16 @@ Send Announcements to all users or targeted users                     </Text>
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
-    paddingBottom:60,
+    backgroundColor: TC.bg,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    color: '#666',
+    color: TC.muted,
     marginTop: 12,
     fontSize: 14,
   },
@@ -730,7 +722,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   saveButton: {
     paddingHorizontal: 16,
@@ -761,17 +753,17 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: 13,
-    color: '#fff',
+    color: TC.text,
     lineHeight: 18,
   },
    menuCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     padding: 16,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
     marginHorizontal: 16,
     marginBottom: 16,
   },
@@ -789,22 +781,22 @@ const styles = StyleSheet.create({
   menuTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 4,
   },
   menuDescription: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 8,
   },
   section: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     marginHorizontal: 16,
     marginBottom: 16,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -815,11 +807,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   sectionDescription: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 16,
   },
   inputGroup: {
@@ -827,21 +819,21 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 13,
-    color: '#fff',
+    color: TC.text,
     marginBottom: 6,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
     height: 50,
   },
   input: {
     flex: 1,
-    color: '#fff',
+    color: TC.text,
     fontSize: 15,
     paddingHorizontal: 12,
     height: '100%',
@@ -850,18 +842,18 @@ const styles = StyleSheet.create({
     paddingLeft: 8,
   },
   inputPrefix: {
-    color: '#666',
+    color: TC.muted,
     fontSize: 15,
     paddingLeft: 12,
   },
   inputSuffix: {
-    color: '#666',
+    color: TC.muted,
     fontSize: 15,
     paddingRight: 12,
   },
   hint: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
     marginTop: 4,
   },
   row: {
@@ -873,17 +865,17 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     padding: 16,
     borderRadius: 12,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
   },
   exampleTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 2,
   },
   exampleSubtitle: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 12,
   },
   exampleRow: {
@@ -893,7 +885,7 @@ const styles = StyleSheet.create({
   },
   exampleLabel: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   exampleValue: {
     fontSize: 12,
@@ -902,13 +894,13 @@ const styles = StyleSheet.create({
   },
   exampleDivider: {
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: TC.hairline,
     marginVertical: 8,
   },
   exampleLabelTotal: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   exampleValueTotal: {
     fontSize: 13,
@@ -917,7 +909,7 @@ const styles = StyleSheet.create({
   },
   // NEW: Rider example styles
   riderExampleCard: {
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     borderRadius: 8,
     padding: 12,
     marginTop: 8,
@@ -925,7 +917,7 @@ const styles = StyleSheet.create({
   riderTypeTitle: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 6,
   },
   exampleRowSmall: {
@@ -935,7 +927,7 @@ const styles = StyleSheet.create({
   },
   exampleLabelSmall: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
   },
   exampleValueSmall: {
     fontSize: 10,
@@ -948,7 +940,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
   },
   bottomPadding: {
     height: 20,

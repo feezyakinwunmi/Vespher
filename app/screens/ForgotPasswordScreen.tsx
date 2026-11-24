@@ -15,13 +15,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { validatePassword, getPasswordStrengthColor, getPasswordStrengthLabel } from '../utils/passwordValidation';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
+import { TC } from '../theme/palette';
 
 type ScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -284,7 +284,7 @@ useEffect(() => {
             onPress={() => navigation.goBack()}
             style={styles.backButton}
           >
-            <Feather name="arrow-left" size={24} color="#fff" />
+            <Feather name="arrow-left" size={24} color={TC.text} />
           </TouchableOpacity>
 
           {!emailSent ? (
@@ -300,13 +300,13 @@ useEffect(() => {
               </Text>
 
               <View style={styles.inputContainer}>
-                <Feather name="mail" size={20} color="#666" style={styles.inputIcon} />
+                <Feather name="mail" size={20} color={TC.muted} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   value={email}
                   onChangeText={setEmail}
                   placeholder="Enter your email"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={TC.muted}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoFocus
@@ -318,16 +318,13 @@ useEffect(() => {
                 disabled={isLoading}
                 style={styles.submitButton}
               >
-                <LinearGradient
-                  colors={['#f97316', '#f43f5e']}
-                  style={styles.submitGradient}
-                >
+                <View style={[styles.submitGradient, { backgroundColor: '#ea580c' }]}>
                   {isLoading ? (
                     <ActivityIndicator color="#fff" />
                   ) : (
-                    <Text style={styles.submitText}>Send Reset Code</Text>
+                    <Text style={styles.submitText}>Send reset code</Text>
                   )}
-                </LinearGradient>
+                </View>
               </TouchableOpacity>
             </>
           ) : (
@@ -337,7 +334,7 @@ useEffect(() => {
                 <Feather name="mail" size={50} color="#f97316" />
               </View>
 
-              <Text style={styles.title}>Check Your Email</Text>
+              <Text style={styles.title}>Check your email</Text>
               
               <Text style={styles.message}>
                 We've sent a 6-digit verification code to:
@@ -359,7 +356,7 @@ useEffect(() => {
                 onPress={() => navigation.navigate('Login')}
                 style={styles.loginButton}
               >
-                <Text style={styles.loginButtonText}>Return to Login</Text>
+                <Text style={styles.loginButtonText}>Return to login</Text>
               </TouchableOpacity>
             </>
           )}
@@ -376,9 +373,9 @@ useEffect(() => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Verify Your Email</Text>
+              <Text style={styles.modalTitle}>Verify your email</Text>
               <TouchableOpacity onPress={() => setShowOTPModal(false)}>
-                <Feather name="x" size={20} color="#fff" />
+                <Feather name="x" size={20} color={TC.text} />
               </TouchableOpacity>
             </View>
 
@@ -438,16 +435,13 @@ useEffect(() => {
                 disabled={isVerifyingOTP || otpCode.some(d => d === '')}
                 style={styles.modalButton}
               >
-                <LinearGradient
-                  colors={['#f97316', '#f43f5e']}
-                  style={styles.submitGradient}
-                >
+                <View style={[styles.submitGradient, { backgroundColor: '#ea580c' }]}>
                   {isVerifyingOTP ? (
                     <ActivityIndicator color="#fff" />
                   ) : (
-                    <Text style={styles.submitText}>Verify Code</Text>
+                    <Text style={styles.submitText}>Verify code</Text>
                   )}
-                </LinearGradient>
+                </View>
               </TouchableOpacity>
             </View>
           </View>
@@ -464,29 +458,29 @@ useEffect(() => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Reset Password</Text>
+              <Text style={styles.modalTitle}>Reset password</Text>
               <TouchableOpacity onPress={cancelPasswordReset}>
-                <Feather name="x" size={20} color="#fff" />
+                <Feather name="x" size={20} color={TC.text} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.modalBody}>
               {/* New Password */}
               <View style={styles.inputContainer}>
-                <Feather name="lock" size={20} color="#666" style={styles.inputIcon} />
+                <Feather name="lock" size={20} color={TC.muted} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   value={password}
                   onChangeText={setPassword}
                   placeholder="New password"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={TC.muted}
                   secureTextEntry={!showPassword}
                 />
                 <TouchableOpacity
                   onPress={() => setShowPassword(!showPassword)}
                   style={styles.eyeIcon}
                 >
-                  <Feather name={showPassword ? 'eye-off' : 'eye'} size={20} color="#666" />
+                  <Feather name={showPassword ? 'eye-off' : 'eye'} size={20} color={TC.muted} />
                 </TouchableOpacity>
               </View>
 
@@ -502,7 +496,7 @@ useEffect(() => {
                           {
                             backgroundColor: level <= passwordStrength.score 
                               ? getPasswordStrengthColor(passwordStrength.score)
-                              : '#2a2a2a',
+                              : TC.raised,
                           },
                         ]}
                       />
@@ -528,20 +522,20 @@ useEffect(() => {
 
               {/* Confirm Password */}
               <View style={styles.inputContainer}>
-                <Feather name="lock" size={20} color="#666" style={styles.inputIcon} />
+                <Feather name="lock" size={20} color={TC.muted} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   placeholder="Confirm new password"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={TC.muted}
                   secureTextEntry={!showConfirmPassword}
                 />
                 <TouchableOpacity
                   onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                   style={styles.eyeIcon}
                 >
-                  <Feather name={showConfirmPassword ? 'eye-off' : 'eye'} size={20} color="#666" />
+                  <Feather name={showConfirmPassword ? 'eye-off' : 'eye'} size={20} color={TC.muted} />
                 </TouchableOpacity>
               </View>
 
@@ -554,16 +548,13 @@ useEffect(() => {
                 disabled={isResetting || !passwordStrength.isValid || password !== confirmPassword}
                 style={styles.modalButton}
               >
-                <LinearGradient
-                  colors={['#f97316', '#f43f5e']}
-                  style={styles.submitGradient}
-                >
+                <View style={[styles.submitGradient, { backgroundColor: '#ea580c' }]}>
                   {isResetting ? (
                     <ActivityIndicator color="#fff" />
                   ) : (
-                    <Text style={styles.submitText}>Reset Password</Text>
+                    <Text style={styles.submitText}>Reset password</Text>
                   )}
-                </LinearGradient>
+                </View>
               </TouchableOpacity>
             </View>
           </View>
@@ -576,7 +567,7 @@ useEffect(() => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
   },
   keyboardView: {
     flex: 1,
@@ -590,7 +581,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 30,
@@ -601,14 +592,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
     textAlign: 'center',
     marginBottom: 12,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
+    color: TC.muted,
     textAlign: 'center',
     marginBottom: 40,
     lineHeight: 24,
@@ -616,13 +607,13 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     paddingHorizontal: 12,
     marginBottom: 16,
     height: 56,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   inputIcon: {
     marginRight: 10,
@@ -630,7 +621,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     height: '100%',
-    color: '#fff',
+    color: TC.text,
     fontSize: 16,
   },
   eyeIcon: {
@@ -654,7 +645,7 @@ const styles = StyleSheet.create({
   },
   message: {
     fontSize: 16,
-    color: '#666',
+    color: TC.muted,
     textAlign: 'center',
     marginBottom: 8,
   },
@@ -667,7 +658,7 @@ const styles = StyleSheet.create({
   },
   instruction: {
     fontSize: 14,
-    color: '#666',
+    color: TC.muted,
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 40,
@@ -684,7 +675,7 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: TC.hairline3,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -700,7 +691,7 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: '90%',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 20,
     overflow: 'hidden',
   },
@@ -710,12 +701,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   modalBody: {
     padding: 16,
@@ -746,10 +737,10 @@ const styles = StyleSheet.create({
   requirementsContainer: {
     marginBottom: 16,
     padding: 12,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   requirementRow: {
     flexDirection: 'row',
@@ -759,7 +750,7 @@ const styles = StyleSheet.create({
   },
   requirementText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   errorText: {
     color: '#ef4444',
@@ -770,7 +761,7 @@ const styles = StyleSheet.create({
   // OTP specific styles
   otpDescription: {
     fontSize: 14,
-    color: '#666',
+    color: TC.muted,
     textAlign: 'center',
     marginBottom: 24,
   },
@@ -783,14 +774,14 @@ const styles = StyleSheet.create({
   otpInput: {
     width: 45,
     height: 45,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 8,
     textAlign: 'center',
-    color: '#fff',
+    color: TC.text,
     fontSize: 18,
     fontWeight: '600',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: TC.hairline3,
   },
   otpInputError: {
     borderColor: '#ef4444',
@@ -808,7 +799,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   resendInfo: {
-    color: '#666',
+    color: TC.muted,
     fontSize: 14,
   },
   resendLink: {
@@ -817,6 +808,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   resendLinkDisabled: {
-    color: '#666',
+    color: TC.muted,
   },
 });

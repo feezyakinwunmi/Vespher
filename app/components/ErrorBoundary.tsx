@@ -3,6 +3,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { TC } from '../theme/palette';
 
 export class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { failed: boolean }> {
   state = { failed: false };
@@ -31,9 +32,9 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0a0a0a', alignItems: 'center', justifyContent: 'center', padding: 32 },
-  title: { color: '#fff', fontSize: 20, fontWeight: '700', marginTop: 14 },
-  body: { color: '#9ca3af', fontSize: 14, textAlign: 'center', marginTop: 8, lineHeight: 21 },
-  button: { marginTop: 22, paddingHorizontal: 28, paddingVertical: 13, borderRadius: 12, backgroundColor: '#f97316' },
-  buttonText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  container: { flex: 1, backgroundColor: TC.bg, alignItems: 'center', justifyContent: 'center', padding: 32 },
+  title: { color: TC.text, fontSize: 20, fontWeight: '600', marginTop: 14 },
+  body: { color: TC.subtle, fontSize: 14, textAlign: 'center', marginTop: 8, lineHeight: 21 },
+  button: { marginTop: 22, paddingHorizontal: 28, paddingVertical: 13, borderRadius: 12, backgroundColor: '#ea580c' },
+  buttonText: { color: '#fff', fontSize: 15, fontWeight: '600' },
 });

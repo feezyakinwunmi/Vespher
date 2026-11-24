@@ -9,10 +9,10 @@ import {
   Dimensions,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useFavorites } from '../../hooks/customer/useFavorites';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Vendor } from '../../types';
+import { TC } from '../../theme/palette';
 
 interface VendorCardProps {
   vendor: Vendor;
@@ -55,14 +55,11 @@ export function VendorCard({ vendor, variant = 'default', onPress }: VendorCardP
               onError={() => setImageError(true)}
             />
           ) : (
-            <LinearGradient
-              colors={['rgba(59,130,246,0.2)', 'rgba(16,185,129,0.2)']}
-              style={styles.horizontalImagePlaceholder}
-            >
+            <View style={[styles.horizontalImagePlaceholder, { backgroundColor: 'rgba(59,130,246,0.2)' }]}>
               <Text style={styles.horizontalPlaceholderText}>
                 {vendor.name.charAt(0).toUpperCase()}
               </Text>
-            </LinearGradient>
+            </View>
           )}
         </View>
 
@@ -74,7 +71,7 @@ export function VendorCard({ vendor, variant = 'default', onPress }: VendorCardP
               <Feather 
                 name="heart" 
                 size={16} 
-                color={isFav ? '#ef4444' : '#666'} 
+                color={isFav ? '#ef4444' : TC.muted} 
                 style={isFav && styles.favoriteFilled}
               />
             </TouchableOpacity>
@@ -88,7 +85,7 @@ export function VendorCard({ vendor, variant = 'default', onPress }: VendorCardP
           </View>
 
           <View style={styles.horizontalAddress}>
-            <Feather name="map-pin" size={12} color="#666" />
+            <Feather name="map-pin" size={12} color={TC.muted} />
             <Text style={styles.horizontalAddressText} numberOfLines={1}>
               {vendor.address}
             </Text>
@@ -123,14 +120,11 @@ export function VendorCard({ vendor, variant = 'default', onPress }: VendorCardP
             onError={() => setImageError(true)}
           />
         ) : (
-          <LinearGradient
-            colors={['rgba(59,130,246,0.2)', 'rgba(16,185,129,0.2)']}
-            style={styles.defaultImagePlaceholder}
-          >
+          <View style={[styles.defaultImagePlaceholder, { backgroundColor: 'rgba(59,130,246,0.2)' }]}>
             <Text style={styles.defaultPlaceholderText}>
               {vendor.name.charAt(0).toUpperCase()}
             </Text>
-          </LinearGradient>
+          </View>
         )}
         
         <TouchableOpacity onPress={handleFavoriteClick} style={styles.defaultFavoriteButton}>
@@ -159,7 +153,7 @@ export function VendorCard({ vendor, variant = 'default', onPress }: VendorCardP
 
         <View style={styles.defaultMeta}>
           <View style={styles.defaultMetaItem}>
-            <Feather name="clock" size={12} color="#666" />
+            <Feather name="clock" size={12} color={TC.muted} />
             <Text style={styles.defaultMetaText}>{vendor.deliveryTime}</Text>
           </View>
           {/* <Text style={styles.defaultMetaText}>•</Text> */}
@@ -167,7 +161,7 @@ export function VendorCard({ vendor, variant = 'default', onPress }: VendorCardP
         </View>
 
         <View style={styles.defaultAddress}>
-          <Feather name="map-pin" size={10} color="#666" />
+          <Feather name="map-pin" size={10} color={TC.muted} />
           <Text style={styles.defaultAddressText} numberOfLines={1}>
             {vendor.address}
           </Text>
@@ -181,12 +175,12 @@ const styles = StyleSheet.create({
   // Horizontal variant
   horizontalCard: {
     flexDirection: 'row',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     padding: 12,
     gap: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
     width: HORIZONTAL_CARD_WIDTH,
   },
   horizontalImageContainer: {
@@ -207,7 +201,7 @@ const styles = StyleSheet.create({
   },
   horizontalPlaceholderText: {
     fontSize: 32,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#3b82f6',
   },
   horizontalContent: {
@@ -222,7 +216,7 @@ const styles = StyleSheet.create({
   horizontalName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     flex: 1,
   },
   favoriteButton: {
@@ -242,15 +236,15 @@ const styles = StyleSheet.create({
   },
   horizontalRatingText: {
     fontSize: 12,
-    color: '#fff',
+    color: TC.text,
   },
   horizontalDot: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   horizontalDeliveryTime: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   horizontalAddress: {
     flexDirection: 'row',
@@ -260,7 +254,7 @@ const styles = StyleSheet.create({
   },
   horizontalAddressText: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
     flex: 1,
   },
   horizontalFooter: {
@@ -279,20 +273,20 @@ const styles = StyleSheet.create({
     color: '#3b82f6',
   },
   horizontalBadgeSecondary: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
   },
   horizontalBadgeTextSecondary: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
   },
 
   // Default vertical variant
   defaultCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
     marginBottom: 12,
   },
   defaultImageContainer: {
@@ -312,7 +306,7 @@ const styles = StyleSheet.create({
   },
   defaultPlaceholderText: {
     fontSize: 48,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: 'rgba(59,130,246,0.3)',
   },
   defaultFavoriteButton: {
@@ -338,7 +332,7 @@ const styles = StyleSheet.create({
   defaultName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     flex: 1,
   },
   defaultRating: {
@@ -348,11 +342,11 @@ const styles = StyleSheet.create({
   },
   defaultRatingText: {
     fontSize: 12,
-    color: '#fff',
+    color: TC.text,
   },
   defaultDescription: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 8,
   },
   defaultMeta: {
@@ -368,7 +362,7 @@ const styles = StyleSheet.create({
   },
   defaultMetaText: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
   },
   defaultAddress: {
     flexDirection: 'row',
@@ -377,7 +371,7 @@ const styles = StyleSheet.create({
   },
   defaultAddressText: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
     flex: 1,
   },
 });

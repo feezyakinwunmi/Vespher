@@ -15,13 +15,13 @@ import {
   Platform,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../../lib/supabase';
 import { detectAllergens, allergenById } from '../../services/foodSafety';
 import { findDishTemplate, MealTime } from '../../services/dishTemplates';
 import { functionErrorMessage } from '../../utils/paystack';
 import { EmojiIcon } from '../EmojiIcon';
+import { TC } from '../../theme/palette';
 
 const MEAL_TIME_OPTIONS: { id: MealTime; label: string }[] = [
   { id: 'breakfast', label: 'Breakfast' },
@@ -260,7 +260,7 @@ export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuI
       return publicUrl;
     } catch (error) {
       console.error('Error uploading image:', error);
-      Alert.alert('Upload Failed', `Could not upload image: ${error}`);
+      Alert.alert('Upload failed', `Could not upload image: ${error}`);
       return null;
     } finally {
       setUploadingImage(false);
@@ -386,7 +386,7 @@ export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuI
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <Feather name="x" size={24} color="#fff" />
+          <Feather name="x" size={24} color={TC.text} />
         </TouchableOpacity>
         <Text style={styles.title}>
           {initialData ? 'Edit Menu Item' : 'Add New Menu Item'}
@@ -423,8 +423,8 @@ export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuI
               />
             ) : (
               <View style={styles.imagePlaceholder}>
-                <Feather name="camera" size={32} color="#666" />
-                <Text style={styles.imageUploadText}>Upload Image</Text>
+                <Feather name="camera" size={32} color={TC.muted} />
+                <Text style={styles.imageUploadText}>Upload image</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -437,7 +437,7 @@ export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuI
               value={formData.name}
               onChangeText={(text) => setFormData({ ...formData, name: text })}
               placeholder="e.g., Jollof Rice"
-              placeholderTextColor="#666"
+              placeholderTextColor={TC.muted}
             />
 
             <Text style={styles.label}>Description</Text>
@@ -446,7 +446,7 @@ export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuI
               value={formData.description}
               onChangeText={(text) => setFormData({ ...formData, description: text })}
               placeholder="Describe your dish..."
-              placeholderTextColor="#666"
+              placeholderTextColor={TC.muted}
               multiline
               numberOfLines={3}
               textAlignVertical="top"
@@ -461,7 +461,7 @@ export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuI
               value={formData.price}
               onChangeText={(text) => setFormData({ ...formData, price: text })}
               placeholder="0"
-              placeholderTextColor="#666"
+              placeholderTextColor={TC.muted}
               keyboardType="numeric"
             />
 
@@ -471,7 +471,7 @@ export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuI
               value={formData.original_price}
               onChangeText={(text) => setFormData({ ...formData, original_price: text })}
               placeholder="0"
-              placeholderTextColor="#666"
+              placeholderTextColor={TC.muted}
               keyboardType="numeric"
             />
           </View>
@@ -546,7 +546,7 @@ export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuI
                 value={ingredients}
                 onChangeText={setIngredients}
                 placeholder="Add ingredients separated by commas (e.g., Rice, Tomatoes, Onions)"
-                placeholderTextColor="#666"
+                placeholderTextColor={TC.muted}
               />
               <TouchableOpacity style={styles.addIngredientButton} onPress={addIngredient}>
                 <Feather name="plus" size={20} color="#f97316" />
@@ -558,7 +558,7 @@ export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuI
                 <View key={index} style={styles.ingredientChip}>
                   <Text style={styles.ingredientText}>{ing}</Text>
                   <TouchableOpacity onPress={() => removeIngredient(index)}>
-                    <Feather name="x" size={14} color="#666" />
+                    <Feather name="x" size={14} color={TC.muted} />
                   </TouchableOpacity>
                 </View>
               ))}
@@ -589,7 +589,7 @@ export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuI
 
           {/* NEW: Health Tags Section */}
           <View style={styles.section}>
-            <Text style={[styles.label, styles.requiredText]}>Health Tags</Text>
+            <Text style={[styles.label, styles.requiredText]}>Health tags</Text>
             <Text style={styles.helperText}>
               Select all that apply. Helps customers filter food based on their health needs.
             </Text>
@@ -627,13 +627,13 @@ export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuI
 
           {/* Additional Options */}
           <View style={styles.section}>
-            <Text style={styles.label}>Preparation Time</Text>
+            <Text style={styles.label}>Preparation time</Text>
             <TextInput
               style={styles.input}
               value={formData.preparation_time}
               onChangeText={(text) => setFormData({ ...formData, preparation_time: text })}
               placeholder="e.g., 20-30 min"
-              placeholderTextColor="#666"
+              placeholderTextColor={TC.muted}
             />
 
             <View style={styles.switchContainer}>
@@ -641,8 +641,8 @@ export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuI
               <Switch
                 value={formData.is_popular}
                 onValueChange={(value) => setFormData({ ...formData, is_popular: value })}
-                trackColor={{ false: '#2a2a2a', true: '#f97316' }}
-                thumbColor="#fff"
+                trackColor={{ false: TC.raised, true: '#f97316' }}
+                thumbColor={TC.text}
               />
             </View>
 
@@ -652,7 +652,7 @@ export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuI
               value={formData.quantity_available}
               onChangeText={(text) => setFormData({ ...formData, quantity_available: text })}
               placeholder="Leave empty for unlimited"
-              placeholderTextColor="#666"
+              placeholderTextColor={TC.muted}
               keyboardType="numeric"
             />
           </View>
@@ -674,10 +674,7 @@ export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuI
           disabled={isSubmitting || uploadingImage}
           style={styles.submitButton}
         >
-          <LinearGradient
-            colors={['#f97316', '#f43f5e']}
-            style={styles.submitGradient}
-          >
+          <View style={[styles.submitGradient, { backgroundColor: '#ea580c' }]}>
             {isSubmitting || uploadingImage ? (
               <ActivityIndicator color="#fff" />
             ) : (
@@ -685,7 +682,7 @@ export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuI
                 {initialData ? 'Update Item' : 'Add Item'}
               </Text>
             )}
-          </LinearGradient>
+          </View>
         </TouchableOpacity>
       </View>
     </View>
@@ -695,7 +692,7 @@ export function MenuItemForm({ onClose, onSubmit, initialData, vendorId }: MenuI
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     marginTop: 50,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
@@ -706,7 +703,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   closeButton: {
     padding: 4,
@@ -714,7 +711,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   headerRight: {
     width: 32,
@@ -736,15 +733,15 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 12,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
     borderStyle: 'dashed',
   },
   imageUploadText: {
-    color: '#666',
+    color: TC.muted,
     fontSize: 12,
     marginTop: 8,
   },
@@ -754,17 +751,17 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 8,
   },
   requiredText: {
     color: '#f97316',
   },
   input: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 8,
     padding: 12,
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
     marginBottom: 12,
   },
@@ -780,16 +777,16 @@ const styles = StyleSheet.create({
   categoryChip: {
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 20,
     marginRight: 8,
   },
   categoryChipSelected: {
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
   },
   categoryText: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
   },
   categoryTextSelected: {
     color: '#fff',
@@ -816,7 +813,7 @@ const styles = StyleSheet.create({
   footer: {
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   submitButton: {
     height: 48,
@@ -844,7 +841,7 @@ const styles = StyleSheet.create({
   addIngredientButton: {
     width: 44,
     height: 44,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
@@ -858,14 +855,14 @@ const styles = StyleSheet.create({
   ingredientChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 16,
     gap: 6,
   },
   ingredientText: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 12,
   },
   allergenBox: {
@@ -897,12 +894,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(245,158,11,0.15)',
   },
   allergenChipText: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 12,
     fontWeight: '500',
   },
   allergenSource: {
-    color: '#aaa',
+    color: TC.subtle,
     fontSize: 11,
   },
   tagCategory: {
@@ -922,7 +919,7 @@ const styles = StyleSheet.create({
   tagChip: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: '#3a3a3a',
@@ -937,7 +934,7 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 12,
-    color: '#aaa',
+    color: TC.subtle,
   },
   tagTextSelected: {
     color: '#f97316',
@@ -962,13 +959,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   autoFillTitle: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
     fontWeight: '600',
     marginBottom: 2,
   },
   autoFillText: {
-    color: '#aaa',
+    color: TC.subtle,
     fontSize: 12,
     lineHeight: 16,
   },
@@ -976,16 +973,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 18,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: TC.hairline2,
   },
   mealChipActive: {
     backgroundColor: 'rgba(249,115,22,0.15)',
     borderColor: '#f97316',
   },
   mealChipText: {
-    color: '#aaa',
+    color: TC.subtle,
     fontSize: 13,
   },
   mealChipTextActive: {
@@ -994,7 +991,7 @@ const styles = StyleSheet.create({
   },
   helperText: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
     marginTop: 4,
   },
 });

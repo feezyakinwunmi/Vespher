@@ -36,14 +36,15 @@ import {
   fetchUnpaidCashOrders,
   recordCashPayout,
 } from '../../services/cashPayouts';
+import { TC } from '../../theme/palette';
 
 const C = {
-  bg: '#0a0a0a',
-  card: '#141414',
-  border: 'rgba(255,255,255,0.06)',
-  text: '#fff',
-  muted: '#8a8a8a',
-  faint: '#5c5c5c',
+  bg: TC.bg,
+  card: TC.surface2,
+  border: TC.hairline2,
+  text: TC.text,
+  muted: TC.subtle,
+  faint: TC.subtle,
   orange: '#f97316',
   green: '#10b981',
   amber: '#f59e0b',
@@ -164,7 +165,7 @@ export function AdminCashPayoutsScreen() {
       <View style={styles.tabs}>
         {(['owed', 'paid'] as const).map(t => (
           <TouchableOpacity key={t} style={[styles.tab, tab === t && styles.tabOn]} onPress={() => setTab(t)}>
-            <Text style={[styles.tabText, tab === t && { color: '#fff' }]}>{t === 'owed' ? `To pay (${owed.length})` : 'Paid'}</Text>
+            <Text style={[styles.tabText, tab === t && { color: TC.text }]}>{t === 'owed' ? `To pay (${owed.length})` : 'Paid'}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -326,11 +327,11 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 10 },
   back: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.card, justifyContent: 'center', alignItems: 'center' },
-  title: { color: C.text, fontSize: 19, fontWeight: '800' },
+  title: { color: C.text, fontSize: 19, fontWeight: '600' },
   subtitle: { color: C.muted, fontSize: 12, marginTop: 1 },
   summary: { marginHorizontal: 16, marginBottom: 12, padding: 16, borderRadius: 16, backgroundColor: 'rgba(249,115,22,0.08)', borderWidth: 1, borderColor: 'rgba(249,115,22,0.25)' },
   summaryLabel: { color: C.muted, fontSize: 12.5 },
-  summaryValue: { color: C.text, fontSize: 28, fontWeight: '800', marginTop: 4 },
+  summaryValue: { color: C.text, fontSize: 28, fontWeight: '600', marginTop: 4 },
   summarySub: { color: C.muted, fontSize: 12, marginTop: 2 },
   tabs: { flexDirection: 'row', marginHorizontal: 16, backgroundColor: C.card, borderRadius: 12, padding: 4 },
   tab: { flex: 1, paddingVertical: 9, alignItems: 'center', borderRadius: 9 },
@@ -339,24 +340,24 @@ const styles = StyleSheet.create({
   list: { padding: 16, paddingBottom: 40 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderRadius: 16, borderWidth: 1, borderColor: C.border, padding: 14, marginBottom: 10 },
   rowIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(249,115,22,0.1)', justifyContent: 'center', alignItems: 'center' },
-  rowTitle: { color: C.text, fontSize: 15, fontWeight: '700' },
+  rowTitle: { color: C.text, fontSize: 15, fontWeight: '600' },
   rowSub: { color: C.muted, fontSize: 12, marginTop: 2 },
   rowBorder: { borderTopWidth: 1, borderTopColor: C.border },
-  amount: { color: C.text, fontSize: 15, fontWeight: '800' },
+  amount: { color: C.text, fontSize: 15, fontWeight: '600' },
   link: { color: C.orange, fontSize: 13, fontWeight: '600' },
-  section: { color: C.muted, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, marginTop: 18, marginBottom: 8 },
+  section: { color: C.muted, fontSize: 12, fontWeight: '600', marginTop: 18, marginBottom: 8 },
   card: { backgroundColor: C.card, borderRadius: 16, borderWidth: 1, borderColor: C.border, padding: 14 },
-  bankName: { color: C.text, fontSize: 15, fontWeight: '700' },
+  bankName: { color: C.text, fontSize: 15, fontWeight: '600' },
   copyRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10, alignSelf: 'flex-start', paddingVertical: 6, paddingHorizontal: 10, borderRadius: 10, backgroundColor: 'rgba(249,115,22,0.1)' },
-  accountNo: { color: C.text, fontSize: 18, fontWeight: '800', letterSpacing: 1 },
+  accountNo: { color: C.text, fontSize: 18, fontWeight: '600', letterSpacing: 1 },
   orderRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 9 },
   orderNo: { color: C.text, fontSize: 14, fontWeight: '600' },
-  orderAmt: { color: C.text, fontSize: 14, fontWeight: '700' },
+  orderAmt: { color: C.text, fontSize: 14, fontWeight: '600' },
   label: { color: C.muted, fontSize: 13, fontWeight: '600', marginBottom: 6, marginTop: 4 },
-  input: { minHeight: 48, borderRadius: 12, borderWidth: 1, borderColor: '#2a2a2a', backgroundColor: C.card, color: C.text, paddingHorizontal: 14, fontSize: 15, marginBottom: 12 },
-  receipt: { height: 160, borderRadius: 14, borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#333', backgroundColor: C.card, justifyContent: 'center', alignItems: 'center', gap: 6, overflow: 'hidden', marginBottom: 12 },
+  input: { minHeight: 48, borderRadius: 12, borderWidth: 1, borderColor: TC.raised, backgroundColor: C.card, color: C.text, paddingHorizontal: 14, fontSize: 15, marginBottom: 12 },
+  receipt: { height: 160, borderRadius: 14, borderWidth: 1.5, borderStyle: 'dashed', borderColor: TC.raised, backgroundColor: C.card, justifyContent: 'center', alignItems: 'center', gap: 6, overflow: 'hidden', marginBottom: 12 },
   footer: { padding: 16, borderTopWidth: 1, borderTopColor: C.border },
   btn: { height: 52, borderRadius: 14, backgroundColor: C.green, justifyContent: 'center', alignItems: 'center' },
-  btnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  btnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   viewer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', alignItems: 'center' },
 });

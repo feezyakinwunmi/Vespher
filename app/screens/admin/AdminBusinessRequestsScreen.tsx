@@ -13,10 +13,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import Toast from 'react-native-toast-message';
+import { humanize } from '../../utils/text';
+import { TC } from '../../theme/palette';
 
 type RequestStatus = 'pending' | 'accepted' | 'cancelled' | 'paid' | 'assigned' | 'picked_up' | 'delivered';
 
@@ -387,7 +388,7 @@ export function AdminBusinessRequestsScreen() {
           status: 'pending',
         });
 
-      showToast(`Rider ${selectedRider.name} assigned!`, 'success');
+      showToast(`Rider ${selectedRider.name} assigned`, 'success');
       setShowAssignModal(false);
       setSelectedRider(null);
       fetchRequests();
@@ -411,7 +412,7 @@ export function AdminBusinessRequestsScreen() {
 
       if (error) throw error;
 
-      showToast('Payment confirmed!', 'success');
+      showToast('Payment confirmed', 'success');
       fetchRequests();
     } catch (error) {
       console.error('Error marking as paid:', error);
@@ -429,7 +430,7 @@ export function AdminBusinessRequestsScreen() {
       delivered: '#10b981',
       cancelled: '#ef4444',
     };
-    return colors[status] || '#666';
+    return colors[status] || TC.muted;
   };
 
   const getStatusIcon = (status: RequestStatus): keyof typeof Feather.glyphMap => {
@@ -469,18 +470,15 @@ export function AdminBusinessRequestsScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
-      <LinearGradient
-        colors={['#f97316', '#f43f5e']}
-        style={styles.header}
-      >
+      <View style={[styles.header, { backgroundColor: '#ea580c' }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Feather name="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Business Requests</Text>
+        <Text style={styles.headerTitle}>Business requests</Text>
         <TouchableOpacity onPress={fetchRequests} style={styles.refreshButton}>
           <Feather name="refresh-cw" size={20} color="#fff" />
         </TouchableOpacity>
-      </LinearGradient>
+      </View>
 
       {/* Stats Cards */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.statsScroll}>
@@ -541,7 +539,7 @@ export function AdminBusinessRequestsScreen() {
       >
         {filteredRequests.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Feather name="package" size={48} color="#666" />
+            <Feather name="package" size={48} color={TC.muted} />
             <Text style={styles.emptyTitle}>No requests found</Text>
             <Text style={styles.emptyText}>Business requests will appear here</Text>
           </View>
@@ -566,7 +564,7 @@ export function AdminBusinessRequestsScreen() {
                     color={getStatusColor(request.status)} 
                   />
                   <Text style={[styles.statusText, { color: getStatusColor(request.status) }]}>
-                    {request.status.toUpperCase()}
+                    {humanize(request.status)}
                   </Text>
                 </View>
               </View>
@@ -619,7 +617,7 @@ export function AdminBusinessRequestsScreen() {
                 </View>
 
                 <View style={styles.locationRow}>
-                  <Feather name="phone" size={14} color="#666" />
+                  <Feather name="phone" size={14} color={TC.muted} />
                   <Text style={styles.receiverPhone}>Receiver: {request.receiver_phone}</Text>
                 </View>
               </View>
@@ -652,7 +650,7 @@ export function AdminBusinessRequestsScreen() {
                     onPress={() => handleAcceptRequest(request)}
                   >
                     <Feather name="check-circle" size={16} color="#fff" />
-                    <Text style={styles.acceptButtonText}>Accept & Quote</Text>
+                    <Text style={styles.acceptButtonText}>Accept & quote</Text>
                   </TouchableOpacity>
                 )}
 
@@ -672,7 +670,7 @@ export function AdminBusinessRequestsScreen() {
                     onPress={() => handleAssignRider(request)}
                   >
                     <Feather name="truck" size={16} color="#fff" />
-                    <Text style={styles.assignButtonText}>Assign to Rider</Text>
+                    <Text style={styles.assignButtonText}>Assign to rider</Text>
                   </TouchableOpacity>
                 )}
 
@@ -694,15 +692,15 @@ export function AdminBusinessRequestsScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Accept & Quote</Text>
+              <Text style={styles.modalTitle}>Accept & quote</Text>
               <TouchableOpacity onPress={() => setShowAcceptModal(false)}>
-                <Feather name="x" size={24} color="#fff" />
+                <Feather name="x" size={24} color={TC.text} />
               </TouchableOpacity>
             </View>
 
             {selectedRequest && (
               <ScrollView style={styles.modalBody}>
-                <Text style={styles.modalLabel}>Edit Bill Details</Text>
+                <Text style={styles.modalLabel}>Edit bill details</Text>
                 
                 {/* Distance Input */}
                 <View style={styles.inputGroup}>
@@ -729,7 +727,7 @@ export function AdminBusinessRequestsScreen() {
                       value={editedFee}
                       onChangeText={handleFeeChange}
                       placeholder="Enter fee"
-                      placeholderTextColor="#666"
+                      placeholderTextColor={TC.muted}
                       keyboardType="numeric"
                     />
                   </View>
@@ -745,7 +743,7 @@ export function AdminBusinessRequestsScreen() {
                       value={riderPercentage}
                       onChangeText={handleRiderPercentageChange}
                       placeholder="50"
-                      placeholderTextColor="#666"
+                      placeholderTextColor={TC.muted}
                       keyboardType="numeric"
                     />
                     <Text style={styles.inputSuffix}>%</Text>
@@ -764,7 +762,7 @@ export function AdminBusinessRequestsScreen() {
                       value={adminNote}
                       onChangeText={setAdminNote}
                       placeholder="Add any notes or adjustments..."
-                      placeholderTextColor="#666"
+                      placeholderTextColor={TC.muted}
                       multiline
                       numberOfLines={3}
                       textAlignVertical="top"
@@ -774,7 +772,7 @@ export function AdminBusinessRequestsScreen() {
 
                 {/* Calculation Summary */}
                 <View style={styles.summaryCard}>
-                  <Text style={styles.summaryTitle}>Fee Breakdown</Text>
+                  <Text style={styles.summaryTitle}>Fee breakdown</Text>
                   
                   <View style={styles.summaryRow}>
                     <Text style={styles.summaryLabel}>Distance:</Text>
@@ -798,7 +796,7 @@ export function AdminBusinessRequestsScreen() {
 
                 {/* Split Info */}
                 <View style={styles.splitInfo}>
-                  <Text style={styles.splitTitle}>Earnings Split</Text>
+                  <Text style={styles.splitTitle}>Earnings split</Text>
                   <View style={styles.splitRow}>
                     <Text style={styles.splitLabel}>Rider gets:</Text>
                     <Text style={styles.splitValue}>
@@ -826,7 +824,7 @@ export function AdminBusinessRequestsScreen() {
                     style={styles.modalConfirmButton}
                     onPress={confirmAcceptRequest}
                   >
-                    <Text style={styles.modalConfirmText}>Accept & Send Bill</Text>
+                    <Text style={styles.modalConfirmText}>Accept & send bill</Text>
                   </TouchableOpacity>
                 </View>
               </ScrollView>
@@ -840,19 +838,19 @@ export function AdminBusinessRequestsScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Rider</Text>
+              <Text style={styles.modalTitle}>Select rider</Text>
               <TouchableOpacity onPress={() => {
                 setShowAssignModal(false);
                 setSelectedRider(null);
               }}>
-                <Feather name="x" size={24} color="#fff" />
+                <Feather name="x" size={24} color={TC.text} />
               </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.modalBody}>
               {availableRiders.length === 0 ? (
                 <View style={styles.noRidersContainer}>
-                  <Feather name="truck" size={40} color="#666" />
+                  <Feather name="truck" size={40} color={TC.muted} />
                   <Text style={styles.noRidersText}>No available riders</Text>
                 </View>
               ) : (
@@ -899,7 +897,7 @@ export function AdminBusinessRequestsScreen() {
                   style={styles.modalConfirmButton}
                   onPress={confirmAssignRider}
                 >
-                  <Text style={styles.modalConfirmText}>Assign Rider</Text>
+                  <Text style={styles.modalConfirmText}>Assign rider</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -913,13 +911,13 @@ export function AdminBusinessRequestsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
         paddingBottom:25,
 
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -941,7 +939,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   refreshButton: {
     width: 40,
@@ -961,7 +959,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   statCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 12,
@@ -982,12 +980,12 @@ const styles = StyleSheet.create({
   },
   statNumber: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
   },
   statLabel: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
     marginTop: 2,
   },
   content: {
@@ -1002,21 +1000,21 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginTop: 12,
   },
   emptyText: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
     marginTop: 4,
   },
   requestCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   requestHeader: {
     flexDirection: 'row',
@@ -1030,12 +1028,12 @@ const styles = StyleSheet.create({
   businessName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 2,
   },
   requestTime: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
   },
   statusBadge: {
     flexDirection: 'row',
@@ -1055,7 +1053,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 8,
   },
   packageGrid: {
@@ -1069,7 +1067,7 @@ const styles = StyleSheet.create({
   },
   packageLabel: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 2,
   },
   packageValue: {
@@ -1090,16 +1088,16 @@ const styles = StyleSheet.create({
   },
   locationLabel: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 2,
   },
   locationAddress: {
     fontSize: 12,
-    color: '#fff',
+    color: TC.text,
   },
   locationContact: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
     marginTop: 2,
   },
   receiverPhone: {
@@ -1110,7 +1108,7 @@ const styles = StyleSheet.create({
   feeSection: {
     paddingVertical: 8,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
     marginBottom: 12,
   },
   feeRow: {
@@ -1121,11 +1119,11 @@ const styles = StyleSheet.create({
   },
   feeLabel: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
   },
   feeValue: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#f97316',
   },
   splitRow: {
@@ -1134,7 +1132,7 @@ const styles = StyleSheet.create({
   },
   splitSmallText: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
   },
   actionButtons: {
     flexDirection: 'row',
@@ -1172,7 +1170,7 @@ const styles = StyleSheet.create({
   },
   assignButton: {
     flex: 1,
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1213,7 +1211,7 @@ const styles = StyleSheet.create({
   modalContent: {
     width: '100%',
     maxWidth: 400,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 16,
     overflow: 'hidden',
   },
@@ -1223,19 +1221,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   modalBody: {
     padding: 16,
   },
   modalLabel: {
     fontSize: 14,
-    color: '#fff',
+    color: TC.text,
     marginBottom: 12,
   },
   inputGroup: {
@@ -1243,21 +1241,21 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 13,
-    color: '#fff',
+    color: TC.text,
     marginBottom: 6,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
     height: 48,
   },
   input: {
     flex: 1,
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
     paddingHorizontal: 12,
     height: '100%',
@@ -1265,33 +1263,33 @@ const styles = StyleSheet.create({
   currencyPrefix: {
     position: 'absolute',
     left: 12,
-    color: '#666',
+    color: TC.muted,
     fontSize: 14,
   },
   inputSuffix: {
-    color: '#666',
+    color: TC.muted,
     fontSize: 14,
     paddingRight: 12,
   },
   inputHint: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
     marginTop: 4,
   },
   textAreaContainer: {
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
     padding: 12,
   },
   textArea: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
     minHeight: 80,
   },
   summaryCard: {
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     borderRadius: 8,
     padding: 16,
     marginBottom: 16,
@@ -1299,7 +1297,7 @@ const styles = StyleSheet.create({
   summaryTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 12,
   },
   summaryRow: {
@@ -1309,25 +1307,25 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
   },
   summaryValue: {
     fontSize: 13,
-    color: '#fff',
+    color: TC.text,
   },
   summaryDivider: {
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: TC.hairline,
     marginVertical: 8,
   },
   summaryLabelTotal: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   summaryValueTotal: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#f97316',
   },
   splitInfo: {
@@ -1345,11 +1343,11 @@ const styles = StyleSheet.create({
 
   splitLabel: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
   },
   splitValue: {
     fontSize: 13,
-    color: '#fff',
+    color: TC.text,
     fontWeight: '500',
   },
   modalActions: {
@@ -1357,23 +1355,23 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 8,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   modalCancelButton: {
     flex: 1,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     padding: 14,
     borderRadius: 8,
     alignItems: 'center',
   },
   modalCancelText: {
-    color: '#666',
+    color: TC.muted,
     fontSize: 14,
     fontWeight: '500',
   },
   modalConfirmButton: {
     flex: 2,
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     padding: 14,
     borderRadius: 8,
     alignItems: 'center',
@@ -1388,7 +1386,7 @@ const styles = StyleSheet.create({
     padding: 40,
   },
   noRidersText: {
-    color: '#666',
+    color: TC.muted,
     marginTop: 12,
   },
   riderItem: {
@@ -1396,7 +1394,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 12,
     borderRadius: 8,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     marginBottom: 8,
   },
   riderItemSelected: {
@@ -1408,7 +1406,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -1424,11 +1422,11 @@ const styles = StyleSheet.create({
   riderName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 2,
   },
   riderDetails: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
 });

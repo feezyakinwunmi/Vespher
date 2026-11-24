@@ -19,7 +19,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../lib/supabase';
 import { useNavigation } from '@react-navigation/native';
@@ -30,6 +29,7 @@ import ReuseLocationPicker from '../components/ReuseLocationPicker';
 import { BANKS } from '../constants/banks';
 import { useAuth } from '../contexts/AuthContext';
 import { supportLinks } from '../config/support';
+import { TC } from '../theme/palette';
 
 type RegistrationStep = 'auth' | 'business' | 'documents' | 'review' | 'success';
 
@@ -495,7 +495,7 @@ export function VendorSignupScreen() {
         return (
           <View style={styles.stepContainer}>
             <View style={styles.headerContainer}>
-              <Text style={styles.title}>Create Your Account</Text>
+              <Text style={styles.title}>Create your account</Text>
               <Text style={styles.subtitle}>Set up your vendor account credentials</Text>
             </View>
             {error && (
@@ -508,26 +508,26 @@ export function VendorSignupScreen() {
               <View style={styles.fieldContainer}>
                 <Text style={styles.label}>Full Name *</Text>
                 <View style={styles.inputWrapper}>
-                  <Feather name="user" size={20} color="#666" style={styles.inputIcon} />
+                  <Feather name="user" size={20} color={TC.muted} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={formData.ownerName}
                     onChangeText={(text) => updateField('ownerName', text)}
                     placeholder="Your full name"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                   />
                 </View>
               </View>
               <View style={styles.fieldContainer}>
                 <Text style={styles.label}>Phone Number *</Text>
                 <View style={styles.inputWrapper}>
-                  <Feather name="phone" size={20} color="#666" style={styles.inputIcon} />
+                  <Feather name="phone" size={20} color={TC.muted} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={formData.phone}
                     onChangeText={(text) => updateField('phone', text)}
                     placeholder="+234 801 234 5678"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                     keyboardType="phone-pad"
                   />
                 </View>
@@ -535,13 +535,13 @@ export function VendorSignupScreen() {
               <View style={styles.fieldContainer}>
                 <Text style={styles.label}>Email Address *</Text>
                 <View style={styles.inputWrapper}>
-                  <Feather name="mail" size={20} color="#666" style={styles.inputIcon} />
+                  <Feather name="mail" size={20} color={TC.muted} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={formData.email}
                     onChangeText={(text) => updateField('email', text)}
                     placeholder="you@example.com"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                     keyboardType="email-address"
                     autoCapitalize="none"
                   />
@@ -550,34 +550,34 @@ export function VendorSignupScreen() {
               <View style={styles.fieldContainer}>
                 <Text style={styles.label}>Password *</Text>
                 <View style={styles.inputWrapper}>
-                  <Feather name="lock" size={20} color="#666" style={styles.inputIcon} />
+                  <Feather name="lock" size={20} color={TC.muted} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={formData.password}
                     onChangeText={(text) => updateField('password', text)}
                     placeholder="Create a password"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                     secureTextEntry={!showPassword}
                   />
                   <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-                    <Feather name={showPassword ? 'eye-off' : 'eye'} size={20} color="#666" />
+                    <Feather name={showPassword ? 'eye-off' : 'eye'} size={20} color={TC.muted} />
                   </TouchableOpacity>
                 </View>
               </View>
               <View style={styles.fieldContainer}>
                 <Text style={styles.label}>Confirm Password *</Text>
                 <View style={styles.inputWrapper}>
-                  <Feather name="lock" size={20} color="#666" style={styles.inputIcon} />
+                  <Feather name="lock" size={20} color={TC.muted} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={formData.confirmPassword}
                     onChangeText={(text) => updateField('confirmPassword', text)}
                     placeholder="Confirm your password"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                     secureTextEntry={!showConfirmPassword}
                   />
                   <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon}>
-                    <Feather name={showConfirmPassword ? 'eye-off' : 'eye'} size={20} color="#666" />
+                    <Feather name={showConfirmPassword ? 'eye-off' : 'eye'} size={20} color={TC.muted} />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -589,7 +589,7 @@ export function VendorSignupScreen() {
         return (
           <View style={styles.stepContainer}>
             <View style={styles.headerContainer}>
-              <Text style={styles.title}>Business Information</Text>
+              <Text style={styles.title}>Business information</Text>
               <Text style={styles.subtitle}>Tell us about your business</Text>
             </View>
             {error && (
@@ -605,7 +605,7 @@ export function VendorSignupScreen() {
                     <Image source={{ uri: formData.logo }} style={styles.logoPreview} />
                   ) : (
                     <View style={styles.logoPlaceholder}>
-                      <Feather name="camera" size={32} color="#666" />
+                      <Feather name="camera" size={32} color={TC.muted} />
                     </View>
                   )}
                   <View style={styles.logoOverlay}>
@@ -616,26 +616,26 @@ export function VendorSignupScreen() {
               <View style={styles.fieldContainer}>
                 <Text style={styles.label}>Business Name *</Text>
                 <View style={styles.inputWrapper}>
-                  <Feather name="home" size={20} color="#666" style={styles.inputIcon} />
+                  <Feather name="home" size={20} color={TC.muted} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={formData.businessName}
                     onChangeText={(text) => updateField('businessName', text)}
                     placeholder="e.g., Mama Epe Kitchen"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                   />
                 </View>
               </View>
               <View style={styles.fieldContainer}>
                 <Text style={styles.label}>Business Address *</Text>
                 <View style={styles.inputWrapper}>
-                  <Feather name="map-pin" size={20} color="#666" style={styles.inputIcon} />
+                  <Feather name="map-pin" size={20} color={TC.muted} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={formData.address}
                     onChangeText={(text) => updateField('address', text)}
                     placeholder="Full address"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                   />
                 </View>
               </View>
@@ -651,7 +651,7 @@ export function VendorSignupScreen() {
                       ? `Location selected: ${formData.latitude.toFixed(6)}, ${formData.longitude.toFixed(6)}`
                       : 'Tap to set your business location on map'}
                   </Text>
-                  <Feather name="chevron-right" size={20} color="#666" />
+                  <Feather name="chevron-right" size={20} color={TC.muted} />
                 </TouchableOpacity>
                 {formData.latitude !== null && formData.longitude !== null && (
                   <Text style={styles.locationCoordsText}>
@@ -660,22 +660,22 @@ export function VendorSignupScreen() {
                 )}
               </View>
               <View style={styles.fieldContainer}>
-                <Text style={styles.label}>Business Category</Text>
+                <Text style={styles.label}>Business category</Text>
                 <TouchableOpacity style={styles.dropdownButton} onPress={() => setShowCategoryDropdown(true)}>
-                  <Feather name="grid" size={20} color="#666" style={styles.dropdownIcon} />
+                  <Feather name="grid" size={20} color={TC.muted} style={styles.dropdownIcon} />
                   <Text style={[styles.dropdownButtonText, !formData.category && styles.dropdownPlaceholder]}>
                     {formData.category ? categories.find(c => c.value === formData.category)?.label : 'Select category'}
                   </Text>
-                  <Feather name="chevron-down" size={20} color="#666" />
+                  <Feather name="chevron-down" size={20} color={TC.muted} />
                 </TouchableOpacity>
               </View>
               <Modal visible={showCategoryDropdown} transparent animationType="slide" onRequestClose={() => setShowCategoryDropdown(false)}>
                 <View style={styles.modalOverlay}>
                   <View style={styles.dropdownModal}>
                     <View style={styles.dropdownHeader}>
-                      <Text style={styles.dropdownTitle}>Select Category</Text>
+                      <Text style={styles.dropdownTitle}>Select category</Text>
                       <TouchableOpacity onPress={() => setShowCategoryDropdown(false)}>
-                        <Feather name="x" size={24} color="#fff" />
+                        <Feather name="x" size={24} color={TC.text} />
                       </TouchableOpacity>
                     </View>
                     <FlatList
@@ -692,13 +692,13 @@ export function VendorSignupScreen() {
                 </View>
               </Modal>
               <View style={styles.fieldContainer}>
-                <Text style={styles.label}>Business Description</Text>
+                <Text style={styles.label}>Business description</Text>
                 <TextInput
                   style={styles.textArea}
                   value={formData.description}
                   onChangeText={(text) => updateField('description', text)}
                   placeholder="Tell customers about your business..."
-                  placeholderTextColor="#666"
+                  placeholderTextColor={TC.muted}
                   multiline
                   numberOfLines={4}
                   textAlignVertical="top"
@@ -723,7 +723,7 @@ export function VendorSignupScreen() {
         return (
           <View style={styles.stepContainer}>
             <View style={styles.headerContainer}>
-              <Text style={styles.title}>Payment Details</Text>
+              <Text style={styles.title}>Payment details</Text>
               <Text style={styles.subtitle}>How you'll receive payments</Text>
             </View>
             {error && (
@@ -740,26 +740,26 @@ export function VendorSignupScreen() {
                   value={formData.cacNumber}
                   onChangeText={(text) => updateField('cacNumber', text)}
                   placeholder="RC123456"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={TC.muted}
                 />
               </View>
               <View style={styles.fieldContainer}>
                 <Text style={styles.label}>Bank Name *</Text>
                 <TouchableOpacity style={styles.dropdownButton} onPress={() => setShowBankDropdown(true)}>
-                  <Feather name="credit-card" size={20} color="#666" style={styles.dropdownIcon} />
+                  <Feather name="credit-card" size={20} color={TC.muted} style={styles.dropdownIcon} />
                   <Text style={[styles.dropdownButtonText, !formData.bankName && styles.dropdownPlaceholder]}>
                     {formData.bankName ? banks.find(b => b.value === formData.bankName)?.label : 'Select bank'}
                   </Text>
-                  <Feather name="chevron-down" size={20} color="#666" />
+                  <Feather name="chevron-down" size={20} color={TC.muted} />
                 </TouchableOpacity>
               </View>
               <Modal visible={showBankDropdown} transparent animationType="slide" onRequestClose={() => setShowBankDropdown(false)}>
                 <View style={styles.modalOverlay}>
                   <View style={styles.dropdownModal}>
                     <View style={styles.dropdownHeader}>
-                      <Text style={styles.dropdownTitle}>Select Bank</Text>
+                      <Text style={styles.dropdownTitle}>Select bank</Text>
                       <TouchableOpacity onPress={() => setShowBankDropdown(false)}>
-                        <Feather name="x" size={24} color="#fff" />
+                        <Feather name="x" size={24} color={TC.text} />
                       </TouchableOpacity>
                     </View>
                     <FlatList
@@ -783,7 +783,7 @@ export function VendorSignupScreen() {
                     value={formData.accountNumber}
                     onChangeText={(text) => updateField('accountNumber', text)}
                     placeholder="10-digit account number"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                     keyboardType="numeric"
                     maxLength={10}
                   />
@@ -795,7 +795,7 @@ export function VendorSignupScreen() {
                     {isVerifyingAccount ? (
                       <ActivityIndicator size="small" color="#fff" />
                     ) : accountVerified ? (
-                      <Feather name="check" size={20} color="#fff" />
+                      <Feather name="check" size={20} color={TC.text} />
                     ) : (
                       <Text style={styles.verifyButtonText}>Verify</Text>
                     )}
@@ -805,19 +805,19 @@ export function VendorSignupScreen() {
                 {accountVerified && <Text style={styles.verificationSuccess}>✓ Account verified</Text>}
               </View>
               <View style={styles.fieldContainer}>
-                <Text style={styles.label}>Account Name</Text>
+                <Text style={styles.label}>Account name</Text>
                 <TextInput
                   style={[styles.simpleInput, accountVerified && styles.verifiedInput]}
                   value={formData.accountName}
                   editable={false}
                   placeholder="Account name will appear after verification"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={TC.muted}
                 />
               </View>
               <View style={styles.infoBox}>
                 <Feather name="info" size={20} color="#f97316" />
                 <View style={styles.infoTextContainer}>
-                  <Text style={styles.infoTitle}>Email Verification Required</Text>
+                  <Text style={styles.infoTitle}>Email verification required</Text>
                   <Text style={styles.infoText}>
                     After submitting, we'll send a 6-digit verification code to your email. You'll need to enter it to complete registration.
                   </Text>
@@ -831,7 +831,7 @@ export function VendorSignupScreen() {
         return (
           <View style={styles.stepContainer}>
             <View style={styles.headerContainer}>
-              <Text style={styles.title}>Review Your Information</Text>
+              <Text style={styles.title}>Review your information</Text>
               <Text style={styles.subtitle}>Please verify before submitting</Text>
             </View>
             {error && (
@@ -842,14 +842,14 @@ export function VendorSignupScreen() {
             )}
             <View style={styles.reviewCards}>
               <View style={styles.reviewCard}>
-                <Text style={styles.reviewCardTitle}>Account Details</Text>
+                <Text style={styles.reviewCardTitle}>Account details</Text>
                 <View style={styles.reviewRow}><Text style={styles.reviewLabel}>Name</Text><Text style={styles.reviewValue}>{formData.ownerName}</Text></View>
                 <View style={styles.reviewRow}><Text style={styles.reviewLabel}>Email</Text><Text style={styles.reviewValue}>{formData.email}</Text></View>
                 <View style={styles.reviewRow}><Text style={styles.reviewLabel}>Phone</Text><Text style={styles.reviewValue}>{formData.phone}</Text></View>
               </View>
               <View style={styles.reviewCard}>
-                <Text style={styles.reviewCardTitle}>Business Details</Text>
-                <View style={styles.reviewRow}><Text style={styles.reviewLabel}>Business Name</Text><Text style={styles.reviewValue}>{formData.businessName}</Text></View>
+                <Text style={styles.reviewCardTitle}>Business details</Text>
+                <View style={styles.reviewRow}><Text style={styles.reviewLabel}>Business name</Text><Text style={styles.reviewValue}>{formData.businessName}</Text></View>
                 <View style={styles.reviewRow}><Text style={styles.reviewLabel}>Address</Text><Text style={[styles.reviewValue, styles.reviewValueAddress]}>{formData.address}</Text></View>
                 {formData.latitude && formData.longitude && (
                   <View style={styles.reviewRow}>
@@ -865,14 +865,14 @@ export function VendorSignupScreen() {
                 )}
               </View>
               <View style={styles.reviewCard}>
-                <Text style={styles.reviewCardTitle}>Payment Details</Text>
+                <Text style={styles.reviewCardTitle}>Payment details</Text>
                 <View style={styles.reviewRow}><Text style={styles.reviewLabel}>Bank</Text><Text style={styles.reviewValue}>{banks.find(b => b.value === formData.bankName)?.label || formData.bankName}</Text></View>
-                <View style={styles.reviewRow}><Text style={styles.reviewLabel}>Account Number</Text><Text style={styles.reviewValue}>{formData.accountNumber}</Text></View>
-                <View style={styles.reviewRow}><Text style={styles.reviewLabel}>Account Name</Text><Text style={styles.reviewValue}>{formData.accountName}</Text></View>
+                <View style={styles.reviewRow}><Text style={styles.reviewLabel}>Account number</Text><Text style={styles.reviewValue}>{formData.accountNumber}</Text></View>
+                <View style={styles.reviewRow}><Text style={styles.reviewLabel}>Account name</Text><Text style={styles.reviewValue}>{formData.accountName}</Text></View>
                 {formData.accountVerified && (
                   <View style={styles.reviewVerifiedBadge}>
                     <Feather name="check-circle" size={14} color="#10b981" />
-                    <Text style={styles.reviewVerifiedText}>Account Verified</Text>
+                    <Text style={styles.reviewVerifiedText}>Account verified</Text>
                   </View>
                 )}
               </View>
@@ -886,7 +886,7 @@ export function VendorSignupScreen() {
             <View style={styles.successIcon}>
               <Feather name="check-circle" size={64} color="#10b981" />
             </View>
-            <Text style={styles.successTitle}>Registration Successful!</Text>
+            <Text style={styles.successTitle}>Registration successful</Text>
             <Text style={styles.successText}>Your vendor application has been submitted and is under review.</Text>
             <Text style={styles.successSubText}>Redirecting you to login page in a few seconds...</Text>
             <ActivityIndicator size="small" color="#f97316" style={{ marginTop: 24 }} />
@@ -901,7 +901,7 @@ export function VendorSignupScreen() {
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-              <Feather name="arrow-left" size={24} color="#fff" />
+              <Feather name="arrow-left" size={24} color={TC.text} />
             </TouchableOpacity>
             <View style={styles.headerText}>
               <Text style={styles.headerTitle}>Register as Vendor</Text>
@@ -919,7 +919,7 @@ export function VendorSignupScreen() {
           {step !== 'success' && (
             <View style={styles.footer}>
               <TouchableOpacity onPress={handleNext} disabled={isSubmitting} activeOpacity={0.8}>
-                <LinearGradient colors={['#f97316', '#f43f5e']} style={styles.footerButton}>
+                <View style={[styles.footerButton, { backgroundColor: '#ea580c' }]}>
                   {isSubmitting ? (
                     <View style={styles.buttonContent}>
                       <ActivityIndicator color="#fff" />
@@ -931,7 +931,7 @@ export function VendorSignupScreen() {
                       <Feather name="chevron-right" size={20} color="#fff" />
                     </View>
                   )}
-                </LinearGradient>
+                </View>
               </TouchableOpacity>
             </View>
           )}
@@ -942,8 +942,8 @@ export function VendorSignupScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Verify Your Email</Text>
-              <TouchableOpacity onPress={() => setShowOTPModal(false)}><Feather name="x" size={20} color="#fff" /></TouchableOpacity>
+              <Text style={styles.modalTitle}>Verify your email</Text>
+              <TouchableOpacity onPress={() => setShowOTPModal(false)}><Feather name="x" size={20} color={TC.text} /></TouchableOpacity>
             </View>
             <View style={styles.modalBody}>
               <Text style={styles.otpDescription}>Enter the 6-digit verification code sent to:</Text>
@@ -974,9 +974,9 @@ export function VendorSignupScreen() {
                 </TouchableOpacity>
               </View>
               <TouchableOpacity onPress={handleVerifyOTP} disabled={isVerifyingOTP || otpCode.some(d => d === '')} style={styles.modalButton}>
-                <LinearGradient colors={['#f97316', '#f43f5e']} style={styles.submitGradient}>
-                  {isVerifyingOTP ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Verify Email</Text>}
-                </LinearGradient>
+                <View style={[styles.submitGradient, { backgroundColor: '#ea580c' }]}>
+                  {isVerifyingOTP ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Verify email</Text>}
+                </View>
               </TouchableOpacity>
             </View>
           </View>
@@ -988,76 +988,76 @@ export function VendorSignupScreen() {
 
 // Styles remain the same as your existing styles...
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0a0a0a' },
+  container: { flex: 1, backgroundColor: TC.bg },
   keyboardView: { flex: 1 },
   scrollContent: { flexGrow: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', padding: 20, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
-  backButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#1a1a1a', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+  header: { flexDirection: 'row', alignItems: 'center', padding: 20, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: TC.hairline },
+  backButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: TC.surface, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
   headerText: { flex: 1 },
-  headerTitle: { fontSize: 18, fontWeight: '600', color: '#fff' },
-  headerStep: { fontSize: 12, color: '#666', marginTop: 2 },
+  headerTitle: { fontSize: 18, fontWeight: '600', color: TC.text },
+  headerStep: { fontSize: 12, color: TC.muted, marginTop: 2 },
   progressContainer: { flexDirection: 'row', gap: 8, paddingHorizontal: 20, paddingTop: 12 },
   progressBar: { height: 4, flex: 1, borderRadius: 2 },
-  progressActive: { backgroundColor: '#f97316' },
-  progressInactive: { backgroundColor: '#1a1a1a' },
+  progressActive: { backgroundColor: '#ea580c' },
+  progressInactive: { backgroundColor: TC.surface },
   content: { flex: 1, padding: 20 },
   stepContainer: { flex: 1 },
   headerContainer: { marginBottom: 24 },
-  title: { fontSize: 24, fontWeight: '700', color: '#fff', marginBottom: 8 },
-  subtitle: { fontSize: 14, color: '#666' },
+  title: { fontSize: 24, fontWeight: '600', color: TC.text, marginBottom: 8 },
+  subtitle: { fontSize: 14, color: TC.muted },
   errorContainer: { backgroundColor: 'rgba(239,68,68,0.1)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.2)', borderRadius: 12, padding: 16, marginBottom: 24, flexDirection: 'row', alignItems: 'center', gap: 12 },
   errorText: { color: '#ef4444', fontSize: 14, flex: 1 },
   form: { gap: 20 },
   fieldContainer: { gap: 8 },
-  label: { fontSize: 14, fontWeight: '500', color: '#fff', marginLeft: 4 },
+  label: { fontSize: 14, fontWeight: '500', color: TC.text, marginLeft: 4 },
   inputWrapper: { position: 'relative', flexDirection: 'row', alignItems: 'center' },
   inputIcon: { position: 'absolute', left: 16, zIndex: 1 },
-  input: { flex: 1, height: 56, backgroundColor: '#1a1a1a', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 14, paddingLeft: 48, paddingRight: 48, fontSize: 16, color: '#fff' },
+  input: { flex: 1, height: 56, backgroundColor: TC.surface, borderWidth: 1, borderColor: TC.raised, borderRadius: 14, paddingLeft: 48, paddingRight: 48, fontSize: 16, color: TC.text },
   eyeIcon: { position: 'absolute', right: 16, zIndex: 1, padding: 4 },
   logoContainer: { alignItems: 'center', marginBottom: 16 },
   logoUpload: { position: 'relative' },
   logoPreview: { width: 96, height: 96, borderRadius: 48 },
-  logoPlaceholder: { width: 96, height: 96, borderRadius: 48, backgroundColor: '#1a1a1a', borderWidth: 2, borderColor: 'rgba(255,255,255,0.1)', borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center' },
-  logoOverlay: { position: 'absolute', bottom: 0, right: 0, width: 32, height: 32, borderRadius: 16, backgroundColor: '#f97316', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#0a0a0a' },
-  dropdownButton: { flexDirection: 'row', alignItems: 'center', height: 56, backgroundColor: '#1a1a1a', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 14, paddingHorizontal: 16 },
+  logoPlaceholder: { width: 96, height: 96, borderRadius: 48, backgroundColor: TC.surface, borderWidth: 2, borderColor: TC.hairline3, borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center' },
+  logoOverlay: { position: 'absolute', bottom: 0, right: 0, width: 32, height: 32, borderRadius: 16, backgroundColor: '#ea580c', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: TC.bg },
+  dropdownButton: { flexDirection: 'row', alignItems: 'center', height: 56, backgroundColor: TC.surface, borderWidth: 1, borderColor: TC.raised, borderRadius: 14, paddingHorizontal: 16 },
   dropdownIcon: { marginRight: 12 },
-  dropdownButtonText: { flex: 1, fontSize: 16, color: '#fff' },
-  dropdownPlaceholder: { color: '#666' },
-  dropdownModal: { backgroundColor: '#1a1a1a', borderRadius: 20, padding: 16, maxHeight: '70%', width: '90%' },
-  dropdownHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', marginBottom: 16 },
-  dropdownTitle: { fontSize: 18, fontWeight: '600', color: '#fff' },
-  dropdownItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
-  dropdownItemText: { fontSize: 16, color: '#fff' },
-  locationPickerButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1a1a1a', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 16, gap: 12, borderWidth: 1, borderColor: '#2a2a2a' },
-  locationPickerText: { flex: 1, color: '#fff', fontSize: 14 },
-  locationCoordsText: { fontSize: 11, color: '#666', marginTop: 6, marginLeft: 4 },
-  textArea: { height: 100, backgroundColor: '#1a1a1a', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 14, padding: 16, fontSize: 16, color: '#fff', textAlignVertical: 'top' },
-  simpleInput: { height: 56, backgroundColor: '#1a1a1a', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 14, paddingHorizontal: 16, fontSize: 16, color: '#fff' },
+  dropdownButtonText: { flex: 1, fontSize: 16, color: TC.text },
+  dropdownPlaceholder: { color: TC.muted },
+  dropdownModal: { backgroundColor: TC.surface, borderRadius: 20, padding: 16, maxHeight: '70%', width: '90%' },
+  dropdownHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: TC.hairline, marginBottom: 16 },
+  dropdownTitle: { fontSize: 18, fontWeight: '600', color: TC.text },
+  dropdownItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: TC.hairline },
+  dropdownItemText: { fontSize: 16, color: TC.text },
+  locationPickerButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: TC.surface, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 16, gap: 12, borderWidth: 1, borderColor: TC.raised },
+  locationPickerText: { flex: 1, color: TC.text, fontSize: 14 },
+  locationCoordsText: { fontSize: 11, color: TC.muted, marginTop: 6, marginLeft: 4 },
+  textArea: { height: 100, backgroundColor: TC.surface, borderWidth: 1, borderColor: TC.raised, borderRadius: 14, padding: 16, fontSize: 16, color: TC.text, textAlignVertical: 'top' },
+  simpleInput: { height: 56, backgroundColor: TC.surface, borderWidth: 1, borderColor: TC.raised, borderRadius: 14, paddingHorizontal: 16, fontSize: 16, color: TC.text },
   verificationRow: { flexDirection: 'row', gap: 8 },
-  verifyButton: { width: 80, height: 56, backgroundColor: '#f97316', borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+  verifyButton: { width: 80, height: 56, backgroundColor: '#ea580c', borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
   verifyButtonSuccess: { backgroundColor: '#10b981' },
   verifyButtonText: { color: '#fff', fontSize: 14, fontWeight: '600' },
   verificationError: { color: '#ef4444', fontSize: 12, marginTop: 4, marginLeft: 4 },
   verificationSuccess: { color: '#10b981', fontSize: 12, marginTop: 4, marginLeft: 4 },
   verifiedInput: { backgroundColor: '#1a2a1a', borderColor: '#10b981' },
-  infoBox: { backgroundColor: '#1a1a1a', borderRadius: 14, padding: 16, flexDirection: 'row', gap: 12, marginTop: 8, borderWidth: 1, borderColor: 'rgba(249,115,22,0.2)' },
+  infoBox: { backgroundColor: TC.surface, borderRadius: 14, padding: 16, flexDirection: 'row', gap: 12, marginTop: 8, borderWidth: 1, borderColor: 'rgba(249,115,22,0.2)' },
   infoTextContainer: { flex: 1 },
-  infoTitle: { fontSize: 14, fontWeight: '600', color: '#fff', marginBottom: 4 },
-  infoText: { fontSize: 12, color: '#666', lineHeight: 18 },
+  infoTitle: { fontSize: 14, fontWeight: '600', color: TC.text, marginBottom: 4 },
+  infoText: { fontSize: 12, color: TC.muted, lineHeight: 18 },
   reviewCards: { gap: 16 },
-  reviewCard: { backgroundColor: '#1a1a1a', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-  reviewCardTitle: { fontSize: 16, fontWeight: '600', color: '#fff', marginBottom: 12 },
+  reviewCard: { backgroundColor: TC.surface, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: TC.hairline },
+  reviewCardTitle: { fontSize: 16, fontWeight: '600', color: TC.text, marginBottom: 12 },
   reviewRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  reviewLabel: { fontSize: 14, color: '#666' },
-  reviewValue: { fontSize: 14, color: '#fff', fontWeight: '500' },
+  reviewLabel: { fontSize: 14, color: TC.muted },
+  reviewValue: { fontSize: 14, color: TC.text, fontWeight: '500' },
   reviewValueAddress: { flex: 1, textAlign: 'right', marginLeft: 16 },
-  reviewVerifiedBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' },
+  reviewVerifiedBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: TC.hairline },
   reviewVerifiedText: { fontSize: 12, color: '#10b981', fontWeight: '500' },
   successContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 },
   successIcon: { width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(249,115,22,0.2)', justifyContent: 'center', alignItems: 'center', marginBottom: 24 },
-  successTitle: { fontSize: 24, fontWeight: '700', color: '#fff', textAlign: 'center', marginBottom: 12 },
-  successText: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 8 },
-  successSubText: { fontSize: 12, color: '#666', textAlign: 'center', marginBottom: 32 },
+  successTitle: { fontSize: 24, fontWeight: '600', color: TC.text, textAlign: 'center', marginBottom: 12 },
+  successText: { fontSize: 14, color: TC.muted, textAlign: 'center', marginBottom: 8 },
+  successSubText: { fontSize: 12, color: TC.muted, textAlign: 'center', marginBottom: 32 },
   successButton: { height: 56, borderRadius: 14, overflow: 'hidden', width: '100%' },
   successGradient: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   successButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
@@ -1066,20 +1066,20 @@ const styles = StyleSheet.create({
   buttonContent: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center' },
-  modalContent: { width: '90%', backgroundColor: '#1a1a1a', borderRadius: 20, overflow: 'hidden' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
-  modalTitle: { fontSize: 18, fontWeight: '600', color: '#fff' },
+  modalContent: { width: '90%', backgroundColor: TC.surface, borderRadius: 20, overflow: 'hidden' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: TC.hairline },
+  modalTitle: { fontSize: 18, fontWeight: '600', color: TC.text },
   modalBody: { padding: 16 },
-  otpDescription: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 8 },
+  otpDescription: { fontSize: 14, color: TC.muted, textAlign: 'center', marginBottom: 8 },
   maskedEmail: { fontSize: 16, fontWeight: '600', color: '#f97316', textAlign: 'center', marginBottom: 24 },
   otpContainer: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 10, marginBottom: 16 },
-  otpInput: { width: 45, height: 45, backgroundColor: '#2a2a2a', borderRadius: 8, textAlign: 'center', color: '#fff', fontSize: 18, fontWeight: '600', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+  otpInput: { width: 45, height: 45, backgroundColor: TC.raised, borderRadius: 8, textAlign: 'center', color: TC.text, fontSize: 18, fontWeight: '600', borderWidth: 1, borderColor: TC.hairline3 },
   otpInputError: { borderColor: '#ef4444' },
   otpErrorText: { color: '#ef4444', fontSize: 12, textAlign: 'center', marginBottom: 16 },
   resendContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 8, marginBottom: 20 },
-  resendInfo: { color: '#666', fontSize: 14 },
+  resendInfo: { color: TC.muted, fontSize: 14 },
   resendLink: { color: '#f97316', fontSize: 14, fontWeight: '500' },
-  resendLinkDisabled: { color: '#666' },
+  resendLinkDisabled: { color: TC.muted },
   modalButton: { height: 48, borderRadius: 8, overflow: 'hidden' },
   submitGradient: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   submitText: { color: '#fff', fontSize: 16, fontWeight: '600' },

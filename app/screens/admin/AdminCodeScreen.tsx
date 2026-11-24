@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { TC } from '../../theme/palette';
 
 const RESEND_SECONDS = 60;
 
@@ -86,7 +87,7 @@ export function AdminCodeScreen() {
           autoComplete="one-time-code"
           maxLength={6}
           placeholder="••••••"
-          placeholderTextColor="#444"
+          placeholderTextColor={TC.muted}
           autoFocus
         />
         {!!error && <Text style={styles.error}>{error}</Text>}
@@ -111,7 +112,7 @@ export function AdminCodeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0a0a0a' },
+  container: { flex: 1, backgroundColor: TC.bg },
   inner: { flex: 1, justifyContent: 'center', paddingHorizontal: 24 },
   iconBg: {
     width: 72,
@@ -123,27 +124,27 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginBottom: 20,
   },
-  title: { color: '#fff', fontSize: 22, fontWeight: '700', textAlign: 'center' },
-  subtitle: { color: '#aaa', fontSize: 14, textAlign: 'center', marginTop: 8, lineHeight: 20 },
-  email: { color: '#fff', fontWeight: '600' },
+  title: { color: TC.text, fontSize: 22, fontWeight: '600', textAlign: 'center' },
+  subtitle: { color: TC.subtle, fontSize: 14, textAlign: 'center', marginTop: 8, lineHeight: 20 },
+  email: { color: TC.text, fontWeight: '600' },
   codeInput: {
     marginTop: 28,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#2a2a2a',
-    color: '#fff',
+    borderColor: TC.raised,
+    color: TC.text,
     fontSize: 26,
     letterSpacing: 12,
     textAlign: 'center',
     paddingVertical: 14,
   },
   error: { color: '#ef4444', fontSize: 13, marginTop: 10, textAlign: 'center' },
-  button: { backgroundColor: '#f97316', borderRadius: 12, paddingVertical: 15, alignItems: 'center', marginTop: 20 },
+  button: { backgroundColor: '#ea580c', borderRadius: 12, paddingVertical: 15, alignItems: 'center', marginTop: 20 },
   buttonDisabled: { opacity: 0.6 },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   row: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 18 },
   link: { color: '#f97316', fontSize: 13 },
-  linkDisabled: { color: '#666' },
-  muted: { color: '#aaa', fontSize: 13 },
+  linkDisabled: { color: TC.muted },
+  muted: { color: TC.subtle, fontSize: 13 },
 });

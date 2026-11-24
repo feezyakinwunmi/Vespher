@@ -43,6 +43,9 @@ import { SafetyVerdict } from '../../hooks/customer/useHealthCheck';
 import { useLocation } from '../../contexts/LocationContext';
 import { calculateDistance } from '../../services/locationService';
 import { PRO_SUBSCRIPTIONS_ENABLED } from '../../config/features';
+import { fill } from '../../theme/colors';
+import { TAB_BAR_SPACE } from '../../navigation/tabBarOptions';
+import { TC } from '../../theme/palette';
 
 
 const { width } = Dimensions.get('window');
@@ -110,12 +113,11 @@ const [isLoadingNearby, setIsLoadingNearby] = useState(false);
   const [pendingProductName, setPendingProductName] = useState('');
 
   // Promo slides
+  // Promo slides (real programmes only: referral and free delivery). One calm card style.
   const verticalPromoSlides = [
-    { id: 'promo_1', title: '🎁 Refer & Earn', subtitle: 'Refer a friend and you both get ₦500 off!', buttonText: 'Invite Now', icon: 'users', gradientColors: ['#f97316', '#f43f5e'], action: 'referral', backgroundColor: 'rgba(249,115,22,0.15)' },
-    { id: 'promo_2', title: '🚚 Free Delivery', subtitle: 'Order 5 times and get free delivery on your next order!', buttonText: 'View Rewards', icon: 'truck', gradientColors: ['#10b981', '#059669'], action: 'rewards', backgroundColor: 'rgba(16,185,129,0.15)' },
-    { id: 'promo_3', title: '💰 Earn Cashback', subtitle: 'Get cashback on every order. Save more!', buttonText: 'Learn More', icon: 'dollar-sign', gradientColors: ['#8b5cf6', '#6d28d9'], action: 'rewards', backgroundColor: 'rgba(139,92,246,0.15)' },
-    { id: 'promo_4', title: '⭐ Loyalty Rewards', subtitle: 'Every 5th order = Free delivery. Keep ordering!', buttonText: 'Check Status', icon: 'star', gradientColors: ['#f59e0b', '#d97706'], action: 'rewards', backgroundColor: 'rgba(245,158,11,0.15)' },
-    { id: 'promo_5', title: '🏪 New Vendors', subtitle: 'Discover amazing restaurants near you!', buttonText: 'Explore', icon: 'home', gradientColors: ['#3b82f6', '#1d4ed8'], action: 'Vendors', backgroundColor: 'rgba(59,130,246,0.15)' },
+    { id: 'promo_1', title: 'Invite a friend', subtitle: 'You both get ₦500 off', buttonText: 'Invite', icon: 'users', image: require('../../assets/promo/friends-table.jpg'), gradientColors: [TC.surface, TC.surface], action: 'referral', backgroundColor: 'rgba(249,115,22,0.15)' },
+    { id: 'promo_2', title: 'Free delivery', subtitle: 'Every 5th order is delivered free', buttonText: 'View rewards', icon: 'truck', image: require('../../assets/promo/jollof-skewers.jpg'), gradientColors: [TC.surface, TC.surface], action: 'rewards', backgroundColor: 'rgba(249,115,22,0.15)' },
+    { id: 'promo_5', title: 'New on Vesphe', subtitle: 'Shops that just joined near you', buttonText: 'Explore', icon: 'shopping-bag', image: require('../../assets/promo/jollof-plate.jpg'), gradientColors: [TC.surface, TC.surface], action: 'Vendors', backgroundColor: 'rgba(249,115,22,0.15)' },
   ];
 
   const [currentPromoIndex, setCurrentPromoIndex] = useState(0);
@@ -181,8 +183,8 @@ const getHealthierAlternatives = (triggeredConditions: string[], currentProductN
   };
 
   const firstOrderPromotion = {
-    id: 'first-order', title: 'First Order Offer',
-    description: 'Get 10% off + FREE delivery on your first order',
+    id: 'first-order', title: 'Your first order',
+    description: '10% off and free delivery',
     image_url: require('../../assets/buggerbg.jpg'),
     promotion_type: 'first_order', vendor_id: null, vendor_name: null,
     discounted_price: null, original_price: null, is_first_order: true,
@@ -604,7 +606,7 @@ function getEffectMessage(conditionId: string, label: string): string {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <CustomerHeader />
 
    <HealthWarningModal
@@ -650,13 +652,13 @@ function getEffectMessage(conditionId: string, label: string): string {
         {/* ── Quick Actions ── */}
         <View style={styles.quickActions}>
           <TouchableOpacity style={styles.quickActionCard} onPress={() => navigation.navigate('CustomerTabs', { screen: 'Vendors' })}>
-            <LinearGradient colors={['rgba(249,115,22,0.2)', 'rgba(249,115,22,0.05)']} style={styles.quickActionGradient}>
+            <View style={[styles.quickActionGradient, { backgroundColor: 'rgba(249,115,22,0.2)' }]}>
               <View style={[styles.quickActionIcon, { backgroundColor: 'rgba(249,115,22,0.2)' }]}>
                 <Feather name="zap" size={20} color="#f97316" />
               </View>
-              <Text style={styles.quickActionTitle}>Order Food</Text>
+              <Text style={styles.quickActionTitle}>Order food</Text>
               <Text style={styles.quickActionSubtitle}>From {vendors.length}+ vendors</Text>
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
 
           <View style={styles.verticalPromoContainer}>
@@ -668,16 +670,15 @@ function getEffectMessage(conditionId: string, label: string): string {
                 else navigation.navigate('Rewards');
               }}
             >
-              <LinearGradient colors={verticalPromoSlides[currentVerticalIndex].gradientColors as any} style={styles.verticalPromoGradient}>
-                <View style={styles.verticalPromoIconContainer}>
-                  <Feather name={verticalPromoSlides[currentVerticalIndex].icon as any} size={28} color="#fff" />
+              <View style={styles.verticalPromoGradient}>
+                <Image source={verticalPromoSlides[currentVerticalIndex].image} style={StyleSheet.absoluteFill} resizeMode="cover" />
+                <LinearGradient colors={['rgba(0,0,0,0.05)', 'rgba(0,0,0,0.35)', 'rgba(0,0,0,0.85)']} style={StyleSheet.absoluteFill} />
+                <View style={styles.verticalPromoText}>
+                  <Feather name={verticalPromoSlides[currentVerticalIndex].icon as any} size={16} color="#fff" />
+                  <Text style={styles.verticalPromoTitle}>{verticalPromoSlides[currentVerticalIndex].title}</Text>
+                  <Text style={styles.verticalPromoSubtitle} numberOfLines={2}>{verticalPromoSlides[currentVerticalIndex].subtitle}</Text>
                 </View>
-                <Text style={styles.verticalPromoTitle}>{verticalPromoSlides[currentVerticalIndex].title}</Text>
-                <Text style={styles.verticalPromoSubtitle}>{verticalPromoSlides[currentVerticalIndex].subtitle}</Text>
-                <View style={styles.verticalPromoArrow}>
-                  <Feather name="arrow-right" size={14} color="#fff" />
-                </View>
-              </LinearGradient>
+              </View>
             </TouchableOpacity>
             <View style={styles.verticalPaginationContainer}>
               {verticalPromoSlides.map((_, index) => (
@@ -704,22 +705,20 @@ function getEffectMessage(conditionId: string, label: string): string {
                 if (item.promotion_type === 'referral') {
                   return (
                     <TouchableOpacity activeOpacity={0.9} onPress={() => navigation.navigate('Rewards')} style={styles.slide}>
-                      <LinearGradient colors={['#f97316', '#f43f5e']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.slideOverlay, styles.referralSlide]}>
-                        <View style={styles.referralArt}>
-                          <Feather name="users" size={64} color="rgba(255,255,255,0.18)" />
-                        </View>
+                      <Image source={require('../../assets/promo/friends-table.jpg')} style={styles.slideImage} resizeMode="cover" />
+                      <LinearGradient colors={['rgba(0,0,0,0.82)', 'rgba(0,0,0,0.55)', 'rgba(0,0,0,0.1)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.slideOverlay}>
                         <View style={styles.slideContent}>
                           <View style={styles.textContent}>
-                            <View style={[styles.badgeContainer, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+                            <View style={[styles.badgeContainer, { backgroundColor: 'rgba(255,255,255,0.16)' }]}>
                               <Feather name="gift" size={14} color="#fff" />
-                              <Text style={[styles.badgeText, { color: '#fff' }]}>REFERRAL BONUS</Text>
+                              <Text style={[styles.badgeText, { color: '#fff' }]}>Referral bonus</Text>
                             </View>
                             <Text style={styles.title}>{item.title}</Text>
                             <Text style={styles.description} numberOfLines={3}>{item.description}</Text>
                             <View style={styles.buttonContainer}>
-                              <View style={[styles.orderButton, { backgroundColor: '#fff' }]}>
-                                <Text style={[styles.orderButtonText, { color: '#f97316' }]}>Get my code</Text>
-                                <Feather name="arrow-right" size={16} color="#f97316" />
+                              <View style={[styles.orderButton, { backgroundColor: '#ea580c' }]}>
+                                <Text style={styles.orderButtonText}>Get my code</Text>
+                                <Feather name="arrow-right" size={16} color="#fff" />
                               </View>
                             </View>
                           </View>
@@ -738,20 +737,20 @@ function getEffectMessage(conditionId: string, label: string): string {
                           <View style={styles.textContent}>
                             <View style={styles.badgeContainer}>
                               <Feather name="gift" size={14} color="#f97316" />
-                              <Text style={styles.badgeText}>WELCOME OFFER</Text>
+                              <Text style={styles.badgeText}>Welcome offer</Text>
                             </View>
                             <Text style={styles.title}>{item.title}</Text>
                             <Text style={styles.description}>{item.description}</Text>
                             <View style={styles.priceSection}>
-                              <Text style={styles.discountedPrice}>10% OFF</Text>
-                              <Text style={styles.originalPriceStrikethrough}>+ FREE Delivery</Text>
+                              <Text style={styles.discountedPrice}>10% off</Text>
+                              <Text style={styles.originalPriceStrikethrough}>+ free delivery</Text>
                             </View>
                             <Text style={styles.minOrderText}>On orders above ₦{item.min_order_amount.toLocaleString()}</Text>
                             <View style={styles.buttonContainer}>
-                              <LinearGradient colors={['#f97316', '#f43f5e']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.orderButton}>
-                                <Text style={styles.orderButtonText}>Order Now</Text>
+                              <View style={[styles.orderButton, { backgroundColor: '#ea580c' }]}>
+                                <Text style={styles.orderButtonText}>Order now</Text>
                                 <Feather name="arrow-right" size={16} color="#fff" />
-                              </LinearGradient>
+                              </View>
                             </View>
                           </View>
                         </View>
@@ -770,7 +769,7 @@ function getEffectMessage(conditionId: string, label: string): string {
                         <View style={styles.textContent}>
                           <View style={styles.badgeContainer}>
                             <Feather name="zap" size={14} color="#f97316" />
-                            <Text style={styles.badgeText}>HOT DEAL</Text>
+                            <Text style={styles.badgeText}>Offer</Text>
                           </View>
                           <Text style={styles.title}>{item.title}</Text>
                           {item.description && <Text style={styles.description} numberOfLines={2}>{item.description}</Text>}
@@ -796,7 +795,7 @@ function getEffectMessage(conditionId: string, label: string): string {
                                   <Feather name="shopping-bag" size={12} color="#f97316" />
                                   <Text style={styles.comboItemText}>{item.buy_quantity}x {item.main_product_name}</Text>
                                 </View>
-                                <View style={styles.comboPlus}><Feather name="plus" size={10} color="#fff" /></View>
+                                <View style={styles.comboPlus}><Feather name="plus" size={10} color={TC.text} /></View>
                                 <View style={styles.comboItem}>
                                   <Feather name="gift" size={12} color="#10b981" />
                                   <Text style={[styles.comboItemText, styles.freeText]}>{item.get_quantity}x {item.free_product_name} FREE</Text>
@@ -812,10 +811,10 @@ function getEffectMessage(conditionId: string, label: string): string {
                           )}
                           {item.promotion_type !== 'flyer' && (
                             <View style={styles.buttonContainer}>
-                              <LinearGradient colors={['#f97316', '#f43f5e']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.orderButton}>
-                                <Text style={styles.orderButtonText}>Order Now</Text>
+                              <View style={[styles.orderButton, { backgroundColor: '#ea580c' }]}>
+                                <Text style={styles.orderButtonText}>Order now</Text>
                                 <Feather name="arrow-right" size={16} color="#fff" />
-                              </LinearGradient>
+                              </View>
                             </View>
                           )}
                         </View>
@@ -867,7 +866,7 @@ function getEffectMessage(conditionId: string, label: string): string {
                   style={[styles.categoryChip, selectedCategory === item.name && styles.categoryChipSelected]}
                   onPress={() => setSelectedCategory(item.name)}
                 >
-                  <Feather name="box" size={16} color={selectedCategory === item.name ? '#f97316' : '#666'} />
+                  <Feather name="box" size={16} color={selectedCategory === item.name ? '#f97316' : TC.muted} />
                   <Text style={[styles.categoryChipText, selectedCategory === item.name && styles.categoryChipTextSelected]}>
                     {item.name}
                   </Text>
@@ -884,10 +883,10 @@ function getEffectMessage(conditionId: string, label: string): string {
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleContainer}>
                 <Feather name="star" size={18} color="#f97316" />
-                <Text style={styles.sectionTitle}>Featured Vendors</Text>
+                <Text style={styles.sectionTitle}>Featured vendors</Text>
               </View>
               <TouchableOpacity style={styles.seeAllButton} onPress={() => navigation.navigate('CustomerTabs', { screen: 'Vendors' })}>
-                <Text style={styles.seeAllText}>See All</Text>
+                <Text style={styles.seeAllText}>See all</Text>
                 <Feather name="arrow-right" size={16} color="#f97316" />
               </TouchableOpacity>
             </View>
@@ -922,10 +921,10 @@ function getEffectMessage(conditionId: string, label: string): string {
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleContainer}>
                 <Feather name="trending-up" size={18} color="#f97316" />
-                <Text style={styles.sectionTitle}>Popular Near You</Text>
+                <Text style={styles.sectionTitle}>Popular near you</Text>
               </View>
               <TouchableOpacity style={styles.seeAllButton} onPress={() => navigation.navigate('CustomerTabs', { screen: 'Explore' })}>
-                <Text style={styles.seeAllText}>See All</Text>
+                <Text style={styles.seeAllText}>See all</Text>
                 <Feather name="arrow-right" size={16} color="#f97316" />
               </TouchableOpacity>
             </View>
@@ -969,10 +968,10 @@ function getEffectMessage(conditionId: string, label: string): string {
 <View style={styles.sectionHeader}>
   <View style={styles.sectionTitleContainer}>
     <Feather name="map-pin" size={18} color="#f97316" />
-    <Text style={styles.sectionTitle}>Near You</Text>
+    <Text style={styles.sectionTitle}>Near you</Text>
   </View>
   <TouchableOpacity style={styles.seeAllButton} onPress={() => navigation.navigate('AllVendorsMap')}>
-    <Text style={styles.seeAllText}>See Map</Text>
+    <Text style={styles.seeAllText}>See map</Text>
     <Feather name="arrow-right" size={16} color="#f97316" />
   </TouchableOpacity>
 </View>
@@ -1037,7 +1036,7 @@ function getEffectMessage(conditionId: string, label: string): string {
   />
 ) : (
   <View style={styles.noNearbyContainer}>
-    <Feather name="map-pin" size={24} color="#666" />
+    <Feather name="map-pin" size={24} color={TC.muted} />
     <Text style={styles.noNearbyText}>No restaurants found nearby</Text>
     <Text style={styles.noNearbySubtext}>Try adjusting your location</Text>
   </View>
@@ -1073,7 +1072,7 @@ function getEffectMessage(conditionId: string, label: string): string {
           </View>
         ) : (
           <View style={styles.emptyContainer}>
-            <Feather name="alert-circle" size={40} color="#666" />
+            <Feather name="alert-circle" size={40} color={TC.muted} />
             <Text style={styles.emptyText}>No vendors found in this category</Text>
           </View>
         )}
@@ -1083,39 +1082,38 @@ function getEffectMessage(conditionId: string, label: string): string {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0a0a0a', paddingBottom: 60 },
-  scrollContent: { paddingBottom: 100, paddingTop: 35 },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0a0a0a' },
-  loadingText: { color: '#666', marginTop: 12, fontSize: 14 },
-  errorContainer: { flex: 1, backgroundColor: '#0a0a0a', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  container: { flex: 1, backgroundColor: TC.bg, },
+  scrollContent: { paddingBottom: TAB_BAR_SPACE, paddingTop: 35 },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: TC.bg },
+  loadingText: { color: TC.muted, marginTop: 12, fontSize: 14 },
+  errorContainer: { flex: 1, backgroundColor: TC.bg, justifyContent: 'center', alignItems: 'center', padding: 20 },
   errorText: { color: '#ef4444', fontSize: 16, marginTop: 12, marginBottom: 20 },
-  retryButton: { backgroundColor: '#f97316', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8 },
-  retryText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  retryButton: { backgroundColor: '#ea580c', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8 },
+  retryText: { color: TC.text, fontSize: 16, fontWeight: '600' },
 
   // Greeting
   greetingSection: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16 },
   greetingTextGroup: { flex: 1, marginRight: 12 },
   greetingRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  greetingText: { fontSize: 20, fontWeight: '700', color: '#fff', flexShrink: 1 },
-  subtitleText: { fontSize: 13, color: '#666', marginTop: 4, lineHeight: 18 },
-  messageButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#1a1a1a', justifyContent: 'center', alignItems: 'center', position: 'relative' },
+  greetingText: { fontSize: 20, fontWeight: '600', color: TC.text, flexShrink: 1 },
+  subtitleText: { fontSize: 13, color: TC.muted, marginTop: 4, lineHeight: 18 },
+  messageButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: TC.surface, justifyContent: 'center', alignItems: 'center', position: 'relative' },
   unreadBadge: { position: 'absolute', top: -2, right: -2, minWidth: 18, height: 18, borderRadius: 9, backgroundColor: '#ef4444', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 4 },
-  unreadBadgeText: { fontSize: 10, fontWeight: 'bold', color: '#fff' },
+  unreadBadgeText: { fontSize: 10, fontWeight: '600', color: '#fff' },
 
   // Quick Actions
   quickActions: { flexDirection: 'row', paddingHorizontal: 20, gap: 12, marginBottom: 24, height: 120 },
   quickActionCard: { flex: 1, borderRadius: 16, overflow: 'hidden' },
   quickActionGradient: { padding: 16, flex: 1 },
   quickActionIcon: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
-  quickActionTitle: { fontSize: 14, fontWeight: '600', color: '#fff', marginBottom: 4 },
-  quickActionSubtitle: { fontSize: 11, color: '#666' },
+  quickActionTitle: { fontSize: 14, fontWeight: '600', color: TC.text, marginBottom: 4 },
+  quickActionSubtitle: { fontSize: 11, color: TC.muted },
   verticalPromoContainer: { flex: 1, position: 'relative' },
   verticalPromoCard: { borderRadius: 16, overflow: 'hidden', height: '100%' },
-  verticalPromoGradient: { padding: 10, alignItems: 'center', justifyContent: 'center', flex: 1 },
-  verticalPromoIconContainer: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
-  verticalPromoTitle: { fontSize: 13, fontWeight: '700', color: '#fff', textAlign: 'center', marginBottom: 2 },
-  verticalPromoSubtitle: { fontSize: 10, color: 'rgba(255,255,255,0.8)', textAlign: 'center', marginBottom: 6 },
-  verticalPromoArrow: { width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', marginTop: 4 },
+  verticalPromoGradient: { flex: 1, justifyContent: 'flex-end', backgroundColor: TC.surface },
+  verticalPromoText: { padding: 12, gap: 2 },
+  verticalPromoTitle: { fontSize: 14, fontWeight: '600', color: '#fff', marginTop: 6 },
+  verticalPromoSubtitle: { fontSize: 11, color: 'rgba(255,255,255,0.8)', lineHeight: 15 },
   verticalPaginationContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', position: 'absolute', bottom: 8, left: 0, right: 0, gap: 4 },
   verticalPaginationDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.5)' },
   verticalPaginationDotActive: { width: 12, height: 4, borderRadius: 2, backgroundColor: '#fff' },
@@ -1127,74 +1125,73 @@ const styles = StyleSheet.create({
   slideImage: { width: '100%', height: '100%' },
   slideOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center' },
   referralSlide: { overflow: 'hidden' },
-  referralArt: { position: 'absolute', right: -6, bottom: -6 },
   slideContent: { flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 20 },
   textContent: { flex: 1, gap: 8 },
   badgeContainer: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(249,115,22,0.2)', alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
-  badgeText: { fontSize: 10, fontWeight: 'bold', color: '#f97316', letterSpacing: 0.5 },
-  title: { fontSize: 22, fontWeight: 'bold', color: '#fff', marginTop: 4, textShadowColor: 'rgba(0,0,0,0.3)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 2 },
+  badgeText: { fontSize: 10, fontWeight: '600', color: '#f97316' },
+  title: { fontSize: 22, fontWeight: '600', color: '#fff', marginTop: 4, textShadowColor: 'rgba(0,0,0,0.3)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 2 },
   description: { fontSize: 12, color: 'rgba(255,255,255,0.9)', lineHeight: 16, marginBottom: 4 },
   priceSection: { flexDirection: 'row', alignItems: 'baseline', gap: 8, marginTop: 4 },
   originalPriceStrikethrough: { fontSize: 14, color: 'rgba(255,255,255,0.6)', textDecorationLine: 'line-through' },
-  discountedPrice: { fontSize: 24, fontWeight: 'bold', color: '#f97316', textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 3 },
+  discountedPrice: { fontSize: 24, fontWeight: '600', color: '#f97316', textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 3 },
   minOrderText: { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 4, marginBottom: 8 },
-  productNameText: { fontSize: 14, fontWeight: '500', color: '#fff', marginBottom: 4 },
+  productNameText: { fontSize: 14, fontWeight: '500', color: TC.text, marginBottom: 4 },
   comboSection: { marginTop: 4, gap: 6 },
   comboItems: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
   comboItem: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 16 },
-  comboItemText: { fontSize: 11, color: '#fff', fontWeight: '500' },
+  comboItemText: { fontSize: 11, color: TC.text, fontWeight: '500' },
   freeText: { color: '#10b981' },
   comboPlus: { width: 18, height: 18, borderRadius: 9, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
   comboPriceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
   comboPriceLabel: { fontSize: 14, color: 'rgba(255,255,255,0.8)' },
-  comboPrice: { fontSize: 24, fontWeight: 'bold', color: '#f97316' },
+  comboPrice: { fontSize: 24, fontWeight: '600', color: '#f97316' },
   buttonContainer: { marginTop: 12 },
   orderButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 30, alignSelf: 'flex-start' },
   orderButtonText: { color: '#fff', fontSize: 13, fontWeight: '600' },
   paginationContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', position: 'absolute', bottom: 10, left: 0, right: 0 },
-  paginationDot: { height: 6, borderRadius: 3, backgroundColor: '#f97316', marginHorizontal: 4 },
+  paginationDot: { height: 6, borderRadius: 3, backgroundColor: '#ea580c', marginHorizontal: 4 },
 
   // Sections
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 12 },
   sectionTitleContainer: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  sectionTitle: { fontSize: 16, fontWeight: '600', color: '#fff' },
+  sectionTitle: { fontSize: 16, fontWeight: '600', color: TC.text },
   seeAllButton: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   seeAllText: { fontSize: 13, color: '#f97316' },
   categoriesList: { paddingHorizontal: 20, gap: 8, marginBottom: 24 },
-  categoryChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1a1a1a', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, marginRight: 8, gap: 6 },
+  categoryChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: TC.surface, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, marginRight: 8, gap: 6 },
   categoryChipSelected: { backgroundColor: 'rgba(249,115,22,0.1)', borderWidth: 1, borderColor: '#f97316' },
-  categoryChipText: { fontSize: 13, color: '#666' },
+  categoryChipText: { fontSize: 13, color: TC.muted },
   categoryChipTextSelected: { color: '#f97316' },
   vendorsList: { paddingHorizontal: 20, gap: 12, marginBottom: 24 },
   vendorCard: { width: 200, height: 150, borderRadius: 16, marginRight: 12, overflow: 'hidden' },
   vendorImage: { width: '100%', height: '100%', position: 'absolute' },
   vendorGradient: { flex: 1, justifyContent: 'flex-end', padding: 12 },
   vendorInfo: { gap: 4 },
-  vendorName: { fontSize: 14, fontWeight: '600', color: '#fff' },
+  vendorName: { fontSize: 14, fontWeight: '600', color: TC.text },
   vendorMeta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   ratingContainer: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  ratingText: { fontSize: 11, color: '#fff' },
+  ratingText: { fontSize: 11, color: TC.text },
   vendorMetaText: { fontSize: 11, color: 'rgba(255,255,255,0.6)' },
   productsGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16, gap: 12, marginBottom: 24 },
-  productCard: { width: '47%', height: 180, borderRadius: 12, overflow: 'hidden', backgroundColor: '#1a1a1a' },
+  productCard: { width: '47%', height: 180, borderRadius: 12, overflow: 'hidden', backgroundColor: TC.surface },
   productImage: { width: '100%', height: '100%', position: 'absolute' },
   productGradient: { flex: 1, justifyContent: 'flex-end', padding: 12 },
   productInfo: { gap: 4 },
-  productName: { fontSize: 14, fontWeight: '600', color: '#fff' },
+  productName: { fontSize: 14, fontWeight: '600', color: TC.text },
   productFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   productPrice: { fontSize: 13, fontWeight: '600', color: '#f97316' },
-  addButton: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#f97316', justifyContent: 'center', alignItems: 'center' },
+  addButton: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#ea580c', justifyContent: 'center', alignItems: 'center' },
   allVendorsList: { paddingHorizontal: 20, gap: 12 },
-  vendorListItem: { flexDirection: 'row', backgroundColor: '#1a1a1a', borderRadius: 12, padding: 12, gap: 12 },
+  vendorListItem: { flexDirection: 'row', backgroundColor: TC.surface, borderRadius: 12, padding: 12, gap: 12 },
   vendorListImage: { width: 60, height: 60, borderRadius: 8 },
   vendorListInfo: { flex: 1, justifyContent: 'center' },
-  vendorListName: { fontSize: 14, fontWeight: '600', color: '#fff', marginBottom: 4 },
+  vendorListName: { fontSize: 14, fontWeight: '600', color: TC.text, marginBottom: 4 },
   vendorListMeta: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  vendorListMetaText: { fontSize: 11, color: '#666' },
+  vendorListMetaText: { fontSize: 11, color: TC.muted },
   vendorCuisine: { fontSize: 11, color: '#f97316' },
-  vendorCount: { fontSize: 13, color: '#666' },
+  vendorCount: { fontSize: 13, color: TC.muted },
   emptyContainer: { justifyContent: 'center', alignItems: 'center', padding: 20 },
-  emptyText: { color: '#666', fontSize: 16, marginTop: 8 },
+  emptyText: { color: TC.muted, fontSize: 16, marginTop: 8 },
   // Add these styles to your existing styles object:
 
 loadingNearbyContainer: {
@@ -1205,7 +1202,7 @@ loadingNearbyContainer: {
   gap: 10,
 },
 loadingNearbyText: {
-  color: '#666',
+  color: TC.muted,
   fontSize: 13,
 },
 enableLocationCard: {
@@ -1213,7 +1210,7 @@ enableLocationCard: {
   alignItems: 'center',
   justifyContent: 'center',
   gap: 10,
-  backgroundColor: '#1a1a1a',
+  backgroundColor: TC.surface,
   marginHorizontal: 16,
   padding: 16,
   borderRadius: 12,
@@ -1237,7 +1234,7 @@ nearbyProductCard: {
   height: 220, // Increased height to fit everything
   borderRadius: 16,
   overflow: 'hidden',
-  backgroundColor: '#1a1a1a',
+  backgroundColor: TC.surface,
   marginRight: 12,
   position: 'relative',
 },
@@ -1260,11 +1257,11 @@ nearbyProductInfo: {
 nearbyProductName: {
   fontSize: 14,
   fontWeight: '600',
-  color: '#fff',
+  color: TC.text,
 },
 nearbyProductVendor: {
   fontSize: 11,
-  color: '#aaa',
+  color: TC.subtle,
 },
 nearbyProductFooter: {
   flexDirection: 'column',
@@ -1276,7 +1273,7 @@ nearbyProductFooter: {
 },
 nearbyProductPrice: {
   fontSize: 13,
-  fontWeight: '700',
+  fontWeight: '600',
   color: '#f97316',
 },
 distanceBadge: {
@@ -1290,7 +1287,7 @@ distanceBadge: {
 },
 distanceText: {
   fontSize: 9,
-  color: '#fff',
+  color: TC.text,
 },
 nearbyAddButton: {
   position: 'absolute',
@@ -1299,7 +1296,7 @@ nearbyAddButton: {
   width: 32,
   height: 32,
   borderRadius: 16,
-  backgroundColor: '#f97316',
+  backgroundColor: '#ea580c',
   justifyContent: 'center',
   alignItems: 'center',
   shadowColor: '#000',
@@ -1316,12 +1313,12 @@ noNearbyContainer:{
 },
 
 noNearbyText:{
-  color: '#666',
+  color: TC.muted,
   fontSize: 16,
   marginTop: 8,
 },
 noNearbySubtext:{
-  color: '#666',
+  color: TC.muted,
   fontSize: 13,
   marginTop: 4,
   textAlign: 'center',

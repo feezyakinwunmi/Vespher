@@ -17,7 +17,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { BusinessHours, useVendorProfile, VendorProfile } from '../../hooks/vendor/useVendorProfile';
@@ -31,6 +30,8 @@ import Toast from 'react-native-toast-message';
 import { verifyBankAccount } from '../../utils/paystack';
 import ReuseLocationPicker from '../../components/ReuseLocationPicker';
 import { BANKS } from '../../constants/banks';
+import { TC } from '../../theme/palette';
+import { AppearanceSetting } from '../../components/AppearanceSetting';
 
 type VendorScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type SettingsTab = 'profile' | 'business' | 'bank' | 'preferences' | 'promos' | 'support' ; // Added 'payouts'
@@ -74,9 +75,9 @@ function TermsConditionsScreen({ onClose }: { onClose: () => void }) {
       <SafeAreaView style={styles.modalContainer}>
         <View style={styles.modalHeader}>
           <TouchableOpacity onPress={onClose} style={styles.modalCloseButton}>
-            <Feather name="x" size={24} color="#fff" />
+            <Feather name="x" size={24} color={TC.text} />
           </TouchableOpacity>
-          <Text style={styles.modalTitle}>Terms & Conditions</Text>
+          <Text style={styles.modalTitle}>Terms & conditions</Text>
           <View style={{ width: 40 }} />
         </View>
         
@@ -147,14 +148,14 @@ function PrivacyPolicyScreen({ onClose }: { onClose: () => void }) {
       <SafeAreaView style={styles.modalContainer}>
         <View style={styles.modalHeader}>
           <TouchableOpacity onPress={onClose} style={styles.modalCloseButton}>
-            <Feather name="x" size={24} color="#fff" />
+            <Feather name="x" size={24} color={TC.text} />
           </TouchableOpacity>
-          <Text style={styles.modalTitle}>Privacy Policy</Text>
+          <Text style={styles.modalTitle}>Privacy policy</Text>
           <View style={{ width: 40 }} />
         </View>
         
         <ScrollView style={styles.modalContent}>
-          <Text style={styles.modalSectionTitle}>Information We Collect</Text>
+          <Text style={styles.modalSectionTitle}>Information we collect</Text>
           <Text style={styles.modalText}>
             • Business information (name, address, contact details){"\n"}
             • Bank account details for payouts{"\n"}
@@ -163,7 +164,7 @@ function PrivacyPolicyScreen({ onClose }: { onClose: () => void }) {
             • Communications with customers
           </Text>
 
-          <Text style={styles.modalSectionTitle}>How We Use Your Information</Text>
+          <Text style={styles.modalSectionTitle}>How we use your information</Text>
           <Text style={styles.modalText}>
             • Process orders and payments{"\n"}
             • Communicate about orders and platform updates{"\n"}
@@ -172,7 +173,7 @@ function PrivacyPolicyScreen({ onClose }: { onClose: () => void }) {
             • Prevent fraud and ensure platform security
           </Text>
 
-          <Text style={styles.modalSectionTitle}>Data Sharing</Text>
+          <Text style={styles.modalSectionTitle}>Data sharing</Text>
           <Text style={styles.modalText}>
             We share your information with:
             • Customers (business name, menu, contact for order purposes){"\n"}
@@ -181,14 +182,14 @@ function PrivacyPolicyScreen({ onClose }: { onClose: () => void }) {
             • Legal authorities when required by law
           </Text>
 
-          <Text style={styles.modalSectionTitle}>Data Security</Text>
+          <Text style={styles.modalSectionTitle}>Data security</Text>
           <Text style={styles.modalText}>
             We implement industry-standard security measures to protect your data. However, no method of 
             transmission over the internet is 100% secure. You are responsible for maintaining the 
             confidentiality of your account credentials.
           </Text>
 
-          <Text style={styles.modalSectionTitle}>Your Rights</Text>
+          <Text style={styles.modalSectionTitle}>Your rights</Text>
           <Text style={styles.modalText}>
             You have the right to:
             • Access your personal data{"\n"}
@@ -223,25 +224,25 @@ function HelpSupportScreen({ onClose }: { onClose: () => void }) {
       <SafeAreaView style={styles.modalContainer}>
         <View style={styles.modalHeader}>
           <TouchableOpacity onPress={onClose} style={styles.modalCloseButton}>
-            <Feather name="x" size={24} color="#fff" />
+            <Feather name="x" size={24} color={TC.text} />
           </TouchableOpacity>
-          <Text style={styles.modalTitle}>Help & Support</Text>
+          <Text style={styles.modalTitle}>Help & support</Text>
           <View style={{ width: 40 }} />
         </View>
         
         <ScrollView style={styles.modalContent}>
-          <Text style={styles.modalSectionTitle}>Contact Us</Text>
+          <Text style={styles.modalSectionTitle}>Contact us</Text>
           
           <TouchableOpacity style={styles.contactOption} onPress={handleCall}>
             <View style={styles.contactIconContainer}>
               <Feather name="phone" size={24} color="#f97316" />
             </View>
             <View style={styles.contactInfo}>
-              <Text style={styles.contactLabel}>Call Us</Text>
+              <Text style={styles.contactLabel}>Call us</Text>
               <Text style={styles.contactValue}>{SUPPORT.phoneDisplay}</Text>
               <Text style={styles.contactNote}>Mon-Fri, 9am - 6pm</Text>
             </View>
-            <Feather name="chevron-right" size={20} color="#666" />
+            <Feather name="chevron-right" size={20} color={TC.muted} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.contactOption} onPress={handleWhatsApp}>
@@ -253,7 +254,7 @@ function HelpSupportScreen({ onClose }: { onClose: () => void }) {
               <Text style={styles.contactValue}>{SUPPORT.phoneDisplay}</Text>
               <Text style={styles.contactNote}>Instant messaging support</Text>
             </View>
-            <Feather name="chevron-right" size={20} color="#666" />
+            <Feather name="chevron-right" size={20} color={TC.muted} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.contactOption} onPress={handleEmail}>
@@ -265,12 +266,12 @@ function HelpSupportScreen({ onClose }: { onClose: () => void }) {
               <Text style={styles.contactValue}>{SUPPORT.email}</Text>
               <Text style={styles.contactNote}>24hr response time</Text>
             </View>
-            <Feather name="chevron-right" size={20} color="#666" />
+            <Feather name="chevron-right" size={20} color={TC.muted} />
           </TouchableOpacity>
 
           <View style={styles.divider} />
 
-          <Text style={styles.modalSectionTitle}>Frequently Asked Questions</Text>
+          <Text style={styles.modalSectionTitle}>Frequently asked questions</Text>
           
           <View style={styles.faqItem}>
             <Text style={styles.faqQuestion}>How do I update my menu?</Text>
@@ -359,9 +360,9 @@ function QAScreen({ onClose }: { onClose: () => void }) {
       <SafeAreaView style={styles.modalContainer}>
         <View style={styles.modalHeader}>
           <TouchableOpacity onPress={onClose} style={styles.modalCloseButton}>
-            <Feather name="x" size={24} color="#fff" />
+            <Feather name="x" size={24} color={TC.text} />
           </TouchableOpacity>
-          <Text style={styles.modalTitle}>Frequently Asked Questions</Text>
+          <Text style={styles.modalTitle}>Frequently asked questions</Text>
           <View style={{ width: 40 }} />
         </View>
         
@@ -796,10 +797,10 @@ const pickImage = async (type: 'avatar' | 'cover') => {
           <Feather name="help-circle" size={24} color="#f97316" />
         </View>
         <View style={styles.supportInfo}>
-          <Text style={styles.supportTitle}>Frequently Asked Questions</Text>
+          <Text style={styles.supportTitle}>Frequently asked questions</Text>
           <Text style={styles.supportSubtitle}>Find answers to common questions</Text>
         </View>
-        <Feather name="chevron-right" size={20} color="#666" />
+        <Feather name="chevron-right" size={20} color={TC.muted} />
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.supportOption} onPress={() => setShowHelp(true)}>
@@ -807,10 +808,10 @@ const pickImage = async (type: 'avatar' | 'cover') => {
           <Feather name="headphones" size={24} color="#f97316" />
         </View>
         <View style={styles.supportInfo}>
-          <Text style={styles.supportTitle}>Help & Support</Text>
+          <Text style={styles.supportTitle}>Help & support</Text>
           <Text style={styles.supportSubtitle}>Contact our support team</Text>
         </View>
-        <Feather name="chevron-right" size={20} color="#666" />
+        <Feather name="chevron-right" size={20} color={TC.muted} />
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.supportOption} onPress={() => navigation.navigate('Complaints')}>
@@ -821,7 +822,7 @@ const pickImage = async (type: 'avatar' | 'cover') => {
           <Text style={styles.supportTitle}>Complaints & chat</Text>
           <Text style={styles.supportSubtitle}>Report a problem and chat with Vesphe support</Text>
         </View>
-        <Feather name="chevron-right" size={20} color="#666" />
+        <Feather name="chevron-right" size={20} color={TC.muted} />
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.supportOption} onPress={() => setShowTerms(true)}>
@@ -829,10 +830,10 @@ const pickImage = async (type: 'avatar' | 'cover') => {
           <Feather name="file-text" size={24} color="#f97316" />
         </View>
         <View style={styles.supportInfo}>
-          <Text style={styles.supportTitle}>Terms & Conditions</Text>
+          <Text style={styles.supportTitle}>Terms & conditions</Text>
           <Text style={styles.supportSubtitle}>Read our terms of service</Text>
         </View>
-        <Feather name="chevron-right" size={20} color="#666" />
+        <Feather name="chevron-right" size={20} color={TC.muted} />
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.supportOption} onPress={() => setShowPrivacy(true)}>
@@ -840,10 +841,10 @@ const pickImage = async (type: 'avatar' | 'cover') => {
           <Feather name="lock" size={24} color="#f97316" />
         </View>
         <View style={styles.supportInfo}>
-          <Text style={styles.supportTitle}>Privacy Policy</Text>
+          <Text style={styles.supportTitle}>Privacy policy</Text>
           <Text style={styles.supportSubtitle}>How we handle your data</Text>
         </View>
-        <Feather name="chevron-right" size={20} color="#666" />
+        <Feather name="chevron-right" size={20} color={TC.muted} />
       </TouchableOpacity>
     </View>
   );
@@ -859,14 +860,11 @@ const renderProfileTab = () => (
             style={styles.avatarImage}
           />
         ) : (
-          <LinearGradient
-            colors={['#f97316', '#f43f5e']}
-            style={styles.avatarPlaceholder}
-          >
+          <View style={[styles.avatarPlaceholder, { backgroundColor: '#ea580c' }]}>
             <Text style={styles.avatarText}>
               {profile.name?.charAt(0).toUpperCase()}
             </Text>
-          </LinearGradient>
+          </View>
         )}
       </View>
       {isEditing && (
@@ -885,14 +883,14 @@ const renderProfileTab = () => (
     </View>
 
     <View style={styles.formGroup}>
-      <Text style={styles.label}>Full Name</Text>
+      <Text style={styles.label}>Full name</Text>
       {isEditing ? (
         <TextInput
           style={styles.input}
           value={formData.name || ''}
           onChangeText={(text) => setFormData({ ...formData, name: text })}
           placeholder="Your name"
-          placeholderTextColor="#666"
+          placeholderTextColor={TC.muted}
         />
       ) : (
         <Text style={styles.value}>{profile.name}</Text>
@@ -905,14 +903,14 @@ const renderProfileTab = () => (
     </View>
 
     <View style={styles.formGroup}>
-      <Text style={styles.label}>Phone Number</Text>
+      <Text style={styles.label}>Phone number</Text>
       {isEditing ? (
         <TextInput
           style={styles.input}
           value={formData.phone || ''}
           onChangeText={(text) => setFormData({ ...formData, phone: text })}
           placeholder="Phone number"
-          placeholderTextColor="#666"
+          placeholderTextColor={TC.muted}
           keyboardType="phone-pad"
         />
       ) : (
@@ -922,7 +920,7 @@ const renderProfileTab = () => (
 
     {/* Business Address - Fixed to show from vendor profile */}
     <View style={styles.formGroup}>
-      <Text style={styles.label}>Business Address</Text>
+      <Text style={styles.label}>Business address</Text>
       <Text style={styles.value}>{profile.businessAddress || 'Not provided'}</Text>
     </View>
 
@@ -934,7 +932,7 @@ const renderBusinessTab = () => (
   <View style={styles.tabContent}>
     {/* Cover Image */}
     <View style={styles.formGroup}>
-      <Text style={styles.label}>Cover Image</Text>
+      <Text style={styles.label}>Cover image</Text>
       <View style={styles.coverContainer}>
         {formData.businessCover || profile.cover_image_url ? (
           <Image 
@@ -943,7 +941,7 @@ const renderBusinessTab = () => (
           />
         ) : (
           <View style={styles.coverPlaceholder}>
-            <Feather name="image" size={32} color="#666" />
+            <Feather name="image" size={32} color={TC.muted} />
             <Text style={styles.coverPlaceholderText}>No cover image</Text>
           </View>
         )}
@@ -958,7 +956,7 @@ const renderBusinessTab = () => (
             ) : (
               <>
                 <Feather name="camera" size={14} color="#fff" />
-                <Text style={styles.coverEditText}>Change Cover</Text>
+                <Text style={styles.coverEditText}>Change cover</Text>
               </>
             )}
           </TouchableOpacity>
@@ -968,14 +966,14 @@ const renderBusinessTab = () => (
 
     {/* Business Name */}
     <View style={styles.formGroup}>
-      <Text style={styles.label}>Business Name</Text>
+      <Text style={styles.label}>Business name</Text>
       {isEditing ? (
         <TextInput
           style={styles.input}
           value={formData.businessName || ''}
           onChangeText={(text) => setFormData({ ...formData, businessName: text })}
           placeholder="Business name"
-          placeholderTextColor="#666"
+          placeholderTextColor={TC.muted}
         />
       ) : (
         <Text style={styles.value}>{profile.businessName}</Text>
@@ -1014,7 +1012,7 @@ const renderBusinessTab = () => (
 
     {/* Business Address - with Map Picker */}
     <View style={styles.formGroup}>
-      <Text style={styles.label}>Business Address</Text>
+      <Text style={styles.label}>Business address</Text>
       {isEditing ? (
         <>
           <TextInput
@@ -1022,7 +1020,7 @@ const renderBusinessTab = () => (
             value={formData.businessAddress || ''}
             onChangeText={(text) => setFormData({ ...formData, businessAddress: text })}
             placeholder="Business address"
-            placeholderTextColor="#666"
+            placeholderTextColor={TC.muted}
             multiline
             numberOfLines={2}
             textAlignVertical="top"
@@ -1037,7 +1035,7 @@ const renderBusinessTab = () => (
                 ? `Location selected: ${formData.latitude.toFixed(6)}, ${formData.longitude.toFixed(6)}`
                 : 'Tap to set business location on map'}
             </Text>
-            <Feather name="chevron-right" size={20} color="#666" />
+            <Feather name="chevron-right" size={20} color={TC.muted} />
           </TouchableOpacity>
           {formData.latitude && formData.longitude && (
             <Text style={styles.locationCoordsText}>
@@ -1066,7 +1064,7 @@ const renderBusinessTab = () => (
           value={formData.businessDescription || ''}
           onChangeText={(text) => setFormData({ ...formData, businessDescription: text })}
           placeholder="Describe your business..."
-          placeholderTextColor="#666"
+          placeholderTextColor={TC.muted}
           multiline
           numberOfLines={4}
           textAlignVertical="top"
@@ -1106,7 +1104,7 @@ const renderBusinessTab = () => (
   const renderBankTab = () => (
     <View style={styles.tabContent}>
       <View style={styles.formGroup}>
-        <Text style={styles.label}>Bank Name</Text>
+        <Text style={styles.label}>Bank name</Text>
         {isEditing ? (
           <>
             <View style={styles.pickerContainer}>
@@ -1143,7 +1141,7 @@ const renderBusinessTab = () => (
       </View>
 
       <View style={styles.formGroup}>
-        <Text style={styles.label}>Account Number</Text>
+        <Text style={styles.label}>Account number</Text>
         {isEditing ? (
           <View style={styles.verificationRow}>
             <TextInput
@@ -1154,7 +1152,7 @@ const renderBusinessTab = () => (
                 setBankVerified(false);
               }}
               placeholder="10-digit account number"
-              placeholderTextColor="#666"
+              placeholderTextColor={TC.muted}
               keyboardType="numeric"
               maxLength={10}
             />
@@ -1183,14 +1181,14 @@ const renderBusinessTab = () => (
       </View>
 
       <View style={styles.formGroup}>
-        <Text style={styles.label}>Account Name</Text>
+        <Text style={styles.label}>Account name</Text>
         {isEditing ? (
           <TextInput
             style={[styles.input, bankVerified && styles.verifiedInput]}
             value={formData.accountName || ''}
             onChangeText={(text) => setFormData({ ...formData, accountName: text })}
             placeholder="Account name"
-            placeholderTextColor="#666"
+            placeholderTextColor={TC.muted}
             editable={!bankVerified}
           />
         ) : (
@@ -1231,8 +1229,8 @@ const renderBusinessTab = () => (
                     notifications: { ...formData.notifications, [item.key]: value }
                   })
                 }
-                trackColor={{ false: '#2a2a2a', true: '#f97316' }}
-                thumbColor="#fff"
+                trackColor={{ false: TC.raised, true: '#f97316' }}
+                thumbColor={TC.text}
               />
             ) : (
               <View style={[
@@ -1242,7 +1240,7 @@ const renderBusinessTab = () => (
                 <Feather 
                   name={profile.notifications?.[item.key] ? 'check' : 'x'} 
                   size={14} 
-                  color={profile.notifications?.[item.key] ? '#10b981' : '#666'} 
+                  color={profile.notifications?.[item.key] ? '#10b981' : TC.muted} 
                 />
               </View>
             )}
@@ -1251,7 +1249,7 @@ const renderBusinessTab = () => (
       </View>
 
       <View style={styles.settingsCard}>
-        <Text style={styles.settingsCardTitle}>Business Hours</Text>
+        <Text style={styles.settingsCardTitle}>Business hours</Text>
         
         {days.map(({ key, label }) => (
           <View key={key} style={styles.hoursRow}>
@@ -1267,7 +1265,7 @@ const renderBusinessTab = () => (
                   })
                 }
                 placeholder="9:00-21:00"
-                placeholderTextColor="#666"
+                placeholderTextColor={TC.muted}
               />
             ) : (
               <Text style={styles.hoursValue}>
@@ -1291,7 +1289,7 @@ const renderBusinessTab = () => (
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Feather name="arrow-left" size={24} color="#fff" />
+          <Feather name="arrow-left" size={24} color={TC.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Settings</Text>
         <View style={styles.headerRight} />
@@ -1326,7 +1324,7 @@ const renderBusinessTab = () => (
               <Feather 
                 name={tab.icon as any} 
                 size={18} 
-                color={activeTab === tab.id ? '#fff' : '#666'} 
+                color={activeTab === tab.id ? '#fff' : TC.muted} 
               />
               <Text style={[
                 styles.mobileMenuItemText,
@@ -1358,7 +1356,7 @@ const renderBusinessTab = () => (
             <Feather 
               name={tab.icon as any} 
               size={16} 
-              color={activeTab === tab.id ? '#fff' : '#666'} 
+              color={activeTab === tab.id ? '#fff' : TC.muted} 
             />
             <Text style={[
               styles.desktopTabText,
@@ -1387,13 +1385,10 @@ const renderBusinessTab = () => (
           onPress={handleSave}
           style={[styles.actionButton, styles.saveButton]}
         >
-          <LinearGradient
-            colors={['#f97316', '#f43f5e']}
-            style={styles.saveButtonGradient}
-          >
+          <View style={[styles.saveButtonGradient, { backgroundColor: '#ea580c' }]}>
             <Feather name="save" size={18} color="#fff" />
-            <Text style={styles.saveButtonText}>Save Changes</Text>
-          </LinearGradient>
+            <Text style={styles.saveButtonText}>Save changes</Text>
+          </View>
         </TouchableOpacity>
       </>
     ) : (
@@ -1402,7 +1397,7 @@ const renderBusinessTab = () => (
         style={[styles.actionButton, styles.editButton]}
       >
         <Feather name="edit-2" size={18} color="#f97316" />
-        <Text style={styles.editButtonText}>Edit Profile</Text>
+        <Text style={styles.editButtonText}>Edit profile</Text>
       </TouchableOpacity>
     )}
   </View>
@@ -1419,6 +1414,8 @@ const renderBusinessTab = () => (
           {activeTab === 'promos' && <PromoCodeManager />}
           {activeTab === 'support' && renderSupportTab()}
         </View>
+
+        <AppearanceSetting style={{ marginHorizontal: 16, marginBottom: 16 }} />
 
         {/* Logout Button */}
         <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
@@ -1442,19 +1439,19 @@ const styles = StyleSheet.create({
   // ... (keep all your existing styles)
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     paddingTop: 40,
     paddingBottom: 80,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
   errorContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -1471,20 +1468,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   headerRight: {
     width: 40,
@@ -1493,7 +1490,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     margin: 16,
     marginBottom: 8,
     padding: 16,
@@ -1502,10 +1499,10 @@ const styles = StyleSheet.create({
   mobileMenuText: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#fff',
+    color: TC.text,
   },
   mobileMenu: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     marginHorizontal: 16,
     marginBottom: 16,
     borderRadius: 12,
@@ -1519,11 +1516,11 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   mobileMenuItemActive: {
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
   },
   mobileMenuItemText: {
     fontSize: 14,
-    color: '#666',
+    color: TC.muted,
   },
   mobileMenuItemTextActive: {
     color: '#fff',
@@ -1540,18 +1537,18 @@ const styles = StyleSheet.create({
   desktopTab: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
     gap: 8,
   },
   desktopTabActive: {
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
   },
   desktopTabText: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
   },
   desktopTabTextActive: {
     color: '#fff',
@@ -1571,9 +1568,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   editButton: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   editButtonText: {
     color: '#f97316',
@@ -1581,13 +1578,13 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   cancelButton: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderWidth: 1,
     borderColor: '#ef4444',
   },
   // Add to styles object
 coverPlaceholderText: {
-  color: '#666',
+  color: TC.muted,
   marginTop: 8,
   fontSize: 12,
 },
@@ -1615,13 +1612,13 @@ coverPlaceholderText: {
     flex: 1,
   },
   contentCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     margin: 16,
     marginTop: 0,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   tabContent: {
     gap: 20,
@@ -1634,7 +1631,7 @@ coverPlaceholderText: {
   mapPickerButton: {
   flexDirection: 'row',
   alignItems: 'center',
-  backgroundColor: '#2a2a2a',
+  backgroundColor: TC.raised,
   borderRadius: 8,
   paddingHorizontal: 16,
   paddingVertical: 12,
@@ -1643,23 +1640,23 @@ coverPlaceholderText: {
 },
 mapPickerText: {
   flex: 1,
-  color: '#fff',
+  color: TC.text,
   fontSize: 13,
 },
 coordsText: {
   fontSize: 12,
-  color: '#666',
+  color: TC.muted,
   marginTop: 4,
 },
 locationCoordsText: {
   fontSize: 11,
-  color: '#666',
+  color: TC.muted,
   marginTop: 6,
   marginLeft: 4,
 },
 hint: {
   fontSize: 11,
-  color: '#666',
+  color: TC.muted,
   marginTop: 4,
 },
   avatar: {
@@ -1680,7 +1677,7 @@ hint: {
   },
   avatarText: {
     fontSize: 36,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#fff',
   },
   avatarEditButton: {
@@ -1690,29 +1687,29 @@ hint: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#1a1a1a',
+    borderColor: TC.surface,
   },
   formGroup: {
     marginBottom: 16,
   },
   label: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 6,
   },
   value: {
     fontSize: 15,
-    color: '#fff',
+    color: TC.text,
   },
   input: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 8,
     padding: 12,
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
   },
   textArea: {
@@ -1737,7 +1734,7 @@ hint: {
   logoPlaceholder: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1745,7 +1742,7 @@ hint: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     padding: 16,
     borderRadius: 8,
   },
@@ -1758,16 +1755,16 @@ hint: {
   menuItemTitle: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 2,
   },
   menuItemSubtitle: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
   },
   uploadButton: {
     flex: 1,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
@@ -1791,7 +1788,7 @@ hint: {
   coverPlaceholder: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1816,15 +1813,15 @@ hint: {
   categoryChip: {
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 20,
   },
   categoryChipSelected: {
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
   },
   categoryChipText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   categoryChipTextSelected: {
     color: '#fff',
@@ -1832,21 +1829,21 @@ hint: {
   bankChip: {
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 20,
   },
   bankChipSelected: {
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
   },
   bankChipText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   bankChipTextSelected: {
     color: '#fff',
   },
   settingsCard: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     padding: 16,
     borderRadius: 8,
     marginBottom: 16,
@@ -1854,7 +1851,7 @@ hint: {
   settingsCardTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 16,
   },
   hoursRow: {
@@ -1865,18 +1862,18 @@ hint: {
   },
   hoursLabel: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
   },
   hoursValue: {
     fontSize: 13,
-    color: '#fff',
+    color: TC.text,
   },
   hoursInput: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
-    color: '#fff',
+    color: TC.text,
     fontSize: 13,
     width: 120,
     textAlign: 'right',
@@ -1889,13 +1886,13 @@ hint: {
   },
   notificationLabel: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
   },
   notificationIndicator: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1926,7 +1923,7 @@ hint: {
     marginHorizontal: 16,
   },
   deleteAccountText: {
-    color: '#888',
+    color: TC.subtle,
     fontSize: 13,
     textDecorationLine: 'underline',
   },
@@ -1934,7 +1931,7 @@ hint: {
   supportOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     padding: 16,
     borderRadius: 8,
     marginTop: 30,
@@ -1954,17 +1951,17 @@ hint: {
   supportTitle: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 2,
   },
   supportSubtitle: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   // Modal styles
   modalContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     paddingTop: 40,
   },
   modalHeader: {
@@ -1974,20 +1971,20 @@ hint: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   modalCloseButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   modalContent: {
     flex: 1,
@@ -2002,13 +1999,13 @@ hint: {
   },
   modalText: {
     fontSize: 14,
-    color: '#ccc',
+    color: TC.text2,
     lineHeight: 22,
     marginBottom: 15,
   },
   modalLastUpdated: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
     fontStyle: 'italic',
     marginTop: 30,
     marginBottom: 20,
@@ -2018,12 +2015,12 @@ hint: {
   contactOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   contactIconContainer: {
     width: 50,
@@ -2039,22 +2036,22 @@ hint: {
   },
   contactLabel: {
     fontSize: 14,
-    color: '#999',
+    color: TC.subtle,
     marginBottom: 2,
   },
   contactValue: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 2,
   },
   contactNote: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   divider: {
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: TC.hairline3,
     marginVertical: 20,
   },
   faqItem: {
@@ -2068,16 +2065,16 @@ hint: {
   },
   faqAnswer: {
     fontSize: 14,
-    color: '#ccc',
+    color: TC.text2,
     lineHeight: 20,
   },
   // FAQ accordion styles
   faqContainer: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
     overflow: 'hidden',
   },
   faqHeader: {
@@ -2089,18 +2086,18 @@ hint: {
   faqHeaderQuestion: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#fff',
+    color: TC.text,
     flex: 1,
     marginRight: 10,
   },
   faqBody: {
     padding: 16,
     paddingTop: 0,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
   },
   faqBodyAnswer: {
     fontSize: 14,
-    color: '#ccc',
+    color: TC.text2,
     lineHeight: 20,
   },
   // ✅ New payment styles
@@ -2111,7 +2108,7 @@ hint: {
   verifyButton: {
     width: 80,
     height: 48,
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
@@ -2158,7 +2155,7 @@ hint: {
     flex: 1,
   },
   paymentStatusCard: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -2175,30 +2172,30 @@ hint: {
   paymentStatusTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 2,
   },
   paymentStatusSubtitle: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   subaccountInfo: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     padding: 12,
     borderRadius: 8,
   },
   subaccountLabel: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 2,
   },
   subaccountValue: {
     fontSize: 12,
-    color: '#fff',
+    color: TC.text,
     fontFamily: 'monospace',
   },
   paymentDetailsCard: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -2216,11 +2213,11 @@ hint: {
   },
   paymentDetailLabel: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   paymentDetailValue: {
     fontSize: 12,
-    color: '#fff',
+    color: TC.text,
     fontWeight: '500',
   },
   paymentDetailValueHighlight: {
@@ -2232,13 +2229,13 @@ hint: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     padding: 12,
     borderRadius: 8,
   },
   paymentInfoText: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
     flex: 1,
   },
   retryButton: {

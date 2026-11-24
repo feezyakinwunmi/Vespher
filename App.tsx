@@ -10,6 +10,8 @@ import { AppNavigator } from './app/navigation';
 import { LocationProvider } from './app/contexts/LocationContext';
 import { TrackingProvider } from './app/contexts/TrackingContext';
 import Toast from 'react-native-toast-message';
+import { StatusBar } from 'expo-status-bar';
+import { TC } from './app/theme/palette';
 import { PaystackCheckoutProvider } from './app/contexts/PaystackCheckoutContext';
 
 // Import mapbox config to initialize (optional)
@@ -31,8 +33,9 @@ function PushNotificationsHandler() {
 
 export default function App() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: TC.bg }}>
       <SafeAreaProvider>
+        <StatusBar style={TC.statusBar} />
         <PaystackCheckoutProvider>
         <AuthProvider>
           <HealthProvider>

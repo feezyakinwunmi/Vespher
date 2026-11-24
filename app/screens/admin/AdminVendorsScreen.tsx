@@ -15,11 +15,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { verifyBankAccount, functionErrorMessage } from '../../utils/paystack';
 import { BANKS } from '../../constants/banks';
+import { TAB_BAR_SPACE } from '../../navigation/tabBarOptions';
+import { TC } from '../../theme/palette';
 
 type VendorStatus = 'all' | 'pending' | 'approved' | 'suspended';
 
@@ -362,16 +363,16 @@ export function AdminVendorsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Feather name="arrow-left" size={24} color="#fff" />
+          <Feather name="arrow-left" size={24} color={TC.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Vendor Management</Text>
+        <Text style={styles.headerTitle}>Vendor management</Text>
         <TouchableOpacity 
           onPress={() => {
-            Alert.alert('Platform Fee', `Current platform fee: ${platformSettings?.platform_fee_percentage || 10}%`);
+            Alert.alert('Platform fee', `Current platform fee: ${platformSettings?.platform_fee_percentage || 10}%`);
           }} 
           style={styles.addButton}
         >
@@ -381,17 +382,17 @@ export function AdminVendorsScreen() {
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
-        <Feather name="search" size={18} color="#666" style={styles.searchIcon} />
+        <Feather name="search" size={18} color={TC.muted} style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
           value={searchQuery}
           onChangeText={setSearchQuery}
           placeholder="Search vendors by name, email..."
-          placeholderTextColor="#666"
+          placeholderTextColor={TC.muted}
         />
         {searchQuery ? (
           <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <Feather name="x" size={18} color="#666" />
+            <Feather name="x" size={18} color={TC.muted} />
           </TouchableOpacity>
         ) : null}
       </View>
@@ -433,7 +434,7 @@ export function AdminVendorsScreen() {
       </View>
 
       {/* Vendors List */}
-      <ScrollView
+      <ScrollView contentContainerStyle={{ paddingBottom: TAB_BAR_SPACE }}
         style={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -442,7 +443,7 @@ export function AdminVendorsScreen() {
       >
         {filteredVendors.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Feather name="users" size={48} color="#666" />
+            <Feather name="users" size={48} color={TC.muted} />
             <Text style={styles.emptyTitle}>No vendors found</Text>
             <Text style={styles.emptyText}>Try adjusting your filters</Text>
           </View>
@@ -458,14 +459,11 @@ export function AdminVendorsScreen() {
                       {vendor.image_url ? (
                         <Image source={{ uri: vendor.image_url }} style={styles.vendorImage} />
                       ) : (
-                        <LinearGradient
-                          colors={['#f97316', '#f43f5e']}
-                          style={styles.vendorImagePlaceholder}
-                        >
+                        <View style={[styles.vendorImagePlaceholder, { backgroundColor: '#ea580c' }]}>
                           <Text style={styles.vendorInitial}>
                             {vendor.name.charAt(0).toUpperCase()}
                           </Text>
-                        </LinearGradient>
+                        </View>
                       )}
                     </View>
                     <View>
@@ -488,23 +486,23 @@ export function AdminVendorsScreen() {
                       }}
                       style={styles.menuButton}
                     >
-                      <Feather name="more-vertical" size={20} color="#666" />
+                      <Feather name="more-vertical" size={20} color={TC.muted} />
                     </TouchableOpacity>
                   </View>
                 </View>
 
                 <View style={styles.vendorDetails}>
                   <Text style={styles.vendorDetail}>
-                    <Feather name="user" size={12} color="#666" /> Owner: {vendor.owner?.name || 'N/A'}
+                    <Feather name="user" size={12} color={TC.muted} /> Owner: {vendor.owner?.name || 'N/A'}
                   </Text>
                   <Text style={styles.vendorDetail}>
-                    <Feather name="phone" size={12} color="#666" /> {vendor.phone}
+                    <Feather name="phone" size={12} color={TC.muted} /> {vendor.phone}
                   </Text>
                   <Text style={styles.vendorDetail}>
-                    <Feather name="map-pin" size={12} color="#666" /> {vendor.address}
+                    <Feather name="map-pin" size={12} color={TC.muted} /> {vendor.address}
                   </Text>
                   <Text style={styles.vendorDetail}>
-                    <Feather name="tag" size={12} color="#666" /> {vendor.category}
+                    <Feather name="tag" size={12} color={TC.muted} /> {vendor.category}
                   </Text>
                   
                   {/* Bank Details */}
@@ -517,9 +515,9 @@ export function AdminVendorsScreen() {
                   >
                     <Feather name="credit-card" size={14} color="#f97316" />
                     <Text style={styles.paymentStatusText}>
-                      View Bank Details
+                      View bank details
                     </Text>
-                    <Feather name="chevron-right" size={14} color="#666" style={styles.paymentChevron} />
+                    <Feather name="chevron-right" size={14} color={TC.muted} style={styles.paymentChevron} />
                   </TouchableOpacity>
                 </View>
 
@@ -554,7 +552,7 @@ export function AdminVendorsScreen() {
                 onPress={() => handleVendorAction(selectedVendor, 'approve')}
               >
                 <Feather name="check-circle" size={18} color="#10b981" />
-                <Text style={styles.actionText}>Approve Vendor</Text>
+                <Text style={styles.actionText}>Approve vendor</Text>
               </TouchableOpacity>
             )}
 
@@ -564,7 +562,7 @@ export function AdminVendorsScreen() {
                 onPress={() => handleVendorAction(selectedVendor, 'suspend')}
               >
                 <Feather name="pause-circle" size={18} color="#f59e0b" />
-                <Text style={styles.actionText}>Suspend Vendor</Text>
+                <Text style={styles.actionText}>Suspend vendor</Text>
               </TouchableOpacity>
             )}
 
@@ -574,7 +572,7 @@ export function AdminVendorsScreen() {
                 onPress={() => handleVendorAction(selectedVendor, 'unsuspend')}
               >
                 <Feather name="play-circle" size={18} color="#10b981" />
-                <Text style={styles.actionText}>Unsuspend Vendor</Text>
+                <Text style={styles.actionText}>Unsuspend vendor</Text>
               </TouchableOpacity>
             )}
 
@@ -584,7 +582,7 @@ export function AdminVendorsScreen() {
                 onPress={() => handleVendorAction(selectedVendor, 'reject')}
               >
                 <Feather name="x-circle" size={18} color="#ef4444" />
-                <Text style={[styles.actionText, styles.actionTextDelete]}>Reject Vendor</Text>
+                <Text style={[styles.actionText, styles.actionTextDelete]}>Reject vendor</Text>
               </TouchableOpacity>
             )}
 
@@ -594,7 +592,7 @@ export function AdminVendorsScreen() {
                 onPress={() => handleVendorAction(selectedVendor, 'delete')}
               >
                 <Feather name="trash-2" size={18} color="#ef4444" />
-                <Text style={[styles.actionText, styles.actionTextDelete]}>Delete Vendor</Text>
+                <Text style={[styles.actionText, styles.actionTextDelete]}>Delete vendor</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -615,13 +613,13 @@ export function AdminVendorsScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.paymentModal}>
             <View style={styles.paymentModalHeader}>
-              <Text style={styles.paymentModalTitle}>Bank Details</Text>
+              <Text style={styles.paymentModalTitle}>Bank details</Text>
               <TouchableOpacity onPress={() => {
                 setShowPaymentDetailsModal(false);
                 setIsEditingBank(false);
                 setBankVerified(false);
               }}>
-                <Feather name="x" size={20} color="#fff" />
+                <Feather name="x" size={20} color={TC.text} />
               </TouchableOpacity>
             </View>
 
@@ -630,7 +628,7 @@ export function AdminVendorsScreen() {
                 {/* Bank Details Section */}
                 <View style={styles.paymentSection}>
                   <View style={styles.sectionHeader}>
-                    <Text style={styles.paymentSectionTitle}>Bank Information</Text>
+                    <Text style={styles.paymentSectionTitle}>Bank information</Text>
                     {!isEditingBank ? (
                       <TouchableOpacity onPress={() => startEditingBank(selectedVendor)}>
                         <Feather name="edit-2" size={16} color="#f97316" />
@@ -665,7 +663,7 @@ export function AdminVendorsScreen() {
                     <>
                       {/* Bank Dropdown */}
                       <View style={styles.formGroup}>
-                        <Text style={styles.label}>Bank Name</Text>
+                        <Text style={styles.label}>Bank name</Text>
                         <TouchableOpacity 
                           style={styles.dropdownButton}
                           onPress={() => setShowBankDropdown(true)}
@@ -676,13 +674,13 @@ export function AdminVendorsScreen() {
                           ]}>
                             {editedBankDetails.bank_name || 'Select bank'}
                           </Text>
-                          <Feather name="chevron-down" size={20} color="#666" />
+                          <Feather name="chevron-down" size={20} color={TC.muted} />
                         </TouchableOpacity>
                       </View>
 
                       {/* Account Number with Verify Button */}
                       <View style={styles.formGroup}>
-                        <Text style={styles.label}>Account Number</Text>
+                        <Text style={styles.label}>Account number</Text>
                         <View style={styles.verificationRow}>
                           <TextInput
                             style={[styles.input, { flex: 1 }]}
@@ -692,7 +690,7 @@ export function AdminVendorsScreen() {
                               setBankVerified(false);
                             }}
                             placeholder="10-digit account number"
-                            placeholderTextColor="#666"
+                            placeholderTextColor={TC.muted}
                             keyboardType="numeric"
                             maxLength={10}
                           />
@@ -707,7 +705,7 @@ export function AdminVendorsScreen() {
                             {isVerifyingBank ? (
                               <ActivityIndicator size="small" color="#fff" />
                             ) : bankVerified ? (
-                              <Feather name="check" size={20} color="#fff" />
+                              <Feather name="check" size={20} color={TC.text} />
                             ) : (
                               <Text style={styles.verifyButtonText}>Verify</Text>
                             )}
@@ -720,13 +718,13 @@ export function AdminVendorsScreen() {
 
                       {/* Account Name */}
                       <View style={styles.formGroup}>
-                        <Text style={styles.label}>Account Name</Text>
+                        <Text style={styles.label}>Account name</Text>
                         <TextInput
                           style={[styles.input, bankVerified && styles.verifiedInput]}
                           value={editedBankDetails.account_name}
                           onChangeText={(text) => setEditedBankDetails({ ...editedBankDetails, account_name: text })}
                           placeholder="Account name"
-                          placeholderTextColor="#666"
+                          placeholderTextColor={TC.muted}
                           editable={!bankVerified}
                         />
                       </View>
@@ -751,12 +749,9 @@ export function AdminVendorsScreen() {
                           onPress={saveBankDetails}
                           disabled={!bankVerified}
                         >
-                          <LinearGradient
-                            colors={['#f97316', '#f43f5e']}
-                            style={styles.saveEditGradient}
-                          >
-                            <Text style={styles.saveEditText}>Save Changes</Text>
-                          </LinearGradient>
+                          <View style={[styles.saveEditGradient, { backgroundColor: '#ea580c' }]}>
+                            <Text style={styles.saveEditText}>Save changes</Text>
+                          </View>
                         </TouchableOpacity>
                       </View>
                     </>
@@ -786,9 +781,9 @@ export function AdminVendorsScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.dropdownModal}>
             <View style={styles.dropdownHeader}>
-              <Text style={styles.dropdownTitle}>Select Bank</Text>
+              <Text style={styles.dropdownTitle}>Select bank</Text>
               <TouchableOpacity onPress={() => setShowBankDropdown(false)}>
-                <Feather name="x" size={24} color="#fff" />
+                <Feather name="x" size={24} color={TC.text} />
               </TouchableOpacity>
             </View>
             <ScrollView>
@@ -822,7 +817,7 @@ export function AdminVendorsScreen() {
               <Feather name="alert-triangle" size={40} color="#f97316" />
             </View>
             
-            <Text style={styles.confirmTitle}>Confirm Action</Text>
+            <Text style={styles.confirmTitle}>Confirm action</Text>
             <Text style={styles.confirmMessage}>
               {confirmAction?.type === 'approve' && `Are you sure you want to approve ${confirmAction.vendor.name}?`}
               {confirmAction?.type === 'reject' && `Are you sure you want to reject ${confirmAction.vendor.name}? This action cannot be undone.`}
@@ -879,14 +874,14 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 6,
   },
   input: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 8,
     padding: 12,
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
     height: 44,
   },
@@ -894,20 +889,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 8,
     padding: 12,
     height: 44,
   },
   dropdownButtonText: {
     fontSize: 14,
-    color: '#fff',
+    color: TC.text,
   },
   dropdownPlaceholder: {
-    color: '#666',
+    color: TC.muted,
   },
   dropdownModal: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 20,
     padding: 16,
     maxHeight: '70%',
@@ -919,13 +914,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
     marginBottom: 16,
   },
   dropdownTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   dropdownItem: {
     flexDirection: 'row',
@@ -934,11 +929,11 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 8,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   dropdownItemText: {
     fontSize: 16,
-    color: '#fff',
+    color: TC.text,
   },
   verificationRow: {
     flexDirection: 'row',
@@ -947,7 +942,7 @@ const styles = StyleSheet.create({
   verifyButton: {
     width: 80,
     height: 44,
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
@@ -995,7 +990,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   cancelEditButton: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderWidth: 1,
     borderColor: '#ef4444',
   },
@@ -1014,18 +1009,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   saveEditText: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
     fontWeight: '600',
   },
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
-    paddingBottom: 60,
+    backgroundColor: TC.bg,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1036,33 +1030,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   addButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     margin: 16,
     marginBottom: 12,
     paddingHorizontal: 12,
@@ -1074,7 +1068,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
   },
   filterTabs: {
@@ -1089,7 +1083,7 @@ const styles = StyleSheet.create({
   filterTab: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: 'transparent',
@@ -1099,7 +1093,7 @@ const styles = StyleSheet.create({
   },
   filterTabText: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
   },
   resultsContainer: {
     paddingHorizontal: 16,
@@ -1107,19 +1101,19 @@ const styles = StyleSheet.create({
   },
   resultsText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   content: {
     flex: 1,
   },
   vendorCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     marginHorizontal: 16,
     marginBottom: 12,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   vendorHeader: {
     flexDirection: 'row',
@@ -1150,18 +1144,18 @@ const styles = StyleSheet.create({
   },
   vendorInitial: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
   },
   vendorName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 2,
   },
   vendorEmail: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
   },
   vendorHeaderRight: {
     flexDirection: 'row',
@@ -1186,7 +1180,7 @@ const styles = StyleSheet.create({
   },
   vendorDetail: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   paymentStatusRow: {
     flexDirection: 'row',
@@ -1204,11 +1198,11 @@ const styles = StyleSheet.create({
   vendorFooter: {
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   vendorDate: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
   },
   emptyContainer: {
     alignItems: 'center',
@@ -1219,13 +1213,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginTop: 16,
     marginBottom: 4,
   },
   emptyText: {
     fontSize: 14,
-    color: '#666',
+    color: TC.muted,
     textAlign: 'center',
   },
   bottomPadding: {
@@ -1239,7 +1233,7 @@ const styles = StyleSheet.create({
   },
   actionsModal: {
     width: '80%',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     padding: 8,
   },
@@ -1249,14 +1243,14 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   actionItemDelete: {
     borderBottomWidth: 0,
   },
   actionText: {
     fontSize: 14,
-    color: '#fff',
+    color: TC.text,
   },
   actionTextDelete: {
     color: '#ef4444',
@@ -1264,7 +1258,7 @@ const styles = StyleSheet.create({
   paymentModal: {
     width: '90%',
     maxHeight: '80%',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 16,
     overflow: 'hidden',
   },
@@ -1274,12 +1268,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   paymentModalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   paymentModalBody: {
     padding: 16,
@@ -1287,7 +1281,7 @@ const styles = StyleSheet.create({
   paymentSection: {
     marginBottom: 20,
     padding: 12,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 8,
   },
   paymentSectionTitle: {
@@ -1303,11 +1297,11 @@ const styles = StyleSheet.create({
   },
   paymentDetailLabel: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   paymentDetailValue: {
     fontSize: 12,
-    color: '#fff',
+    color: TC.text,
     fontWeight: '500',
     flex: 1,
     textAlign: 'right',
@@ -1326,7 +1320,7 @@ const styles = StyleSheet.create({
   },
   confirmModal: {
     width: '80%',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 16,
     padding: 20,
     alignItems: 'center',
@@ -1348,7 +1342,7 @@ const styles = StyleSheet.create({
   },
   confirmMessage: {
     fontSize: 14,
-    color: '#666',
+    color: TC.muted,
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -1365,10 +1359,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelButton: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
   },
   cancelButtonText: {
-    color: '#666',
+    color: TC.muted,
     fontSize: 14,
     fontWeight: '500',
   },

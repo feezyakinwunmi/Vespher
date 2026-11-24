@@ -12,12 +12,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import Toast from 'react-native-toast-message';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
+import { humanize } from '../../utils/text';
+import { TC } from '../../theme/palette';
 
 type AdminLogisticsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -214,7 +215,7 @@ export function AdminAllOrdersScreen() {
       delivered: '#10b981',
       cancelled: '#ef4444',
     };
-    return colors[status] || '#666';
+    return colors[status] || TC.muted;
   };
 
   const formatDate = (dateString: string) => {
@@ -253,32 +254,29 @@ export function AdminAllOrdersScreen() {
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
-      <LinearGradient
-        colors={['#f97316', '#f43f5e']}
-        style={styles.header}
-      >
+      <View style={[styles.header, { backgroundColor: '#ea580c' }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Feather name="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>All Orders</Text>
+        <Text style={styles.headerTitle}>All orders</Text>
         <TouchableOpacity onPress={fetchAllOrders} style={styles.refreshButton}>
           <Feather name="refresh-cw" size={20} color="#fff" />
         </TouchableOpacity>
-      </LinearGradient>
+      </View>
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
-        <Feather name="search" size={18} color="#666" style={styles.searchIcon} />
+        <Feather name="search" size={18} color={TC.muted} style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
           placeholder="Search by order #, customer, business..."
-          placeholderTextColor="#666"
+          placeholderTextColor={TC.muted}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
         {searchQuery ? (
           <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <Feather name="x" size={18} color="#666" />
+            <Feather name="x" size={18} color={TC.muted} />
           </TouchableOpacity>
         ) : null}
       </View>
@@ -292,7 +290,7 @@ export function AdminAllOrdersScreen() {
             onPress={() => setOrderType('all')}
           >
             <Text style={[styles.filterChipText, orderType === 'all' && styles.filterChipTextActive]}>
-              All Orders
+              All orders
             </Text>
           </TouchableOpacity>
 
@@ -300,7 +298,7 @@ export function AdminAllOrdersScreen() {
             style={[styles.filterChip, orderType === 'food' && styles.filterChipActive]}
             onPress={() => setOrderType('food')}
           >
-            <Feather name="coffee" size={14} color={orderType === 'food' ? '#f97316' : '#666'} />
+            <Feather name="coffee" size={14} color={orderType === 'food' ? '#f97316' : TC.muted} />
             <Text style={[styles.filterChipText, orderType === 'food' && styles.filterChipTextActive]}>
               Food
             </Text>
@@ -310,7 +308,7 @@ export function AdminAllOrdersScreen() {
             style={[styles.filterChip, orderType === 'business' && styles.filterChipActive]}
             onPress={() => setOrderType('business')}
           >
-            <Feather name="package" size={14} color={orderType === 'business' ? '#f97316' : '#666'} />
+            <Feather name="package" size={14} color={orderType === 'business' ? '#f97316' : TC.muted} />
             <Text style={[styles.filterChipText, orderType === 'business' && styles.filterChipTextActive]}>
               Business
             </Text>
@@ -322,7 +320,7 @@ export function AdminAllOrdersScreen() {
             onPress={() => setSelectedPeriod('week')}
           >
             <Text style={[styles.filterChipText, selectedPeriod === 'week' && styles.filterChipTextActive]}>
-              This Week
+              This week
             </Text>
           </TouchableOpacity>
 
@@ -331,7 +329,7 @@ export function AdminAllOrdersScreen() {
             onPress={() => setSelectedPeriod('month')}
           >
             <Text style={[styles.filterChipText, selectedPeriod === 'month' && styles.filterChipTextActive]}>
-              This Month
+              This month
             </Text>
           </TouchableOpacity>
 
@@ -340,7 +338,7 @@ export function AdminAllOrdersScreen() {
             onPress={() => setSelectedPeriod('year')}
           >
             <Text style={[styles.filterChipText, selectedPeriod === 'year' && styles.filterChipTextActive]}>
-              This Year
+              This year
             </Text>
           </TouchableOpacity>
         </View>
@@ -366,7 +364,7 @@ export function AdminAllOrdersScreen() {
                 styles.statusChipText,
                 selectedStatus === status && { color: getStatusColor(status) }
               ]}>
-                {status === 'all' ? 'All Status' : status.toUpperCase()}
+                {status === 'all' ? 'All statuses' : humanize(status)}
               </Text>
             </TouchableOpacity>
           ))}
@@ -390,7 +388,7 @@ export function AdminAllOrdersScreen() {
       >
         {filteredOrders.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Feather name="package" size={48} color="#666" />
+            <Feather name="package" size={48} color={TC.muted} />
             <Text style={styles.emptyTitle}>No orders found</Text>
             <Text style={styles.emptyText}>Try adjusting your filters</Text>
           </View>
@@ -410,7 +408,7 @@ export function AdminAllOrdersScreen() {
                 <Feather 
                   name={order.type === 'food' ? 'coffee' : 'package'} 
                   size={10} 
-                  color="#fff" 
+                  color={TC.text} 
                 />
                 <Text style={styles.typeBadgeText}>
                   {order.type === 'food' ? 'FOOD' : 'BUSINESS'}
@@ -433,7 +431,7 @@ export function AdminAllOrdersScreen() {
                 ]}>
                   <View style={[styles.statusDot, { backgroundColor: getStatusColor(order.status) }]} />
                   <Text style={[styles.statusText, { color: getStatusColor(order.status) }]}>
-                    {order.status.toUpperCase()}
+                    {humanize(order.status)}
                   </Text>
                 </View>
               </View>
@@ -444,11 +442,11 @@ export function AdminAllOrdersScreen() {
                   // Food Order Details
                   <>
                     <View style={styles.detailRow}>
-                      <Feather name="user" size={12} color="#666" />
+                      <Feather name="user" size={12} color={TC.muted} />
                       <Text style={styles.detailText}>Customer: {order.customer_name}</Text>
                     </View>
                     <View style={styles.detailRow}>
-                      <Feather name="home" size={12} color="#666" />
+                      <Feather name="home" size={12} color={TC.muted} />
                       <Text style={styles.detailText}>Vendor: {order.vendor_name}</Text>
                     </View>
                     {order.firstItem && (
@@ -467,11 +465,11 @@ export function AdminAllOrdersScreen() {
                   // Business Order Details
                   <>
                     <View style={styles.detailRow}>
-                      <Feather name="briefcase" size={12} color="#666" />
+                      <Feather name="briefcase" size={12} color={TC.muted} />
                       <Text style={styles.detailText}>Business: {order.business_name}</Text>
                     </View>
                     <View style={styles.detailRow}>
-                      <Feather name="package" size={12} color="#666" />
+                      <Feather name="package" size={12} color={TC.muted} />
                       <Text style={styles.detailText}>Package: {order.package_name}</Text>
                     </View>
                     <View style={styles.detailRow}>
@@ -504,7 +502,7 @@ export function AdminAllOrdersScreen() {
                         styles.paymentText,
                         { color: order.payment_status === 'paid' ? '#10b981' : '#f59e0b' }
                       ]}>
-                        {order.payment_status.toUpperCase()}
+                        {humanize(order.payment_status)}
                       </Text>
                     </>
                   )}
@@ -525,18 +523,18 @@ export function AdminAllOrdersScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
         paddingBottom:25,
 
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    color: '#666',
+    color: TC.muted,
     marginTop: 12,
     fontSize: 14,
   },
@@ -558,7 +556,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   refreshButton: {
     width: 40,
@@ -571,7 +569,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     marginHorizontal: 16,
     marginTop: 12,
     marginBottom: 8,
@@ -584,7 +582,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
   },
   filtersContainer: {
@@ -601,10 +599,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
     gap: 4,
   },
   filterChipActive: {
@@ -613,7 +611,7 @@ const styles = StyleSheet.create({
   },
   filterChipText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   filterChipTextActive: {
     color: '#f97316',
@@ -627,10 +625,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
     gap: 4,
   },
   statusChipActive: {
@@ -638,7 +636,7 @@ const styles = StyleSheet.create({
   },
   statusChipText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   statusDot: {
     width: 8,
@@ -651,7 +649,7 @@ const styles = StyleSheet.create({
   },
   resultsText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   content: {
     flex: 1,
@@ -665,21 +663,21 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginTop: 12,
   },
   emptyText: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
     marginTop: 4,
   },
   orderCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   typeBadge: {
     position: 'absolute',
@@ -711,12 +709,12 @@ const styles = StyleSheet.create({
   orderNumber: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 2,
   },
   orderDate: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
   },
   statusBadge: {
     flexDirection: 'row',
@@ -742,7 +740,7 @@ const styles = StyleSheet.create({
   detailText: {
     flex: 1,
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   itemPreview: {
     flexDirection: 'row',
@@ -751,7 +749,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     paddingTop: 4,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   itemText: {
     fontSize: 12,
@@ -760,8 +758,8 @@ const styles = StyleSheet.create({
   },
   moreItems: {
     fontSize: 10,
-    color: '#666',
-    backgroundColor: '#2a2a2a',
+    color: TC.muted,
+    backgroundColor: TC.raised,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -772,7 +770,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   paymentStatus: {
     flexDirection: 'row',
@@ -785,7 +783,7 @@ const styles = StyleSheet.create({
   },
   orderAmount: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#f97316',
   },
   bottomPadding: {

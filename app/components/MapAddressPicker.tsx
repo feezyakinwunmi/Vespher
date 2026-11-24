@@ -294,7 +294,7 @@
 //       });
 //       onClose();
 //     } else {
-//       Alert.alert('No Location', 'Please select a location on the map or search for an address');
+//       Alert.alert('No location', 'Please select a location on the map or search for an address');
 //     }
 //   };
 
@@ -331,7 +331,7 @@
 //         {/* Header */}
 //         <View style={styles.header}>
 //           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-//             <Feather name="x" size={24} color="#fff" />
+//             <Feather name="x" size={24} color={TC.text} />
 //           </TouchableOpacity>
 //           <Text style={styles.title}>{title}</Text>
 //           <TouchableOpacity onPress={confirmLocation} style={styles.confirmButton}>
@@ -349,11 +349,11 @@
 //         {/* Search Bar */}
 //         <View style={styles.searchContainer}>
 //           <View style={styles.searchInputWrapper}>
-//             <Feather name="search" size={20} color="#666" style={styles.searchIcon} />
+//             <Feather name="search" size={20} color={TC.muted} style={styles.searchIcon} />
 //             <TextInput
 //               style={styles.searchInput}
 //               placeholder="Search address, city, or place..."
-//               placeholderTextColor="#666"
+//               placeholderTextColor={TC.muted}
 //               value={searchText}
 //               onChangeText={(text) => {
 //                 setSearchText(text);
@@ -429,7 +429,7 @@
 //         {/* Selected Address Info */}
 //         {selectedAddressDetails && (
 //           <View style={styles.addressInfo}>
-//             <Text style={styles.addressInfoTitle}>Selected Location</Text>
+//             <Text style={styles.addressInfoTitle}>Selected location</Text>
 //             <Text style={styles.addressInfoText} numberOfLines={2}>
 //               {selectedAddressDetails.fullAddress}
 //             </Text>
@@ -452,14 +452,14 @@
 //     paddingTop: Platform.OS === 'ios' ? 60 : 40,
 //     paddingBottom: 16,
 //     paddingHorizontal: 20,
-//     backgroundColor: '#1a1a1a',
+//     backgroundColor: TC.surface,
 //     borderBottomWidth: 1,
-//     borderBottomColor: 'rgba(255,255,255,0.05)',
+//     borderBottomColor: TC.hairline,
 //   },
 //   title: {
 //     fontSize: 18,
 //     fontWeight: '600',
-//     color: '#fff',
+//     color: TC.text,
 //   },
 //   closeButton: {
 //     padding: 8,
@@ -485,7 +485,7 @@
 //     left: 16,
 //     right: 16,
 //     zIndex: 1,
-//     backgroundColor: '#2a2a2a',
+//     backgroundColor: TC.raised,
 //     borderRadius: 12,
 //     elevation: 5,
 //     shadowColor: '#000',
@@ -505,7 +505,7 @@
 //     flex: 1,
 //     height: 52,
 //     fontSize: 16,
-//     color: '#fff',
+//     color: TC.text,
 //   },
 //   loader: {
 //     marginLeft: 8,
@@ -515,7 +515,7 @@
 //     top: Platform.OS === 'ios' ? 180 : 160,
 //     left: 16,
 //     right: 16,
-//     backgroundColor: '#2a2a2a',
+//     backgroundColor: TC.raised,
 //     borderRadius: 12,
 //     elevation: 5,
 //     maxHeight: 250,
@@ -530,13 +530,13 @@
 //     alignItems: 'center',
 //     padding: 14,
 //     borderBottomWidth: 1,
-//     borderBottomColor: 'rgba(255,255,255,0.05)',
+//     borderBottomColor: TC.hairline,
 //     gap: 12,
 //   },
 //   suggestionText: {
 //     flex: 1,
 //     fontSize: 14,
-//     color: '#fff',
+//     color: TC.text,
 //   },
 //   map: {
 //     flex: 1,
@@ -545,7 +545,7 @@
 //     position: 'absolute',
 //     bottom: 20,
 //     right: 20,
-//     backgroundColor: '#2a2a2a',
+//     backgroundColor: TC.raised,
 //     width: 50,
 //     height: 50,
 //     borderRadius: 25,
@@ -573,7 +573,7 @@
 //   },
 //   addressInfoText: {
 //     fontSize: 14,
-//     color: '#fff',
+//     color: TC.text,
 //   },
 // });
 
@@ -602,6 +602,7 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { TC } from '../theme/palette';
 
 interface MapAddressPickerProps {
   visible: boolean;
@@ -667,7 +668,7 @@ export default function MapAddressPicker({
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <Feather name="arrow-left" size={24} color="#fff" />
+          <Feather name="arrow-left" size={24} color={TC.text} />
         </TouchableOpacity>
         <Text style={styles.title}>{title}</Text>
         <View style={{ width: 40 }} />
@@ -676,11 +677,11 @@ export default function MapAddressPicker({
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchWrapper}>
-          <Feather name="search" size={20} color="#666" />
+          <Feather name="search" size={20} color={TC.muted} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search address..."
-            placeholderTextColor="#666"
+            placeholderTextColor={TC.muted}
             value={searchText}
             onChangeText={handleSearch}
             autoFocus={true}
@@ -708,7 +709,7 @@ export default function MapAddressPicker({
       {/* Map Placeholder */}
       <View style={styles.mapPlaceholder}>
         <Feather name="map" size={64} color="#f97316" />
-        <Text style={styles.placeholderTitle}>Find Your Location</Text>
+        <Text style={styles.placeholderTitle}>Find your location</Text>
         <Text style={styles.placeholderText}>
           Search for an address above
         </Text>
@@ -732,12 +733,9 @@ export default function MapAddressPicker({
             onClose();
           }}
         >
-          <LinearGradient
-            colors={['#f97316', '#f43f5e']}
-            style={styles.confirmGradient}
-          >
-            <Text style={styles.confirmText}>Use This Location</Text>
-          </LinearGradient>
+          <View style={[styles.confirmGradient, { backgroundColor: '#ea580c' }]}>
+            <Text style={styles.confirmText}>Use this location</Text>
+          </View>
         </TouchableOpacity>
       )}
     </SafeAreaView>
@@ -751,7 +749,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     zIndex: 1000,
   },
   header: {
@@ -762,21 +760,21 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
-    backgroundColor: '#1a1a1a',
+    borderBottomColor: TC.hairline,
+    backgroundColor: TC.surface,
   },
   closeButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     justifyContent: 'center',
     alignItems: 'center',
   },
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   searchContainer: {
     padding: 16,
@@ -784,7 +782,7 @@ const styles = StyleSheet.create({
   searchWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     paddingHorizontal: 16,
     height: 52,
@@ -792,13 +790,13 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    color: '#fff',
+    color: TC.text,
     fontSize: 16,
   },
   suggestionsList: {
     maxHeight: 250,
     marginHorizontal: 16,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
   },
   suggestionItem: {
@@ -807,12 +805,12 @@ const styles = StyleSheet.create({
     padding: 14,
     gap: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   suggestionText: {
     flex: 1,
     fontSize: 14,
-    color: '#fff',
+    color: TC.text,
   },
   mapPlaceholder: {
     flex: 1,
@@ -824,12 +822,12 @@ const styles = StyleSheet.create({
   placeholderTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginTop: 16,
   },
   placeholderText: {
     fontSize: 14,
-    color: '#666',
+    color: TC.muted,
     textAlign: 'center',
   },
   placeholderNote: {

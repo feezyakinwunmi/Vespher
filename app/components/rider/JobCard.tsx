@@ -2,10 +2,10 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { formatDistanceToNow } from 'date-fns';
 import type { RiderOrder } from '../../services/riderOrders';
 import { R, naira, StatusPill, RouteLine } from './ui';
+import { fill } from '../../theme/colors';
 
 interface Props {
   order: RiderOrder;
@@ -57,7 +57,7 @@ export function JobCard({ order, onPress, onAccept, accepting }: Props) {
 
         {onAccept ? (
           <TouchableOpacity onPress={onAccept} disabled={accepting} activeOpacity={0.85}>
-            <LinearGradient colors={R.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.acceptBtn}>
+            <View style={[styles.acceptBtn, { backgroundColor: fill(R.gradient) }]}>
               {accepting ? (
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
@@ -66,7 +66,7 @@ export function JobCard({ order, onPress, onAccept, accepting }: Props) {
                   <Feather name="arrow-right" size={15} color="#fff" />
                 </>
               )}
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
         ) : (
           <Feather name="chevron-right" size={20} color={R.muted} />
@@ -88,10 +88,10 @@ const styles = StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   logo: { width: 42, height: 42, borderRadius: 12 },
   logoFallback: { backgroundColor: 'rgba(249,115,22,0.1)', justifyContent: 'center', alignItems: 'center' },
-  vendor: { color: R.text, fontSize: 15, fontWeight: '700' },
+  vendor: { color: R.text, fontSize: 15, fontWeight: '600' },
   meta: { color: R.muted, fontSize: 12, marginTop: 2 },
   earnBox: { alignItems: 'flex-end' },
-  earn: { color: R.green, fontSize: 17, fontWeight: '800' },
+  earn: { color: R.green, fontSize: 17, fontWeight: '600' },
   earnLabel: { color: R.faint, fontSize: 10, marginTop: 1 },
   divider: { height: 1, backgroundColor: R.border, marginVertical: 14 },
   bottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 },
@@ -116,5 +116,5 @@ const styles = StyleSheet.create({
     minWidth: 96,
     justifyContent: 'center',
   },
-  acceptText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  acceptText: { color: '#fff', fontSize: 14, fontWeight: '600' },
 });

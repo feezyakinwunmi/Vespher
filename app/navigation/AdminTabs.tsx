@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, AppState } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Feather } from '@expo/vector-icons';
 import { AdminTabParamList } from './types';
-import { useTabBarOptions, TAB_ICON_SIZE } from './tabBarOptions';
+import { useTabBarOptions, renderGlassTabBar, TAB_ICON_SIZE } from './tabBarOptions';
 
 import { AdminDashboardScreen } from '../screens/admin/AdminDashboardScreen';
 import { AdminVendorsScreen } from '../screens/admin/AdminVendorsScreen';
@@ -14,6 +14,7 @@ import { AdminLogisticsScreen } from '../lib/AdminLogisticsScreen';
 import { AdminSettingsScreen } from '../screens/admin/AdminSettingsScreen';
 import { useAdmin } from '../hooks/admin/useAdmin';
 import { countPendingApplications } from '../services/riderApplications';
+import { TC } from '../theme/palette';
 
 const Tab = createBottomTabNavigator<AdminTabParamList>();
 
@@ -51,7 +52,7 @@ export function AdminTabs() {
   }, [loadRiderCount]);
 
   return (
-    <Tab.Navigator screenOptions={screenOptions}>
+    <Tab.Navigator screenOptions={screenOptions} tabBar={renderGlassTabBar}>
       <Tab.Screen name="Dashboard" component={AdminDashboardScreen} options={{ tabBarIcon: icon('grid') }} />
       <Tab.Screen name="Vendors" component={AdminVendorsScreen} options={{ tabBarIcon: icon('users', pendingVendorCount) }} />
       <Tab.Screen name="Withdrawals" component={AdminWithdrawalsScreen} options={{ tabBarIcon: icon('credit-card', pendingWithdrawalCount) }} />
@@ -79,9 +80,9 @@ const styles = StyleSheet.create({
     borderRadius: 9,
     backgroundColor: '#ef4444',
     borderWidth: 1.5,
-    borderColor: '#0a0a0a',
+    borderColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  badgeText: { color: '#fff', fontSize: 9.5, fontWeight: '700' },
+  badgeText: { color: '#fff', fontSize: 9.5, fontWeight: '600' },
 });

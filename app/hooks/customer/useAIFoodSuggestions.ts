@@ -406,7 +406,7 @@ export function getMealTimeGreeting(mealTime: MealTime, firstName: string): { gr
       subtitle: 'Start your day right — here are light breakfast picks for you',
     },
     lunch: {
-      greeting: `Hey ${firstName}, lunchtime!`,
+      greeting: `Hey ${firstName}, lunchtime`,
       subtitle: 'Hungry? Check out these hearty Nigerian lunch meals',
     },
     dinner: {

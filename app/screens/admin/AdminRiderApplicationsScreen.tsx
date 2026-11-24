@@ -32,14 +32,15 @@ import {
   reviewApplication,
 } from '../../services/riderApplications';
 import { ModalSafeArea } from '../../components/ModalSafeArea';
+import { TC } from '../../theme/palette';
 
 const C = {
-  bg: '#0a0a0a',
-  card: '#141414',
-  border: 'rgba(255,255,255,0.06)',
-  text: '#fff',
-  muted: '#8a8a8a',
-  faint: '#5c5c5c',
+  bg: TC.bg,
+  card: TC.surface2,
+  border: TC.hairline2,
+  text: TC.text,
+  muted: TC.subtle,
+  faint: TC.subtle,
   orange: '#f97316',
   green: '#10b981',
   amber: '#f59e0b',
@@ -132,7 +133,7 @@ export function AdminRiderApplicationsScreen() {
       <View style={styles.tabs}>
         {TABS.map(t => (
           <TouchableOpacity key={t.key} style={[styles.tab, tab === t.key && styles.tabOn]} onPress={() => setTab(t.key)}>
-            <Text style={[styles.tabText, tab === t.key && { color: '#fff' }]}>{t.label}</Text>
+            <Text style={[styles.tabText, tab === t.key && { color: TC.text }]}>{t.label}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -148,7 +149,7 @@ export function AdminRiderApplicationsScreen() {
           ListEmptyComponent={
             <View style={styles.empty}>
               <Feather name="inbox" size={28} color={C.faint} />
-              <Text style={styles.emptyText}>{tab === 'pending' ? 'No applications waiting. Nice!' : 'Nothing here yet.'}</Text>
+              <Text style={styles.emptyText}>{tab === 'pending' ? 'No applications waiting. Nice' : 'Nothing here yet.'}</Text>
             </View>
           }
           renderItem={({ item }) => (
@@ -264,7 +265,7 @@ export function AdminRiderApplicationsScreen() {
                   <View style={styles.reasons}>
                     {QUICK_REASONS.map(r => (
                       <TouchableOpacity key={r} style={[styles.reason, reason === r && styles.reasonOn]} onPress={() => setReason(r)}>
-                        <Text style={[styles.reasonText, reason === r && { color: '#fff' }]}>{r}</Text>
+                        <Text style={[styles.reasonText, reason === r && { color: TC.text }]}>{r}</Text>
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -352,7 +353,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 10 },
   back: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.card, justifyContent: 'center', alignItems: 'center' },
-  title: { color: C.text, fontSize: 19, fontWeight: '800' },
+  title: { color: C.text, fontSize: 19, fontWeight: '600' },
   tabs: { flexDirection: 'row', marginHorizontal: 16, backgroundColor: C.card, borderRadius: 12, padding: 4 },
   tab: { flex: 1, paddingVertical: 9, alignItems: 'center', borderRadius: 9 },
   tabOn: { backgroundColor: C.orange },
@@ -362,35 +363,35 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderRadius: 16, borderWidth: 1, borderColor: C.border, padding: 14, marginBottom: 10 },
   avatar: { width: 46, height: 46, borderRadius: 23 },
   avatarFallback: { backgroundColor: 'rgba(249,115,22,0.1)', justifyContent: 'center', alignItems: 'center' },
-  name: { color: C.text, fontSize: 15, fontWeight: '700' },
+  name: { color: C.text, fontSize: 15, fontWeight: '600' },
   sub: { color: C.muted, fontSize: 12.5, marginTop: 2 },
   time: { color: C.faint, fontSize: 11.5, marginTop: 2 },
   pill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
-  pillText: { fontSize: 11, fontWeight: '700', textTransform: 'capitalize' },
+  pillText: { fontSize: 11, fontWeight: '600', textTransform: 'capitalize' },
   top: { flexDirection: 'row', gap: 16, alignItems: 'center' },
   bigAvatar: { width: 84, height: 84, borderRadius: 42 },
   action: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4 },
   actionText: { color: C.text, fontSize: 14, flex: 1 },
   rejected: { marginTop: 14, padding: 12, borderRadius: 12, backgroundColor: 'rgba(239,68,68,0.1)' },
   rejectedText: { color: '#fca5a5', fontSize: 13 },
-  sectionTitle: { color: C.muted, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 8 },
+  sectionTitle: { color: C.muted, fontSize: 12, fontWeight: '600', marginBottom: 8 },
   card: { backgroundColor: C.card, borderRadius: 16, borderWidth: 1, borderColor: C.border, padding: 14 },
   info: { flexDirection: 'row', paddingVertical: 5, gap: 12 },
   infoKey: { color: C.muted, fontSize: 13, width: 100 },
   infoVal: { color: C.text, fontSize: 13.5, flex: 1 },
   docs: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  doc: { width: '47%', height: 110, borderRadius: 12, backgroundColor: '#1c1c1c', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  doc: { width: '47%', height: 110, borderRadius: 12, backgroundColor: TC.surface, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   docImg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
-  docLabel: { position: 'absolute', bottom: 6, left: 8, color: '#fff', fontSize: 11, fontWeight: '700', backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, overflow: 'hidden' },
+  docLabel: { position: 'absolute', bottom: 6, left: 8, color: '#fff', fontSize: 11, fontWeight: '600', backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, overflow: 'hidden' },
   reasons: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 },
-  reason: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: '#2a2a2a' },
+  reason: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: TC.raised },
   reasonOn: { backgroundColor: C.red, borderColor: C.red },
   reasonText: { color: C.text, fontSize: 12.5 },
-  reasonInput: { minHeight: 70, borderRadius: 12, borderWidth: 1, borderColor: '#2a2a2a', color: C.text, padding: 12, textAlignVertical: 'top' },
+  reasonInput: { minHeight: 70, borderRadius: 12, borderWidth: 1, borderColor: TC.raised, color: C.text, padding: 12, textAlignVertical: 'top' },
   footer: { flexDirection: 'row', gap: 10, padding: 16, borderTopWidth: 1, borderTopColor: C.border },
   btn: { flex: 1, height: 50, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
   btnGhost: { backgroundColor: C.card, borderWidth: 1, borderColor: C.border },
-  btnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  btnText: { color: '#fff', fontSize: 15, fontWeight: '600' },
   viewer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', alignItems: 'center' },
   viewerImg: { width: '100%', height: '80%' },
   viewerHint: { color: C.muted, marginTop: 12 },

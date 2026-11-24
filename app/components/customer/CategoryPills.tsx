@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import type { Category } from '../../types';
+import { TC } from '../../theme/palette';
 
 interface CategoryPillsProps {
   categories: Category[];
@@ -39,7 +40,7 @@ export function CategoryPills({
           <Feather 
             name={category.icon as any} 
             size={16} 
-            color={selectedCategory === category.name ? '#f97316' : '#666'} 
+            color={selectedCategory === category.name ? '#f97316' : TC.muted} 
           />
           <Text style={[
             styles.pillText,
@@ -62,7 +63,7 @@ const styles = StyleSheet.create({
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
@@ -77,7 +78,7 @@ const styles = StyleSheet.create({
   },
   pillText: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
   },
   pillTextSelected: {
     color: '#f97316',

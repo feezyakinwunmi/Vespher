@@ -13,6 +13,7 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
+import { TC } from '../../theme/palette';
 
 type PrivacyScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -24,9 +25,9 @@ export function PrivacyScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Feather name="arrow-left" size={24} color="#fff" />
+          <Feather name="arrow-left" size={24} color={TC.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Privacy Policy</Text>
+        <Text style={styles.headerTitle}>Privacy policy</Text>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -57,7 +58,7 @@ export function PrivacyScreen() {
           <Text style={styles.subtitle}>Children</Text>
           <Text style={styles.paragraph}>Vesphe is not intended for children under 18.</Text>
 
-          <Text style={styles.subtitle}>Contact Us</Text>
+          <Text style={styles.subtitle}>Contact us</Text>
           <Text style={styles.paragraph}>
             If you have questions about this Privacy Policy, please contact us at {SUPPORT.email}
           </Text>
@@ -71,7 +72,7 @@ export function PrivacyScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
         paddingBottom:60,
 
   },
@@ -82,20 +83,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   content: {
     flex: 1,
@@ -105,19 +106,19 @@ const styles = StyleSheet.create({
   },
   lastUpdated: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 20,
   },
   subtitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginTop: 20,
     marginBottom: 8,
   },
   paragraph: {
     fontSize: 14,
-    color: '#666',
+    color: TC.muted,
     lineHeight: 22,
     marginBottom: 10,
   },

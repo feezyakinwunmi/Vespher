@@ -15,13 +15,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import Toast from 'react-native-toast-message';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
+import { humanize } from '../../utils/text';
+import { TAB_BAR_SPACE } from '../../navigation/tabBarOptions';
+import { TC } from '../../theme/palette';
 
 // In the component
 
@@ -300,7 +302,7 @@ const handleRetryWithdrawal = async (withdrawal: Withdrawal) => {
       case 'processing': return '#3b82f6';
       case 'completed': return '#10b981';
       case 'failed': return '#ef4444';
-      default: return '#666';
+      default: return TC.muted;
     }
   };
 
@@ -337,12 +339,12 @@ const handleRetryWithdrawal = async (withdrawal: Withdrawal) => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
 
 <View style={styles.header}>
   <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-    <Feather name="arrow-left" size={24} color="#fff" />
+    <Feather name="arrow-left" size={24} color={TC.text} />
   </TouchableOpacity>
   <Text style={styles.headerTitle}>Withdrawals</Text>
   <View style={styles.headerRight}>
@@ -360,13 +362,10 @@ const handleRetryWithdrawal = async (withdrawal: Withdrawal) => {
 
       {/* Stats Cards */}
       <View style={styles.statsContainer}>
-        <LinearGradient
-          colors={['#f97316', '#f43f5e']}
-          style={styles.statCard}
-        >
-          <Text style={styles.statLabel}>Total Withdrawn</Text>
+        <View style={[styles.statCard, { backgroundColor: '#ea580c' }]}>
+          <Text style={styles.statLabel}>Total withdrawn</Text>
           <Text style={styles.statValue}>₦{getTotalCompleted().toLocaleString()}</Text>
-        </LinearGradient>
+        </View>
 
         <View style={styles.statCardSecondary}>
           <Feather name="clock" size={20} color="#f59e0b" />
@@ -385,17 +384,17 @@ const handleRetryWithdrawal = async (withdrawal: Withdrawal) => {
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
-        <Feather name="search" size={18} color="#666" style={styles.searchIcon} />
+        <Feather name="search" size={18} color={TC.muted} style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
           value={searchQuery}
           onChangeText={setSearchQuery}
           placeholder="Search by name, email, bank..."
-          placeholderTextColor="#666"
+          placeholderTextColor={TC.muted}
         />
         {searchQuery ? (
           <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <Feather name="x" size={18} color="#666" />
+            <Feather name="x" size={18} color={TC.muted} />
           </TouchableOpacity>
         ) : null}
       </View>
@@ -413,7 +412,7 @@ const handleRetryWithdrawal = async (withdrawal: Withdrawal) => {
             <Text style={[
               styles.filterTabText,
               userTypeFilter === 'all' && styles.filterTabTextActive,
-            ]}>All Types</Text>
+            ]}>All types</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => setUserTypeFilter('vendor')}
@@ -422,7 +421,7 @@ const handleRetryWithdrawal = async (withdrawal: Withdrawal) => {
               userTypeFilter === 'vendor' && styles.filterTabActive,
             ]}
           >
-            <Feather name="home" size={14} color={userTypeFilter === 'vendor' ? '#f97316' : '#666'} />
+            <Feather name="home" size={14} color={userTypeFilter === 'vendor' ? '#f97316' : TC.muted} />
             <Text style={[
               styles.filterTabText,
               userTypeFilter === 'vendor' && styles.filterTabTextActive,
@@ -435,7 +434,7 @@ const handleRetryWithdrawal = async (withdrawal: Withdrawal) => {
               userTypeFilter === 'rider' && styles.filterTabActive,
             ]}
           >
-            <Feather name="truck" size={14} color={userTypeFilter === 'rider' ? '#f97316' : '#666'} />
+            <Feather name="truck" size={14} color={userTypeFilter === 'rider' ? '#f97316' : TC.muted} />
             <Text style={[
               styles.filterTabText,
               userTypeFilter === 'rider' && styles.filterTabTextActive,
@@ -509,7 +508,7 @@ const handleRetryWithdrawal = async (withdrawal: Withdrawal) => {
       </View>
 
       {/* Withdrawals List */}
-      <ScrollView
+      <ScrollView contentContainerStyle={{ paddingBottom: TAB_BAR_SPACE }}
         style={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -518,7 +517,7 @@ const handleRetryWithdrawal = async (withdrawal: Withdrawal) => {
       >
         {filteredWithdrawals.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Feather name="credit-card" size={48} color="#666" />
+            <Feather name="credit-card" size={48} color={TC.muted} />
             <Text style={styles.emptyTitle}>No withdrawals found</Text>
             <Text style={styles.emptyText}>Try adjusting your filters</Text>
           </View>
@@ -531,14 +530,11 @@ const handleRetryWithdrawal = async (withdrawal: Withdrawal) => {
                     {withdrawal.user?.avatar_url ? (
                       <Image source={{ uri: withdrawal.user.avatar_url }} style={styles.avatar} />
                     ) : (
-                      <LinearGradient
-                        colors={['#f97316', '#f43f5e']}
-                        style={styles.avatarPlaceholder}
-                      >
+                      <View style={[styles.avatarPlaceholder, { backgroundColor: '#ea580c' }]}>
                         <Text style={styles.avatarText}>
                           {withdrawal.user?.name?.charAt(0) || withdrawal.user_type.charAt(0).toUpperCase()}
                         </Text>
-                      </LinearGradient>
+                      </View>
                     )}
                   </View>
                   <View>
@@ -566,7 +562,7 @@ const handleRetryWithdrawal = async (withdrawal: Withdrawal) => {
                   }}
                   style={styles.menuButton}
                 >
-                  <Feather name="more-vertical" size={20} color="#666" />
+                  <Feather name="more-vertical" size={20} color={TC.muted} />
                 </TouchableOpacity>
               </View>
 
@@ -576,7 +572,7 @@ const handleRetryWithdrawal = async (withdrawal: Withdrawal) => {
               </View>
 
               <View style={styles.bankDetails}>
-                <Feather name="credit-card" size={14} color="#666" />
+                <Feather name="credit-card" size={14} color={TC.muted} />
                 <Text style={styles.bankText}>{withdrawal.bank_name}</Text>
               </View>
               <Text style={styles.accountText}>{withdrawal.account_number} • {withdrawal.account_name}</Text>
@@ -588,7 +584,7 @@ const handleRetryWithdrawal = async (withdrawal: Withdrawal) => {
 
               <View style={styles.footer}>
                 <View style={styles.dateContainer}>
-                  <Feather name="calendar" size={12} color="#666" />
+                  <Feather name="calendar" size={12} color={TC.muted} />
                   <Text style={styles.date}>{formatDate(withdrawal.created_at)}</Text>
                 </View>
 
@@ -598,14 +594,14 @@ const handleRetryWithdrawal = async (withdrawal: Withdrawal) => {
                 ]}>
                   <View style={[styles.statusDot, { backgroundColor: getStatusColor(withdrawal.status) }]} />
                   <Text style={[styles.statusText, { color: getStatusColor(withdrawal.status) }]}>
-                    {withdrawal.status.toUpperCase()}
+                    {humanize(withdrawal.status)}
                   </Text>
                 </View>
               </View>
 
               {withdrawal.notes && (
                 <View style={styles.notesContainer}>
-                  <Feather name="message-circle" size={12} color="#666" />
+                  <Feather name="message-circle" size={12} color={TC.muted} />
                   <Text style={styles.notes}>{withdrawal.notes}</Text>
                 </View>
               )}
@@ -657,7 +653,7 @@ const handleRetryWithdrawal = async (withdrawal: Withdrawal) => {
             onPress={() => handleAction(selectedWithdrawal, 'reject')}
           >
             <Feather name="x-circle" size={18} color="#ef4444" />
-            <Text style={[styles.actionText, styles.actionTextDelete]}>Reject Withdrawal</Text>
+            <Text style={[styles.actionText, styles.actionTextDelete]}>Reject withdrawal</Text>
           </TouchableOpacity>
         </>
       )}
@@ -681,7 +677,7 @@ const handleRetryWithdrawal = async (withdrawal: Withdrawal) => {
             onPress={() => handleAction(selectedWithdrawal, 'reject')}
           >
             <Feather name="x-circle" size={18} color="#ef4444" />
-            <Text style={[styles.actionText, styles.actionTextDelete]}>Reject Withdrawal</Text>
+            <Text style={[styles.actionText, styles.actionTextDelete]}>Reject withdrawal</Text>
           </TouchableOpacity>
         </>
       )}
@@ -689,7 +685,7 @@ const handleRetryWithdrawal = async (withdrawal: Withdrawal) => {
       {/* Completed/Processing - Show Info Only */}
       {selectedWithdrawal?.status !== 'pending' && selectedWithdrawal?.status !== 'failed' && (
         <View style={styles.actionInfo}>
-          <Feather name="info" size={18} color="#666" />
+          <Feather name="info" size={18} color={TC.muted} />
           <Text style={styles.actionInfoText}>
             This withdrawal is already {selectedWithdrawal?.status}
           </Text>
@@ -712,7 +708,7 @@ const handleRetryWithdrawal = async (withdrawal: Withdrawal) => {
               <Feather name="alert-triangle" size={40} color="#f97316" />
             </View>
             
-            <Text style={styles.confirmTitle}>Confirm Action</Text>
+            <Text style={styles.confirmTitle}>Confirm action</Text>
             <Text style={styles.confirmMessage}>
               {confirmAction?.type === 'approve' 
                 ? `Only confirm after you have sent ₦${confirmAction?.withdrawal.amount.toLocaleString()} to ${confirmAction?.withdrawal.account_name} (${confirmAction?.withdrawal.bank_name} ${confirmAction?.withdrawal.account_number}) from your bank app or the Paystack dashboard. The app does not send this money.` 
@@ -757,9 +753,9 @@ const handleRetryWithdrawal = async (withdrawal: Withdrawal) => {
         <View style={styles.modalOverlay}>
           <View style={styles.notesModal}>
             <View style={styles.notesModalHeader}>
-              <Text style={styles.notesModalTitle}>Rejection Reason</Text>
+              <Text style={styles.notesModalTitle}>Rejection reason</Text>
               <TouchableOpacity onPress={() => setShowNotesModal(false)}>
-                <Feather name="x" size={20} color="#fff" />
+                <Feather name="x" size={20} color={TC.text} />
               </TouchableOpacity>
             </View>
 
@@ -772,7 +768,7 @@ const handleRetryWithdrawal = async (withdrawal: Withdrawal) => {
               value={rejectNotes}
               onChangeText={setRejectNotes}
               placeholder="Enter reason..."
-              placeholderTextColor="#666"
+              placeholderTextColor={TC.muted}
               multiline
               numberOfLines={4}
               textAlignVertical="top"
@@ -795,12 +791,9 @@ const handleRetryWithdrawal = async (withdrawal: Withdrawal) => {
                 onPress={executeRejectWithNotes}
                 disabled={!rejectNotes.trim()}
               >
-                <LinearGradient
-                  colors={['#f97316', '#f43f5e']}
-                  style={styles.notesSubmitGradient}
-                >
+                <View style={[styles.notesSubmitGradient, { backgroundColor: '#ea580c' }]}>
                   <Text style={styles.notesSubmitText}>Submit</Text>
-                </LinearGradient>
+                </View>
               </TouchableOpacity>
             </View>
           </View>
@@ -812,18 +805,17 @@ const handleRetryWithdrawal = async (withdrawal: Withdrawal) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
-        paddingBottom:60,
+    backgroundColor: TC.bg,
 
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    color: '#666',
+    color: TC.muted,
     marginTop: 12,
     fontSize: 14,
   },
@@ -834,26 +826,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   refreshButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -869,12 +861,12 @@ const styles = StyleSheet.create({
   },
   statCardSecondary: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     padding: 12,
     borderRadius: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   statLabel: {
     fontSize: 11,
@@ -889,30 +881,30 @@ outstandingButton: {
   width: 40,
   height: 40,
   borderRadius: 20,
-  backgroundColor: '#1a1a1a',
+  backgroundColor: TC.surface,
   justifyContent: 'center',
   alignItems: 'center',
 },
   statValue: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
   },
   statNumber: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
     marginTop: 4,
     marginBottom: 2,
   },
   statLabelSmall: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     marginHorizontal: 16,
     marginBottom: 12,
     paddingHorizontal: 12,
@@ -924,7 +916,7 @@ outstandingButton: {
   },
   searchInput: {
     flex: 1,
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
   },
   filterTabs: {
@@ -942,7 +934,7 @@ outstandingButton: {
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 20,
     gap: 4,
   },
@@ -953,7 +945,7 @@ outstandingButton: {
   },
   filterTabText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   filterTabTextActive: {
     color: '#f97316',
@@ -961,7 +953,7 @@ outstandingButton: {
   filterDivider: {
     width: 1,
     height: 20,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     marginHorizontal: 4,
   },
   filterChip: {
@@ -969,7 +961,7 @@ outstandingButton: {
     alignItems: 'center',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 16,
     gap: 4,
     borderWidth: 1,
@@ -981,7 +973,7 @@ outstandingButton: {
   },
   filterChipText: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
   },
   filterChipTextActive: {
     color: '#f97316',
@@ -997,19 +989,19 @@ outstandingButton: {
   },
   resultsText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   content: {
     flex: 1,
   },
   withdrawalCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     marginHorizontal: 16,
     marginBottom: 12,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -1040,13 +1032,13 @@ outstandingButton: {
   },
   avatarText: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#fff',
   },
   userName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 2,
   },
   userTypeBadge: {
@@ -1066,12 +1058,12 @@ outstandingButton: {
   },
   amountLabel: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 2,
   },
   amount: {
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#f97316',
   },
   bankDetails: {
@@ -1082,11 +1074,11 @@ outstandingButton: {
   },
   bankText: {
     fontSize: 13,
-    color: '#fff',
+    color: TC.text,
   },
   accountText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 8,
   },
   referenceRow: {
@@ -1097,7 +1089,7 @@ outstandingButton: {
   },
   referenceLabel: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
   },
   reference: {
     fontSize: 11,
@@ -1117,7 +1109,7 @@ outstandingButton: {
   },
   date: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
   },
   statusBadge: {
     flexDirection: 'row',
@@ -1138,12 +1130,12 @@ outstandingButton: {
     marginTop: 8,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   notes: {
     flex: 1,
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
     fontStyle: 'italic',
   },
   processedContainer: {
@@ -1165,13 +1157,13 @@ outstandingButton: {
   emptyTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginTop: 16,
     marginBottom: 4,
   },
   emptyText: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
     textAlign: 'center',
   },
   bottomPadding: {
@@ -1185,7 +1177,7 @@ outstandingButton: {
   },
   actionsModal: {
     width: '80%',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     padding: 8,
   },
@@ -1195,14 +1187,14 @@ outstandingButton: {
     padding: 16,
     gap: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   actionItemDelete: {
     borderBottomWidth: 0,
   },
   actionText: {
     fontSize: 14,
-    color: '#fff',
+    color: TC.text,
   },
   actionTextDelete: {
     color: '#ef4444',
@@ -1212,17 +1204,17 @@ outstandingButton: {
     alignItems: 'center',
     padding: 16,
     gap: 12,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 8,
   },
   actionInfoText: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
     flex: 1,
   },
   confirmModal: {
     width: '80%',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 16,
     padding: 20,
     alignItems: 'center',
@@ -1244,7 +1236,7 @@ outstandingButton: {
   },
   confirmMessage: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -1261,10 +1253,10 @@ outstandingButton: {
     alignItems: 'center',
   },
   cancelButton: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
   },
   cancelButtonText: {
-    color: '#666',
+    color: TC.muted,
     fontSize: 14,
     fontWeight: '500',
   },
@@ -1281,7 +1273,7 @@ outstandingButton: {
   },
   notesModal: {
     width: '85%',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 16,
     padding: 20,
   },
@@ -1294,18 +1286,18 @@ outstandingButton: {
   notesModalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   notesModalLabel: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 12,
   },
   notesInput: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 8,
     padding: 12,
-    color: '#fff',
+    color: TC.text,
     fontSize: 13,
     height: 100,
     textAlignVertical: 'top',
@@ -1323,10 +1315,10 @@ outstandingButton: {
     alignItems: 'center',
   },
   notesCancelButton: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
   },
   notesCancelText: {
-    color: '#666',
+    color: TC.muted,
     fontSize: 14,
     fontWeight: '500',
   },

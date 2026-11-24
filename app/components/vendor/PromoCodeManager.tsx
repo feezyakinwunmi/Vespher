@@ -14,10 +14,10 @@ import {
   Image,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import * as Clipboard from 'expo-clipboard';
+import { TC } from '../../theme/palette';
 
 interface PromoCode {
   id: string;
@@ -178,7 +178,7 @@ export function PromoCodeManager() {
     if (formData.discount_type === 'percentage') {
       return `Special Offer! Get ${formData.discount_value || '20'}% OFF on all orders above ₦${parseInt(formData.min_order_amount || '0').toLocaleString()}. Don't miss out on this amazing deal! Valid for a limited time only. Share with friends and family.`;
     } else {
-      return `Limited Time Offer! Save ₦${parseInt(formData.discount_value || '1000').toLocaleString()} on your next order when you spend ₦${parseInt(formData.min_order_amount || '5000').toLocaleString()} or more. Perfect for family meals and group orders!`;
+      return `Limited Time Offer! Save ₦${parseInt(formData.discount_value || '1000').toLocaleString()} on your next order when you spend ₦${parseInt(formData.min_order_amount || '5000').toLocaleString()} or more. Perfect for family meals and group orders`;
     }
   };
 
@@ -193,7 +193,7 @@ export function PromoCodeManager() {
       min_order_amount: formData.min_order_amount || minAmount,
     });
     setShowSampleModal(false);
-    Alert.alert('Sample Applied', 'Sample description and values have been added. You can edit them before creating.');
+    Alert.alert('Sample applied', 'Sample description and values have been added. You can edit them before creating.');
   };
 
   const handleSubmit = async () => {
@@ -278,7 +278,7 @@ export function PromoCodeManager() {
 
   const handleDelete = (id: string) => {
     Alert.alert(
-      'Delete Promo Code',
+      'Delete promo code',
       'Are you sure you want to delete this promo code?',
       [
         { text: 'Cancel', style: 'cancel' },
@@ -333,7 +333,7 @@ export function PromoCodeManager() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Text style={styles.title}>Promo Codes</Text>
+          <Text style={styles.title}>Promo codes</Text>
           <Text style={styles.subtitle}>
             {isAdmin ? 'Manage platform-wide promo codes' : 'Create promotions for your customers'}
           </Text>
@@ -343,7 +343,7 @@ export function PromoCodeManager() {
             onPress={() => setShowHelpModal(true)}
             style={styles.helpButton}
           >
-            <Feather name="help-circle" size={22} color="#666" />
+            <Feather name="help-circle" size={22} color={TC.muted} />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => {
@@ -365,13 +365,10 @@ export function PromoCodeManager() {
             }}
             style={styles.createButton}
           >
-            <LinearGradient
-              colors={['#f97316', '#f43f5e']}
-              style={styles.createButtonGradient}
-            >
+            <View style={[styles.createButtonGradient, { backgroundColor: '#ea580c' }]}>
               <Feather name="plus" size={16} color="#fff" />
-              <Text style={styles.createButtonText}>Create Promo Code</Text>
-            </LinearGradient>
+              <Text style={styles.createButtonText}>Create promo code</Text>
+            </View>
           </TouchableOpacity>
         </View>
       </View>
@@ -381,14 +378,14 @@ export function PromoCodeManager() {
         <View style={styles.statCard}>
           <Feather name="tag" size={20} color="#f97316" />
           <Text style={styles.statNumber}>{promoCodes.length}</Text>
-          <Text style={styles.statLabel}>Total Codes</Text>
+          <Text style={styles.statLabel}>Total codes</Text>
         </View>
         <View style={styles.statCard}>
           <Feather name="trending-up" size={20} color="#10b981" />
           <Text style={styles.statNumber}>
             {promoCodes.reduce((sum, c) => sum + (c.times_used || 0), 0)}
           </Text>
-          <Text style={styles.statLabel}>Total Uses</Text>
+          <Text style={styles.statLabel}>Total uses</Text>
         </View>
         <View style={styles.statCard}>
           <Feather name="clock" size={20} color="#f59e0b" />
@@ -412,7 +409,7 @@ export function PromoCodeManager() {
         onPress={() => copyToClipboard(code.code)}
         style={styles.copyButton}
       >
-        <Feather name="copy" size={14} color="#666" />
+        <Feather name="copy" size={14} color={TC.muted} />
       </TouchableOpacity>
     </View>
     <View style={styles.badgeRow}>
@@ -471,7 +468,7 @@ export function PromoCodeManager() {
       }}
       style={styles.actionButton}
     >
-      <Feather name="edit-2" size={18} color="#666" />
+      <Feather name="edit-2" size={18} color={TC.muted} />
     </TouchableOpacity>
     <TouchableOpacity
       onPress={() => handleDelete(code.id)}
@@ -492,7 +489,7 @@ export function PromoCodeManager() {
                   </Text>
                 </View>
                 <View style={styles.stat}>
-                  <Text style={styles.statLabel}>Min Order</Text>
+                  <Text style={styles.statLabel}>Min order</Text>
                   <Text style={styles.statValue}>₦{code.min_order_amount.toLocaleString()}</Text>
                 </View>
                 <View style={styles.stat}>
@@ -513,7 +510,7 @@ export function PromoCodeManager() {
           ))
         ) : (
           <View style={styles.emptyState}>
-            <Feather name="tag" size={48} color="#666" />
+            <Feather name="tag" size={48} color={TC.muted} />
             <Text style={styles.emptyTitle}>No promo codes yet</Text>
             <Text style={styles.emptyText}>
               Create your first promo code to start offering discounts to customers
@@ -538,13 +535,10 @@ export function PromoCodeManager() {
               }}
               style={styles.emptyButton}
             >
-              <LinearGradient
-                colors={['#f97316', '#f43f5e']}
-                style={styles.emptyButtonGradient}
-              >
+              <View style={[styles.emptyButtonGradient, { backgroundColor: '#ea580c' }]}>
                 <Feather name="plus" size={16} color="#fff" />
-                <Text style={styles.emptyButtonText}>Create Your First Promo Code</Text>
-              </LinearGradient>
+                <Text style={styles.emptyButtonText}>Create your first promo code</Text>
+              </View>
             </TouchableOpacity>
           </View>
         )}
@@ -587,7 +581,7 @@ export function PromoCodeManager() {
                     value={formData.code}
                     onChangeText={(text) => setFormData({ ...formData, code: text.toUpperCase() })}
                     placeholder="SAVE20"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                     autoCapitalize="characters"
                     maxLength={20}
                   />
@@ -608,7 +602,7 @@ export function PromoCodeManager() {
                   value={formData.description}
                   onChangeText={(text) => setFormData({ ...formData, description: text })}
                   placeholder="Describe your offer... (this will be shown to customers)"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={TC.muted}
                   multiline
                   numberOfLines={3}
                   textAlignVertical="top"
@@ -621,7 +615,7 @@ export function PromoCodeManager() {
               {/* Discount Type & Value */}
               <View style={styles.row}>
                 <View style={[styles.formGroup, { flex: 1, marginRight: 8 }]}>
-                  <Text style={styles.label}>Discount Type</Text>
+                  <Text style={styles.label}>Discount type</Text>
                   <View style={styles.pickerContainer}>
                     <TouchableOpacity
                       onPress={() => setFormData({ ...formData, discount_type: 'percentage' })}
@@ -660,7 +654,7 @@ export function PromoCodeManager() {
                     value={formData.discount_value}
                     onChangeText={(text) => setFormData({ ...formData, discount_value: text })}
                     placeholder={formData.discount_type === 'percentage' ? '20' : '2000'}
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                     keyboardType="numeric"
                   />
                 </View>
@@ -675,7 +669,7 @@ export function PromoCodeManager() {
                     value={formData.min_order_amount}
                     onChangeText={(text) => setFormData({ ...formData, min_order_amount: text })}
                     placeholder="0"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                     keyboardType="numeric"
                   />
                 </View>
@@ -686,7 +680,7 @@ export function PromoCodeManager() {
                     value={formData.max_discount_amount}
                     onChangeText={(text) => setFormData({ ...formData, max_discount_amount: text })}
                     placeholder="Unlimited"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                     keyboardType="numeric"
                   />
                 </View>
@@ -694,7 +688,7 @@ export function PromoCodeManager() {
 
               {/* Usage Type */}
               <View style={styles.formGroup}>
-                <Text style={styles.label}>Usage Limit</Text>
+                <Text style={styles.label}>Usage limit</Text>
                 <View style={styles.usageTypeGrid}>
                   <TouchableOpacity
                     onPress={() => setFormData({ ...formData, usage_limit_type: 'unlimited', usage_limit_value: '' })}
@@ -703,7 +697,7 @@ export function PromoCodeManager() {
                       formData.usage_limit_type === 'unlimited' && styles.usageTypeCardActive,
                     ]}
                   >
-                    <Feather name="feather" size={20} color={formData.usage_limit_type === 'unlimited' ? '#f97316' : '#666'} />
+                    <Feather name="feather" size={20} color={formData.usage_limit_type === 'unlimited' ? '#f97316' : TC.muted} />
                     <Text style={[
                       styles.usageTypeText,
                       formData.usage_limit_type === 'unlimited' && styles.usageTypeTextActive,
@@ -716,7 +710,7 @@ export function PromoCodeManager() {
                       formData.usage_limit_type === 'limited' && styles.usageTypeCardActive,
                     ]}
                   >
-                    <Feather name="hash" size={20} color={formData.usage_limit_type === 'limited' ? '#f97316' : '#666'} />
+                    <Feather name="hash" size={20} color={formData.usage_limit_type === 'limited' ? '#f97316' : TC.muted} />
                     <Text style={[
                       styles.usageTypeText,
                       formData.usage_limit_type === 'limited' && styles.usageTypeTextActive,
@@ -729,7 +723,7 @@ export function PromoCodeManager() {
                       formData.usage_limit_type === 'lucky' && styles.usageTypeCardActive,
                     ]}
                   >
-                    <Feather name="star" size={20} color={formData.usage_limit_type === 'lucky' ? '#f97316' : '#666'} />
+                    <Feather name="star" size={20} color={formData.usage_limit_type === 'lucky' ? '#f97316' : TC.muted} />
                     <Text style={[
                       styles.usageTypeText,
                       formData.usage_limit_type === 'lucky' && styles.usageTypeTextActive,
@@ -749,7 +743,7 @@ export function PromoCodeManager() {
                     value={formData.usage_limit_value}
                     onChangeText={(text) => setFormData({ ...formData, usage_limit_value: text })}
                     placeholder={formData.usage_limit_type === 'limited' ? 'e.g., 100' : 'e.g., 50'}
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                     keyboardType="numeric"
                   />
                 </View>
@@ -757,13 +751,13 @@ export function PromoCodeManager() {
 
               {/* Per User Limit */}
               <View style={styles.formGroup}>
-                <Text style={styles.label}>Uses Per Customer</Text>
+                <Text style={styles.label}>Uses per customer</Text>
                 <TextInput
                   style={styles.input}
                   value={formData.usage_per_user}
                   onChangeText={(text) => setFormData({ ...formData, usage_per_user: text })}
                   placeholder="1"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={TC.muted}
                   keyboardType="numeric"
                 />
                 <Text style={styles.helperText}>How many times can one customer use this code?</Text>
@@ -777,7 +771,7 @@ export function PromoCodeManager() {
                   value={formData.end_date}
                   onChangeText={(text) => setFormData({ ...formData, end_date: text })}
                   placeholder="YYYY-MM-DDTHH:MM"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={TC.muted}
                 />
                 <Text style={styles.helperText}>Leave empty for no expiration date</Text>
               </View>
@@ -787,7 +781,7 @@ export function PromoCodeManager() {
 {/* Live Preview Section - Inline */}
 <View style={styles.previewSection}>
   <View style={styles.previewHeader}>
-    <Text style={styles.previewTitle}>Live Preview</Text>
+    <Text style={styles.previewTitle}>Live preview</Text>
     <TouchableOpacity
       onPress={() => {
         // Apply sample values
@@ -798,7 +792,7 @@ export function PromoCodeManager() {
           ...formData,
           description: formData.discount_type === 'percentage' 
             ? `Special Offer! Get ${formData.discount_value || '20'}% OFF on all orders above ₦${parseInt(formData.min_order_amount || '5000').toLocaleString()}. Don't miss out on this amazing deal! Valid for a limited time only.`
-            : `Limited Time Offer! Save ₦${parseInt(formData.discount_value || '2000').toLocaleString()} on your next order when you spend ₦${parseInt(formData.min_order_amount || '15000').toLocaleString()} or more. Perfect for family meals!`,
+            : `Limited Time Offer! Save ₦${parseInt(formData.discount_value || '2000').toLocaleString()} on your next order when you spend ₦${parseInt(formData.min_order_amount || '15000').toLocaleString()} or more. Perfect for family meals`,
           discount_value: formData.discount_value || discountVal,
           min_order_amount: formData.min_order_amount || minAmount,
         });
@@ -806,7 +800,7 @@ export function PromoCodeManager() {
       style={styles.applySampleButton}
     >
       <Feather name="zap" size={14} color="#f97316" />
-      <Text style={styles.applySampleButtonText}>Use Sample</Text>
+      <Text style={styles.applySampleButtonText}>Use sample</Text>
     </TouchableOpacity>
   </View>
   
@@ -814,7 +808,7 @@ export function PromoCodeManager() {
     <View style={styles.previewNotification}>
       <View style={styles.previewNotificationHeader}>
         <Feather name="bell" size={14} color="#f97316" />
-        <Text style={styles.previewNotificationText}>Push Notification Preview</Text>
+        <Text style={styles.previewNotificationText}>Push notification preview</Text>
       </View>
       <Text style={styles.previewTitleText}>
         {formData.code || 'SAVE20'} - {formData.discount_value || '20'}% off
@@ -829,7 +823,7 @@ export function PromoCodeManager() {
     <View style={styles.previewModal}>
       <View style={styles.previewModalHeader}>
         <Feather name="tag" size={14} color="#f97316" />
-        <Text style={styles.previewModalText}>In-App Modal Preview</Text>
+        <Text style={styles.previewModalText}>In-app modal preview</Text>
       </View>
       <Text style={styles.previewModalCode}>{formData.code || 'SAVE20'}</Text>
       <Text style={styles.previewModalDiscount}>
@@ -850,14 +844,11 @@ export function PromoCodeManager() {
                 onPress={handleSubmit}
                 style={styles.submitButton}
               >
-                <LinearGradient
-                  colors={['#f97316', '#f43f5e']}
-                  style={styles.submitGradient}
-                >
+                <View style={[styles.submitGradient, { backgroundColor: '#ea580c' }]}>
                   <Text style={styles.submitText}>
                     {editingCode ? 'Update' : 'Create'} Promo Code
                   </Text>
-                </LinearGradient>
+                </View>
               </TouchableOpacity>
             </View>
           </View>
@@ -874,9 +865,9 @@ export function PromoCodeManager() {
         <View style={styles.helpModalOverlay}>
           <View style={styles.helpModalContent}>
             <View style={styles.helpModalHeader}>
-              <Text style={styles.helpModalTitle}>How Promo Codes Work</Text>
+              <Text style={styles.helpModalTitle}>How promo codes work</Text>
               <TouchableOpacity onPress={() => setShowHelpModal(false)}>
-                <Feather name="x" size={24} color="#fff" />
+                <Feather name="x" size={24} color={TC.text} />
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.helpModalBody}>
@@ -890,7 +881,7 @@ export function PromoCodeManager() {
 
               <View style={styles.helpSection}>
                 <Feather name="percent" size={20} color="#f97316" />
-                <Text style={styles.helpSectionTitle}>Discount Types</Text>
+                <Text style={styles.helpSectionTitle}>Discount types</Text>
                 <Text style={styles.helpSubtitle}>• Percentage (%) OFF</Text>
                 <Text style={styles.helpText}>Give customers a percentage off their total. Example: 20% off</Text>
                 <Text style={styles.helpSubtitle}>• Fixed Amount (₦) OFF</Text>
@@ -899,7 +890,7 @@ export function PromoCodeManager() {
 
               <View style={styles.helpSection}>
                 <Feather name="settings" size={20} color="#f97316" />
-                <Text style={styles.helpSectionTitle}>Usage Limits</Text>
+                <Text style={styles.helpSectionTitle}>Usage limits</Text>
                 <Text style={styles.helpSubtitle}>• Unlimited</Text>
                 <Text style={styles.helpText}>Anyone can use it any number of times (within per-user limit)</Text>
                 <Text style={styles.helpSubtitle}>• Limited</Text>
@@ -910,7 +901,7 @@ export function PromoCodeManager() {
 
               <View style={styles.helpSection}>
                 <Feather name="bell" size={20} color="#f97316" />
-                <Text style={styles.helpSectionTitle}>Customer Notifications</Text>
+                <Text style={styles.helpSectionTitle}>Customer notifications</Text>
                 <Text style={styles.helpText}>
                   When you create an active promo code, ALL customers will receive:
                   • Push notification on their phone
@@ -922,7 +913,7 @@ export function PromoCodeManager() {
 
               <View style={styles.helpSection}>
                 <Feather name="info" size={20} color="#f97316" />
-                <Text style={styles.helpSectionTitle}>Pro Tips</Text>
+                <Text style={styles.helpSectionTitle}>Pro tips</Text>
                 <Text style={styles.helpText}>Use short, memorable codes like "SAVE20" or "WELCOME"</Text>
                 <Text style={styles.helpText}>Set a minimum order amount to increase average order value</Text>
                 <Text style={styles.helpText}>Create urgency with expiration dates</Text>
@@ -934,12 +925,9 @@ export function PromoCodeManager() {
               onPress={() => setShowHelpModal(false)}
               style={styles.helpModalButton}
             >
-              <LinearGradient
-                colors={['#f97316', '#f43f5e']}
-                style={styles.helpModalButtonGradient}
-              >
-                <Text style={styles.helpModalButtonText}>Got it!</Text>
-              </LinearGradient>
+              <View style={[styles.helpModalButtonGradient, { backgroundColor: '#ea580c' }]}>
+                <Text style={styles.helpModalButtonText}>Got it</Text>
+              </View>
             </TouchableOpacity>
           </View>
         </View>
@@ -955,9 +943,9 @@ export function PromoCodeManager() {
         <View style={styles.sampleModalOverlay}>
           <View style={styles.sampleModalContent}>
             <View style={styles.sampleModalHeader}>
-              <Text style={styles.sampleModalTitle}>Sample Promo Code</Text>
+              <Text style={styles.sampleModalTitle}>Sample promo code</Text>
               <TouchableOpacity onPress={() => setShowSampleModal(false)}>
-                <Feather name="x" size={24} color="#fff" />
+                <Feather name="x" size={24} color={TC.text} />
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.sampleModalBody}>
@@ -965,19 +953,14 @@ export function PromoCodeManager() {
 
               {/* Sample Display */}
               <View style={styles.sampleDisplay}>
-                <LinearGradient
-                  colors={['#f97316', '#f43f5e']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.sampleDisplayGradient}
-                >
+                <View style={[styles.sampleDisplayGradient, { backgroundColor: '#ea580c' }]}>
                   <Feather name="tag" size={32} color="#fff" />
                   <Text style={styles.sampleDisplayCode}>SAVE20</Text>
                   <Text style={styles.sampleDisplayDiscount}>20% OFF</Text>
-                </LinearGradient>
+                </View>
 
                 <View style={styles.sampleDisplayContent}>
-                  <Text style={styles.sampleDisplayTitle}>Special Offer!</Text>
+                  <Text style={styles.sampleDisplayTitle}>Special offer</Text>
                   <Text style={styles.sampleDisplayDescription}>
                     Get 20% OFF on all orders above ₦5,000. Don't miss out on this amazing deal! Valid for a limited time only.
                   </Text>
@@ -1017,13 +1000,10 @@ export function PromoCodeManager() {
                   onPress={applySample}
                   style={styles.sampleApplyButton}
                 >
-                  <LinearGradient
-                    colors={['#f97316', '#f43f5e']}
-                    style={styles.sampleApplyGradient}
-                  >
+                  <View style={[styles.sampleApplyGradient, { backgroundColor: '#ea580c' }]}>
                     <Feather name="check" size={16} color="#fff" />
-                    <Text style={styles.sampleApplyButtonText}>Use This Sample</Text>
-                  </LinearGradient>
+                    <Text style={styles.sampleApplyButtonText}>Use this sample</Text>
+                  </View>
                 </TouchableOpacity>
               </View>
             </ScrollView>
@@ -1062,11 +1042,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   subtitle: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
     marginTop: 2,
   },
   helpButton: {
@@ -1096,7 +1076,7 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     padding: 12,
     alignItems: 'center',
@@ -1104,23 +1084,23 @@ const styles = StyleSheet.create({
   },
   statNumber: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
   },
   statLabel: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
   },
   list: {
     flex: 1,
   },
   codeCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
 // Replace the existing codeHeader and related styles with these:
 
@@ -1179,7 +1159,7 @@ actionButton: {
 previewTitle: {
   fontSize: 13,
   fontWeight: '600',
-  color: '#fff',
+  color: TC.text,
 },
 applySampleButton: {
   flexDirection: 'row',
@@ -1195,14 +1175,14 @@ applySampleButtonText: {
   color: '#f97316',
 },
 previewCard: {
-  backgroundColor: '#2a2a2a',
+  backgroundColor: TC.raised,
   borderRadius: 12,
   overflow: 'hidden',
 },
 previewNotification: {
   padding: 12,
   borderBottomWidth: 1,
-  borderBottomColor: 'rgba(255,255,255,0.05)',
+  borderBottomColor: TC.hairline,
 },
 previewNotificationHeader: {
   flexDirection: 'row',
@@ -1217,16 +1197,16 @@ previewNotificationText: {
 previewTitleText: {
   fontSize: 14,
   fontWeight: '600',
-  color: '#fff',
+  color: TC.text,
   marginBottom: 4,
 },
 previewBodyText: {
   fontSize: 11,
-  color: '#666',
+  color: TC.muted,
 },
 previewDivider: {
   height: 1,
-  backgroundColor: 'rgba(255,255,255,0.05)',
+  backgroundColor: TC.hairline,
 },
 previewModal: {
   padding: 12,
@@ -1243,7 +1223,7 @@ previewModalText: {
 },
 previewModalCode: {
   fontSize: 18,
-  fontWeight: 'bold',
+  fontWeight: '600',
   color: '#f97316',
   fontFamily: 'monospace',
   marginBottom: 4,
@@ -1260,7 +1240,7 @@ previewModalDiscount: {
 },
 previewModalDesc: {
   fontSize: 11,
-  color: '#666',
+  color: TC.muted,
   lineHeight: 16,
 },
   vendorBadge: {
@@ -1281,14 +1261,14 @@ previewModalDesc: {
   },
   codeDescription: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
 
   codeStats: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
     paddingTop: 12,
     gap: 12,
   },
@@ -1299,7 +1279,7 @@ previewModalDesc: {
   statValue: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#fff',
+    color: TC.text,
   },
   emptyState: {
     alignItems: 'center',
@@ -1309,13 +1289,13 @@ previewModalDesc: {
   emptyTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginTop: 12,
     marginBottom: 4,
   },
   emptyText: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -1341,7 +1321,7 @@ previewModalDesc: {
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     height: '90%',
@@ -1352,7 +1332,7 @@ previewModalDesc: {
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   modalHeaderRight: {
     flexDirection: 'row',
@@ -1362,7 +1342,7 @@ previewModalDesc: {
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   sampleButton: {
     flexDirection: 'row',
@@ -1387,21 +1367,21 @@ previewModalDesc: {
   modalFooter: {
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   formGroup: {
     marginBottom: 16,
   },
   label: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 6,
   },
   input: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 8,
     padding: 12,
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
   },
   textArea: {
@@ -1410,7 +1390,7 @@ previewModalDesc: {
   },
   helperText: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
     marginTop: 4,
   },
   codeInputRow: {
@@ -1421,7 +1401,7 @@ previewModalDesc: {
     flex: 1,
   },
   generateButton: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     paddingHorizontal: 12,
     borderRadius: 8,
     justifyContent: 'center',
@@ -1441,7 +1421,7 @@ previewModalDesc: {
   },
   typeButton: {
     flex: 1,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     paddingVertical: 10,
     borderRadius: 8,
     alignItems: 'center',
@@ -1454,7 +1434,7 @@ previewModalDesc: {
   },
   typeButtonText: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
   },
   typeButtonTextActive: {
     color: '#f97316',
@@ -1465,7 +1445,7 @@ previewModalDesc: {
   },
   usageTypeCard: {
     flex: 1,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
@@ -1479,7 +1459,7 @@ previewModalDesc: {
   },
   usageTypeText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   usageTypeTextActive: {
     color: '#f97316',
@@ -1518,7 +1498,7 @@ previewModalDesc: {
     padding: 20,
   },
   helpModalContent: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 20,
     width: '100%',
     maxHeight: '80%',
@@ -1529,12 +1509,12 @@ previewModalDesc: {
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   helpModalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   helpModalBody: {
     padding: 20,
@@ -1545,7 +1525,7 @@ previewModalDesc: {
   helpSectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginTop: 4,
     marginBottom: 8,
   },
@@ -1558,7 +1538,7 @@ previewModalDesc: {
   },
   helpText: {
     fontSize: 13,
-    color: '#999',
+    color: TC.subtle,
     lineHeight: 20,
   },
   helpModalButton: {
@@ -1585,7 +1565,7 @@ previewModalDesc: {
     padding: 20,
   },
   sampleModalContent: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 20,
     width: '100%',
     maxHeight: '80%',
@@ -1596,19 +1576,19 @@ previewModalDesc: {
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   sampleModalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   sampleModalBody: {
     padding: 20,
   },
   sampleModalSubtitle: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 16,
   },
   sampleDisplay: {
@@ -1622,8 +1602,8 @@ previewModalDesc: {
   },
   sampleDisplayCode: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
     letterSpacing: 2,
     marginTop: 8,
     marginBottom: 4,
@@ -1638,17 +1618,17 @@ previewModalDesc: {
   },
   sampleDisplayContent: {
     padding: 16,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
   },
   sampleDisplayTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 8,
   },
   sampleDisplayDescription: {
     fontSize: 13,
-    color: '#ccc',
+    color: TC.text2,
     lineHeight: 20,
     marginBottom: 12,
   },
@@ -1662,7 +1642,7 @@ previewModalDesc: {
   },
   sampleTermText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   sampleTipBox: {
     flexDirection: 'row',
@@ -1684,13 +1664,13 @@ previewModalDesc: {
   },
   sampleCancelButton: {
     flex: 1,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
   },
   sampleCancelButtonText: {
-    color: '#666',
+    color: TC.muted,
     fontSize: 14,
   },
   sampleApplyButton: {

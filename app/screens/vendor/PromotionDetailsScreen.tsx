@@ -18,6 +18,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import Toast from 'react-native-toast-message';
+import { TC } from '../../theme/palette';
 
 interface Promotion {
   id: string;
@@ -134,9 +135,9 @@ export function PromotionDetailsScreen() {
       case 'rejected':
         return '#ef4444';
       case 'expired':
-        return '#6b7280';
+        return TC.subtle;
       default:
-        return '#666';
+        return TC.muted;
     }
   };
 
@@ -188,7 +189,7 @@ export function PromotionDetailsScreen() {
     
     try {
       await Share.share({
-        message: `Check out our promotion: ${promotion.title}!\n\n${promotion.description || 'Limited time offer!'}\n\nAvailable on Vesphe App`,
+        message: `Check out our promotion: ${promotion.title}!\n\n${promotion.description || 'Limited time offer'}\n\nAvailable on Vesphe App`,
         url: promotion.image_url,
       });
     } catch (error) {
@@ -221,9 +222,9 @@ export function PromotionDetailsScreen() {
     return (
       <View style={styles.errorContainer}>
         <Feather name="alert-circle" size={48} color="#ef4444" />
-        <Text style={styles.errorTitle}>Promotion Not Found</Text>
+        <Text style={styles.errorTitle}>Promotion not found</Text>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.errorButton}>
-          <Text style={styles.errorButtonText}>Go Back</Text>
+          <Text style={styles.errorButtonText}>Go back</Text>
         </TouchableOpacity>
       </View>
     );
@@ -234,9 +235,9 @@ export function PromotionDetailsScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Feather name="arrow-left" size={24} color="#fff" />
+          <Feather name="arrow-left" size={24} color={TC.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Promotion Details</Text>
+        <Text style={styles.headerTitle}>Promotion details</Text>
         <TouchableOpacity onPress={handleShare} style={styles.shareButton}>
           <Feather name="share-2" size={20} color="#f97316" />
         </TouchableOpacity>
@@ -284,7 +285,7 @@ export function PromotionDetailsScreen() {
         {/* Product Details (for product offers) */}
         {promotion.promotion_type === 'product_offer' && promotion.product_name && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Product Details</Text>
+            <Text style={styles.sectionTitle}>Product details</Text>
             <View style={styles.productCard}>
               <Text style={styles.productName}>{promotion.product_name}</Text>
               <View style={styles.priceRow}>
@@ -303,7 +304,7 @@ export function PromotionDetailsScreen() {
         {/* Combo Details */}
         {promotion.promotion_type === 'combo' && promotion.main_product_name && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Combo Details</Text>
+            <Text style={styles.sectionTitle}>Combo details</Text>
             <View style={styles.comboCard}>
               <View style={styles.comboItem}>
                 <Feather name="shopping-bag" size={16} color="#f97316" />
@@ -314,14 +315,14 @@ export function PromotionDetailsScreen() {
               </View>
               <View style={styles.comboArrow}>
                 <Feather name="arrow-down" size={20} color="#f97316" />
-                <Text style={styles.comboFree}>FREE</Text>
+                <Text style={styles.comboFree}>Free</Text>
               </View>
               <View style={styles.comboItem}>
                 <Feather name="gift" size={16} color="#10b981" />
                 <Text style={styles.comboText}>
                   Get {promotion.get_quantity} × {promotion.free_product_name}
                 </Text>
-                <Text style={styles.comboPrice}>FREE</Text>
+                <Text style={styles.comboPrice}>Free</Text>
               </View>
               {promotion.max_per_customer ? (
                 <Text style={styles.limitText}>Max {promotion.max_per_customer} combo per customer</Text>
@@ -360,7 +361,7 @@ export function PromotionDetailsScreen() {
             </View>
             <View style={styles.rateDivider} />
             <View style={styles.rateItem}>
-              <Text style={styles.rateLabel}>Conversion Rate</Text>
+              <Text style={styles.rateLabel}>Conversion rate</Text>
               <Text style={styles.rateValue}>{calculateConversionRate()}%</Text>
             </View>
           </View>
@@ -368,35 +369,35 @@ export function PromotionDetailsScreen() {
 
         {/* Duration & Cost */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Duration & Cost</Text>
+          <Text style={styles.sectionTitle}>Duration & cost</Text>
           <View style={styles.infoCard}>
             <View style={styles.infoRow}>
-              <Feather name="calendar" size={16} color="#666" />
-              <Text style={styles.infoLabel}>Start Date</Text>
+              <Feather name="calendar" size={16} color={TC.muted} />
+              <Text style={styles.infoLabel}>Start date</Text>
               <Text style={styles.infoValue}>
                 {new Date(promotion.start_date).toLocaleDateString()}
               </Text>
             </View>
             <View style={styles.infoRow}>
-              <Feather name="calendar" size={16} color="#666" />
-              <Text style={styles.infoLabel}>End Date</Text>
+              <Feather name="calendar" size={16} color={TC.muted} />
+              <Text style={styles.infoLabel}>End date</Text>
               <Text style={styles.infoValue}>
                 {new Date(promotion.end_date).toLocaleDateString()}
               </Text>
             </View>
             <View style={styles.infoRow}>
-              <Feather name="clock" size={16} color="#666" />
+              <Feather name="clock" size={16} color={TC.muted} />
               <Text style={styles.infoLabel}>Duration</Text>
               <Text style={styles.infoValue}>{promotion.days_count} days</Text>
             </View>
             <View style={styles.divider} />
             <View style={styles.infoRow}>
               <Feather name="trending-up" size={16} color="#f97316" />
-              <Text style={styles.infoLabel}>Cost per Day</Text>
+              <Text style={styles.infoLabel}>Cost per day</Text>
               <Text style={styles.infoValue}>₦{promotion.cost_per_day?.toLocaleString()}</Text>
             </View>
             <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Total Cost</Text>
+              <Text style={styles.totalLabel}>Total cost</Text>
               <Text style={styles.totalValue}>₦{promotion.total_cost?.toLocaleString()}</Text>
             </View>
           </View>
@@ -407,7 +408,7 @@ export function PromotionDetailsScreen() {
           <View style={styles.rejectionSection}>
             <Feather name="alert-triangle" size={20} color="#ef4444" />
             <View style={styles.rejectionContent}>
-              <Text style={styles.rejectionTitle}>Rejection Reason</Text>
+              <Text style={styles.rejectionTitle}>Rejection reason</Text>
               <Text style={styles.rejectionText}>{promotion.rejection_reason}</Text>
             </View>
           </View>
@@ -420,22 +421,22 @@ export function PromotionDetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    color: '#666',
+    color: TC.muted,
     marginTop: 12,
     fontSize: 14,
   },
   errorContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -443,12 +444,12 @@ const styles = StyleSheet.create({
   errorTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginTop: 16,
     marginBottom: 20,
   },
   errorButton: {
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
@@ -465,26 +466,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   shareButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -526,13 +527,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   section: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     margin: 16,
     marginBottom: 12,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   titleRow: {
     gap: 8,
@@ -553,36 +554,36 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
     marginTop: 8,
   },
   description: {
     fontSize: 14,
-    color: '#666',
+    color: TC.muted,
     lineHeight: 20,
     marginTop: 8,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 12,
   },
   vendorCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     padding: 12,
     borderRadius: 8,
   },
   vendorName: {
     fontSize: 14,
-    color: '#fff',
+    color: TC.text,
   },
   productCard: {
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     padding: 12,
     borderRadius: 8,
     gap: 8,
@@ -590,7 +591,7 @@ const styles = StyleSheet.create({
   productName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   priceRow: {
     flexDirection: 'row',
@@ -599,16 +600,16 @@ const styles = StyleSheet.create({
   },
   originalPrice: {
     fontSize: 14,
-    color: '#666',
+    color: TC.muted,
     textDecorationLine: 'line-through',
   },
   discountedPrice: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#f97316',
   },
   comboCard: {
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     padding: 16,
     borderRadius: 8,
     gap: 12,
@@ -621,7 +622,7 @@ const styles = StyleSheet.create({
   comboText: {
     flex: 1,
     fontSize: 14,
-    color: '#fff',
+    color: TC.text,
   },
   comboPrice: {
     fontSize: 14,
@@ -635,11 +636,11 @@ const styles = StyleSheet.create({
   comboFree: {
     fontSize: 12,
     color: '#10b981',
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   limitText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
     marginTop: 8,
   },
   statsGrid: {
@@ -649,7 +650,7 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
@@ -657,15 +658,15 @@ const styles = StyleSheet.create({
   },
   statNumber: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
   },
   statLabel: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
   },
   rateCard: {
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     borderRadius: 8,
     padding: 12,
     gap: 8,
@@ -677,7 +678,7 @@ const styles = StyleSheet.create({
   },
   rateLabel: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
   },
   rateValue: {
     fontSize: 16,
@@ -686,11 +687,11 @@ const styles = StyleSheet.create({
   },
   rateDivider: {
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: TC.hairline,
     marginVertical: 8,
   },
   infoCard: {
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     padding: 12,
     borderRadius: 8,
     gap: 12,
@@ -703,15 +704,15 @@ const styles = StyleSheet.create({
   infoLabel: {
     flex: 1,
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
   },
   infoValue: {
     fontSize: 13,
-    color: '#fff',
+    color: TC.text,
   },
   divider: {
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: TC.hairline,
     marginVertical: 4,
   },
   totalRow: {
@@ -721,16 +722,16 @@ const styles = StyleSheet.create({
     marginTop: 4,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   totalLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   totalValue: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#f97316',
   },
   rejectionSection: {

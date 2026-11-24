@@ -12,10 +12,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
+import { TC } from '../../theme/palette';
 
 type SupportScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -78,15 +78,15 @@ export function SupportScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Feather name="arrow-left" size={24} color="#fff" />
+          <Feather name="arrow-left" size={24} color={TC.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Help & Support</Text>
+        <Text style={styles.headerTitle}>Help & support</Text>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Contact Options */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Contact Us</Text>
+          <Text style={styles.sectionTitle}>Contact us</Text>
           <View style={styles.contactList}>
             {contactOptions.map((option, index) => (
               <TouchableOpacity
@@ -101,7 +101,7 @@ export function SupportScreen() {
                   <Text style={styles.contactLabel}>{option.label}</Text>
                   <Text style={styles.contactValue}>{option.value}</Text>
                 </View>
-                <Feather name="chevron-right" size={18} color="#666" />
+                <Feather name="chevron-right" size={18} color={TC.muted} />
               </TouchableOpacity>
             ))}
           </View>
@@ -118,30 +118,30 @@ export function SupportScreen() {
               <Text style={styles.contactLabel}>Complaints & chat</Text>
               <Text style={styles.contactValue}>Raise an issue and chat with Vesphe support</Text>
             </View>
-            <Feather name="chevron-right" size={18} color="#666" />
+            <Feather name="chevron-right" size={18} color={TC.muted} />
           </TouchableOpacity>
         </View>
 
         {/* Quick Links */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Links</Text>
+          <Text style={styles.sectionTitle}>Quick links</Text>
           <View style={styles.quickLinksList}>
             <TouchableOpacity style={styles.quickLinkCard}>
-              <Feather name="file-text" size={18} color="#666" />
-              <Text style={styles.quickLinkText}>Terms of Service</Text>
-              <Feather name="chevron-right" size={18} color="#666" style={styles.quickLinkArrow} />
+              <Feather name="file-text" size={18} color={TC.muted} />
+              <Text style={styles.quickLinkText}>Terms of service</Text>
+              <Feather name="chevron-right" size={18} color={TC.muted} style={styles.quickLinkArrow} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.quickLinkCard} onPress={() => navigation.navigate('Privacy')}>
-              <Feather name="shield" size={18} color="#666" />
-              <Text style={styles.quickLinkText}>Privacy Policy</Text>
-              <Feather name="chevron-right" size={18} color="#666" style={styles.quickLinkArrow} />
+              <Feather name="shield" size={18} color={TC.muted} />
+              <Text style={styles.quickLinkText}>Privacy policy</Text>
+              <Feather name="chevron-right" size={18} color={TC.muted} style={styles.quickLinkArrow} />
             </TouchableOpacity>
           </View>
         </View>
 
         {/* FAQs */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
+          <Text style={styles.sectionTitle}>Frequently asked questions</Text>
           <View style={styles.faqList}>
             {faqs.map((faq, idx) => (
               <View key={idx} style={styles.faqCard}>
@@ -168,7 +168,7 @@ export function SupportScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
         paddingBottom:60,
 
   },
@@ -179,20 +179,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   content: {
     flex: 1,
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 12,
   },
   contactList: {
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
   contactCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     padding: 12,
     gap: 12,
@@ -232,12 +232,12 @@ const styles = StyleSheet.create({
   contactLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 2,
   },
   contactValue: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   quickLinksList: {
     gap: 8,
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
   quickLinkCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     padding: 12,
     gap: 12,
@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
   quickLinkText: {
     flex: 1,
     fontSize: 14,
-    color: '#fff',
+    color: TC.text,
   },
   quickLinkArrow: {
     marginLeft: 'auto',
@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   faqCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     padding: 12,
   },
@@ -276,11 +276,11 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontWeight: '500',
-    color: '#fff',
+    color: TC.text,
   },
   faqAnswer: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
     lineHeight: 18,
     paddingLeft: 26,
   },
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
   },
   versionText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   bottomPadding: {
     height: 20,

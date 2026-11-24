@@ -11,8 +11,8 @@ import {
   FlatList,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { TC } from '../theme/palette';
 
 const LOCATIONIQ_KEY = 'pk.0af27b1ba256a5946cc3366d07bc90d7';
 
@@ -132,26 +132,23 @@ export function AddressPickerScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Feather name="arrow-left" size={24} color="#fff" />
+          <Feather name="arrow-left" size={24} color={TC.text} />
         </TouchableOpacity>
-        <Text style={styles.title}>Pick Location</Text>
+        <Text style={styles.title}>Pick location</Text>
         <TouchableOpacity onPress={handleConfirm} style={styles.confirmButton}>
-          <LinearGradient
-            colors={['#f97316', '#f43f5e']}
-            style={styles.confirmGradient}
-          >
+          <View style={[styles.confirmGradient, { backgroundColor: '#ea580c' }]}>
             <Text style={styles.confirmText}>Confirm</Text>
-          </LinearGradient>
+          </View>
         </TouchableOpacity>
       </View>
 
       <View style={styles.searchContainer}>
         <View style={styles.searchWrapper}>
-          <Feather name="search" size={20} color="#666" />
+          <Feather name="search" size={20} color={TC.muted} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search address, street, or city..."
-            placeholderTextColor="#666"
+            placeholderTextColor={TC.muted}
             value={searchText}
             onChangeText={handleSearch}
             autoFocus={true}
@@ -189,7 +186,7 @@ export function AddressPickerScreen() {
         <View style={styles.selectedPreview}>
           <Feather name="check-circle" size={20} color="#10b981" />
           <View style={styles.selectedTextContainer}>
-            <Text style={styles.selectedTitle}>Selected Address</Text>
+            <Text style={styles.selectedTitle}>Selected address</Text>
             <Text style={styles.selectedAddress} numberOfLines={2}>
               {selectedAddress.fullAddress}
             </Text>
@@ -207,7 +204,7 @@ export function AddressPickerScreen() {
       )}
 
       <View style={styles.noteContainer}>
-        <Feather name="alert-circle" size={12} color="#666" />
+        <Feather name="alert-circle" size={12} color={TC.muted} />
         <Text style={styles.noteText}>
           Search for street names, areas, or landmarks in Nigeria
         </Text>
@@ -219,7 +216,7 @@ export function AddressPickerScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
   },
   header: {
     flexDirection: 'row',
@@ -228,20 +225,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   confirmButton: {
     borderRadius: 8,
@@ -263,7 +260,7 @@ const styles = StyleSheet.create({
   searchWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     paddingHorizontal: 16,
     height: 52,
@@ -271,7 +268,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    color: '#fff',
+    color: TC.text,
     fontSize: 16,
   },
   suggestionsList: {
@@ -283,7 +280,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
     gap: 12,
   },
   suggestionTextContainer: {
@@ -292,12 +289,12 @@ const styles = StyleSheet.create({
   suggestionMainText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 2,
   },
   suggestionSecondaryText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   selectedPreview: {
     flexDirection: 'row',
@@ -343,10 +340,10 @@ const styles = StyleSheet.create({
     gap: 6,
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   noteText: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
   },
 });

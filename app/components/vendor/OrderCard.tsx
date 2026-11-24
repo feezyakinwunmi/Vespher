@@ -9,11 +9,12 @@ import {
   Dimensions,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { useOrderTimer } from '../../hooks/useOrderTimer';
+import { humanize } from '../../utils/text';
+import { TC } from '../../theme/palette';
 
 
 interface OrderCardProps {
@@ -73,13 +74,13 @@ export function OrderCard({
       case 'ready': return '#10b981';
       case 'picked_up': return '#8b5cf6';
       case 'in_transit': return '#f97316';
-      default: return '#666';
+      default: return TC.muted;
     }
   };
 
   const getStatusText = () => {
     if (isScheduled && status === 'pending') return 'SCHEDULED';
-    return status.toUpperCase();
+    return humanize(status);
   };
 
   const getActionButtons = () => {
@@ -127,7 +128,7 @@ export function OrderCard({
             onPress={onPrepare} 
             style={[styles.actionButton, styles.prepareButton]}
           >
-            <Text style={styles.actionButtonText}>Start Preparing</Text>
+            <Text style={styles.actionButtonText}>Start preparing</Text>
           </TouchableOpacity>
         );
       case 'preparing':
@@ -136,7 +137,7 @@ export function OrderCard({
             onPress={onReady} 
             style={[styles.actionButton, styles.readyButton]}
           >
-            <Text style={styles.actionButtonText}>Mark Ready</Text>
+            <Text style={styles.actionButtonText}>Mark ready</Text>
           </TouchableOpacity>
         );
       default:
@@ -191,7 +192,7 @@ export function OrderCard({
       )}
 
       <View style={styles.customerInfo}>
-        <Feather name="user" size={14} color="#666" />
+        <Feather name="user" size={14} color={TC.muted} />
         <Text style={styles.customerName}>{order.customer_name}</Text>
       </View>
 
@@ -204,12 +205,9 @@ export function OrderCard({
               onError={() => setImageError(prev => ({ ...prev, [itemImage]: true }))}
             />
           ) : (
-            <LinearGradient
-              colors={['#f97316', '#f43f5e']}
-              style={styles.itemImagePlaceholder}
-            >
+            <View style={[styles.itemImagePlaceholder, { backgroundColor: '#ea580c' }]}>
               <Feather name="package" size={20} color="#fff" />
-            </LinearGradient>
+            </View>
           )}
         </View>
         <View style={styles.itemsInfo}>
@@ -229,7 +227,7 @@ export function OrderCard({
 {order.items?.some((item: any) => item.is_promotion || item.promotion_id) && (
   <View style={styles.promotionBadge}>
     <Feather name="gift" size={12} color="#f97316" />
-    <Text style={styles.promotionText}>Promotion Order</Text>
+    <Text style={styles.promotionText}>Promotion order</Text>
   </View>
 )}
 
@@ -273,7 +271,7 @@ export function OrderCard({
           <Text style={styles.riderTrackingText}>
             {status === 'ready' ? 'Rider assigned - waiting for pickup' : 'Track Rider'}
           </Text>
-          <Feather name="chevron-right" size={14} color="#666" style={styles.chevronIcon} />
+          <Feather name="chevron-right" size={14} color={TC.muted} style={styles.chevronIcon} />
         </TouchableOpacity>
       )}
     </TouchableOpacity>
@@ -282,11 +280,11 @@ export function OrderCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   header: {
     flexDirection: 'row',
@@ -303,7 +301,7 @@ const styles = StyleSheet.create({
   orderNumber: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     flex: 1,
   },
   statusBadge: {
@@ -317,7 +315,7 @@ const styles = StyleSheet.create({
   },
   timeText: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
   },
   scheduledBadge: {
     flexDirection: 'row',
@@ -381,7 +379,7 @@ timerLabel: {
 },
 timerValue: {
   fontSize: 16,
-  fontWeight: '700',
+  fontWeight: '600',
   color: '#f59e0b',
 },
 timerUrgent: {
@@ -414,7 +412,7 @@ expiredText: {
   },
   customerName: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
   },
   itemsPreview: {
     flexDirection: 'row',
@@ -444,16 +442,16 @@ expiredText: {
   itemName: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 2,
   },
   itemCount: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
   },
   totalAmount: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#f97316',
   },
   actionButtons: {
@@ -474,7 +472,7 @@ expiredText: {
     backgroundColor: '#ef4444',
   },
   prepareButton: {
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
   },
   readyButton: {
     backgroundColor: '#10b981',
@@ -491,7 +489,7 @@ expiredText: {
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   riderTrackingText: {
     fontSize: 12,

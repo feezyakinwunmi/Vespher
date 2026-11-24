@@ -15,13 +15,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { useVendorEarnings } from '../../hooks/vendor/useVendorEarnings';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Toast from 'react-native-toast-message';
 import { supabase } from '../../lib/supabase';
 import { estimatePaystackFee } from '../../utils/fees';
+import { humanize } from '../../utils/text';
+import { TAB_BAR_SPACE } from '../../navigation/tabBarOptions';
+import { TC } from '../../theme/palette';
 
 type FilterType = 'all' | 'order' | 'payout';
 type DateRangeType = 'all' | 'today' | 'week' | 'month' | 'custom';
@@ -98,7 +100,7 @@ function ReceiptModal({
       case 'cancelled':
         return '#ef4444';
       default:
-        return '#666';
+        return TC.muted;
     }
   };
 
@@ -148,21 +150,18 @@ function ReceiptModal({
           {/* Header */}
           <View style={styles.receiptHeader}>
             <TouchableOpacity onPress={onClose} style={styles.receiptCloseButton}>
-              <Feather name="x" size={20} color="#fff" />
+              <Feather name="x" size={20} color={TC.text} />
             </TouchableOpacity>
-            <Text style={styles.receiptTitle}>Payment Receipt</Text>
+            <Text style={styles.receiptTitle}>Payment receipt</Text>
             <View style={{ width: 40 }} />
           </View>
 
           <ScrollView style={styles.receiptBody}>
             {/* Logo/Brand */}
             <View style={styles.receiptBrand}>
-              <LinearGradient
-                colors={['#f97316', '#f43f5e']}
-                style={styles.receiptLogo}
-              >
+              <View style={[styles.receiptLogo, { backgroundColor: '#ea580c' }]}>
                 <Text style={styles.receiptLogoText}>V</Text>
-              </LinearGradient>
+              </View>
               <Text style={styles.receiptBrandName}>Vesphe</Text>
             </View>
 
@@ -174,7 +173,7 @@ function ReceiptModal({
                 color={getStatusColor(paymentStatus)}
               />
               <Text style={[styles.receiptStatusText, { color: getStatusColor(paymentStatus) }]}>
-                {paymentStatus.toUpperCase()}
+                {humanize(paymentStatus)}
               </Text>
             </View>
 
@@ -191,7 +190,7 @@ function ReceiptModal({
 
             {/* Transaction Details */}
             <View style={styles.receiptDetailsSection}>
-              <Text style={styles.receiptDetailsTitle}>Transaction Details</Text>
+              <Text style={styles.receiptDetailsTitle}>Transaction details</Text>
 
               <View style={styles.receiptDetailRow}>
                 <Text style={styles.receiptDetailLabel}>Reference</Text>
@@ -233,7 +232,7 @@ function ReceiptModal({
                   </View>
 
                   <View style={styles.receiptDetailRow}>
-                    <Text style={styles.receiptDetailLabel}>Payment Method</Text>
+                    <Text style={styles.receiptDetailLabel}>Payment method</Text>
                     <Text style={styles.receiptDetailValue}>
                       {orderDetails?.payment_method || 'Card'}
                     </Text>
@@ -262,7 +261,7 @@ function ReceiptModal({
             {/* Earnings Breakdown (for orders) */}
             {isOrder && (
               <View style={styles.receiptBreakdownSection}>
-                <Text style={styles.receiptBreakdownTitle}>Earnings Breakdown</Text>
+                <Text style={styles.receiptBreakdownTitle}>Earnings breakdown</Text>
 
                 {/* Subtotal */}
                 <View style={styles.receiptBreakdownRow}>
@@ -304,7 +303,7 @@ function ReceiptModal({
                     {(firstOrderDiscount > 0 && promoDiscount > 0) && (
                       <View style={styles.discountSeparator}>
                         <View style={styles.receiptBreakdownRow}>
-                          <Text style={styles.receiptBreakdownLabel}>Total Discount</Text>
+                          <Text style={styles.receiptBreakdownLabel}>Total discount</Text>
                           <Text style={[styles.receiptBreakdownValue, styles.receiptDeduction]}>
                             -₦{totalDiscount.toLocaleString()}
                           </Text>
@@ -333,7 +332,7 @@ function ReceiptModal({
                 {/* Delivery Fee */}
                 {deliveryFee > 0 && (
                   <View style={styles.receiptBreakdownRow}>
-                    <Text style={styles.receiptBreakdownLabel}>Delivery Fee</Text>
+                    <Text style={styles.receiptBreakdownLabel}>Delivery fee</Text>
                     <Text style={styles.receiptBreakdownValue}>
                       +₦{deliveryFee.toLocaleString()}
                     </Text>
@@ -342,7 +341,7 @@ function ReceiptModal({
 
                 {/* Paystack Fee */}
                 <View style={styles.receiptBreakdownRow}>
-                  <Text style={styles.receiptBreakdownLabel}>Paystack Fee</Text>
+                  <Text style={styles.receiptBreakdownLabel}>Paystack fee</Text>
                   <Text style={[styles.receiptBreakdownValue, styles.receiptDeduction]}>
                     -₦{paystackFee.toLocaleString()}
                   </Text>
@@ -359,7 +358,7 @@ function ReceiptModal({
                 {/* Stamp Duty */}
                 {stampDuty > 0 && (
                   <View style={styles.receiptBreakdownRow}>
-                    <Text style={styles.receiptBreakdownLabel}>Stamp Duty</Text>
+                    <Text style={styles.receiptBreakdownLabel}>Stamp duty</Text>
                     <Text style={[styles.receiptBreakdownValue, styles.receiptDeduction]}>
                       -₦{stampDuty.toLocaleString()}
                     </Text>
@@ -369,7 +368,7 @@ function ReceiptModal({
                 <View style={styles.receiptDivider} />
 
                 <View style={[styles.receiptBreakdownRow, styles.receiptNetRow]}>
-                  <Text style={styles.receiptNetLabel}>Net Payout</Text>
+                  <Text style={styles.receiptNetLabel}>Net payout</Text>
                   <Text style={styles.receiptNetValue}>
                     ₦{netPayout.toLocaleString()}
                   </Text>
@@ -623,7 +622,7 @@ const fetchOrderDetails = async (orderId: string) => {
       case 'cancelled':
         return '#ef4444';
       default:
-        return '#666';
+        return TC.muted;
     }
   };
 
@@ -641,18 +640,18 @@ const fetchOrderDetails = async (orderId: string) => {
         <Feather name="alert-circle" size={48} color="#ef4444" />
         <Text style={styles.errorText}>Failed to load earnings data</Text>
         <TouchableOpacity onPress={refreshData} style={styles.retryButton}>
-          <Text style={styles.retryText}>Try Again</Text>
+          <Text style={styles.retryText}>Try again</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Feather name="arrow-left" size={24} color="#fff" />
+          <Feather name="arrow-left" size={24} color={TC.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Earnings</Text>
         <TouchableOpacity onPress={refreshData} style={styles.refreshButton}>
@@ -660,7 +659,7 @@ const fetchOrderDetails = async (orderId: string) => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
+      <ScrollView contentContainerStyle={{ paddingBottom: TAB_BAR_SPACE }}
         style={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -669,7 +668,7 @@ const fetchOrderDetails = async (orderId: string) => {
       >
         {/* Cash orders are paid out by transfer; receipts live on their own screen. */}
         <TouchableOpacity
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, marginBottom: 14, borderRadius: 14, backgroundColor: '#1a1a1a', borderWidth: 1, borderColor: 'rgba(245,158,11,0.3)' }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, marginBottom: 14, borderRadius: 14, backgroundColor: TC.surface, borderWidth: 1, borderColor: 'rgba(245,158,11,0.3)' }}
           onPress={() => (navigation as any).navigate('VendorCashPayouts')}
           activeOpacity={0.85}
         >
@@ -677,19 +676,14 @@ const fetchOrderDetails = async (orderId: string) => {
             <Feather name="send" size={17} color="#f59e0b" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>Cash order payouts</Text>
-            <Text style={{ color: '#8a8a8a', fontSize: 12.5, marginTop: 2 }}>See transfers for cash orders and their receipts</Text>
+            <Text style={{ color: TC.text, fontSize: 15, fontWeight: '600' }}>Cash order payouts</Text>
+            <Text style={{ color: TC.subtle, fontSize: 12.5, marginTop: 2 }}>See transfers for cash orders and their receipts</Text>
           </View>
-          <Feather name="chevron-right" size={18} color="#666" />
+          <Feather name="chevron-right" size={18} color={TC.muted} />
         </TouchableOpacity>
 
         {/* Total Earnings Card */}
-        <LinearGradient
-          colors={['#f97316', '#f43f5e']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.totalCard}
-        >
+        <View style={[styles.totalCard, { backgroundColor: '#ea580c' }]}>
           <Text style={styles.totalLabel}>Total Earnings (All Time)</Text>
           <Text style={styles.totalValue}>₦{earnings.totalEarnings.toLocaleString()}</Text>
           <View style={styles.weeklyRow}>
@@ -710,7 +704,7 @@ const fetchOrderDetails = async (orderId: string) => {
               </Text>
             </View>
           </View>
-        </LinearGradient>
+        </View>
 
         {/* Stats Grid */}
         <View style={styles.statsGrid}>
@@ -763,17 +757,17 @@ const fetchOrderDetails = async (orderId: string) => {
 
           {/* Search Bar */}
           <View style={styles.searchContainer}>
-            <Feather name="search" size={16} color="#666" style={styles.searchIcon} />
+            <Feather name="search" size={16} color={TC.muted} style={styles.searchIcon} />
             <TextInput
               style={styles.searchInput}
               value={searchQuery}
               onChangeText={setSearchQuery}
               placeholder="Search by ID or type..."
-              placeholderTextColor="#666"
+              placeholderTextColor={TC.muted}
             />
             {searchQuery ? (
               <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <Feather name="x" size={16} color="#666" />
+                <Feather name="x" size={16} color={TC.muted} />
               </TouchableOpacity>
             ) : null}
           </View>
@@ -795,7 +789,7 @@ const fetchOrderDetails = async (orderId: string) => {
                   onPress={() => setFilterType('order')}
                   style={[styles.filterChip, filterType === 'order' && styles.activeFilterChip]}
                 >
-                  <Feather name="shopping-bag" size={12} color={filterType === 'order' ? '#fff' : '#666'} />
+                  <Feather name="shopping-bag" size={12} color={filterType === 'order' ? '#fff' : TC.muted} />
                   <Text style={[styles.filterChipText, filterType === 'order' && styles.activeFilterChipText]}>
                     Orders
                   </Text>
@@ -804,7 +798,7 @@ const fetchOrderDetails = async (orderId: string) => {
                   onPress={() => setFilterType('payout')}
                   style={[styles.filterChip, filterType === 'payout' && styles.activeFilterChip]}
                 >
-                  <Feather name="credit-card" size={12} color={filterType === 'payout' ? '#fff' : '#666'} />
+                  <Feather name="credit-card" size={12} color={filterType === 'payout' ? '#fff' : TC.muted} />
                   <Text style={[styles.filterChipText, filterType === 'payout' && styles.activeFilterChipText]}>
                     Payouts
                   </Text>
@@ -847,7 +841,7 @@ const fetchOrderDetails = async (orderId: string) => {
           {/* Transactions List */}
           {filteredTransactions.length === 0 ? (
             <View style={styles.emptyTransactions}>
-              <Feather name="list" size={32} color="#666" />
+              <Feather name="list" size={32} color={TC.muted} />
               <Text style={styles.emptyText}>No transactions found</Text>
             </View>
           ) : (
@@ -913,9 +907,9 @@ const fetchOrderDetails = async (orderId: string) => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Date Range</Text>
+              <Text style={styles.modalTitle}>Select date range</Text>
               <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                <Feather name="x" size={20} color="#fff" />
+                <Feather name="x" size={20} color={TC.text} />
               </TouchableOpacity>
             </View>
 
@@ -1016,7 +1010,7 @@ const styles = StyleSheet.create({
 
 
   receiptModal: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     width: '100%',
@@ -1028,20 +1022,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   receiptCloseButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     justifyContent: 'center',
     alignItems: 'center',
   },
   receiptTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   receiptBody: {
     padding: 20,
@@ -1060,13 +1054,13 @@ const styles = StyleSheet.create({
   },
   receiptLogoText: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
   },
   receiptBrandName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   receiptStatusBadge: {
     flexDirection: 'row',
@@ -1087,21 +1081,21 @@ const styles = StyleSheet.create({
   },
   receiptAmountLabel: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 4,
   },
   receiptAmount: {
     fontSize: 32,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#f97316',
   },
   receiptAmountNote: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
     marginTop: 4,
   },
   receiptDetailsSection: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,
@@ -1133,7 +1127,7 @@ discountNoteText: {
   receiptDetailsTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 12,
   },
   receiptDetailRow: {
@@ -1143,18 +1137,18 @@ discountNoteText: {
   },
   receiptDetailLabel: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
     flex: 1,
   },
   receiptDetailValue: {
     fontSize: 12,
-    color: '#fff',
+    color: TC.text,
     fontWeight: '500',
     flex: 1,
     textAlign: 'right',
   },
   receiptBreakdownSection: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,
@@ -1162,7 +1156,7 @@ discountNoteText: {
   receiptBreakdownTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 12,
   },
   receiptBreakdownRow: {
@@ -1172,12 +1166,12 @@ discountNoteText: {
   },
   receiptBreakdownLabel: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
     flex: 1,
   },
   receiptBreakdownValue: {
     fontSize: 12,
-    color: '#fff',
+    color: TC.text,
     flex: 1,
     textAlign: 'right',
   },
@@ -1186,7 +1180,7 @@ discountNoteText: {
   },
   receiptDivider: {
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: TC.hairline3,
     marginVertical: 12,
   },
   receiptNetRow: {
@@ -1195,12 +1189,12 @@ discountNoteText: {
   receiptNetLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     flex: 1,
   },
   receiptNetValue: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#10b981',
     flex: 1,
     textAlign: 'right',
@@ -1224,7 +1218,7 @@ discountNoteText: {
     justifyContent: 'center',
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   receiptAction: {
     flexDirection: 'row',
@@ -1255,7 +1249,7 @@ discountNoteText: {
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 8,
     paddingHorizontal: 12,
     marginBottom: 12,
@@ -1266,7 +1260,7 @@ discountNoteText: {
   },
   searchInput: {
     flex: 1,
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
   },
   filterRow: {
@@ -1285,7 +1279,7 @@ discountNoteText: {
   filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
@@ -1294,12 +1288,12 @@ discountNoteText: {
     borderColor: 'transparent',
   },
   activeFilterChip: {
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     borderColor: '#f97316',
   },
   filterChipText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   activeFilterChipText: {
     color: '#fff',
@@ -1307,13 +1301,13 @@ discountNoteText: {
   dateFilterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
     gap: 6,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
     maxWidth: 150,
   },
   dateFilterText: {
@@ -1329,7 +1323,7 @@ discountNoteText: {
   },
   resultsText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   clearFilters: {
     fontSize: 12,
@@ -1341,7 +1335,7 @@ discountNoteText: {
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
@@ -1355,14 +1349,14 @@ discountNoteText: {
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   modalBody: {
     gap: 8,
   },
   dateRangeOption: {
     padding: 16,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 8,
   },
   dateRangeOptionSelected: {
@@ -1372,7 +1366,7 @@ discountNoteText: {
   },
   dateRangeText: {
     fontSize: 14,
-    color: '#fff',
+    color: TC.text,
   },
   dateRangeTextSelected: {
     color: '#f97316',
@@ -1380,19 +1374,18 @@ discountNoteText: {
   // Base styles from the original
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
-        paddingBottom:60,
+    backgroundColor: TC.bg,
 
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
   errorContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -1406,11 +1399,11 @@ discountNoteText: {
   retryButton: {
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     borderRadius: 8,
   },
   retryText: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -1421,26 +1414,26 @@ discountNoteText: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   refreshButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1459,8 +1452,8 @@ discountNoteText: {
   },
   totalValue: {
     fontSize: 32,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
     marginBottom: 12,
   },
   weeklyRow: {
@@ -1494,35 +1487,35 @@ discountNoteText: {
   },
   statCard: {
     width: '47%',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   statLabel: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 4,
   },
   statValue: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
     marginBottom: 2,
   },
   statSubtext: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
   },
   balanceCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     margin: 16,
     marginTop: 0,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   balanceRow: {
     flexDirection: 'row',
@@ -1532,22 +1525,22 @@ discountNoteText: {
   },
   balanceLabel: {
     fontSize: 14,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 4,
   },
   balanceValue: {
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#f97316',
   },
   withdrawButton: {
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
   },
   withdrawButtonDisabled: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
   },
   withdrawButtonText: {
     color: '#fff',
@@ -1560,11 +1553,11 @@ discountNoteText: {
     gap: 6,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   payoutInfoText: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
   },
   transactionsSection: {
     padding: 16,
@@ -1573,25 +1566,25 @@ discountNoteText: {
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 12,
   },
 
   emptyTransactions: {
     alignItems: 'center',
     padding: 40,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
   },
   emptyText: {
-    color: '#666',
+    color: TC.muted,
     marginTop: 8,
   },
   transactionCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     padding: 12,
     borderRadius: 10,
     marginBottom: 8,
@@ -1613,17 +1606,17 @@ discountNoteText: {
   transactionType: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 2,
   },
   transactionId: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 2,
   },
   transactionDate: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
   },
   statusBadge: {
     alignSelf: 'flex-start',

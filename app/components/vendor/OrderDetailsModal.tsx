@@ -12,10 +12,11 @@ import {
   Alert,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { addOrderToCalendar } from '../../utils/calendar';
 import { Linking } from 'react-native';
 import { supabase } from '../../lib/supabase';
+import { humanize } from '../../utils/text';
+import { TC } from '../../theme/palette';
 
 interface OrderDetailsModalProps {
   visible: boolean;
@@ -145,7 +146,7 @@ if (!order) return null;
       case 'reject':
         if (order.is_scheduled) {
           Alert.alert(
-            'Cancel Scheduled Order',
+            'Cancel scheduled order',
             'This is a scheduled order. Are you sure you want to cancel it?',
             [
               { text: 'No', style: 'cancel' },
@@ -154,7 +155,7 @@ if (!order) return null;
           );
         } else if (order.payment_method === 'card' && order.payment_status === 'paid') {
           Alert.alert(
-            'Refund Warning',
+            'Refund warning',
             'This order was already paid. A refund will be processed to the customer. Continue?',
             [
               { text: 'Cancel', style: 'cancel' },
@@ -211,7 +212,7 @@ const renderDiscountDetails = () => {
       <View style={styles.discountSection}>
         <View style={styles.discountHeader}>
           <Feather name="star" size={16} color="#f59e0b" />
-          <Text style={[styles.discountTitle, { color: '#f59e0b' }]}>First Order Discount</Text>
+          <Text style={[styles.discountTitle, { color: '#f59e0b' }]}>First order discount</Text>
         </View>
         <View style={styles.promoCodeCard}>
           <View style={styles.promoCodeRow}>
@@ -233,7 +234,7 @@ const renderDiscountDetails = () => {
           <View style={styles.promoCodeRow}>
             <Text style={styles.promoCodeLabel}>Type:</Text>
             <Text style={[styles.promoCodeType, styles.platformType]}>
-              Platform Promotion
+              Platform promotion
             </Text>
           </View>
         </View>
@@ -257,7 +258,7 @@ const renderDiscountDetails = () => {
       <View style={styles.discountSection}>
         <View style={styles.discountHeader}>
           <Feather name="tag" size={16} color="#f43f5e" />
-          <Text style={styles.discountTitle}>Promo Code Applied</Text>
+          <Text style={styles.discountTitle}>Promo code applied</Text>
         </View>
         <View style={styles.promoCodeCard}>
           <View style={styles.promoCodeRow}>
@@ -301,7 +302,7 @@ const renderDiscountDetails = () => {
     <View style={styles.discountSection}>
       <View style={styles.discountHeader}>
         <Feather name="tag" size={16} color="#f43f5e" />
-        <Text style={styles.discountTitle}>Discount Applied</Text>
+        <Text style={styles.discountTitle}>Discount applied</Text>
       </View>
       <View style={styles.generalDiscountCard}>
         <Text style={styles.generalDiscountAmount}>
@@ -342,7 +343,7 @@ const renderDiscountDetails = () => {
               style={[styles.actionButton, styles.acceptButton]}
             >
               <Feather name="check-circle" size={18} color="#fff" />
-              <Text style={styles.actionButtonText}>Accept Order</Text>
+              <Text style={styles.actionButtonText}>Accept order</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -365,7 +366,7 @@ const renderDiscountDetails = () => {
               style={[styles.actionButton, styles.acceptButton]}
             >
               <Feather name="check-circle" size={18} color="#fff" />
-              <Text style={styles.actionButtonText}>Accept Order</Text>
+              <Text style={styles.actionButtonText}>Accept order</Text>
             </TouchableOpacity>
           </View>
         );
@@ -377,7 +378,7 @@ const renderDiscountDetails = () => {
             style={[styles.actionButton, styles.prepareButton]}
           >
             <Feather name="coffee" size={18} color="#fff" />
-            <Text style={styles.actionButtonText}>Start Preparing</Text>
+            <Text style={styles.actionButtonText}>Start preparing</Text>
           </TouchableOpacity>
         );
 
@@ -409,7 +410,7 @@ const renderDiscountDetails = () => {
       <View style={styles.promotionSection}>
         <View style={styles.promotionHeader}>
           <Feather name="gift" size={16} color="#f97316" />
-          <Text style={styles.promotionTitle}>Promotion Order</Text>
+          <Text style={styles.promotionTitle}>Promotion order</Text>
         </View>
         
         {order.items.map((item: any, index: number) => {
@@ -420,12 +421,12 @@ const renderDiscountDetails = () => {
                   <Text style={styles.promotionItemName}>{item.name || item.product?.name}</Text>
                   {item.is_free_item && (
                     <View style={styles.freeBadge}>
-                      <Text style={styles.freeBadgeText}>FREE</Text>
+                      <Text style={styles.freeBadgeText}>Free</Text>
                     </View>
                   )}
                   {item.is_combo_main && !item.is_free_item && (
                     <View style={styles.comboBadge}>
-                      <Text style={styles.comboBadgeText}>Combo Main</Text>
+                      <Text style={styles.comboBadgeText}>Combo main</Text>
                     </View>
                   )}
                 </View>
@@ -475,13 +476,13 @@ const renderDiscountDetails = () => {
           <View style={styles.modalHeader}>
             <View style={styles.headerLeft}>
               <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                <Feather name="x" size={20} color="#fff" />
+                <Feather name="x" size={20} color={TC.text} />
               </TouchableOpacity>
-              <Text style={styles.modalTitle}>Order Details</Text>
+              <Text style={styles.modalTitle}>Order details</Text>
             </View>
             <View style={[styles.statusBadge, { backgroundColor: `${statusColors[order.status]}20` }]}>
               <Text style={[styles.statusText, { color: statusColors[order.status] }]}>
-                {statusLabels[order.status] || order.status.toUpperCase()}
+                {statusLabels[order.status] || humanize(order.status)}
               </Text>
             </View>
           </View>
@@ -501,7 +502,7 @@ const renderDiscountDetails = () => {
             {order?.is_scheduled && order?.scheduled_datetime && (
               <View style={[styles.section, styles.scheduledSection]}>
                 <Text style={styles.sectionTitle}>
-                  <Feather name="calendar" size={14} color="#8b5cf6" /> Scheduled Order
+                  <Feather name="calendar" size={14} color="#8b5cf6" /> Scheduled order
                 </Text>
                 <View style={styles.scheduledDetail}>
                   <View style={styles.infoRow}>
@@ -548,15 +549,15 @@ const renderDiscountDetails = () => {
 
             {/* Customer Info */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Customer Details</Text>
+              <Text style={styles.sectionTitle}>Customer details</Text>
               <View style={styles.customerInfo}>
                 <View style={styles.infoRow}>
-                  <Feather name="user" size={14} color="#666" />
+                  <Feather name="user" size={14} color={TC.muted} />
                   <Text style={styles.infoText}>{order.customer_name}</Text>
                 </View>
                 {order.customer_phone && (
                   <View style={styles.infoRow}>
-                    <Feather name="phone" size={14} color="#666" />
+                    <Feather name="phone" size={14} color={TC.muted} />
                     <Text style={styles.infoText}>{order.customer_phone}</Text>
                   </View>
                 )}
@@ -565,7 +566,7 @@ const renderDiscountDetails = () => {
 
             {/* Delivery Address */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Delivery Location</Text>
+              <Text style={styles.sectionTitle}>Delivery location</Text>
               
               <View style={styles.addressCard}>
                 <View style={styles.addressDetails}>
@@ -594,14 +595,14 @@ const renderDiscountDetails = () => {
                   }}
                 >
                   <Feather name="navigation" size={16} color="#f97316" />
-                  <Text style={styles.directionsButtonText}>Get Directions</Text>
+                  <Text style={styles.directionsButtonText}>Get directions</Text>
                 </TouchableOpacity>
               )}
             </View>
 
             {/* Order Items */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Order Items</Text>
+              <Text style={styles.sectionTitle}>Order items</Text>
               {order.items?.map((item: any, idx: number) => (
                 <View key={idx} style={styles.itemCard}>
                   <View style={styles.itemImageContainer}>
@@ -612,12 +613,9 @@ const renderDiscountDetails = () => {
                         onError={() => setImageErrors(prev => ({ ...prev, [item.product.id]: true }))}
                       />
                     ) : (
-                      <LinearGradient
-                        colors={['#f97316', '#f43f5e']}
-                        style={styles.itemImagePlaceholder}
-                      >
+                      <View style={[styles.itemImagePlaceholder, { backgroundColor: '#ea580c' }]}>
                         <Feather name="package" size={20} color="#fff" />
-                      </LinearGradient>
+                      </View>
                     )}
                   </View>
                   <View style={styles.itemDetails}>
@@ -640,12 +638,12 @@ const renderDiscountDetails = () => {
                   <Text style={styles.summaryValue}>₦{(order.subtotal || 0).toLocaleString()}</Text>
                 </View>
                 <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Delivery Fee</Text>
+                  <Text style={styles.summaryLabel}>Delivery fee</Text>
                   <Text style={styles.summaryValue}>₦{(order.delivery_fee || 0).toLocaleString()}</Text>
                 </View>
                 {(order.service_fee || 0) > 0 && (
                   <View style={styles.summaryRow}>
-                    <Text style={styles.summaryLabel}>Service Fee</Text>
+                    <Text style={styles.summaryLabel}>Service fee</Text>
                     <Text style={styles.summaryValue}>₦{(order.service_fee || 0).toLocaleString()}</Text>
                   </View>
                 )}
@@ -664,7 +662,7 @@ const renderDiscountDetails = () => {
 
             {/* Payment Info */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Payment Method</Text>
+              <Text style={styles.sectionTitle}>Payment method</Text>
               <View style={styles.paymentInfo}>
                 <Text style={styles.paymentMethod}>{order.payment_method}</Text>
                 {order.payment_status && (
@@ -683,7 +681,7 @@ const renderDiscountDetails = () => {
             {/* Notes */}
             {(order.notes || order.special_request_text) && !isScheduled && (
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Order Notes</Text>
+                <Text style={styles.sectionTitle}>Order notes</Text>
                 <Text style={styles.notesText}>{order.notes || order.special_request_text}</Text>
               </View>
             )}
@@ -706,7 +704,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     height: '90%',
@@ -717,7 +715,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -730,7 +728,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   statusBadge: {
     paddingHorizontal: 8,
@@ -751,7 +749,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 12,
   },
   orderInfoRow: {
@@ -762,11 +760,11 @@ const styles = StyleSheet.create({
   orderNumber: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   orderTime: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   scheduledSection: {
     backgroundColor: 'rgba(139,92,246,0.1)',
@@ -778,7 +776,7 @@ const styles = StyleSheet.create({
   },
   scheduledDetailText: {
     fontSize: 13,
-    color: '#fff',
+    color: TC.text,
   },
   instructionsBox: {
     marginTop: 8,
@@ -793,13 +791,13 @@ const styles = StyleSheet.create({
   },
   instructionsText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   customerInfo: {
     gap: 8,
   },
   addressCard: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -816,12 +814,12 @@ const styles = StyleSheet.create({
   },
   addressStreet: {
     fontSize: 14,
-    color: '#fff',
+    color: TC.text,
     marginBottom: 4,
   },
   addressArea: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 4,
   },
   addressLandmark: {
@@ -831,7 +829,7 @@ const styles = StyleSheet.create({
   },
   addressPhone: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   directionsButton: {
     flexDirection: 'row',
@@ -855,11 +853,11 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
   },
   itemCard: {
     flexDirection: 'row',
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 8,
     padding: 12,
     marginBottom: 8,
@@ -887,12 +885,12 @@ const styles = StyleSheet.create({
   itemName: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 4,
   },
   itemPrice: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
   },
   itemTotal: {
     fontSize: 13,
@@ -903,7 +901,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   summaryRow: {
     flexDirection: 'row',
@@ -912,11 +910,11 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   summaryValue: {
     fontSize: 12,
-    color: '#fff',
+    color: TC.text,
   },
   // Discount Section Styles
   discountSection: {
@@ -940,7 +938,7 @@ const styles = StyleSheet.create({
     color: '#f43f5e',
   },
   promoCodeCard: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 8,
     padding: 10,
     gap: 6,
@@ -953,7 +951,7 @@ const styles = StyleSheet.create({
   promoCodeLabel: {
     width: 80,
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
   },
   promoCodeValue: {
     flex: 1,
@@ -971,7 +969,7 @@ const styles = StyleSheet.create({
   promoCodeDesc: {
     flex: 1,
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
   },
   promoCodeType: {
     flex: 1,
@@ -990,7 +988,7 @@ const styles = StyleSheet.create({
     color: '#f97316',
   },
   promotionCard: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 8,
     padding: 10,
     gap: 6,
@@ -1002,7 +1000,7 @@ const styles = StyleSheet.create({
   },
   promotionDesc: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
   },
   promotionDiscount: {
     flexDirection: 'row',
@@ -1021,12 +1019,12 @@ const styles = StyleSheet.create({
   },
   generalDiscountAmount: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#f43f5e',
   },
   generalDiscountNote: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
     marginTop: 4,
   },
   savingsRow: {
@@ -1050,16 +1048,16 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   totalLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   totalValue: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#f97316',
   },
   paymentInfo: {
@@ -1069,7 +1067,7 @@ const styles = StyleSheet.create({
   },
   paymentMethod: {
     fontSize: 13,
-    color: '#fff',
+    color: TC.text,
     textTransform: 'capitalize',
   },
   paymentStatus: {
@@ -1089,13 +1087,13 @@ const styles = StyleSheet.create({
   },
   notesText: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
     lineHeight: 18,
   },
   modalFooter: {
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   actionButtonsContainer: {
     gap: 12,
@@ -1120,7 +1118,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ef4444',
   },
   prepareButton: {
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
   },
   readyButton: {
     backgroundColor: '#10b981',
@@ -1212,7 +1210,7 @@ const styles = StyleSheet.create({
   },
   comboMainText: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
     marginTop: 2,
   },
   comboFreeText: {

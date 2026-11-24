@@ -17,10 +17,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { isRiderOnline } from '../../utils/riderPresence';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import Toast from 'react-native-toast-message';
+import { humanize } from '../../utils/text';
+import { TC } from '../../theme/palette';
 
 type UserRole = 'customer' | 'vendor' | 'rider' | 'admin' | 'business';
 type UserStatus = 'all' | 'active' | 'suspended' | 'pending';
@@ -423,7 +424,7 @@ export function AdminUsersScreen() {
       admin: '#8b5cf6',
       business: '#f43f5e',
     };
-    return colors[role] || '#666';
+    return colors[role] || TC.muted;
   };
 
   const getRoleIcon = (role: UserRole): keyof typeof Feather.glyphMap => {
@@ -515,32 +516,29 @@ export function AdminUsersScreen() {
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
-      <LinearGradient
-        colors={['#f97316', '#f43f5e']}
-        style={styles.header}
-      >
+      <View style={[styles.header, { backgroundColor: '#ea580c' }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Feather name="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>User Management</Text>
+        <Text style={styles.headerTitle}>User management</Text>
         <TouchableOpacity onPress={fetchUsers} style={styles.refreshButton}>
           <Feather name="refresh-cw" size={20} color="#fff" />
         </TouchableOpacity>
-      </LinearGradient>
+      </View>
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
-        <Feather name="search" size={18} color="#666" style={styles.searchIcon} />
+        <Feather name="search" size={18} color={TC.muted} style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
           placeholder="Search by name, email, phone..."
-          placeholderTextColor="#666"
+          placeholderTextColor={TC.muted}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
         {searchQuery ? (
           <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <Feather name="x" size={18} color="#666" />
+            <Feather name="x" size={18} color={TC.muted} />
           </TouchableOpacity>
         ) : null}
       </View>
@@ -617,14 +615,11 @@ export function AdminUsersScreen() {
               {user.avatar_url ? (
                 <Image source={{ uri: user.avatar_url }} style={styles.avatarImage} />
               ) : (
-                <LinearGradient
-                  colors={[getRoleColor(user.role), getRoleColor(user.role) + '80']}
-                  style={styles.avatarPlaceholder}
-                >
+                <View style={[styles.avatarPlaceholder, { backgroundColor: getRoleColor(user.role) }]}>
                   <Text style={styles.avatarText}>
                     {user.name?.charAt(0).toUpperCase() || 'U'}
                   </Text>
-                </LinearGradient>
+                </View>
               )}
               
               {/* Online/Offline indicator */}
@@ -640,7 +635,7 @@ export function AdminUsersScreen() {
                 <View style={[styles.roleBadge, { backgroundColor: getRoleColor(user.role) + '20' }]}>
                   <Feather name={getRoleIcon(user.role)} size={10} color={getRoleColor(user.role)} />
                   <Text style={[styles.roleText, { color: getRoleColor(user.role) }]}>
-                    {user.role.toUpperCase()}
+                    {humanize(user.role)}
                   </Text>
                 </View>
               </View>
@@ -649,7 +644,7 @@ export function AdminUsersScreen() {
               
               <View style={styles.userFooter}>
                 <View style={styles.userMeta}>
-                  <Feather name="calendar" size={12} color="#666" />
+                  <Feather name="calendar" size={12} color={TC.muted} />
                   <Text style={styles.metaText}>{formatDate(user.created_at)}</Text>
                 </View>
 
@@ -685,7 +680,7 @@ export function AdminUsersScreen() {
   )}
   {user.role === 'vendor' && !user.vendor_is_open && !user.is_suspended && user.is_approved && (
     <View style={styles.closedBadge}>
-      <Feather name="x-circle" size={10} color="#666" />
+      <Feather name="x-circle" size={10} color={TC.muted} />
       <Text style={styles.closedText}>Closed</Text>
     </View>
   )}
@@ -735,7 +730,7 @@ export function AdminUsersScreen() {
         )}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Feather name="users" size={48} color="#666" />
+            <Feather name="users" size={48} color={TC.muted} />
             <Text style={styles.emptyTitle}>No users found</Text>
             <Text style={styles.emptyText}>Try adjusting your filters</Text>
           </View>
@@ -750,9 +745,9 @@ export function AdminUsersScreen() {
               <>
                 {/* Modal Header */}
                 <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>User Details</Text>
+                  <Text style={styles.modalTitle}>User details</Text>
                   <TouchableOpacity onPress={() => setShowUserModal(false)}>
-                    <Feather name="x" size={24} color="#fff" />
+                    <Feather name="x" size={24} color={TC.text} />
                   </TouchableOpacity>
                 </View>
 
@@ -762,14 +757,11 @@ export function AdminUsersScreen() {
                     {selectedUser.avatar_url ? (
                       <Image source={{ uri: selectedUser.avatar_url }} style={styles.modalAvatar} />
                     ) : (
-                      <LinearGradient
-                        colors={[getRoleColor(selectedUser.role), getRoleColor(selectedUser.role) + '80']}
-                        style={styles.modalAvatarPlaceholder}
-                      >
+                      <View style={[styles.modalAvatarPlaceholder, { backgroundColor: getRoleColor(selectedUser.role) }]}>
                         <Text style={styles.modalAvatarText}>
                           {selectedUser.name?.charAt(0).toUpperCase() || 'U'}
                         </Text>
-                      </LinearGradient>
+                      </View>
                     )}
                   </View>
                   
@@ -778,7 +770,7 @@ export function AdminUsersScreen() {
                     <View style={[styles.modalRoleBadge, { backgroundColor: getRoleColor(selectedUser.role) + '20' }]}>
                       <Feather name={getRoleIcon(selectedUser.role)} size={12} color={getRoleColor(selectedUser.role)} />
                       <Text style={[styles.modalRoleText, { color: getRoleColor(selectedUser.role) }]}>
-                        {selectedUser.role.toUpperCase()}
+                        {humanize(selectedUser.role)}
                       </Text>
                     </View>
                   </View>
@@ -795,7 +787,7 @@ export function AdminUsersScreen() {
                   {!selectedUser.is_approved && selectedUser.role === 'vendor' && (
                     <View style={styles.modalStatusBadgePending}>
                       <Feather name="clock" size={14} color="#f59e0b" />
-                      <Text style={styles.modalStatusTextPending}>Pending Approval</Text>
+                      <Text style={styles.modalStatusTextPending}>Pending approval</Text>
                     </View>
                   )}
                   {selectedUser.role === 'rider' && isRiderOnline(selectedUser) && (
@@ -808,15 +800,15 @@ export function AdminUsersScreen() {
 
                 {/* Contact Information */}
                 <View style={styles.modalSection}>
-                  <Text style={styles.modalSectionTitle}>Contact Information</Text>
+                  <Text style={styles.modalSectionTitle}>Contact information</Text>
                   <View style={styles.modalInfoRow}>
-                    <Feather name="mail" size={16} color="#666" />
+                    <Feather name="mail" size={16} color={TC.muted} />
                     <Text style={styles.modalInfoLabel}>Email:</Text>
                     <Text style={styles.modalInfoValue}>{selectedUser.email}</Text>
                   </View>
                   {selectedUser.phone && (
                     <View style={styles.modalInfoRow}>
-                      <Feather name="phone" size={16} color="#666" />
+                      <Feather name="phone" size={16} color={TC.muted} />
                       <Text style={styles.modalInfoLabel}>Phone:</Text>
                       <Text style={styles.modalInfoValue}>{selectedUser.phone}</Text>
                     </View>
@@ -827,38 +819,38 @@ export function AdminUsersScreen() {
                 {selectedUser.role === 'vendor' && (
                   <>
                     <View style={styles.modalSection}>
-                      <Text style={styles.modalSectionTitle}>Business Information</Text>
+                      <Text style={styles.modalSectionTitle}>Business information</Text>
                       {selectedUser.address && (
                         <View style={styles.modalInfoRow}>
-                          <Feather name="map-pin" size={16} color="#666" />
+                          <Feather name="map-pin" size={16} color={TC.muted} />
                           <Text style={styles.modalInfoLabel}>Address:</Text>
                           <Text style={styles.modalInfoValue}>{selectedUser.address}</Text>
                         </View>
                       )}
                       {selectedUser.description && (
                         <View style={styles.modalInfoRow}>
-                          <Feather name="info" size={16} color="#666" />
+                          <Feather name="info" size={16} color={TC.muted} />
                           <Text style={styles.modalInfoLabel}>Description:</Text>
                           <Text style={styles.modalInfoValue}>{selectedUser.description}</Text>
                         </View>
                       )}
                       {selectedUser.website && (
                         <View style={styles.modalInfoRow}>
-                          <Feather name="globe" size={16} color="#666" />
+                          <Feather name="globe" size={16} color={TC.muted} />
                           <Text style={styles.modalInfoLabel}>Website:</Text>
                           <Text style={styles.modalInfoValue}>{selectedUser.website}</Text>
                         </View>
                       )}
                       {selectedUser.tax_id && (
                         <View style={styles.modalInfoRow}>
-                          <Feather name="hash" size={16} color="#666" />
+                          <Feather name="hash" size={16} color={TC.muted} />
                           <Text style={styles.modalInfoLabel}>Tax ID:</Text>
                           <Text style={styles.modalInfoValue}>{selectedUser.tax_id}</Text>
                         </View>
                       )}
                       {selectedUser.business_reg_number && (
                         <View style={styles.modalInfoRow}>
-                          <Feather name="file-text" size={16} color="#666" />
+                          <Feather name="file-text" size={16} color={TC.muted} />
                           <Text style={styles.modalInfoLabel}>Reg Number:</Text>
                           <Text style={styles.modalInfoValue}>{selectedUser.business_reg_number}</Text>
                         </View>
@@ -868,24 +860,24 @@ export function AdminUsersScreen() {
                     {/* Bank Information */}
                     {(selectedUser.bank_name || selectedUser.account_number) && (
                       <View style={styles.modalSection}>
-                        <Text style={styles.modalSectionTitle}>Bank Information</Text>
+                        <Text style={styles.modalSectionTitle}>Bank information</Text>
                         {selectedUser.bank_name && (
                           <View style={styles.modalInfoRow}>
-                            <Feather name="home" size={16} color="#666" />
+                            <Feather name="home" size={16} color={TC.muted} />
                             <Text style={styles.modalInfoLabel}>Bank:</Text>
                             <Text style={styles.modalInfoValue}>{selectedUser.bank_name}</Text>
                           </View>
                         )}
                         {selectedUser.account_number && (
                           <View style={styles.modalInfoRow}>
-                            <Feather name="credit-card" size={16} color="#666" />
+                            <Feather name="credit-card" size={16} color={TC.muted} />
                             <Text style={styles.modalInfoLabel}>Account:</Text>
                             <Text style={styles.modalInfoValue}>{selectedUser.account_number}</Text>
                           </View>
                         )}
                         {selectedUser.account_name && (
                           <View style={styles.modalInfoRow}>
-                            <Feather name="user" size={16} color="#666" />
+                            <Feather name="user" size={16} color={TC.muted} />
                             <Text style={styles.modalInfoLabel}>Account Name:</Text>
                             <Text style={styles.modalInfoValue}>{selectedUser.account_name}</Text>
                           </View>
@@ -896,35 +888,35 @@ export function AdminUsersScreen() {
                     {/* Rider Specific Information */}
 {selectedUser && selectedUser.role === ('rider' as UserRole) && (
   <View style={styles.modalSection}>
-    <Text style={styles.modalSectionTitle}>Rider Information</Text>
+    <Text style={styles.modalSectionTitle}>Rider information</Text>
     {selectedUser.vehicle_type && (
       <View style={styles.modalInfoRow}>
-        <Feather name="truck" size={16} color="#666" />
+        <Feather name="truck" size={16} color={TC.muted} />
         <Text style={styles.modalInfoLabel}>Vehicle:</Text>
         <Text style={styles.modalInfoValue}>{selectedUser.vehicle_type}</Text>
       </View>
     )}
     {selectedUser.vehicle_number && (
       <View style={styles.modalInfoRow}>
-        <Feather name="hash" size={16} color="#666" />
+        <Feather name="hash" size={16} color={TC.muted} />
         <Text style={styles.modalInfoLabel}>Plate:</Text>
         <Text style={styles.modalInfoValue}>{selectedUser.vehicle_number}</Text>
       </View>
     )}
     {selectedUser.license_number && (
       <View style={styles.modalInfoRow}>
-        <Feather name="award" size={16} color="#666" />
+        <Feather name="award" size={16} color={TC.muted} />
         <Text style={styles.modalInfoLabel}>License:</Text>
         <Text style={styles.modalInfoValue}>{selectedUser.license_number}</Text>
       </View>
     )}
     <View style={styles.modalInfoRow}>
-      <Feather name="package" size={16} color="#666" />
+      <Feather name="package" size={16} color={TC.muted} />
       <Text style={styles.modalInfoLabel}>Deliveries:</Text>
       <Text style={styles.modalInfoValue}>{selectedUser.total_deliveries || 0}</Text>
     </View>
     <View style={styles.modalInfoRow}>
-      <Feather name="activity" size={16} color="#666" />
+      <Feather name="activity" size={16} color={TC.muted} />
       <Text style={styles.modalInfoLabel}>Available:</Text>
       <Text style={[styles.modalInfoValue, { color: selectedUser.is_available ? '#10b981' : '#ef4444' }]}>
         {selectedUser.is_available ? 'Yes' : 'No'}
@@ -965,14 +957,14 @@ export function AdminUsersScreen() {
 
                 {/* Account Information */}
                 <View style={styles.modalSection}>
-                  <Text style={styles.modalSectionTitle}>Account Information</Text>
+                  <Text style={styles.modalSectionTitle}>Account information</Text>
                   <View style={styles.modalInfoRow}>
-                    <Feather name="calendar" size={16} color="#666" />
+                    <Feather name="calendar" size={16} color={TC.muted} />
                     <Text style={styles.modalInfoLabel}>Joined:</Text>
                     <Text style={styles.modalInfoValue}>{formatDate(selectedUser.created_at)}</Text>
                   </View>
                   <View style={styles.modalInfoRow}>
-                    <Feather name="clock" size={16} color="#666" />
+                    <Feather name="clock" size={16} color={TC.muted} />
                     <Text style={styles.modalInfoLabel}>Last Updated:</Text>
                     <Text style={styles.modalInfoValue}>{formatDate(selectedUser.updated_at)}</Text>
                   </View>
@@ -1102,18 +1094,18 @@ export function AdminUsersScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
         paddingBottom:60,
 
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    color: '#666',
+    color: TC.muted,
     marginTop: 12,
     fontSize: 14,
   },
@@ -1135,7 +1127,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   refreshButton: {
     width: 40,
@@ -1148,7 +1140,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     marginHorizontal: 16,
     marginTop: 12,
     marginBottom: 8,
@@ -1161,7 +1153,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
   },
   filtersContainer: {
@@ -1182,10 +1174,10 @@ const styles = StyleSheet.create({
   filterChip: {
     paddingHorizontal: 12,
     paddingVertical: 5,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   filterChipActive: {
     backgroundColor: 'rgba(249,115,22,0.1)',
@@ -1193,7 +1185,7 @@ const styles = StyleSheet.create({
   },
   filterChipText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   filterChipTextActive: {
     color: '#f97316',
@@ -1204,7 +1196,7 @@ const styles = StyleSheet.create({
   },
   resultsText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   listContent: {
     paddingHorizontal: 16,
@@ -1212,12 +1204,12 @@ const styles = StyleSheet.create({
   },
   userCard: {
     flexDirection: 'row',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   userAvatar: {
     position: 'relative',
@@ -1237,7 +1229,7 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#fff',
   },
   onlineDot: {
@@ -1249,7 +1241,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: '#10b981',
     borderWidth: 2,
-    borderColor: '#1a1a1a',
+    borderColor: TC.surface,
   },
   userInfo: {
     flex: 1,
@@ -1263,7 +1255,7 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     flex: 1,
     marginRight: 8,
   },
@@ -1281,7 +1273,7 @@ const styles = StyleSheet.create({
   },
   userEmail: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 6,
   },
   userFooter: {
@@ -1294,7 +1286,7 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
   },
   ratingContainer: {
     flexDirection: 'row',
@@ -1303,7 +1295,7 @@ const styles = StyleSheet.create({
   },
   ratingText: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
     marginLeft: 2,
   },
   statusContainer: {
@@ -1371,12 +1363,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginTop: 12,
   },
   emptyText: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
     marginTop: 4,
   },
   modalOverlay: {
@@ -1390,7 +1382,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 400,
     maxHeight: '80%',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 16,
     padding: 16,
   },
@@ -1403,7 +1395,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   modalProfileHeader: {
     flexDirection: 'row',
@@ -1427,7 +1419,7 @@ const styles = StyleSheet.create({
   },
   modalAvatarText: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#fff',
   },
   modalProfileInfo: {
@@ -1436,7 +1428,7 @@ const styles = StyleSheet.create({
   modalUserName: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 4,
   },
   modalRoleBadge: {
@@ -1511,7 +1503,7 @@ const styles = StyleSheet.create({
   modalSectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 8,
   },
   modalInfoRow: {
@@ -1522,19 +1514,19 @@ const styles = StyleSheet.create({
   },
   modalInfoLabel: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
     width: 70,
   },
   modalInfoValue: {
     flex: 1,
     fontSize: 12,
-    color: '#fff',
+    color: TC.text,
   },
   reviewsLoader: {
     marginVertical: 20,
   },
   reviewItem: {
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     padding: 12,
     borderRadius: 8,
     marginBottom: 8,
@@ -1548,11 +1540,11 @@ const styles = StyleSheet.create({
   reviewerName: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   reviewDate: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
   },
   reviewStars: {
     flexDirection: 'row',
@@ -1560,12 +1552,12 @@ const styles = StyleSheet.create({
   },
   reviewComment: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
     lineHeight: 16,
   },
   noReviewsText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
     fontStyle: 'italic',
     textAlign: 'center',
     paddingVertical: 20,
@@ -1597,14 +1589,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#ef4444',
   },
   modalActionText: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 12,
     fontWeight: '600',
   },
   confirmModal: {
     width: '80%',
     maxWidth: 300,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 16,
     padding: 20,
     alignItems: 'center',
@@ -1613,7 +1605,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: TC.hairline,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -1627,7 +1619,7 @@ const styles = StyleSheet.create({
   },
   confirmMessage: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
     textAlign: 'center',
     marginBottom: 20,
     lineHeight: 18,
@@ -1662,18 +1654,18 @@ closedBadge: {
 },
 closedText: {
   fontSize: 8,
-  color: '#666',
+  color: TC.muted,
   fontWeight: '600',
 },
   confirmCancelButton: {
     flex: 1,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
   },
   confirmCancelText: {
-    color: '#666',
+    color: TC.muted,
     fontSize: 14,
     fontWeight: '500',
   },

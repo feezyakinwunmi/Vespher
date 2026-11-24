@@ -12,6 +12,7 @@ import MapView, { Marker, Polyline, PROVIDER_GOOGLE, Region } from 'react-native
 import { Feather } from '@expo/vector-icons';
 import { useLocation } from '../contexts/LocationContext';
 import { useVendors } from '../hooks/customer/useVendors';
+import { TC } from '../theme/palette';
 
 interface VendorMapProps {
   vendorId: string; // Change: pass vendorId instead of full location
@@ -210,7 +211,7 @@ export function VendorMap({ vendorId, onDistanceCalculated }: VendorMapProps) {
             description={vendor.address}
           >
             <View style={styles.vendorMarker}>
-              <Feather name="coffee" size={20} color="#fff" />
+              <Feather name="coffee" size={20} color={TC.text} />
             </View>
           </Marker>
         )}
@@ -219,10 +220,10 @@ export function VendorMap({ vendorId, onDistanceCalculated }: VendorMapProps) {
         {userLocation && (
           <Marker
             coordinate={userLocation}
-            title="Your Location"
+            title="Your location"
           >
             <View style={styles.userMarker}>
-              <Feather name="navigation" size={16} color="#fff" />
+              <Feather name="navigation" size={16} color={TC.text} />
             </View>
           </Marker>
         )}
@@ -276,7 +277,7 @@ export function VendorMap({ vendorId, onDistanceCalculated }: VendorMapProps) {
           )}
 
           <View style={styles.getDirectionsRow}>
-            <Text style={styles.getDirectionsText}>Get Directions</Text>
+            <Text style={styles.getDirectionsText}>Get directions</Text>
             <Feather name="external-link" size={12} color="#f97316" />
           </View>
         </TouchableOpacity>
@@ -310,22 +311,22 @@ const styles = StyleSheet.create({
   },
   locationPrompt: {
     height: 200,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   locationPromptText: {
-    color: '#666',
+    color: TC.muted,
     marginTop: 8,
   },
   vendorMarker: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
@@ -374,7 +375,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: TC.hairline3,
   },
   distanceRow: {
     flexDirection: 'row',
@@ -382,7 +383,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   distanceText: {
-    color: '#fff',
+    color: TC.text,
     marginLeft: 8,
     fontSize: 13,
   },

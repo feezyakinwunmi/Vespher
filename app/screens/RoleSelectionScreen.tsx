@@ -13,8 +13,9 @@ import { useNavigation } from '@react-navigation/native';
 import { clearRiderApplicationPending, markRiderApplicationPending } from '../utils/riderIntent';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { RootStackParamList } from '../navigation/types';
+import { fill } from '../theme/colors';
+import { TC } from '../theme/palette';
 
 
 type RoleSelectionScreenNavigationProp = NativeStackNavigationProp<
@@ -42,7 +43,7 @@ const roles: RoleOption[] = [
     benefits: [
       'Browse local vendors near you',
       'Fast delivery to your doorstep',
-      'Exclusive discounts & offers',
+      'Offers from shops you like',
       'Track orders in real-time',
     ],
     colors: ['#f97316', '#f43f5e'],
@@ -107,7 +108,7 @@ export function RoleSelectionScreen() {
             onPress={() => navigation.goBack()}
             style={styles.backButton}
           >
-            <Feather name="arrow-left" size={24} color="#fff" />
+            <Feather name="arrow-left" size={24} color={TC.text} />
           </TouchableOpacity>
           
           <View style={styles.logoContainer}>
@@ -120,7 +121,7 @@ export function RoleSelectionScreen() {
             
             <View>
               <Text style={styles.logoText}>veshpe</Text>
-              <Text style={styles.logoSubtext}>Your Food Delivery Platform</Text>
+              <Text style={styles.logoSubtext}>Your food delivery platform</Text>
             </View>
           </View>
         </View>
@@ -162,14 +163,9 @@ export function RoleSelectionScreen() {
                 ]}
               >
                 <View style={styles.roleContent}>
-                  <LinearGradient
-                    colors={role.colors}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.roleIcon}
-                  >
+                  <View style={[styles.roleIcon, { backgroundColor: fill(role.colors) }]}>
                     <Feather name={role.icon} size={28} color="#fff" />
-                  </LinearGradient>
+                  </View>
                   
                   <View style={styles.roleInfo}>
                     <View style={styles.roleHeader}>
@@ -204,23 +200,18 @@ export function RoleSelectionScreen() {
             disabled={!selectedRole}
             activeOpacity={0.8}
           >
-            <LinearGradient
-              colors={selectedRole ? ['#f97316', '#f43f5e'] : ['#f97316', '#f43f5e']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.continueGradient}
-            >
+            <View style={[styles.continueGradient, { backgroundColor: selectedRole ? '#ea580c' : '#ea580c' }]}>
               <Text style={styles.continueText}>
                 Continue as {selectedRole ? roles.find(r => r.id === selectedRole)?.title : '...'}
               </Text>
-              <Feather name="arrow-right" size={20} color="#fff" />
-            </LinearGradient>
+              <Feather name="arrow-right" size={20} color={TC.text} />
+            </View>
           </TouchableOpacity>
 
           <View style={styles.loginContainer}>
             <Text style={styles.loginText}>Already have an account? </Text>
             <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-              <Text style={styles.loginLink}>Sign In</Text>
+              <Text style={styles.loginLink}>Sign in</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -232,7 +223,7 @@ export function RoleSelectionScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
   },
   scrollContent: {
     flexGrow: 1,
@@ -245,7 +236,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center' as const,
     alignItems: 'center' as const,
     marginBottom: 16,
@@ -264,12 +255,12 @@ const styles = StyleSheet.create({
   },
   logoText: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
   },
   logoSubtext: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: TC.subtle,
   },
   titleContainer: {
     paddingHorizontal: 20,
@@ -278,23 +269,23 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#9ca3af',
+    color: TC.subtle,
   },
   rolesContainer: {
     paddingHorizontal: 20,
     gap: 16,
   },
   roleCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 20,
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
     overflow: 'hidden' as const,
   },
   roleCardSelected: {
@@ -325,11 +316,11 @@ const styles = StyleSheet.create({
   roleTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   roleDescription: {
     fontSize: 14,
-    color: '#9ca3af',
+    color: TC.subtle,
     marginBottom: 12,
   },
   benefitsContainer: {
@@ -338,14 +329,14 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   benefitBadge: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
   },
   benefitText: {
     fontSize: 11,
-    color: '#9ca3af',
+    color: TC.subtle,
   },
   footer: {
     padding: 20,
@@ -360,7 +351,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   continueText: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -371,7 +362,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   loginText: {
-    color: '#9ca3af',
+    color: TC.subtle,
     fontSize: 14,
   },
   loginLink: {

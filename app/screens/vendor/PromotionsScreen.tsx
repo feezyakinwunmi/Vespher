@@ -13,7 +13,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -21,6 +20,7 @@ import Toast from 'react-native-toast-message';
 import { RootStackParamList } from '../../navigation/types';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { PROMOTION_PURCHASE_IN_APP } from '../../config/features';
+import { TC } from '../../theme/palette';
 
 type VendorAddressesScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -218,9 +218,9 @@ const calculateActualConversions = async (promotionId: string) => {
       case 'rejected':
         return '#ef4444';
       case 'expired':
-        return '#6b7280';
+        return TC.subtle;
       default:
-        return '#666';
+        return TC.muted;
     }
   };
 
@@ -280,9 +280,9 @@ const calculateActualConversions = async (promotionId: string) => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Feather name="arrow-left" size={24} color="#fff" />
+          <Feather name="arrow-left" size={24} color={TC.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Promotions</Text>
+        <Text style={styles.headerTitle}>My promotions</Text>
         {PROMOTION_PURCHASE_IN_APP ? (
           <TouchableOpacity onPress={handleCreatePromotion} style={styles.createButton}>
             <Feather name="plus" size={24} color="#f97316" />
@@ -308,32 +308,23 @@ const calculateActualConversions = async (promotionId: string) => {
       >
         {/* Stats Cards - Removed Views */}
         <View style={styles.statsContainer}>
-          <LinearGradient
-            colors={['#1a1a1a', '#0a0a0a']}
-            style={styles.statCard}
-          >
+          <View style={[styles.statCard, { backgroundColor: TC.surface }]}>
             <Feather name="trending-up" size={20} color="#f97316" />
             <Text style={styles.statValue}>₦{stats.total_spent.toLocaleString()}</Text>
-            <Text style={styles.statLabel}>Total Spent</Text>
-          </LinearGradient>
+            <Text style={styles.statLabel}>Total spent</Text>
+          </View>
 
-          <LinearGradient
-            colors={['#1a1a1a', '#0a0a0a']}
-            style={styles.statCard}
-          >
+          <View style={[styles.statCard, { backgroundColor: TC.surface }]}>
             <Feather name="mouse-pointer" size={20} color="#f59e0b" />
             <Text style={styles.statValue}>{stats.total_clicks.toLocaleString()}</Text>
             <Text style={styles.statLabel}>Clicks</Text>
-          </LinearGradient>
+          </View>
 
-          <LinearGradient
-            colors={['#1a1a1a', '#0a0a0a']}
-            style={styles.statCard}
-          >
+          <View style={[styles.statCard, { backgroundColor: TC.surface }]}>
             <Feather name="shopping-bag" size={20} color="#f97316" />
             <Text style={styles.statValue}>{stats.total_conversions.toLocaleString()}</Text>
-            <Text style={styles.statLabel}>Orders Completed</Text>
-          </LinearGradient>
+            <Text style={styles.statLabel}>Orders completed</Text>
+          </View>
         </View>
 
         {/* Status Filters */}
@@ -383,21 +374,16 @@ const calculateActualConversions = async (promotionId: string) => {
         {/* Promotions List */}
         {filteredPromotions.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Feather name="speaker" size={48} color="#666" />
-            <Text style={styles.emptyTitle}>No Promotions Yet</Text>
+            <Feather name="speaker" size={48} color={TC.muted} />
+            <Text style={styles.emptyTitle}>No promotions yet</Text>
             <Text style={styles.emptyText}>
               {PROMOTION_PURCHASE_IN_APP ? 'Create your first promotion to attract more customers' : 'Promotions you run will appear here.'}
             </Text>
             {PROMOTION_PURCHASE_IN_APP && (
               <TouchableOpacity onPress={handleCreatePromotion} style={styles.emptyButton}>
-                <LinearGradient
-                  colors={['#f97316', '#f43f5e']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.emptyButtonGradient}
-                >
-                  <Text style={styles.emptyButtonText}>Create Promotion</Text>
-                </LinearGradient>
+                <View style={[styles.emptyButtonGradient, { backgroundColor: '#ea580c' }]}>
+                  <Text style={styles.emptyButtonText}>Create promotion</Text>
+                </View>
               </TouchableOpacity>
             )}
           </View>
@@ -438,13 +424,13 @@ const calculateActualConversions = async (promotionId: string) => {
                   
                   <View style={styles.promotionStats}>
                     <View style={styles.statItem}>
-                      <Feather name="calendar" size={12} color="#666" />
+                      <Feather name="calendar" size={12} color={TC.muted} />
                       <Text style={styles.statItemText}>
                         {new Date(promotion.start_date).toLocaleDateString()} - {new Date(promotion.end_date).toLocaleDateString()}
                       </Text>
                     </View>
                     <View style={styles.statItem}>
-                      <Feather name="mouse-pointer" size={12} color="#666" />
+                      <Feather name="mouse-pointer" size={12} color={TC.muted} />
                       <Text style={styles.statItemText}>{promotion.clicks || 0} clicks</Text>
                     </View>
                     <View style={styles.statItem}>
@@ -470,16 +456,16 @@ const calculateActualConversions = async (promotionId: string) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    color: '#666',
+    color: TC.muted,
     marginTop: 12,
     fontSize: 14,
   },
@@ -490,26 +476,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   createButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -518,7 +504,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     marginHorizontal: 16,
     marginTop: 12,
     paddingVertical: 8,
@@ -538,22 +524,22 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     minWidth: '30%',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   statValue: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
     marginTop: 8,
   },
   statLabel: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
     marginTop: 4,
   },
   filterContainer: {
@@ -564,18 +550,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   filterChipActive: {
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     borderColor: '#f97316',
   },
   filterText: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
   },
   filterTextActive: {
     color: '#fff',
@@ -587,16 +573,16 @@ const styles = StyleSheet.create({
   },
   promotionCard: {
     flexDirection: 'row',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   promotionImage: {
     width: 100,
     height: 100,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
   },
   promotionContent: {
     flex: 1,
@@ -661,7 +647,7 @@ const styles = StyleSheet.create({
   },
   statItemText: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
   },
   promotionFooter: {
     flexDirection: 'row',
@@ -676,7 +662,7 @@ const styles = StyleSheet.create({
   },
   promotionDays: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
   },
   emptyContainer: {
     flex: 1,
@@ -688,13 +674,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginTop: 16,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
     textAlign: 'center',
     marginBottom: 24,
   },

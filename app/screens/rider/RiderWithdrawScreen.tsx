@@ -16,7 +16,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 import { useAuth } from '../../contexts/AuthContext';
@@ -32,6 +31,8 @@ import {
 } from '../../services/riderOrders';
 import { R, naira } from '../../components/rider/ui';
 import { ModalSafeArea } from '../../components/ModalSafeArea';
+import { fill } from '../../theme/colors';
+import { TC } from '../../theme/palette';
 
 export function RiderWithdrawScreen() {
   const navigation = useNavigation();
@@ -222,11 +223,11 @@ export function RiderWithdrawScreen() {
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity
-                  style={[styles.secondaryBtn, { flex: 2, backgroundColor: accountName ? R.orange : '#262626' }]}
+                  style={[styles.secondaryBtn, { flex: 2, backgroundColor: accountName ? R.orange : TC.raised }]}
                   disabled={!accountName || savingBank}
                   onPress={handleSaveBank}
                 >
-                  {savingBank ? <ActivityIndicator color="#fff" /> : <Text style={[styles.secondaryText, { color: accountName ? '#fff' : R.faint }]}>Save account</Text>}
+                  {savingBank ? <ActivityIndicator color={TC.text} /> : <Text style={[styles.secondaryText, { color: accountName ? TC.text : R.faint }]}>Save account</Text>}
                 </TouchableOpacity>
               </View>
             </View>
@@ -261,12 +262,7 @@ export function RiderWithdrawScreen() {
 
         <View style={styles.footer}>
           <TouchableOpacity disabled={!canSubmit || submitting} onPress={handleSubmit} activeOpacity={0.85}>
-            <LinearGradient
-              colors={canSubmit ? R.gradient : ['#262626', '#262626']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.submit}
-            >
+            <View style={[styles.submit, { backgroundColor: canSubmit ? fill(R.gradient) : TC.raised }]}>
               {submitting ? (
                 <ActivityIndicator color="#fff" />
               ) : (
@@ -274,7 +270,7 @@ export function RiderWithdrawScreen() {
                   {value > 0 ? `Withdraw ${naira(value)}` : 'Withdraw'}
                 </Text>
               )}
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -330,11 +326,11 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: R.bg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10 },
   back: { width: 40, height: 40, borderRadius: 20, backgroundColor: R.card, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { color: R.text, fontSize: 17, fontWeight: '700' },
+  headerTitle: { color: R.text, fontSize: 17, fontWeight: '600' },
   content: { padding: 16, paddingBottom: 30 },
   balanceBox: { alignItems: 'center', paddingVertical: 18 },
   balanceLabel: { color: R.muted, fontSize: 13 },
-  balanceValue: { color: R.text, fontSize: 34, fontWeight: '800', marginTop: 4 },
+  balanceValue: { color: R.text, fontSize: 34, fontWeight: '600', marginTop: 4 },
   pendingBox: {
     flexDirection: 'row',
     gap: 12,
@@ -345,13 +341,13 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(245,158,11,0.25)',
     marginBottom: 6,
   },
-  pendingTitle: { color: R.amber, fontSize: 14, fontWeight: '700' },
-  pendingBody: { color: '#d4d4d4', fontSize: 12.5, marginTop: 2, lineHeight: 18 },
+  pendingTitle: { color: R.amber, fontSize: 14, fontWeight: '600' },
+  pendingBody: { color: TC.text2, fontSize: 12.5, marginTop: 2, lineHeight: 18 },
   label: { color: R.muted, fontSize: 13, fontWeight: '600', marginTop: 18, marginBottom: 8 },
   card: { backgroundColor: R.card, borderRadius: 18, borderWidth: 1, borderColor: R.border, padding: 14 },
   bankRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   bankIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(249,115,22,0.12)', justifyContent: 'center', alignItems: 'center' },
-  bankName: { color: R.text, fontSize: 15, fontWeight: '700' },
+  bankName: { color: R.text, fontSize: 15, fontWeight: '600' },
   bankSub: { color: R.muted, fontSize: 12.5, marginTop: 2 },
   link: { color: R.orange, fontWeight: '600', fontSize: 13 },
   input: {
@@ -359,7 +355,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: R.bg,
     borderWidth: 1,
-    borderColor: '#2a2a2a',
+    borderColor: TC.raised,
     paddingHorizontal: 14,
     flexDirection: 'row',
     alignItems: 'center',
@@ -368,11 +364,11 @@ const styles = StyleSheet.create({
   inputText: { color: R.text, fontSize: 15 },
   resolved: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10, minHeight: 20 },
   resolvedText: { color: R.faint, fontSize: 13 },
-  secondaryBtn: { height: 44, borderRadius: 12, backgroundColor: '#262626', justifyContent: 'center', alignItems: 'center' },
-  secondaryText: { color: R.text, fontWeight: '700', fontSize: 14 },
+  secondaryBtn: { height: 44, borderRadius: 12, backgroundColor: TC.raised, justifyContent: 'center', alignItems: 'center' },
+  secondaryText: { color: R.text, fontWeight: '600', fontSize: 14 },
   amountBox: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6 },
-  currency: { color: R.muted, fontSize: 28, fontWeight: '700', marginRight: 6 },
-  amountInput: { flex: 1, color: R.text, fontSize: 30, fontWeight: '800', paddingVertical: 8 },
+  currency: { color: R.muted, fontSize: 28, fontWeight: '600', marginRight: 6 },
+  amountInput: { flex: 1, color: R.text, fontSize: 30, fontWeight: '600', paddingVertical: 8 },
   error: { color: R.red, fontSize: 12.5, marginTop: 6 },
   helper: { color: R.faint, fontSize: 12.5, marginTop: 6 },
   chips: { flexDirection: 'row', gap: 8, marginTop: 12 },
@@ -380,7 +376,7 @@ const styles = StyleSheet.create({
   chipText: { color: R.text, fontWeight: '600', fontSize: 13 },
   footer: { padding: 16, borderTopWidth: 1, borderTopColor: R.border },
   submit: { height: 54, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
-  submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  submitText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   bankOption: {
     flexDirection: 'row',
     justifyContent: 'space-between',

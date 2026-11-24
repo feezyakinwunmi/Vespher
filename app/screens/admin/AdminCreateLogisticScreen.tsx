@@ -13,10 +13,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../../lib/supabase';
+import { TC } from '../../theme/palette';
 
 type Step = 'auth' | 'personal' | 'vehicle' | 'documents';
 
@@ -299,7 +299,7 @@ export function AdminCreateLogisticScreen() {
       // Success!
       Alert.alert(
         'Success',
-        `Rider ${formData.fullName} created successfully with ${formData.vehicleOwnership === 'company' ? 'company' : 'personal'} vehicle!`,
+        `Rider ${formData.fullName} created successfully with ${formData.vehicleOwnership === 'company' ? 'company' : 'personal'} vehicle`,
         [
           {
             text: 'OK',
@@ -330,10 +330,10 @@ export function AdminCreateLogisticScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <Feather name="arrow-left" size={24} color="#fff" />
+          <Feather name="arrow-left" size={24} color={TC.text} />
         </TouchableOpacity>
         <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>Create Logistic Partner</Text>
+          <Text style={styles.headerTitle}>Create logistic partner</Text>
           <Text style={styles.headerSubtitle}>
             Step {currentStepIndex + 1} of {steps.length}
           </Text>
@@ -366,20 +366,20 @@ export function AdminCreateLogisticScreen() {
         {/* Step Content */}
         {step === 'auth' && (
           <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>Create Account</Text>
+            <Text style={styles.stepTitle}>Create account</Text>
             <Text style={styles.stepDescription}>Set up the rider's account credentials</Text>
 
             <View style={styles.form}>
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Full Name *</Text>
                 <View style={styles.inputContainer}>
-                  <Feather name="user" size={18} color="#666" style={styles.inputIcon} />
+                  <Feather name="user" size={18} color={TC.muted} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={formData.fullName}
                     onChangeText={(text) => updateField('fullName', text)}
                     placeholder="John Doe"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                   />
                 </View>
               </View>
@@ -387,13 +387,13 @@ export function AdminCreateLogisticScreen() {
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Phone Number *</Text>
                 <View style={styles.inputContainer}>
-                  <Feather name="phone" size={18} color="#666" style={styles.inputIcon} />
+                  <Feather name="phone" size={18} color={TC.muted} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={formData.phone}
                     onChangeText={(text) => updateField('phone', text)}
                     placeholder="+234 801 234 5678"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                     keyboardType="phone-pad"
                   />
                 </View>
@@ -402,13 +402,13 @@ export function AdminCreateLogisticScreen() {
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Email Address *</Text>
                 <View style={styles.inputContainer}>
-                  <Feather name="mail" size={18} color="#666" style={styles.inputIcon} />
+                  <Feather name="mail" size={18} color={TC.muted} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={formData.email}
                     onChangeText={(text) => updateField('email', text)}
                     placeholder="rider@example.com"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                     keyboardType="email-address"
                     autoCapitalize="none"
                   />
@@ -418,13 +418,13 @@ export function AdminCreateLogisticScreen() {
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Password *</Text>
                 <View style={styles.inputContainer}>
-                  <Feather name="lock" size={18} color="#666" style={styles.inputIcon} />
+                  <Feather name="lock" size={18} color={TC.muted} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={formData.password}
                     onChangeText={(text) => updateField('password', text)}
                     placeholder="Create password"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                     secureTextEntry
                   />
                 </View>
@@ -434,13 +434,13 @@ export function AdminCreateLogisticScreen() {
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Confirm Password *</Text>
                 <View style={styles.inputContainer}>
-                  <Feather name="lock" size={18} color="#666" style={styles.inputIcon} />
+                  <Feather name="lock" size={18} color={TC.muted} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={formData.confirmPassword}
                     onChangeText={(text) => updateField('confirmPassword', text)}
                     placeholder="Confirm password"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                     secureTextEntry
                   />
                 </View>
@@ -451,7 +451,7 @@ export function AdminCreateLogisticScreen() {
 
         {step === 'personal' && (
           <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>Personal Information</Text>
+            <Text style={styles.stepTitle}>Personal information</Text>
             <Text style={styles.stepDescription}>Tell us more about the rider</Text>
 
             {/* Profile Photo Upload */}
@@ -462,12 +462,9 @@ export function AdminCreateLogisticScreen() {
               {formData.profilePhoto ? (
                 <Image source={{ uri: formData.profilePhoto }} style={styles.photoPreview} />
               ) : (
-                <LinearGradient
-                  colors={['#f97316', '#f43f5e']}
-                  style={styles.photoPlaceholder}
-                >
+                <View style={[styles.photoPlaceholder, { backgroundColor: '#ea580c' }]}>
                   <Feather name="camera" size={30} color="#fff" />
-                </LinearGradient>
+                </View>
               )}
               <View style={styles.photoUploadBadge}>
                 <Feather name="upload" size={16} color="#fff" />
@@ -478,13 +475,13 @@ export function AdminCreateLogisticScreen() {
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Home Address *</Text>
                 <View style={styles.inputContainer}>
-                  <Feather name="map-pin" size={18} color="#666" style={styles.inputIcon} />
+                  <Feather name="map-pin" size={18} color={TC.muted} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={formData.address}
                     onChangeText={(text) => updateField('address', text)}
                     placeholder="Rider's address"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                   />
                 </View>
               </View>
@@ -494,7 +491,7 @@ export function AdminCreateLogisticScreen() {
 
         {step === 'vehicle' && (
           <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>Vehicle Information</Text>
+            <Text style={styles.stepTitle}>Vehicle information</Text>
             <Text style={styles.stepDescription}>What will the rider use for deliveries?</Text>
 
             <View style={styles.form}>
@@ -513,7 +510,7 @@ export function AdminCreateLogisticScreen() {
                       <Feather 
                         name="truck" 
                         size={20} 
-                        color={formData.vehicleType === type ? '#f97316' : '#666'} 
+                        color={formData.vehicleType === type ? '#f97316' : TC.muted} 
                       />
                       <Text style={[
                         styles.vehicleOptionText,
@@ -542,7 +539,7 @@ export function AdminCreateLogisticScreen() {
                       <Feather 
                         name={option.icon as any} 
                         size={24} 
-                        color={formData.vehicleOwnership === option.value ? '#f97316' : '#666'} 
+                        color={formData.vehicleOwnership === option.value ? '#f97316' : TC.muted} 
                       />
                       <View style={styles.ownershipTextContainer}>
                         <Text style={[
@@ -568,13 +565,13 @@ export function AdminCreateLogisticScreen() {
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Vehicle Number *</Text>
                 <View style={styles.inputContainer}>
-                  <Feather name="hash" size={18} color="#666" style={styles.inputIcon} />
+                  <Feather name="hash" size={18} color={TC.muted} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={formData.vehicleNumber}
                     onChangeText={(text) => updateField('vehicleNumber', text)}
                     placeholder="e.g., LND 123 XK"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                     autoCapitalize="characters"
                   />
                 </View>
@@ -583,13 +580,13 @@ export function AdminCreateLogisticScreen() {
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Driver's License Number *</Text>
                 <View style={styles.inputContainer}>
-                  <Feather name="credit-card" size={18} color="#666" style={styles.inputIcon} />
+                  <Feather name="credit-card" size={18} color={TC.muted} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={formData.licenseNumber}
                     onChangeText={(text) => updateField('licenseNumber', text)}
                     placeholder="License number"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                     autoCapitalize="characters"
                   />
                 </View>
@@ -597,7 +594,7 @@ export function AdminCreateLogisticScreen() {
 
               {/* License Photo Upload */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>License Photo</Text>
+                <Text style={styles.label}>License photo</Text>
                 <TouchableOpacity 
                   style={styles.documentUpload}
                   onPress={() => pickImage('licensePhoto')}
@@ -612,7 +609,7 @@ export function AdminCreateLogisticScreen() {
                     </View>
                   ) : (
                     <>
-                      <Feather name="upload-cloud" size={32} color="#666" />
+                      <Feather name="upload-cloud" size={32} color={TC.muted} />
                       <Text style={styles.documentUploadText}>Tap to upload license photo</Text>
                       <Text style={styles.documentUploadHint}>JPG, PNG up to 5MB</Text>
                     </>
@@ -622,7 +619,7 @@ export function AdminCreateLogisticScreen() {
 
               {/* ID Card Upload */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>ID Card</Text>
+                <Text style={styles.label}>ID card</Text>
                 <TouchableOpacity 
                   style={styles.documentUpload}
                   onPress={() => pickImage('idCard')}
@@ -637,7 +634,7 @@ export function AdminCreateLogisticScreen() {
                     </View>
                   ) : (
                     <>
-                      <Feather name="upload-cloud" size={32} color="#666" />
+                      <Feather name="upload-cloud" size={32} color={TC.muted} />
                       <Text style={styles.documentUploadText}>Tap to upload ID card</Text>
                       <Text style={styles.documentUploadHint}>National ID, Voter's Card, or Passport</Text>
                     </>
@@ -650,20 +647,20 @@ export function AdminCreateLogisticScreen() {
 
         {step === 'documents' && (
           <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>Payment Details</Text>
+            <Text style={styles.stepTitle}>Payment details</Text>
             <Text style={styles.stepDescription}>Where the rider will receive earnings</Text>
 
             <View style={styles.form}>
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Bank Name *</Text>
                 <View style={styles.pickerContainer}>
-                  <Feather name="credit-card" size={18} color="#666" style={styles.inputIcon} />
+                  <Feather name="credit-card" size={18} color={TC.muted} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={formData.bankName}
                     onChangeText={(text) => updateField('bankName', text)}
                     placeholder="Select or type bank name"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                   />
                 </View>
               </View>
@@ -671,13 +668,13 @@ export function AdminCreateLogisticScreen() {
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Account Number *</Text>
                 <View style={styles.inputContainer}>
-                  <Feather name="hash" size={18} color="#666" style={styles.inputIcon} />
+                  <Feather name="hash" size={18} color={TC.muted} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={formData.accountNumber}
                     onChangeText={(text) => updateField('accountNumber', text)}
                     placeholder="10-digit account number"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                     keyboardType="numeric"
                     maxLength={10}
                   />
@@ -687,28 +684,25 @@ export function AdminCreateLogisticScreen() {
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Account Name *</Text>
                 <View style={styles.inputContainer}>
-                  <Feather name="user" size={18} color="#666" style={styles.inputIcon} />
+                  <Feather name="user" size={18} color={TC.muted} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={formData.accountName}
                     onChangeText={(text) => updateField('accountName', text)}
                     placeholder="Name on account"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                   />
                 </View>
               </View>
 
               {/* Info Box */}
-              <LinearGradient
-                colors={['rgba(249,115,22,0.1)', 'rgba(244,63,94,0.1)']}
-                style={styles.infoBox}
-              >
+              <View style={[styles.infoBox, { backgroundColor: 'rgba(249,115,22,0.1)' }]}>
                 <Feather name="info" size={20} color="#f97316" />
                 <Text style={styles.infoText}>
                   The rider will be created and ready to start accepting deliveries immediately.
                   They'll receive login credentials via email.
                 </Text>
-              </LinearGradient>
+              </View>
             </View>
           </View>
         )}
@@ -740,7 +734,7 @@ export function AdminCreateLogisticScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     paddingBottom: 25,
   },
   header: {
@@ -750,13 +744,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -766,11 +760,11 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   headerSubtitle: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
     marginTop: 2,
   },
   progressContainer: {
@@ -782,11 +776,11 @@ const styles = StyleSheet.create({
   progressStep: {
     flex: 1,
     height: 3,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 1.5,
   },
   progressStepActive: {
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
   },
   content: {
     flex: 1,
@@ -797,13 +791,13 @@ const styles = StyleSheet.create({
   },
   stepTitle: {
     fontSize: 22,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
     marginBottom: 4,
   },
   stepDescription: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 24,
   },
   errorContainer: {
@@ -829,15 +823,15 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#fff',
+    color: TC.text,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
     height: 50,
   },
   inputIcon: {
@@ -845,13 +839,13 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
     height: '100%',
   },
   hint: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
     marginTop: 2,
   },
   photoUploadContainer: {
@@ -882,11 +876,11 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#0a0a0a',
+    borderColor: TC.bg,
   },
   vehicleGrid: {
     flexDirection: 'row',
@@ -897,13 +891,13 @@ const styles = StyleSheet.create({
   vehicleOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
     gap: 6,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   vehicleOptionActive: {
     backgroundColor: 'rgba(249,115,22,0.1)',
@@ -911,7 +905,7 @@ const styles = StyleSheet.create({
   },
   vehicleOptionText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   vehicleOptionTextActive: {
     color: '#f97316',
@@ -923,11 +917,11 @@ const styles = StyleSheet.create({
   ownershipOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
     gap: 12,
   },
   ownershipOptionActive: {
@@ -940,7 +934,7 @@ const styles = StyleSheet.create({
   ownershipLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 2,
   },
   ownershipLabelActive: {
@@ -948,7 +942,7 @@ const styles = StyleSheet.create({
   },
   ownershipDescription: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
   },
   ownershipCheck: {
     width: 24,
@@ -958,9 +952,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   documentUpload: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
     borderStyle: 'dashed',
     borderRadius: 12,
     padding: 20,
@@ -989,25 +983,25 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   documentUploadedText: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
     fontWeight: '500',
   },
   documentUploadText: {
     fontSize: 14,
-    color: '#666',
+    color: TC.muted,
   },
   documentUploadHint: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
   },
   pickerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
     height: 50,
   },
   infoBox: {
@@ -1021,16 +1015,16 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: 13,
-    color: '#fff',
+    color: TC.text,
     lineHeight: 18,
   },
   footer: {
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   continueButton: {
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     height: 56,
     borderRadius: 12,
     flexDirection: 'row',

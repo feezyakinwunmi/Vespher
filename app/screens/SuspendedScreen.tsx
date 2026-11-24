@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
+import { humanize } from '../utils/text';
+import { TC } from '../theme/palette';
 
 export function SuspendedScreen() {
   const { user, signOut } = useAuth();
@@ -35,7 +37,7 @@ export function SuspendedScreen() {
           <Feather name="alert-octagon" size={80} color="#ef4444" />
         </View>
 
-        <Text style={styles.title}>Account Suspended</Text>
+        <Text style={styles.title}>Account suspended</Text>
 
         <Text style={styles.subtitle}>
           Your account has been suspended due to suspicious activity or a violation of our terms of service.
@@ -45,7 +47,7 @@ export function SuspendedScreen() {
           <View style={styles.userInfoCard}>
             <Text style={styles.userName}>{user.name || 'User'}</Text>
             <Text style={styles.userEmail}>{user.email}</Text>
-            <Text style={styles.userRole}>{user.role.toUpperCase()}</Text>
+            <Text style={styles.userRole}>{humanize(user.role)}</Text>
           </View>
         )}
 
@@ -56,14 +58,14 @@ export function SuspendedScreen() {
         </View>
 
         <View style={styles.supportSection}>
-          <Text style={styles.supportTitle}>Contact Support</Text>
+          <Text style={styles.supportTitle}>Contact support</Text>
 
           <TouchableOpacity style={styles.supportButton} onPress={handleCallSupport}>
             <View style={[styles.iconBg, { backgroundColor: 'rgba(16,185,129,0.15)' }]}>
               <Feather name="phone" size={24} color="#10b981" />
             </View>
             <View>
-              <Text style={styles.supportButtonText}>Call Support</Text>
+              <Text style={styles.supportButtonText}>Call support</Text>
               <Text style={styles.supportButtonSub}>+234 916 146 0898</Text>
             </View>
           </TouchableOpacity>
@@ -73,19 +75,19 @@ export function SuspendedScreen() {
               <Feather name="mail" size={24} color="#3b82f6" />
             </View>
             <View>
-              <Text style={styles.supportButtonText}>Email Support</Text>
+              <Text style={styles.supportButtonText}>Email support</Text>
               <Text style={styles.supportButtonSub}>{SUPPORT.email}</Text>
             </View>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.disputeButton} onPress={handleDispute}>
             <Feather name="file-text" size={20} color="#f97316" />
-            <Text style={styles.disputeButtonText}>File a Dispute</Text>
+            <Text style={styles.disputeButtonText}>File a dispute</Text>
           </TouchableOpacity>
         </View>
 
         <TouchableOpacity style={styles.signOutButton} onPress={signOut}>
-          <Text style={styles.signOutText}>Sign Out</Text>
+          <Text style={styles.signOutText}>Sign out</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -95,7 +97,7 @@ export function SuspendedScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
   },
   scrollContent: {
     flexGrow: 1,
@@ -107,19 +109,19 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
     marginBottom: 12,
   },
   subtitle: {
     fontSize: 16,
-    color: '#aaa',
+    color: TC.subtle,
     textAlign: 'center',
     marginBottom: 32,
     lineHeight: 24,
   },
   userInfoCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 16,
     padding: 20,
     width: '100%',
@@ -131,12 +133,12 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 4,
   },
   userEmail: {
     fontSize: 15,
-    color: '#bbb',
+    color: TC.text2,
     marginBottom: 8,
   },
   userRole: {
@@ -170,14 +172,14 @@ const styles = StyleSheet.create({
   supportTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 16,
     textAlign: 'center',
   },
   supportButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
@@ -193,11 +195,11 @@ const styles = StyleSheet.create({
   supportButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   supportButtonSub: {
     fontSize: 13,
-    color: '#888',
+    color: TC.subtle,
   },
   disputeButton: {
     flexDirection: 'row',

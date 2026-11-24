@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../contexts/AuthContext';
@@ -19,6 +18,7 @@ import { useFavorites } from '../../hooks/customer/useFavorites';
 import { useVendors } from '../../hooks/customer/useVendors';
 import { VendorCard } from '../../components/customer/VendorCard';
 import { RootStackParamList } from '../../navigation/types';
+import { TC } from '../../theme/palette';
 
 type FavoritesScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -56,7 +56,7 @@ export function FavoritesScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Feather name="arrow-left" size={24} color="#fff" />
+          <Feather name="arrow-left" size={24} color={TC.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Favorites</Text>
         <View style={styles.headerRight} />
@@ -76,7 +76,7 @@ export function FavoritesScreen() {
         ) : !user ? (
           <View style={styles.emptyContainer}>
             <View style={styles.emptyIconContainer}>
-              <Feather name="heart" size={40} color="#666" />
+              <Feather name="heart" size={40} color={TC.muted} />
             </View>
             <Text style={styles.emptyTitle}>Login to view favorites</Text>
             <Text style={styles.emptyText}>
@@ -86,14 +86,9 @@ export function FavoritesScreen() {
               onPress={() => navigation.navigate('Login')}
               style={styles.signInButton}
             >
-              <LinearGradient
-                colors={['#f97316', '#f43f5e']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.signInGradient}
-              >
-                <Text style={styles.signInText}>Sign In</Text>
-              </LinearGradient>
+              <View style={[styles.signInGradient, { backgroundColor: '#ea580c' }]}>
+                <Text style={styles.signInText}>Sign in</Text>
+              </View>
             </TouchableOpacity>
           </View>
         ) : favoriteVendors.length > 0 ? (
@@ -109,7 +104,7 @@ export function FavoritesScreen() {
         ) : (
           <View style={styles.emptyContainer}>
             <View style={styles.emptyIconContainer}>
-              <Feather name="heart" size={40} color="#666" />
+              <Feather name="heart" size={40} color={TC.muted} />
             </View>
             <Text style={styles.emptyTitle}>No favorites yet</Text>
             <Text style={styles.emptyText}>
@@ -119,7 +114,7 @@ export function FavoritesScreen() {
               onPress={() => navigation.navigate('CustomerTabs', { screen: 'Vendors' })}
               style={styles.browseButton}
             >
-              <Text style={styles.browseButtonText}>Browse Vendors</Text>
+              <Text style={styles.browseButtonText}>Browse vendors</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -132,7 +127,7 @@ export function FavoritesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
         paddingBottom:60,
 
   },
@@ -143,20 +138,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   headerRight: {
     width: 40,
@@ -184,7 +179,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -192,12 +187,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 14,
-    color: '#666',
+    color: TC.muted,
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -213,14 +208,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   signInText: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 15,
     fontWeight: '600',
   },
   browseButton: {
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 8,
   },
   browseButtonText: {

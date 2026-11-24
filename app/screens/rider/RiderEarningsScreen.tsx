@@ -3,13 +3,13 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { format, isToday, isYesterday } from 'date-fns';
 import { useRiderWallet } from '../../hooks/rider/useRiderWallet';
 import { R, naira, SectionTitle, EmptyState } from '../../components/rider/ui';
 import type { RiderStackParamList } from '../../navigation/types';
+import { TC } from '../../theme/palette';
 
 type Nav = NativeStackNavigationProp<RiderStackParamList>;
 type Period = 'week' | 'month';
@@ -106,7 +106,7 @@ export function RiderEarningsScreen() {
         <Text style={styles.title}>Earnings</Text>
 
         {/* Balance */}
-        <LinearGradient colors={['#f97316', '#f43f5e']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.balance}>
+        <View style={[styles.balance, { backgroundColor: '#ea580c' }]}>
           <Text style={styles.balanceLabel}>Available to withdraw</Text>
           <Text style={styles.balanceValue}>{naira(available)}</Text>
           <View style={styles.balanceRow}>
@@ -127,7 +127,7 @@ export function RiderEarningsScreen() {
             <Feather name="arrow-up-right" size={16} color={R.orange} />
             <Text style={styles.withdrawText}>{hasPending ? 'View withdrawal' : 'Withdraw'}</Text>
           </TouchableOpacity>
-        </LinearGradient>
+        </View>
 
         {/* Chart */}
         <View style={styles.card}>
@@ -141,7 +141,7 @@ export function RiderEarningsScreen() {
             <View style={styles.toggle}>
               {(['week', 'month'] as Period[]).map(p => (
                 <TouchableOpacity key={p} onPress={() => setPeriod(p)} style={[styles.toggleBtn, period === p && styles.toggleOn]}>
-                  <Text style={[styles.toggleText, period === p && { color: '#fff' }]}>{p === 'week' ? '7D' : '4W'}</Text>
+                  <Text style={[styles.toggleText, period === p && { color: TC.text }]}>{p === 'week' ? '7D' : '4W'}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -150,10 +150,7 @@ export function RiderEarningsScreen() {
             {chart.rows.map((r, i) => (
               <View key={i} style={styles.barCol}>
                 <View style={styles.barTrack}>
-                  <LinearGradient
-                    colors={r.amount > 0 ? ['#f97316', '#f43f5e'] : ['#262626', '#262626']}
-                    style={[styles.bar, { height: `${Math.max(r.ratio * 100, 4)}%` }]}
-                  />
+                  <View style={[[styles.bar, { height: `${Math.max(r.ratio * 100, 4)}%` }], { backgroundColor: r.amount > 0 ? '#ea580c' : TC.raised }]} />
                 </View>
                 <Text style={styles.barLabel}>{r.label}</Text>
               </View>
@@ -204,13 +201,13 @@ export function RiderEarningsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: R.bg },
   content: { padding: 16, paddingBottom: 110 },
-  title: { color: R.text, fontSize: 26, fontWeight: '800', marginTop: 8, marginBottom: 14 },
+  title: { color: R.text, fontSize: 26, fontWeight: '600', marginTop: 8, marginBottom: 14 },
   balance: { borderRadius: 22, padding: 20 },
   balanceLabel: { color: 'rgba(255,255,255,0.85)', fontSize: 13 },
-  balanceValue: { color: '#fff', fontSize: 36, fontWeight: '800', marginTop: 4 },
+  balanceValue: { color: TC.text, fontSize: 36, fontWeight: '600', marginTop: 4 },
   balanceRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 18 },
   balanceSmallLabel: { color: 'rgba(255,255,255,0.75)', fontSize: 11 },
-  balanceSmall: { color: '#fff', fontSize: 15, fontWeight: '700', marginTop: 2 },
+  balanceSmall: { color: TC.text, fontSize: 15, fontWeight: '600', marginTop: 2 },
   withdrawBtn: {
     marginTop: 18,
     height: 46,
@@ -221,15 +218,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
-  withdrawText: { color: R.orange, fontSize: 15, fontWeight: '700' },
+  withdrawText: { color: R.orange, fontSize: 15, fontWeight: '600' },
   card: { backgroundColor: R.card, borderRadius: 18, borderWidth: 1, borderColor: R.border, padding: 16, marginTop: 14 },
   chartHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  chartTotal: { color: R.text, fontSize: 22, fontWeight: '800' },
+  chartTotal: { color: R.text, fontSize: 22, fontWeight: '600' },
   chartSub: { color: R.muted, fontSize: 12, marginTop: 2 },
   toggle: { flexDirection: 'row', backgroundColor: R.bg, borderRadius: 10, padding: 3 },
   toggleBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
   toggleOn: { backgroundColor: R.orange },
-  toggleText: { color: R.muted, fontSize: 12, fontWeight: '700' },
+  toggleText: { color: R.muted, fontSize: 12, fontWeight: '600' },
   bars: { flexDirection: 'row', height: 140, marginTop: 18, gap: 8 },
   barCol: { flex: 1, alignItems: 'center' },
   barTrack: { flex: 1, width: '100%', justifyContent: 'flex-end' },
@@ -240,6 +237,6 @@ const styles = StyleSheet.create({
   rowIcon: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
   rowTitle: { color: R.text, fontSize: 14, fontWeight: '600' },
   rowSub: { color: R.muted, fontSize: 12, marginTop: 2 },
-  rowAmount: { fontSize: 14, fontWeight: '700' },
+  rowAmount: { fontSize: 14, fontWeight: '600' },
   rowStatus: { fontSize: 11, marginTop: 2, fontWeight: '600' },
 });

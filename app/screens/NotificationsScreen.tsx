@@ -13,7 +13,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNotifications } from '../hooks/useNotifications';
@@ -23,6 +22,7 @@ import { formatDistanceToNow } from 'date-fns';
 import Toast from 'react-native-toast-message';
 import { supabase } from '../lib/supabase';
 import { openAppLink } from '../navigation/RootNavigation';
+import { TC } from '../theme/palette';
 
 type NotificationsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -39,7 +39,7 @@ const notificationIcons = {
 const notificationColors = {
   order: '#f97316',
   payout: '#10b981',
-  system: '#6b7280',
+  system: TC.subtle,
   alert: '#ef4444',
     promotion: '#f97316',  // ← ADD THIS (use orange like orders)
 
@@ -84,7 +84,7 @@ const handleNotificationClick = async (notification: any) => {
   
   // Check if it's a promo code notification (check metadata instead of data)
   if ((notification.type === 'system' || notification.type === 'promotion') && notification.metadata?.type === 'promo_code') {
-    console.log('🎯 This is a promo code notification!');
+    console.log('🎯 This is a promo code notification');
     await handlePromoCodeClick(notification);
     return;
   }
@@ -185,7 +185,7 @@ const copyPromoCode = (code: string) => {
   console.log('Copied:', code);
   setCopied(true);
   setTimeout(() => setCopied(false), 2000);
-  Toast.show({ type: 'success', text1: 'Code copied to clipboard!' });
+  Toast.show({ type: 'success', text1: 'Code copied to clipboard' });
 };
 
 const applyPromoCode = (code: string, vendorId: string) => {
@@ -219,7 +219,7 @@ const applyPromoCode = (code: string, vendorId: string) => {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Feather name="arrow-left" size={24} color="#fff" />
+            <Feather name="arrow-left" size={24} color={TC.text} />
           </TouchableOpacity>
           <View>
             <Text style={styles.headerTitle}>Notifications</Text>
@@ -282,9 +282,9 @@ const applyPromoCode = (code: string, vendorId: string) => {
         {filteredNotifications.length === 0 ? (
           <View style={styles.emptyContainer}>
             <View style={styles.emptyIconContainer}>
-              <Feather name="bell" size={40} color="#666" />
+              <Feather name="bell" size={40} color={TC.muted} />
             </View>
-            <Text style={styles.emptyTitle}>All caught up!</Text>
+            <Text style={styles.emptyTitle}>All caught up</Text>
             <Text style={styles.emptyText}>
               No {filter === 'unread' ? 'unread ' : ''}notifications
             </Text>
@@ -313,7 +313,7 @@ const applyPromoCode = (code: string, vendorId: string) => {
                       <Feather 
                         name={IconName} 
                         size={20} 
-                        color={notificationColors[notification.type as keyof typeof notificationColors] || '#6b7280'} 
+                        color={notificationColors[notification.type as keyof typeof notificationColors] || TC.subtle} 
                       />
                     </View>
 
@@ -352,7 +352,7 @@ const applyPromoCode = (code: string, vendorId: string) => {
                       style={styles.deleteButton}
                       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
-                      <Feather name="x" size={16} color="#666" />
+                      <Feather name="x" size={16} color={TC.muted} />
                     </TouchableOpacity>
                   </View>
                 </TouchableOpacity>
@@ -377,12 +377,7 @@ const applyPromoCode = (code: string, vendorId: string) => {
           <>
             {/* Header */}
             <View style={styles.promoModalHeader}>
-              <LinearGradient
-                colors={['#f97316', '#f43f5e']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.promoModalGradient}
-              >
+              <View style={[styles.promoModalGradient, { backgroundColor: '#ea580c' }]}>
                 <TouchableOpacity
                   onPress={() => setShowPromoModal(false)}
                   style={styles.promoModalClose}
@@ -403,7 +398,7 @@ const applyPromoCode = (code: string, vendorId: string) => {
                       : `₦${selectedPromo.discount_value.toLocaleString()} OFF`}
                   </Text>
                 </View>
-              </LinearGradient>
+              </View>
             </View>
 
             {/* Content */}
@@ -431,14 +426,14 @@ const applyPromoCode = (code: string, vendorId: string) => {
               {/* Description */}
               {selectedPromo.description && (
                 <View style={styles.promoModalSection}>
-                  <Text style={styles.promoModalSectionTitle}>Offer Details</Text>
+                  <Text style={styles.promoModalSectionTitle}>Offer details</Text>
                   <Text style={styles.promoModalDescription}>{selectedPromo.description}</Text>
                 </View>
               )}
 
               {/* Terms */}
               <View style={styles.promoModalSection}>
-                <Text style={styles.promoModalSectionTitle}>Terms & Conditions</Text>
+                <Text style={styles.promoModalSectionTitle}>Terms & conditions</Text>
                 <View style={styles.promoModalTermsList}>
                   {selectedPromo.min_order_amount > 0 && (
                     <View style={styles.promoModalTermItem}>
@@ -507,15 +502,10 @@ const applyPromoCode = (code: string, vendorId: string) => {
                 style={styles.promoModalApplyButton}
                 onPress={() => applyPromoCode(selectedPromo.code, selectedPromo.vendor_id)}
               >
-                <LinearGradient
-                  colors={['#f97316', '#f43f5e']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.promoModalApplyGradient}
-                >
+                <View style={[styles.promoModalApplyGradient, { backgroundColor: '#ea580c' }]}>
                   <Feather name="check-circle" size={20} color="#fff" />
-                  <Text style={styles.promoModalApplyButtonText}>Apply to Order</Text>
-                </LinearGradient>
+                  <Text style={styles.promoModalApplyButtonText}>Apply to order</Text>
+                </View>
               </TouchableOpacity>
             </View>
           </>
@@ -531,11 +521,11 @@ const applyPromoCode = (code: string, vendorId: string) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -546,7 +536,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -557,18 +547,18 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   headerSubtitle: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
     marginTop: 2,
   },
   markAllButton: {
@@ -588,7 +578,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   // Add these to your existing styles
 modalOverlay: {
@@ -597,7 +587,7 @@ modalOverlay: {
   justifyContent: 'flex-end',
 },
 promoModalContent: {
-  backgroundColor: '#0a0a0a',
+  backgroundColor: TC.bg,
   borderTopLeftRadius: 24,
   borderTopRightRadius: 24,
   maxHeight: '90%',
@@ -634,7 +624,7 @@ promoModalIcon: {
 },
 promoModalCode: {
   fontSize: 28,
-  fontWeight: 'bold',
+  fontWeight: '600',
   color: '#fff',
   letterSpacing: 2,
   marginBottom: 8,
@@ -657,7 +647,7 @@ promoModalVendor: {
   flexDirection: 'row',
   alignItems: 'center',
   gap: 12,
-  backgroundColor: '#1a1a1a',
+  backgroundColor: TC.surface,
   padding: 16,
   borderRadius: 12,
   marginBottom: 20,
@@ -671,7 +661,7 @@ promoModalVendorImagePlaceholder: {
   width: 50,
   height: 50,
   borderRadius: 25,
-  backgroundColor: '#2a2a2a',
+  backgroundColor: TC.raised,
   justifyContent: 'center',
   alignItems: 'center',
 },
@@ -699,7 +689,7 @@ promoModalSectionTitle: {
 },
 promoModalDescription: {
   fontSize: 14,
-  color: '#ccc',
+  color: TC.text2,
   lineHeight: 22,
 },
 promoModalTermsList: {
@@ -713,10 +703,10 @@ promoModalTermItem: {
 promoModalTermText: {
   flex: 1,
   fontSize: 13,
-  color: '#666',
+  color: TC.muted,
 },
 promoModalHowTo: {
-  backgroundColor: '#1a1a1a',
+  backgroundColor: TC.surface,
   padding: 16,
   borderRadius: 12,
   marginBottom: 20,
@@ -737,19 +727,19 @@ promoModalStepNumber: {
   width: 24,
   height: 24,
   borderRadius: 12,
-  backgroundColor: '#f97316',
+  backgroundColor: '#ea580c',
   justifyContent: 'center',
   alignItems: 'center',
 },
 promoModalStepNumberText: {
   color: '#fff',
-  fontWeight: 'bold',
+  fontWeight: '600',
   fontSize: 12,
 },
 promoModalStepText: {
   flex: 1,
   fontSize: 13,
-  color: '#ccc',
+  color: TC.text2,
 },
 promoModalFooter: {
   flexDirection: 'row',
@@ -757,7 +747,7 @@ promoModalFooter: {
   padding: 20,
   paddingTop: 0,
   borderTopWidth: 1,
-  borderTopColor: 'rgba(255,255,255,0.05)',
+  borderTopColor: TC.hairline,
 },
 promoModalShareButton: {
   flex: 1,
@@ -765,7 +755,7 @@ promoModalShareButton: {
   alignItems: 'center',
   justifyContent: 'center',
   gap: 8,
-  backgroundColor: '#1a1a1a',
+  backgroundColor: TC.surface,
   paddingVertical: 14,
   borderRadius: 12,
   borderWidth: 1,
@@ -795,7 +785,7 @@ promoModalApplyButtonText: {
 },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 8,
     padding: 4,
   },
@@ -806,12 +796,12 @@ promoModalApplyButtonText: {
     borderRadius: 6,
   },
   activeTab: {
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
   },
   tabText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#666',
+    color: TC.muted,
   },
   activeTabText: {
     color: '#fff',
@@ -824,7 +814,7 @@ promoModalApplyButtonText: {
     gap: 12,
   },
   notificationCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
@@ -859,16 +849,16 @@ promoModalApplyButtonText: {
   notificationTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     flex: 1,
   },
   notificationTime: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
   },
   notificationMessage: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
     lineHeight: 18,
   },
   notificationAction: {
@@ -889,7 +879,7 @@ promoModalApplyButtonText: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
   },
   deleteButton: {
     position: 'absolute',
@@ -907,7 +897,7 @@ promoModalApplyButtonText: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -915,12 +905,12 @@ promoModalApplyButtonText: {
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 14,
-    color: '#666',
+    color: TC.muted,
     textAlign: 'center',
   },
   bottomPadding: {

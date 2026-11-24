@@ -13,7 +13,7 @@ export async function addOrderToCalendar(order: any) {
       // For iOS, we might need to explain how to enable in settings
       if (Platform.OS === 'ios') {
         Alert.alert(
-          'Calendar Access Needed',
+          'Calendar access needed',
           'Please enable calendar access in your iPhone settings to add events.',
           [
             { text: 'OK' },
@@ -64,7 +64,7 @@ export async function addOrderToCalendar(order: any) {
       if (Platform.OS === 'android') {
         // On Android, we can create a new calendar
         const calendarId = await Calendar.createCalendarAsync({
-          title: 'Vesphe Orders',
+          title: 'Vesphe orders',
           color: '#f97316',
           entityType: Calendar.EntityTypes.EVENT,
           sourceId: calendars[0]?.source?.id,

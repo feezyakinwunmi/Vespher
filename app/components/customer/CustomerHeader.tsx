@@ -18,11 +18,11 @@ import { useProfileSetup } from '../../hooks/customer/useProfileSetup';
 let setupTooltipDismissed = false;
 import type { RootStackParamList } from '../../navigation/types';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { BlurView } from 'expo-blur';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { TC } from '../../theme/palette';
 
 interface CustomerHeaderProps {
   showSearch?: boolean;
@@ -102,7 +102,7 @@ export function CustomerHeader({
             onPress={() => navigation.goBack()}
             style={styles.iconButton}
           >
-            <Feather name="arrow-left" size={20} color="#fff" />
+            <Feather name="arrow-left" size={20} color={TC.text} />
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
@@ -121,7 +121,7 @@ export function CustomerHeader({
                 <Text style={styles.locationAddress} numberOfLines={1}>
                   {deliveryLabel}
                 </Text>
-                <Feather name="chevron-down" size={14} color="#666" />
+                <Feather name="chevron-down" size={14} color={TC.muted} />
               </View>
             </View>
           </TouchableOpacity>
@@ -135,7 +135,7 @@ export function CustomerHeader({
           onPress={() => navigation.navigate('AllVendorsMap')}
           style={styles.iconButton}
         >
-          <Feather name="map" size={20} color="#fff" />
+          <Feather name="map" size={20} color={TC.text} />
         </TouchableOpacity>
 
         {/* Cart */}
@@ -143,7 +143,7 @@ export function CustomerHeader({
           onPress={() => navigation.navigate('Cart')}
           style={styles.iconButton}
         >
-          <Feather name="shopping-bag" size={20} color="#fff" />
+          <Feather name="shopping-bag" size={20} color={TC.text} />
           {cartItemCount > 0 && (
             <View style={styles.badge}>
               <Text style={styles.badgeText}>
@@ -158,7 +158,7 @@ export function CustomerHeader({
           onPress={() => navigation.navigate('Notifications')}
           style={styles.iconButton}
         >
-          <Feather name="bell" size={20} color="#fff" />
+          <Feather name="bell" size={20} color={TC.text} />
           {hasUnread && <View style={styles.notificationDot} />}
         </TouchableOpacity>
 
@@ -173,14 +173,9 @@ export function CustomerHeader({
               style={styles.profileImage}
             />
           ) : (
-            <LinearGradient
-              colors={['#f97316', '#10b981']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.profileInitials}
-            >
+            <View style={[styles.profileInitials, { backgroundColor: '#ea580c' }]}>
               <Text style={styles.initialsText}>{getUserInitials()}</Text>
-            </LinearGradient>
+            </View>
           )}
         </TouchableOpacity>
 
@@ -192,7 +187,7 @@ export function CustomerHeader({
               <Text style={styles.tooltipText}>Add your phone, address and health info to start ordering.</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={dismissTooltip} style={styles.tooltipClose} hitSlop={8}>
-              <Feather name="x" size={14} color="#fff" />
+              <Feather name="x" size={14} color={TC.text} />
             </TouchableOpacity>
           </View>
         )}
@@ -221,7 +216,7 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 100,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   container: {
     flexDirection: 'row',
@@ -235,7 +230,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   solid: {
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
   },
   leftSection: {
     flexDirection: 'row',
@@ -251,7 +246,9 @@ const styles = StyleSheet.create({
     width: 72,
     height: 42,
     borderRadius: 16,
-    backgroundColor: 'rgba(59,130,246,0.1)',
+    backgroundColor: TC.surface,
+    borderWidth: 1,
+    borderColor: TC.hairline2,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -260,9 +257,7 @@ const styles = StyleSheet.create({
   },
   locationLabel: {
     fontSize: 10,
-    color: '#666',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    color: TC.muted,
   },
   locationRow: {
     flexDirection: 'row',
@@ -272,26 +267,26 @@ const styles = StyleSheet.create({
   locationAddress: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#fff',
+    color: TC.text,
     maxWidth: 120,
   },
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     textAlign: 'center',
     flex: 2,
   },
   searchButton: {
     flex: 2,
     height: 40,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 20,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
     marginTop: '20%',
   },
   searchIcon: {
@@ -299,7 +294,7 @@ const styles = StyleSheet.create({
   },
   searchPlaceholder: {
     fontSize: 14,
-    color: '#666',
+    color: TC.muted,
     flex: 1,
   },
   rightSection: {
@@ -313,7 +308,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
@@ -325,7 +320,7 @@ const styles = StyleSheet.create({
     minWidth: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 4,
@@ -342,7 +337,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
   },
   profileButton: {
     width: 36,
@@ -383,15 +378,15 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f97316',
   },
   tooltipBody: {
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     borderRadius: 12,
     padding: 12,
     paddingRight: 28,
   },
   tooltipTitle: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '600',
     marginBottom: 2,
   },
   tooltipText: {
@@ -405,7 +400,7 @@ const styles = StyleSheet.create({
     right: 8,
   },
   initialsText: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
     fontWeight: '600',
   },

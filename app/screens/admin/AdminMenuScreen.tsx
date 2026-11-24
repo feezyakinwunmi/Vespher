@@ -15,12 +15,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import Toast from 'react-native-toast-message';
 import { reviewFood, FoodReview } from '../../services/foodSafety';
 import { EmojiIcon } from '../../components/EmojiIcon';
+import { humanize } from '../../utils/text';
+import { TAB_BAR_SPACE } from '../../navigation/tabBarOptions';
+import { TC } from '../../theme/palette';
 
 type MenuStatus = 'all' | 'pending' | 'approved' | 'rejected';
 
@@ -229,7 +231,7 @@ export function AdminMenuScreen() {
 
   const handleDelete = async (itemId: string) => {
     Alert.alert(
-      'Delete Menu Item',
+      'Delete menu item',
       'Are you sure you want to delete this item? This action cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
@@ -264,7 +266,7 @@ export function AdminMenuScreen() {
       case 'pending': return '#f59e0b';
       case 'approved': return '#10b981';
       case 'rejected': return '#ef4444';
-      default: return '#666';
+      default: return TC.muted;
     }
   };
 
@@ -291,13 +293,13 @@ export function AdminMenuScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Feather name="arrow-left" size={24} color="#fff" />
+          <Feather name="arrow-left" size={24} color={TC.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Menu Management</Text>
+        <Text style={styles.headerTitle}>Menu management</Text>
         <TouchableOpacity onPress={fetchData} style={styles.refreshButton}>
           <Feather name="refresh-cw" size={20} color="#f97316" />
         </TouchableOpacity>
@@ -305,13 +307,10 @@ export function AdminMenuScreen() {
 
       {/* Stats Cards */}
       <View style={styles.statsContainer}>
-        <LinearGradient
-          colors={['#f97316', '#f43f5e']}
-          style={styles.statCard}
-        >
-          <Text style={styles.statLabel}>Total Items</Text>
+        <View style={[styles.statCard, { backgroundColor: '#ea580c' }]}>
+          <Text style={styles.statLabel}>Total items</Text>
           <Text style={styles.statValue}>{menuItems.length}</Text>
-        </LinearGradient>
+        </View>
 
         <View style={styles.statCardSecondary}>
           <Feather name="clock" size={20} color="#f59e0b" />
@@ -328,17 +327,17 @@ export function AdminMenuScreen() {
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
-        <Feather name="search" size={18} color="#666" style={styles.searchIcon} />
+        <Feather name="search" size={18} color={TC.muted} style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
           value={searchQuery}
           onChangeText={setSearchQuery}
           placeholder="Search by name, description, vendor..."
-          placeholderTextColor="#666"
+          placeholderTextColor={TC.muted}
         />
         {searchQuery ? (
           <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <Feather name="x" size={18} color="#666" />
+            <Feather name="x" size={18} color={TC.muted} />
           </TouchableOpacity>
         ) : null}
       </View>
@@ -415,7 +414,7 @@ export function AdminMenuScreen() {
             <Text style={[
               styles.filterChipText,
               vendorFilter === 'all' && styles.filterChipTextActive,
-            ]}>All Vendors</Text>
+            ]}>All vendors</Text>
           </TouchableOpacity>
 
           {vendors.slice(0, 3).map(vendor => (
@@ -450,7 +449,7 @@ export function AdminMenuScreen() {
       </View>
 
       {/* Menu Items Grid */}
-      <ScrollView
+      <ScrollView contentContainerStyle={{ paddingBottom: TAB_BAR_SPACE }}
         style={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -460,7 +459,7 @@ export function AdminMenuScreen() {
         <View style={styles.grid}>
           {filteredItems.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Feather name="coffee" size={48} color="#666" />
+              <Feather name="coffee" size={48} color={TC.muted} />
               <Text style={styles.emptyTitle}>No menu items found</Text>
               <Text style={styles.emptyText}>Try adjusting your filters</Text>
             </View>
@@ -482,12 +481,9 @@ export function AdminMenuScreen() {
                       onError={() => setImageError(prev => ({ ...prev, [item.id]: true }))}
                     />
                   ) : (
-                    <LinearGradient
-                      colors={['#f97316', '#f43f5e']}
-                      style={styles.menuImagePlaceholder}
-                    >
+                    <View style={[styles.menuImagePlaceholder, { backgroundColor: '#ea580c' }]}>
                       <Feather name="image" size={24} color="#fff" />
-                    </LinearGradient>
+                    </View>
                   )}
                   
                   <View style={[
@@ -547,9 +543,9 @@ export function AdminMenuScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.detailsModal}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Menu Item Details</Text>
+              <Text style={styles.modalTitle}>Menu item details</Text>
               <TouchableOpacity onPress={() => setShowDetailsModal(false)}>
-                <Feather name="x" size={20} color="#fff" />
+                <Feather name="x" size={20} color={TC.text} />
               </TouchableOpacity>
             </View>
 
@@ -564,12 +560,9 @@ export function AdminMenuScreen() {
                       onError={() => setImageError(prev => ({ ...prev, [selectedItem.id]: true }))}
                     />
                   ) : (
-                    <LinearGradient
-                      colors={['#f97316', '#f43f5e']}
-                      style={styles.detailImagePlaceholder}
-                    >
+                    <View style={[styles.detailImagePlaceholder, { backgroundColor: '#ea580c' }]}>
                       <Feather name="image" size={40} color="#fff" />
-                    </LinearGradient>
+                    </View>
                   )}
                 </View>
 
@@ -581,14 +574,14 @@ export function AdminMenuScreen() {
                   ]}>
                     <View style={[styles.statusDot, { backgroundColor: getStatusColor(selectedItem.approval_status) }]} />
                     <Text style={[styles.detailStatusText, { color: getStatusColor(selectedItem.approval_status) }]}>
-                      {selectedItem.approval_status.toUpperCase()}
+                      {humanize(selectedItem.approval_status)}
                     </Text>
                   </View>
                 </View>
 
                 {/* Basic Info */}
                 <View style={styles.detailSection}>
-                  <Text style={styles.detailLabel}>Item Name</Text>
+                  <Text style={styles.detailLabel}>Item name</Text>
                   <Text style={styles.detailValue}>{selectedItem.name}</Text>
                 </View>
 
@@ -604,7 +597,7 @@ export function AdminMenuScreen() {
                   </View>
                   {selectedItem.original_price && (
                     <View style={[styles.detailSection, { flex: 1 }]}>
-                      <Text style={styles.detailLabel}>Original Price</Text>
+                      <Text style={styles.detailLabel}>Original price</Text>
                       <Text style={styles.detailOriginalPrice}>{formatCurrency(selectedItem.original_price)}</Text>
                     </View>
                   )}
@@ -616,7 +609,7 @@ export function AdminMenuScreen() {
                     <Text style={styles.detailValue}>{selectedItem.category}</Text>
                   </View>
                   <View style={[styles.detailSection, { flex: 1 }]}>
-                    <Text style={styles.detailLabel}>Prep Time</Text>
+                    <Text style={styles.detailLabel}>Prep time</Text>
                     <Text style={styles.detailValue}>{selectedItem.preparation_time || 'N/A'}</Text>
                   </View>
                 </View>
@@ -660,7 +653,7 @@ export function AdminMenuScreen() {
 
                       {!!selectedItem.health_tags?.length && (
                         <View style={styles.detailSection}>
-                          <Text style={styles.detailLabel}>Health Tags</Text>
+                          <Text style={styles.detailLabel}>Health tags</Text>
                           <View style={styles.chipRow}>
                             {selectedItem.health_tags.map(t => (
                               <View key={t} style={styles.chip}>
@@ -701,14 +694,11 @@ export function AdminMenuScreen() {
                       {selectedItem.vendor?.image_url ? (
                         <Image source={{ uri: selectedItem.vendor.image_url }} style={styles.vendorAvatarImage} />
                       ) : (
-                        <LinearGradient
-                          colors={['#f97316', '#f43f5e']}
-                          style={styles.vendorAvatarPlaceholder}
-                        >
+                        <View style={[styles.vendorAvatarPlaceholder, { backgroundColor: '#ea580c' }]}>
                           <Text style={styles.vendorAvatarText}>
                             {selectedItem.vendor?.name?.charAt(0) || 'V'}
                           </Text>
-                        </LinearGradient>
+                        </View>
                       )}
                     </View>
                     <View>
@@ -745,7 +735,7 @@ export function AdminMenuScreen() {
                         setShowRejectModal(true);
                       }}
                     >
-                      <Feather name="x-circle" size={18} color="#fff" />
+                      <Feather name="x-circle" size={18} color={TC.text} />
                       <Text style={styles.actionButtonText}>Reject</Text>
                     </TouchableOpacity>
                     
@@ -756,7 +746,7 @@ export function AdminMenuScreen() {
                         confirmApprove(selectedItem);
                       }}
                     >
-                      <Feather name="check-circle" size={18} color="#fff" />
+                      <Feather name="check-circle" size={18} color={TC.text} />
                       <Text style={styles.actionButtonText}>Approve</Text>
                     </TouchableOpacity>
                   </View>
@@ -770,8 +760,8 @@ export function AdminMenuScreen() {
                       handleDelete(selectedItem.id);
                     }}
                   >
-                    <Feather name="trash-2" size={18} color="#fff" />
-                    <Text style={styles.actionButtonText}>Delete Item</Text>
+                    <Feather name="trash-2" size={18} color={TC.text} />
+                    <Text style={styles.actionButtonText}>Delete item</Text>
                   </TouchableOpacity>
                 )}
               </ScrollView>
@@ -790,9 +780,9 @@ export function AdminMenuScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.rejectModal}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Reject Menu Item</Text>
+              <Text style={styles.modalTitle}>Reject menu item</Text>
               <TouchableOpacity onPress={() => setShowRejectModal(false)}>
-                <Feather name="x" size={20} color="#fff" />
+                <Feather name="x" size={20} color={TC.text} />
               </TouchableOpacity>
             </View>
 
@@ -805,7 +795,7 @@ export function AdminMenuScreen() {
                 value={rejectReason}
                 onChangeText={setRejectReason}
                 placeholder="Enter reason..."
-                placeholderTextColor="#666"
+                placeholderTextColor={TC.muted}
                 multiline
                 numberOfLines={4}
                 textAlignVertical="top"
@@ -827,12 +817,9 @@ export function AdminMenuScreen() {
                   onPress={handleReject}
                   disabled={!rejectReason.trim()}
                 >
-                  <LinearGradient
-                    colors={['#f97316', '#f43f5e']}
-                    style={styles.rejectConfirmGradient}
-                  >
+                  <View style={[styles.rejectConfirmGradient, { backgroundColor: '#ea580c' }]}>
                     <Text style={styles.rejectConfirmText}>Submit</Text>
-                  </LinearGradient>
+                  </View>
                 </TouchableOpacity>
               </View>
             </View>
@@ -854,13 +841,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: TC.hairline2,
   },
   allergenChip: {
     backgroundColor: 'rgba(245,158,11,0.15)',
   },
   chipText: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 12,
     textTransform: 'capitalize',
   },
@@ -894,12 +881,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   reviewLine: {
-    color: '#ddd',
+    color: TC.text2,
     fontSize: 12,
     lineHeight: 18,
   },
   reviewNote: {
-    color: '#999',
+    color: TC.subtle,
     fontSize: 12,
     fontStyle: 'italic',
   },
@@ -916,18 +903,17 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
-        paddingBottom:60,
+    backgroundColor: TC.bg,
 
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    color: '#666',
+    color: TC.muted,
     marginTop: 12,
     fontSize: 14,
   },
@@ -938,26 +924,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   refreshButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -973,12 +959,12 @@ const styles = StyleSheet.create({
   },
   statCardSecondary: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     padding: 12,
     borderRadius: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   statLabel: {
     fontSize: 11,
@@ -987,24 +973,24 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
   },
   statNumber: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
     marginTop: 4,
     marginBottom: 2,
   },
   statLabelSmall: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     marginHorizontal: 16,
     marginBottom: 12,
     paddingHorizontal: 12,
@@ -1016,7 +1002,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
   },
   filterRow: {
@@ -1034,7 +1020,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 20,
     gap: 4,
     borderWidth: 1,
@@ -1046,7 +1032,7 @@ const styles = StyleSheet.create({
   },
   filterChipText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   filterChipTextActive: {
     color: '#f97316',
@@ -1054,7 +1040,7 @@ const styles = StyleSheet.create({
   filterDivider: {
     width: 1,
     height: 20,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     marginHorizontal: 4,
   },
   statusDot: {
@@ -1068,7 +1054,7 @@ const styles = StyleSheet.create({
   },
   resultsText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   content: {
     flex: 1,
@@ -1081,11 +1067,11 @@ const styles = StyleSheet.create({
   },
   menuCard: {
     width: '47%',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
     marginBottom: 8,
   },
   menuImageContainer: {
@@ -1123,12 +1109,12 @@ const styles = StyleSheet.create({
   menuName: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 2,
   },
   menuVendor: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 6,
   },
   menuPriceRow: {
@@ -1139,12 +1125,12 @@ const styles = StyleSheet.create({
   },
   menuPrice: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#f97316',
   },
   menuOriginalPrice: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
     textDecorationLine: 'line-through',
   },
   menuMeta: {
@@ -1167,7 +1153,7 @@ const styles = StyleSheet.create({
   },
   menuCategory: {
     fontSize: 9,
-    color: '#666',
+    color: TC.muted,
   },
   emptyContainer: {
     alignItems: 'center',
@@ -1178,13 +1164,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginTop: 16,
     marginBottom: 4,
   },
   emptyText: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
     textAlign: 'center',
   },
   bottomPadding: {
@@ -1199,7 +1185,7 @@ const styles = StyleSheet.create({
   detailsModal: {
     width: '90%',
     maxHeight: '80%',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 16,
     overflow: 'hidden',
   },
@@ -1209,12 +1195,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   modalBody: {
     padding: 16,
@@ -1256,12 +1242,12 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 4,
   },
   detailValue: {
     fontSize: 14,
-    color: '#fff',
+    color: TC.text,
   },
   detailRow: {
     flexDirection: 'row',
@@ -1270,19 +1256,19 @@ const styles = StyleSheet.create({
   },
   detailPrice: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#f97316',
   },
   detailOriginalPrice: {
     fontSize: 14,
-    color: '#666',
+    color: TC.muted,
     textDecorationLine: 'line-through',
   },
   vendorInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     padding: 12,
     borderRadius: 8,
   },
@@ -1304,22 +1290,22 @@ const styles = StyleSheet.create({
   },
   vendorAvatarText: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#fff',
   },
   vendorName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 2,
   },
   vendorId: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
   },
   detailDate: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   rejectionSection: {
     backgroundColor: 'rgba(239,68,68,0.1)',
@@ -1370,7 +1356,7 @@ const styles = StyleSheet.create({
   },
   rejectModal: {
     width: '85%',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 16,
     overflow: 'hidden',
   },
@@ -1379,14 +1365,14 @@ const styles = StyleSheet.create({
   },
   rejectLabel: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 12,
   },
   rejectInput: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 8,
     padding: 12,
-    color: '#fff',
+    color: TC.text,
     fontSize: 13,
     height: 100,
     textAlignVertical: 'top',
@@ -1398,13 +1384,13 @@ const styles = StyleSheet.create({
   },
   rejectCancel: {
     flex: 1,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
   },
   rejectCancelText: {
-    color: '#666',
+    color: TC.muted,
     fontSize: 14,
     fontWeight: '500',
   },

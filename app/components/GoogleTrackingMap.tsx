@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import { Feather } from '@expo/vector-icons';
+import { TC } from '../theme/palette';
 
 const { width, height } = Dimensions.get('window');
 
@@ -194,7 +195,7 @@ export default function GoogleTrackingMap({
           title="Restaurant"
         >
           <View style={styles.vendorMarker}>
-            <Feather name="coffee" size={20} color="#fff" />
+            <Feather name="coffee" size={20} color={TC.text} />
           </View>
         </Marker>
 
@@ -202,10 +203,10 @@ export default function GoogleTrackingMap({
         {deliveryLat && deliveryLng && (
           <Marker
             coordinate={{ latitude: deliveryLat, longitude: deliveryLng }}
-            title="Delivery Location"
+            title="Delivery location"
           >
             <View style={styles.deliveryMarker}>
-              <Feather name="home" size={18} color="#fff" />
+              <Feather name="home" size={18} color={TC.text} />
             </View>
           </Marker>
         )}
@@ -217,7 +218,7 @@ export default function GoogleTrackingMap({
             title="Rider"
           >
             <View style={styles.riderMarker}>
-              <Feather name="truck" size={18} color="#fff" />
+              <Feather name="truck" size={18} color={TC.text} />
             </View>
           </Marker>
         )}
@@ -270,14 +271,14 @@ export default function GoogleTrackingMap({
         style={styles.legendToggle}
         onPress={() => setShowLegend(!showLegend)}
       >
-        <Feather name="info" size={18} color="#fff" />
+        <Feather name="info" size={18} color={TC.text} />
       </TouchableOpacity>
 
       {/* Legend */}
       {showLegend && (
         <View style={styles.legendContainer}>
           <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#f97316' }]} />
+            <View style={[styles.legendDot, { backgroundColor: '#ea580c' }]} />
             <Text style={styles.legendText}>Restaurant</Text>
           </View>
           <View style={styles.legendItem}>
@@ -334,7 +335,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   loadingText: {
-    color: '#fff',
+    color: TC.text,
     marginTop: 10,
     fontSize: 14,
   },
@@ -342,7 +343,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
@@ -426,7 +427,7 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: 10,
-    color: '#fff',
+    color: TC.text,
   },
   statusBadge: {
     position: 'absolute',
@@ -439,7 +440,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statusText: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 12,
     fontWeight: '500',
   },

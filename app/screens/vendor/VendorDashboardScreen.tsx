@@ -15,7 +15,6 @@ import {
   Alert,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -28,18 +27,19 @@ import { useVendorStats } from '../../hooks/vendor/useVendorStats';
 import { useVendorEarnings } from '../../hooks/vendor/useVendorEarnings';
 import { useNotifications } from '../../hooks/useNotifications';
 import { RootStackParamList } from '../../navigation/types';
+import { TC } from '../../theme/palette';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type IconName = React.ComponentProps<typeof Feather>['name'];
 
 const C = {
-  bg: '#0a0a0a',
-  card: '#141414',
-  raised: '#1c1c1c',
-  border: 'rgba(255,255,255,0.06)',
-  text: '#ffffff',
-  muted: '#8a8a8a',
-  faint: '#5c5c5c',
+  bg: TC.bg,
+  card: TC.surface2,
+  raised: TC.surface,
+  border: TC.hairline2,
+  text: TC.text,
+  muted: TC.subtle,
+  faint: TC.subtle,
   orange: '#f97316',
   rose: '#f43f5e',
   green: '#10b981',
@@ -235,8 +235,8 @@ export function VendorDashboardScreen() {
               <Switch
                 value={!!shop?.is_open}
                 onValueChange={toggleOpen}
-                trackColor={{ false: '#333', true: 'rgba(16,185,129,0.45)' }}
-                thumbColor={shop?.is_open ? C.green : '#888'}
+                trackColor={{ false: TC.raised, true: 'rgba(16,185,129,0.45)' }}
+                thumbColor={shop?.is_open ? C.green : TC.subtle}
               />
             )}
           </View>
@@ -244,11 +244,11 @@ export function VendorDashboardScreen() {
 
         {/* Today */}
         <View style={styles.todayRow}>
-          <LinearGradient colors={['#f97316', '#f43f5e']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.todayMain}>
+          <View style={[styles.todayMain, { backgroundColor: '#ea580c' }]}>
             <Text style={styles.todayLabel}>Today's sales</Text>
             <Text style={styles.todayValue}>{naira(stats?.todaySales)}</Text>
             <Text style={styles.todaySub}>{stats?.todayOrders || 0} orders delivered</Text>
-          </LinearGradient>
+          </View>
           <View style={styles.todaySide}>
             <MiniStat icon="star" color={C.amber} value={stats?.averageRating ? stats.averageRating.toFixed(1) : '–'} label={`${stats?.reviewCount || 0} reviews`} />
             <MiniStat icon="clock" color={C.blue} value={stats?.averagePrepTime ? `${Math.round(stats.averagePrepTime)}m` : '–'} label="avg prep" />
@@ -527,9 +527,9 @@ function OrderRow({
               )}
               {primary && (
                 <TouchableOpacity style={{ flex: 2 }} onPress={primary.onPress}>
-                  <LinearGradient colors={['#f97316', '#f43f5e']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.orderBtn}>
+                  <View style={[styles.orderBtn, { backgroundColor: '#ea580c' }]}>
                     <Text style={styles.orderBtnText}>{primary.label}</Text>
-                  </LinearGradient>
+                  </View>
                 </TouchableOpacity>
               )}
             </>
@@ -547,9 +547,9 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
   logo: { width: 46, height: 46, borderRadius: 14 },
   logoFallback: { backgroundColor: C.orange, justifyContent: 'center', alignItems: 'center' },
-  logoText: { color: '#fff', fontSize: 20, fontWeight: '800' },
+  logoText: { color: TC.text, fontSize: 20, fontWeight: '600' },
   greet: { color: C.muted, fontSize: 13 },
-  shopName: { color: C.text, fontSize: 20, fontWeight: '800', marginTop: 1 },
+  shopName: { color: C.text, fontSize: 20, fontWeight: '600', marginTop: 1 },
   iconBtn: {
     width: 42,
     height: 42,
@@ -573,7 +573,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  countBadgeText: { color: '#fff', fontSize: 10, fontWeight: '700' },
+  countBadgeText: { color: '#fff', fontSize: 10, fontWeight: '600' },
 
   banner: {
     flexDirection: 'row',
@@ -585,10 +585,10 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(245,158,11,0.25)',
     marginBottom: 12,
   },
-  bannerTitle: { color: C.amber, fontSize: 14, fontWeight: '700' },
-  bannerText: { color: '#d4d4d4', fontSize: 12.5, marginTop: 3, lineHeight: 18 },
+  bannerTitle: { color: C.amber, fontSize: 14, fontWeight: '600' },
+  bannerText: { color: TC.text2, fontSize: 12.5, marginTop: 3, lineHeight: 18 },
   bannerBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 },
-  bannerBtnText: { color: C.amber, fontSize: 13, fontWeight: '700' },
+  bannerBtnText: { color: C.amber, fontSize: 13, fontWeight: '600' },
 
   openCard: {
     flexDirection: 'row',
@@ -603,17 +603,17 @@ const styles = StyleSheet.create({
   },
   openCardOn: { borderColor: 'rgba(16,185,129,0.35)', backgroundColor: 'rgba(16,185,129,0.06)' },
   openDot: { width: 10, height: 10, borderRadius: 5 },
-  openTitle: { color: C.text, fontSize: 15, fontWeight: '700' },
+  openTitle: { color: C.text, fontSize: 15, fontWeight: '600' },
   openSub: { color: C.muted, fontSize: 12, marginTop: 2 },
 
   todayRow: { flexDirection: 'row', gap: 12 },
   todayMain: { flex: 1.4, borderRadius: 20, padding: 16, justifyContent: 'space-between' },
   todayLabel: { color: 'rgba(255,255,255,0.85)', fontSize: 12.5 },
-  todayValue: { color: '#fff', fontSize: 26, fontWeight: '800', marginVertical: 6 },
+  todayValue: { color: TC.text, fontSize: 26, fontWeight: '600', marginVertical: 6 },
   todaySub: { color: 'rgba(255,255,255,0.85)', fontSize: 12 },
   todaySide: { flex: 1, gap: 12 },
   mini: { flex: 1, backgroundColor: C.card, borderRadius: 16, borderWidth: 1, borderColor: C.border, padding: 12, justifyContent: 'center' },
-  miniValue: { color: C.text, fontSize: 17, fontWeight: '800', marginTop: 4 },
+  miniValue: { color: C.text, fontSize: 17, fontWeight: '600', marginTop: 4 },
   miniLabel: { color: C.muted, fontSize: 11, marginTop: 1 },
 
   pipeline: {
@@ -626,13 +626,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   chip: { flex: 1, alignItems: 'center' },
-  chipCount: { fontSize: 20, fontWeight: '800' },
+  chipCount: { fontSize: 20, fontWeight: '600' },
   chipLabel: { color: C.muted, fontSize: 11, marginTop: 2 },
 
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, marginBottom: 10 },
-  sectionTitle: { color: C.text, fontSize: 17, fontWeight: '700' },
+  sectionTitle: { color: C.text, fontSize: 17, fontWeight: '600' },
   sectionCount: { backgroundColor: 'rgba(249,115,22,0.15)', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 1 },
-  sectionCountText: { color: C.orange, fontSize: 12, fontWeight: '700' },
+  sectionCountText: { color: C.orange, fontSize: 12, fontWeight: '600' },
   sectionAction: { color: C.orange, fontSize: 13, fontWeight: '600' },
 
   empty: {
@@ -643,7 +643,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderStyle: 'dashed',
-    borderColor: '#262626',
+    borderColor: TC.raised,
   },
   emptyText: { color: C.muted, fontSize: 13, textAlign: 'center', lineHeight: 19 },
 
@@ -657,29 +657,29 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   orderTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  orderNo: { color: C.text, fontSize: 15, fontWeight: '700' },
+  orderNo: { color: C.text, fontSize: 15, fontWeight: '600' },
   orderTime: { color: C.faint, fontSize: 12 },
-  orderItems: { color: '#d4d4d4', fontSize: 13.5, marginTop: 6, lineHeight: 19 },
+  orderItems: { color: TC.text2, fontSize: 13.5, marginTop: 6, lineHeight: 19 },
   orderMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
   orderCustomer: { color: C.muted, fontSize: 12.5, flex: 1, marginRight: 8 },
-  orderTotal: { color: C.text, fontSize: 15, fontWeight: '800' },
+  orderTotal: { color: C.text, fontSize: 15, fontWeight: '600' },
   orderNote: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 },
   orderNoteText: { color: C.green, fontSize: 12.5, fontWeight: '600' },
   orderActions: { flexDirection: 'row', gap: 10, marginTop: 12 },
   orderBtn: { height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   orderBtnGhost: { flex: 1, backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.25)' },
-  orderBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  orderBtnText: { color: '#fff', fontSize: 14, fontWeight: '600' },
 
   card: { backgroundColor: C.card, borderRadius: 18, borderWidth: 1, borderColor: C.border, padding: 16 },
   earnTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   earnLabel: { color: C.muted, fontSize: 12.5 },
-  earnValue: { color: C.text, fontSize: 26, fontWeight: '800', marginTop: 4 },
+  earnValue: { color: C.text, fontSize: 26, fontWeight: '600', marginTop: 4 },
   growth: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
-  growthText: { fontSize: 12, fontWeight: '700' },
+  growthText: { fontSize: 12, fontWeight: '600' },
   earnRow: { flexDirection: 'row', marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: C.border },
   earnCell: { flex: 1 },
   earnCellLabel: { color: C.muted, fontSize: 12 },
-  earnCellValue: { color: C.text, fontSize: 15, fontWeight: '700', marginTop: 3 },
+  earnCellValue: { color: C.text, fontSize: 15, fontWeight: '600', marginTop: 3 },
   payoutWarn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -713,7 +713,7 @@ const styles = StyleSheet.create({
 
   popular: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
   rowBorder: { borderTopWidth: 1, borderTopColor: C.border },
-  rank: { color: C.faint, fontSize: 15, fontWeight: '800', width: 18 },
+  rank: { color: C.faint, fontSize: 15, fontWeight: '600', width: 18 },
   popularName: { color: C.text, fontSize: 14, flex: 1 },
   popularCount: { color: C.muted, fontSize: 12.5 },
 });

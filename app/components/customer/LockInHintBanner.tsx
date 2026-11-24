@@ -1,9 +1,9 @@
 // components/customer/LockInHintBanner.tsx
-import React, { useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useHealth } from '../../contexts/HealthContext';
+import { TC } from '../../theme/palette';
 
 interface Props {
   onPress: () => void;
@@ -11,22 +11,6 @@ interface Props {
 
 export function LockInHintBanner({ onPress }: Props) {
   const { healthProfile, hasAnyCondition } = useHealth();
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-
-  // Pulse animation on the lock icon to draw attention
-  useEffect(() => {
-    if (!hasAnyCondition) {
-      const pulse = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, { toValue: 1.2, duration: 800, useNativeDriver: true }),
-          Animated.timing(pulseAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
-        ])
-      );
-      pulse.start();
-      return () => pulse.stop();
-    }
-  }, [hasAnyCondition]);
-
   // Already locked in: nothing to prompt, keep Home uncluttered (managed from Profile).
   if (healthProfile.isLocked && hasAnyCondition) {
     return null;
@@ -36,21 +20,16 @@ export function LockInHintBanner({ onPress }: Props) {
   if (hasAnyCondition && !healthProfile.isLocked) {
     return (
       <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={styles.container}>
-        <LinearGradient
-          colors={['rgba(245,158,11,0.15)', 'rgba(245,158,11,0.05)']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.gradient}
-        >
-          <Animated.View style={[styles.iconBg, { backgroundColor: 'rgba(245,158,11,0.2)', transform: [{ scale: pulseAnim }] }]}>
+        <View style={[styles.gradient, { backgroundColor: 'rgba(245,158,11,0.15)' }]}>
+          <View style={[styles.iconBg, { backgroundColor: 'rgba(245,158,11,0.2)' }]}>
             <Feather name="unlock" size={16} color="#f59e0b" />
-          </Animated.View>
+          </View>
           <View style={styles.textGroup}>
             <Text style={[styles.title, { color: '#f59e0b' }]}>Health profile set — Lock-In off</Text>
             <Text style={styles.subtitle}>Tap to enable health warnings while ordering</Text>
           </View>
           <Feather name="chevron-right" size={16} color="#f59e0b" />
-        </LinearGradient>
+        </View>
       </TouchableOpacity>
     );
   }
@@ -58,21 +37,16 @@ export function LockInHintBanner({ onPress }: Props) {
   // No conditions set yet — encourage setup
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={styles.container}>
-      <LinearGradient
-        colors={['rgba(249,115,22,0.12)', 'rgba(249,115,22,0.04)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={styles.gradient}
-      >
-        <Animated.View style={[styles.iconBg, { transform: [{ scale: pulseAnim }] }]}>
+      <View style={[styles.gradient, { backgroundColor: 'rgba(249,115,22,0.12)' }]}>
+        <View style={styles.iconBg}>
           <Feather name="shield" size={16} color="#f97316" />
-        </Animated.View>
+        </View>
         <View style={styles.textGroup}>
           <Text style={styles.title}>Set your Health Lock-In</Text>
           <Text style={styles.subtitle}>Get warnings for foods that don't suit your health</Text>
         </View>
         <Feather name="chevron-right" size={16} color="#f97316" />
-      </LinearGradient>
+      </View>
     </TouchableOpacity>
   );
 }
@@ -108,12 +82,12 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#f97316',
   },
   subtitle: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
     lineHeight: 15,
   },
   activeDot: {

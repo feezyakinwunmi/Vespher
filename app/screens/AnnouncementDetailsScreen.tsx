@@ -14,7 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
-import { LinearGradient } from 'expo-linear-gradient';
+import { TC } from '../theme/palette';
 
 export function AnnouncementDetailsScreen({ navigation, route }: any) {
   const { user } = useAuth();
@@ -74,7 +74,7 @@ export function AnnouncementDetailsScreen({ navigation, route }: any) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Feather name="arrow-left" size={24} color="#fff" />
+          <Feather name="arrow-left" size={24} color={TC.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Announcement</Text>
         <View style={{ width: 40 }} />
@@ -92,7 +92,7 @@ export function AnnouncementDetailsScreen({ navigation, route }: any) {
             />
             {imageError && (
               <View style={styles.imageFallback}>
-                <Feather name="image" size={32} color="#666" />
+                <Feather name="image" size={32} color={TC.muted} />
                 <Text style={styles.imageFallbackText}>Image not available</Text>
               </View>
             )}
@@ -109,17 +109,12 @@ export function AnnouncementDetailsScreen({ navigation, route }: any) {
             style={styles.actionButton}
             onPress={handleActionPress}
           >
-            <LinearGradient
-              colors={['#f97316', '#f43f5e']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.actionButtonGradient}
-            >
+            <View style={[styles.actionButtonGradient, { backgroundColor: '#ea580c' }]}>
               <Text style={styles.actionButtonText}>
                 {announcement.action_label || 'View Details'}
               </Text>
               <Feather name="arrow-right" size={16} color="#fff" />
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
         )}
         
@@ -137,19 +132,19 @@ export function AnnouncementDetailsScreen({ navigation, route }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     padding: 20,
   },
   errorText: {
@@ -164,20 +159,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   content: {
     flex: 1,
@@ -189,7 +184,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 20,
     overflow: 'hidden',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     position: 'relative',
   },
   image: {
@@ -204,21 +199,21 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
   },
   imageFallbackText: {
-    color: '#666',
+    color: TC.muted,
     marginTop: 8,
   },
   title: {
     fontSize: 22,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
     marginBottom: 12,
   },
   message: {
     fontSize: 16,
-    color: '#ccc',
+    color: TC.text2,
     lineHeight: 24,
     marginBottom: 20,
   },
@@ -247,6 +242,6 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
   },
 });

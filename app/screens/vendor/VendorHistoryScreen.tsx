@@ -15,13 +15,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { usePlatformSettings } from '../../hooks/usePlatformSettings';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
+import { humanize } from '../../utils/text';
+import { TC } from '../../theme/palette';
 type VendorScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 interface OrderHistory {
@@ -200,7 +201,7 @@ export function VendorHistoryScreen({ onTabChange }: { onTabChange?: (tab: strin
     const csv = [headers, ...csvData].map(row => row.join(',')).join('\n');
     
     await Share.share({
-      title: 'Order History Export',
+      title: 'Order history export',
       message: csv,
     });
   };
@@ -236,9 +237,9 @@ export function VendorHistoryScreen({ onTabChange }: { onTabChange?: (tab: strin
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Feather name="arrow-left" size={24} color="#fff" />
+          <Feather name="arrow-left" size={24} color={TC.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Order History</Text>
+        <Text style={styles.headerTitle}>Order history</Text>
         {onTabChange && (
           <TouchableOpacity
             onPress={() => onTabChange('analytics')}
@@ -251,49 +252,34 @@ export function VendorHistoryScreen({ onTabChange }: { onTabChange?: (tab: strin
 
       {/* Stats Cards */}
       <View style={styles.statsContainer}>
-        <LinearGradient
-          colors={['#f97316', '#f43f5e']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.statCard}
-        >
-          <Text style={styles.statLabel}>Total Orders</Text>
+        <View style={[styles.statCard, { backgroundColor: '#ea580c' }]}>
+          <Text style={styles.statLabel}>Total orders</Text>
           <Text style={styles.statValue}>{filteredOrders.length}</Text>
-        </LinearGradient>
-        <LinearGradient
-          colors={['#10b981', '#059669']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.statCard}
-        >
+        </View>
+        <View style={[styles.statCard, { backgroundColor: '#10b981' }]}>
           <Text style={styles.statLabel}>Completed</Text>
           <Text style={styles.statValue}>{completedOrders}</Text>
-        </LinearGradient>
-        <LinearGradient
-          colors={['#3b82f6', '#2563eb']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.statCard}
-        >
-          <Text style={styles.statLabel}>Your Earnings</Text>
+        </View>
+        <View style={[styles.statCard, { backgroundColor: '#3b82f6' }]}>
+          <Text style={styles.statLabel}>Your earnings</Text>
           <Text style={styles.statValue}>₦{totalEarnings.toLocaleString()}</Text>
-        </LinearGradient>
+        </View>
       </View>
 
       {/* Search and Filter */}
       <View style={styles.searchContainer}>
         <View style={styles.searchInputContainer}>
-          <Feather name="search" size={16} color="#666" style={styles.searchIcon} />
+          <Feather name="search" size={16} color={TC.muted} style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder="Search orders..."
-            placeholderTextColor="#666"
+            placeholderTextColor={TC.muted}
           />
           {searchQuery ? (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Feather name="x" size={16} color="#666" />
+              <Feather name="x" size={16} color={TC.muted} />
             </TouchableOpacity>
           ) : null}
         </View>
@@ -405,13 +391,13 @@ export function VendorHistoryScreen({ onTabChange }: { onTabChange?: (tab: strin
                 </View>
                 <View style={[styles.statusBadge, { backgroundColor: getStatusBgColor(order.status) }]}>
                   <Text style={[styles.statusText, { color: getStatusColor(order.status) }]}>
-                    {order.status.toUpperCase()}
+                    {humanize(order.status)}
                   </Text>
                 </View>
               </View>
 
               <View style={styles.addressContainer}>
-                <Feather name="map-pin" size={12} color="#666" />
+                <Feather name="map-pin" size={12} color={TC.muted} />
                 <Text style={styles.addressText} numberOfLines={2}>
                   {order.customer_address}
                 </Text>
@@ -419,7 +405,7 @@ export function VendorHistoryScreen({ onTabChange }: { onTabChange?: (tab: strin
 
               <View style={styles.orderFooter}>
                 <View style={styles.itemsInfo}>
-                  <Feather name="package" size={12} color="#666" />
+                  <Feather name="package" size={12} color={TC.muted} />
                   <Text style={styles.itemsText}>{order.items_count} items</Text>
                   <Text style={styles.paymentMethod}>• {order.payment_method}</Text>
                 </View>
@@ -434,7 +420,7 @@ export function VendorHistoryScreen({ onTabChange }: { onTabChange?: (tab: strin
           ))
         ) : (
           <View style={styles.emptyContainer}>
-            <Feather name="package" size={48} color="#666" />
+            <Feather name="package" size={48} color={TC.muted} />
             <Text style={styles.emptyTitle}>No orders found</Text>
             <Text style={styles.emptyText}>Try adjusting your filters</Text>
           </View>
@@ -448,12 +434,12 @@ export function VendorHistoryScreen({ onTabChange }: { onTabChange?: (tab: strin
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     paddingBottom: 60,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -464,26 +450,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   analyticsButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -504,8 +490,8 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -517,7 +503,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 8,
     paddingHorizontal: 12,
     height: 44,
@@ -527,19 +513,19 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
   },
   filterButton: {
     width: 44,
     height: 44,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
   filtersContainer: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     marginHorizontal: 16,
     marginBottom: 12,
     padding: 12,
@@ -553,15 +539,15 @@ const styles = StyleSheet.create({
   filterChip: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 16,
   },
   filterChipActive: {
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
   },
   filterChipText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   filterChipTextActive: {
     color: '#fff',
@@ -573,16 +559,16 @@ const styles = StyleSheet.create({
   dateFilterButton: {
     flex: 1,
     paddingVertical: 8,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 8,
     alignItems: 'center',
   },
   dateFilterButtonActive: {
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
   },
   dateFilterText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   dateFilterTextActive: {
     color: '#fff',
@@ -593,7 +579,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 8,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 8,
   },
   exportButtonText: {
@@ -610,7 +596,7 @@ const styles = StyleSheet.create({
   },
   resultsText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   clearText: {
     fontSize: 12,
@@ -620,13 +606,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   orderCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     marginHorizontal: 16,
     marginBottom: 8,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   orderHeader: {
     flexDirection: 'row',
@@ -637,12 +623,12 @@ const styles = StyleSheet.create({
   orderNumber: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 2,
   },
   orderCustomer: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   customerInfoRow: {
     flexDirection: 'row',
@@ -666,7 +652,7 @@ const styles = StyleSheet.create({
   addressText: {
     flex: 1,
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
     lineHeight: 16,
   },
   orderFooter: {
@@ -675,7 +661,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   itemsInfo: {
     flexDirection: 'row',
@@ -684,11 +670,11 @@ const styles = StyleSheet.create({
   },
   itemsText: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
   },
   paymentMethod: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
   },
   amountContainer: {
     alignItems: 'flex-end',
@@ -696,7 +682,7 @@ const styles = StyleSheet.create({
   amount: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   earnings: {
     fontSize: 10,
@@ -712,13 +698,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginTop: 12,
     marginBottom: 4,
   },
   emptyText: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
     textAlign: 'center',
   },
   bottomPadding: {

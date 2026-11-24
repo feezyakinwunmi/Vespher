@@ -28,6 +28,7 @@ import { useAuth } from '../contexts/AuthContext';
 import type { RootStackParamList } from '../navigation/types';
 import { navigate } from '../navigation/RootNavigation';
 import { blockUser, fetchBlockedIds, unblockUser } from '../services/blocks';
+import { TC } from '../theme/palette';
 
 const BUCKET = 'chat-media';
 const ORANGE = '#f97316';
@@ -109,7 +110,7 @@ function Avatar({ person, size = 44 }: { person: Person; size?: number }) {
     );
   }
   if (person.avatar_url) {
-    return <Image source={{ uri: person.avatar_url }} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#222' }} />;
+    return <Image source={{ uri: person.avatar_url }} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: TC.raised }} />;
   }
   return (
     <View style={[styles.avatar, { width: size, height: size, borderRadius: size / 2 }]}>
@@ -226,7 +227,7 @@ export function MessagingScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconButton} accessibilityLabel="Back">
-          <Feather name="arrow-left" size={22} color="#fff" />
+          <Feather name="arrow-left" size={22} color={TC.text} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle}>Messages</Text>
@@ -238,8 +239,8 @@ export function MessagingScreen() {
       </View>
 
       <View style={styles.searchBox}>
-        <Feather name="search" size={16} color="#666" />
-        <TextInput style={styles.searchInput} value={search} onChangeText={setSearch} placeholder="Search chats" placeholderTextColor="#666" />
+        <Feather name="search" size={16} color={TC.muted} />
+        <TextInput style={styles.searchInput} value={search} onChangeText={setSearch} placeholder="Search chats" placeholderTextColor={TC.muted} />
       </View>
 
       {loading ? (
@@ -251,7 +252,7 @@ export function MessagingScreen() {
           contentContainerStyle={visible.length ? undefined : { flex: 1 }}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Feather name="message-circle" size={48} color="#444" />
+              <Feather name="message-circle" size={48} color={TC.muted} />
               <Text style={styles.emptyTitle}>{search ? 'No chats match' : 'No messages yet'}</Text>
               <Text style={styles.emptyText}>Tap the pencil to message a vendor, your rider or Vesphe Support.</Text>
             </View>
@@ -261,13 +262,13 @@ export function MessagingScreen() {
               <Avatar person={item.other} />
               <View style={{ flex: 1, marginLeft: 12 }}>
                 <View style={styles.rowBetween}>
-                  <Text style={[styles.convName, item.unread > 0 && { fontWeight: '700' }]} numberOfLines={1}>
+                  <Text style={[styles.convName, item.unread > 0 && { fontWeight: '600' }]} numberOfLines={1}>
                     {item.other.name}
                   </Text>
                   <Text style={[styles.convTime, item.unread > 0 && { color: ORANGE }]}>{listTime(item.last_message_time)}</Text>
                 </View>
                 <View style={styles.rowBetween}>
-                  <Text style={[styles.convPreview, item.unread > 0 && { color: '#ddd' }]} numberOfLines={1}>
+                  <Text style={[styles.convPreview, item.unread > 0 && { color: TC.text2 }]} numberOfLines={1}>
                     <Text style={styles.roleTag}>{ROLE_LABEL[item.other.role] || item.other.role} · </Text>
                     {item.last_message}
                   </Text>
@@ -322,12 +323,12 @@ function NewChatModal({ visible, onClose, onPick }: { visible: boolean; onClose:
           <View style={styles.sheetHeader}>
             <Text style={styles.sheetTitle}>New message</Text>
             <TouchableOpacity onPress={onClose} accessibilityLabel="Close">
-              <Feather name="x" size={22} color="#fff" />
+              <Feather name="x" size={22} color={TC.text} />
             </TouchableOpacity>
           </View>
           <View style={[styles.searchBox, { marginHorizontal: 0 }]}>
-            <Feather name="search" size={16} color="#666" />
-            <TextInput style={styles.searchInput} value={query} onChangeText={setQuery} placeholder="Search" placeholderTextColor="#666" autoFocus />
+            <Feather name="search" size={16} color={TC.muted} />
+            <TextInput style={styles.searchInput} value={query} onChangeText={setQuery} placeholder="Search" placeholderTextColor={TC.muted} autoFocus />
           </View>
           {loading ? (
             <ActivityIndicator style={{ marginTop: 30 }} color={ORANGE} />
@@ -579,7 +580,7 @@ function ChatThread({ conversation, onBack }: { conversation: Conversation; onBa
               <Feather
                 name={m.pending ? 'clock' : m.read ? 'check-circle' : 'check'}
                 size={12}
-                color={m.read ? '#fff' : 'rgba(255,255,255,0.7)'}
+                color={m.read ? TC.text : 'rgba(255,255,255,0.7)'}
                 style={{ marginLeft: 4 }}
               />
             )}
@@ -593,7 +594,7 @@ function ChatThread({ conversation, onBack }: { conversation: Conversation; onBa
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.iconButton} accessibilityLabel="Back">
-          <Feather name="arrow-left" size={22} color="#fff" />
+          <Feather name="arrow-left" size={22} color={TC.text} />
         </TouchableOpacity>
         <Avatar person={other} size={38} />
         <View style={{ flex: 1, marginLeft: 10 }}>
@@ -602,7 +603,7 @@ function ChatThread({ conversation, onBack }: { conversation: Conversation; onBa
         </View>
         {other.role !== 'admin' && (
           <TouchableOpacity onPress={openSafetyMenu} style={styles.iconButton} accessibilityLabel="Report or block">
-            <Feather name="flag" size={20} color="#fff" />
+            <Feather name="flag" size={20} color={TC.text} />
           </TouchableOpacity>
         )}
       </View>
@@ -629,14 +630,14 @@ function ChatThread({ conversation, onBack }: { conversation: Conversation; onBa
 
         <View style={styles.composer}>
           <TouchableOpacity onPress={attach} style={styles.attachButton} accessibilityLabel="Send a photo">
-            <Feather name="image" size={20} color="#bbb" />
+            <Feather name="image" size={20} color={TC.text2} />
           </TouchableOpacity>
           <TextInput
             style={styles.input}
             value={text}
             onChangeText={setText}
             placeholder="Message"
-            placeholderTextColor="#666"
+            placeholderTextColor={TC.muted}
             multiline
             maxLength={4000}
           />
@@ -664,20 +665,20 @@ function ChatThread({ conversation, onBack }: { conversation: Conversation; onBa
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0a0a0a' },
+  container: { flex: 1, backgroundColor: TC.bg },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#1a1a1a',
+    borderBottomColor: TC.surface,
     gap: 6,
   },
   iconButton: { padding: 6 },
-  headerTitle: { color: '#fff', fontSize: 20, fontWeight: '700' },
-  headerSub: { color: '#888', fontSize: 12, marginTop: 1 },
-  threadName: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  headerTitle: { color: TC.text, fontSize: 20, fontWeight: '600' },
+  headerSub: { color: TC.subtle, fontSize: 12, marginTop: 1 },
+  threadName: { color: TC.text, fontSize: 16, fontWeight: '600' },
   newButton: {
     width: 40,
     height: 40,
@@ -690,18 +691,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#161616',
+    backgroundColor: TC.surface2,
     borderRadius: 12,
     marginHorizontal: 16,
     marginVertical: 10,
     paddingHorizontal: 12,
   },
-  searchInput: { flex: 1, color: '#fff', paddingVertical: 10, fontSize: 14 },
+  searchInput: { flex: 1, color: TC.text, paddingVertical: 10, fontSize: 14 },
   convRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  convName: { color: '#fff', fontSize: 15, fontWeight: '600', flexShrink: 1 },
-  convTime: { color: '#777', fontSize: 12 },
-  convPreview: { color: '#888', fontSize: 13, marginTop: 3, flexShrink: 1 },
+  convName: { color: TC.text, fontSize: 15, fontWeight: '600', flexShrink: 1 },
+  convTime: { color: TC.muted, fontSize: 12 },
+  convPreview: { color: TC.subtle, fontSize: 13, marginTop: 3, flexShrink: 1 },
   roleTag: { color: ORANGE, fontSize: 12 },
   unreadBadge: {
     minWidth: 20,
@@ -713,16 +714,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     marginTop: 3,
   },
-  unreadText: { color: '#fff', fontSize: 11, fontWeight: '700' },
-  avatar: { backgroundColor: '#262626', alignItems: 'center', justifyContent: 'center' },
-  avatarText: { color: '#fff', fontWeight: '700' },
+  unreadText: { color: '#fff', fontSize: 11, fontWeight: '600' },
+  avatar: { backgroundColor: TC.raised, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { color: '#fff', fontWeight: '600' },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40, gap: 8 },
-  emptyTitle: { color: '#fff', fontSize: 17, fontWeight: '600', marginTop: 8, textAlign: 'center' },
-  emptyText: { color: '#888', fontSize: 13, textAlign: 'center', lineHeight: 19 },
+  emptyTitle: { color: TC.text, fontSize: 17, fontWeight: '600', marginTop: 8, textAlign: 'center' },
+  emptyText: { color: TC.subtle, fontSize: 13, textAlign: 'center', lineHeight: 19 },
   sheetOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
-  sheet: { backgroundColor: '#111', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16, maxHeight: '85%', minHeight: '60%' },
+  sheet: { backgroundColor: TC.surface2, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16, maxHeight: '85%', minHeight: '60%' },
   sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  sheetTitle: { color: '#fff', fontSize: 18, fontWeight: '700' },
+  sheetTitle: { color: TC.text, fontSize: 18, fontWeight: '600' },
   personRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
   rolePill: {
     color: ORANGE,
@@ -736,35 +737,35 @@ const styles = StyleSheet.create({
   },
   thread: { paddingHorizontal: 12, paddingVertical: 10 },
   dayRow: { alignItems: 'center', marginVertical: 10 },
-  dayText: { color: '#999', fontSize: 11, backgroundColor: '#161616', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, overflow: 'hidden' },
+  dayText: { color: TC.subtle, fontSize: 11, backgroundColor: TC.surface2, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, overflow: 'hidden' },
   msgRow: { flexDirection: 'row', marginVertical: 2 },
   mineRow: { justifyContent: 'flex-end' },
   theirRow: { justifyContent: 'flex-start' },
   bubble: { maxWidth: '80%', borderRadius: 18, paddingHorizontal: 12, paddingVertical: 8 },
   mineBubble: { backgroundColor: ORANGE, borderBottomRightRadius: 4 },
-  theirBubble: { backgroundColor: '#1c1c1c', borderBottomLeftRadius: 4 },
+  theirBubble: { backgroundColor: TC.surface, borderBottomLeftRadius: 4 },
   photoBubble: { padding: 4 },
-  photo: { width: 220, height: 220, borderRadius: 14, backgroundColor: '#222' },
+  photo: { width: 220, height: 220, borderRadius: 14, backgroundColor: TC.raised },
   photoLoading: { alignItems: 'center', justifyContent: 'center' },
   uploading: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 14, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' },
-  msgText: { color: '#fff', fontSize: 15, lineHeight: 21 },
+  msgText: { color: TC.text, fontSize: 15, lineHeight: 21 },
   metaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 2, paddingBottom: 2 },
-  msgTime: { color: '#888', fontSize: 10 },
+  msgTime: { color: TC.subtle, fontSize: 10 },
   composer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderTopWidth: 1,
-    borderTopColor: '#1a1a1a',
+    borderTopColor: TC.surface,
     gap: 8,
   },
-  attachButton: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: '#161616' },
+  attachButton: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: TC.surface2 },
   input: {
     flex: 1,
     maxHeight: 120,
-    backgroundColor: '#161616',
-    color: '#fff',
+    backgroundColor: TC.surface2,
+    color: TC.text,
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingTop: 10,

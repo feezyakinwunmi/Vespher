@@ -106,7 +106,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
       
       // Check if adding would exceed max quantity for promo items
       if (maxQuantity && newQuantity > maxQuantity) {
-        Alert.alert('Limit Reached', `You can only order ${maxQuantity} of this promotional item.`);
+        Alert.alert('Limit reached', `You can only order ${maxQuantity} of this promotional item.`);
         return state;
       }
       
@@ -117,7 +117,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 
     // Check if adding new promo item would exceed max quantity
     if (maxQuantity && quantity > maxQuantity) {
-      Alert.alert('Limit Reached', `You can only order ${maxQuantity} of this promotional item.`);
+      Alert.alert('Limit reached', `You can only order ${maxQuantity} of this promotional item.`);
       return state;
     }
 
@@ -179,7 +179,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 
   // Check max quantity for promo items in new cart
   if (maxQuantity && quantity > maxQuantity) {
-    Alert.alert('Limit Reached', `You can only order ${maxQuantity} of this promotional item.`);
+    Alert.alert('Limit reached', `You can only order ${maxQuantity} of this promotional item.`);
     return state;
   }
 
@@ -267,7 +267,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
   
   // Check if updating would exceed max quantity for promo items
   if (maxQuantity && quantity > maxQuantity) {
-    Alert.alert('Limit Reached', `You can only order ${maxQuantity} of this promotional item.`);
+    Alert.alert('Limit reached', `You can only order ${maxQuantity} of this promotional item.`);
     return state;
   }
 
@@ -314,14 +314,14 @@ const addItem = useCallback(async (product: Product, quantity: number, selectedO
   console.log('📊 Stock check result - Available:', available, 'Stock:', stockQuantity);
   
   if (!available) {
-    Alert.alert('Out of Stock', `Only ${stockQuantity} left in stock. You already have ${currentQuantityInCart} in cart.`);
+    Alert.alert('Out of stock', `Only ${stockQuantity} left in stock. You already have ${currentQuantityInCart} in cart.`);
     return;
   }
   
   // SECOND: Check promo max quantity (existing logic)
   const maxQuantity = (product as any).max_quantity || (product as any).promotion_max_quantity;
   if (maxQuantity && totalRequestedQuantity > maxQuantity) {
-    Alert.alert('Limit Reached', `You can only order ${maxQuantity} of this promotional item.`);
+    Alert.alert('Limit reached', `You can only order ${maxQuantity} of this promotional item.`);
     return;
   }
   
@@ -357,7 +357,7 @@ const updateQuantity = useCallback(async (productId: string, quantity: number) =
     const { available, stockQuantity } = await checkProductStock(productId, quantity);
     console.log('📊 Update stock check - Available:', available, 'Stock:', stockQuantity);
     if (!available) {
-      Alert.alert('Out of Stock', `Only ${stockQuantity} left in stock.`);
+      Alert.alert('Out of stock', `Only ${stockQuantity} left in stock.`);
       return;
     }
   }

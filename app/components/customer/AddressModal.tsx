@@ -14,8 +14,8 @@ import {
   Dimensions,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
+import { TC } from '../../theme/palette';
 
 const LOCATIONIQ_KEY = 'pk.0af27b1ba256a5946cc3366d07bc90d7'; // Replace with your key
 const { height } = Dimensions.get('window');
@@ -308,7 +308,7 @@ export function AddressModal({ isOpen, onClose, onSave, address }: AddressModalP
               {address?.id ? 'Edit Address' : 'Add New Address'}
             </Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Feather name="x" size={20} color="#fff" />
+              <Feather name="x" size={20} color={TC.text} />
             </TouchableOpacity>
           </View>
 
@@ -352,7 +352,7 @@ export function AddressModal({ isOpen, onClose, onSave, address }: AddressModalP
                       ? `${formData.street}, ${formData.area}`
                       : 'Tap to pick location on map'}
                   </Text>
-                  <Feather name="chevron-right" size={20} color="#666" />
+                  <Feather name="chevron-right" size={20} color={TC.muted} />
                 </TouchableOpacity>
                 {(formData.latitude && formData.longitude) && (
                   <Text style={styles.coordsText}>
@@ -365,13 +365,13 @@ export function AddressModal({ isOpen, onClose, onSave, address }: AddressModalP
               <View style={styles.fieldContainer}>
                 <Text style={styles.label}>Street Address *</Text>
                 <View style={styles.inputContainer}>
-                  <Feather name="map-pin" size={18} color="#666" style={styles.inputIcon} />
+                  <Feather name="map-pin" size={18} color={TC.muted} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={formData.street}
                     onChangeText={(text) => setFormData({ ...formData, street: text })}
                     placeholder="e.g., 15 University Road"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                   />
                 </View>
               </View>
@@ -380,13 +380,13 @@ export function AddressModal({ isOpen, onClose, onSave, address }: AddressModalP
               <View style={styles.fieldContainer}>
                 <Text style={styles.label}>Area *</Text>
                 <View style={styles.inputContainer}>
-                  <Feather name="navigation" size={18} color="#666" style={styles.inputIcon} />
+                  <Feather name="navigation" size={18} color={TC.muted} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={formData.area}
                     onChangeText={(text) => setFormData({ ...formData, area: text })}
                     placeholder="e.g., Epe"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                   />
                 </View>
               </View>
@@ -395,13 +395,13 @@ export function AddressModal({ isOpen, onClose, onSave, address }: AddressModalP
               <View style={styles.fieldContainer}>
                 <Text style={styles.label}>Landmark (Optional)</Text>
                 <View style={styles.inputContainer}>
-                  <Feather name="flag" size={18} color="#666" style={styles.inputIcon} />
+                  <Feather name="flag" size={18} color={TC.muted} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={formData.landmark}
                     onChangeText={(text) => setFormData({ ...formData, landmark: text })}
                     placeholder="e.g., Beside the market"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                   />
                 </View>
               </View>
@@ -410,13 +410,13 @@ export function AddressModal({ isOpen, onClose, onSave, address }: AddressModalP
               <View style={styles.fieldContainer}>
                 <Text style={styles.label}>Phone Number *</Text>
                 <View style={styles.inputContainer}>
-                  <Feather name="phone" size={18} color="#666" style={styles.inputIcon} />
+                  <Feather name="phone" size={18} color={TC.muted} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={formData.phone}
                     onChangeText={(text) => setFormData({ ...formData, phone: text })}
                     placeholder="Phone number for delivery"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                     keyboardType="phone-pad"
                   />
                 </View>
@@ -427,27 +427,24 @@ export function AddressModal({ isOpen, onClose, onSave, address }: AddressModalP
             <View style={styles.pickerContainer}>
               <View style={styles.pickerHeader}>
                 <TouchableOpacity onPress={handleCancelPicker} style={styles.pickerBackButton}>
-                  <Feather name="arrow-left" size={24} color="#fff" />
+                  <Feather name="arrow-left" size={24} color={TC.text} />
                 </TouchableOpacity>
-                <Text style={styles.pickerTitle}>Drop a Pin</Text>
+                <Text style={styles.pickerTitle}>Drop a pin</Text>
                 <TouchableOpacity onPress={handleConfirmLocation} style={styles.pickerConfirmButton}>
-                  <LinearGradient
-                    colors={['#f97316', '#f43f5e']}
-                    style={styles.pickerConfirmGradient}
-                  >
+                  <View style={[styles.pickerConfirmGradient, { backgroundColor: '#ea580c' }]}>
                     <Text style={styles.pickerConfirmText}>Confirm</Text>
-                  </LinearGradient>
+                  </View>
                 </TouchableOpacity>
               </View>
 
               {/* Search Bar */}
               <View style={styles.searchContainer}>
                 <View style={styles.searchWrapper}>
-                  <Feather name="search" size={20} color="#666" />
+                  <Feather name="search" size={20} color={TC.muted} />
                   <TextInput
                     style={styles.searchInput}
                     placeholder="Search address..."
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                     value={searchText}
                     onChangeText={setSearchText}
                   />
@@ -503,7 +500,7 @@ export function AddressModal({ isOpen, onClose, onSave, address }: AddressModalP
                   )}
                 </MapView>
                 <View style={styles.mapHint}>
-                  <Feather name="info" size={14} color="#666" />
+                  <Feather name="info" size={14} color={TC.muted} />
                   <Text style={styles.mapHintText}>
                     Tap anywhere on map to drop a pin
                   </Text>
@@ -515,7 +512,7 @@ export function AddressModal({ isOpen, onClose, onSave, address }: AddressModalP
                 <View style={styles.selectedAddressCard}>
                   <Feather name="check-circle" size={18} color="#10b981" />
                   <View style={styles.selectedAddressContent}>
-                    <Text style={styles.selectedAddressLabel}>Selected Location</Text>
+                    <Text style={styles.selectedAddressLabel}>Selected location</Text>
                     <Text style={styles.selectedAddressText} numberOfLines={2}>
                       {selectedAddressDetails.fullAddress}
                     </Text>
@@ -533,12 +530,7 @@ export function AddressModal({ isOpen, onClose, onSave, address }: AddressModalP
                 disabled={isSubmitting}
                 style={styles.saveButton}
               >
-                <LinearGradient
-                  colors={['#f97316', '#f43f5e']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.saveGradient}
-                >
+                <View style={[styles.saveGradient, { backgroundColor: '#ea580c' }]}>
                   {isSubmitting ? (
                     <ActivityIndicator color="#fff" />
                   ) : (
@@ -546,7 +538,7 @@ export function AddressModal({ isOpen, onClose, onSave, address }: AddressModalP
                       {address?.id ? 'Update Address' : 'Save Address'}
                     </Text>
                   )}
-                </LinearGradient>
+                </View>
               </TouchableOpacity>
             </View>
           )}
@@ -563,7 +555,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     height: '90%',
@@ -574,12 +566,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   closeButton: {
     padding: 4,
@@ -594,7 +586,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#666',
+    color: TC.muted,
     marginBottom: 8,
   },
   optionsContainer: {
@@ -605,7 +597,7 @@ const styles = StyleSheet.create({
   optionButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: 'transparent',
@@ -616,7 +608,7 @@ const styles = StyleSheet.create({
   },
   optionText: {
     fontSize: 14,
-    color: '#666',
+    color: TC.muted,
   },
   optionTextSelected: {
     color: '#f97316',
@@ -624,7 +616,7 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 12,
     paddingHorizontal: 12,
   },
@@ -634,13 +626,13 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     height: 48,
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
   },
   mapPickerButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -648,19 +640,19 @@ const styles = StyleSheet.create({
   },
   mapPickerText: {
     flex: 1,
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
   },
   coordsText: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
     marginTop: 8,
     marginLeft: 4,
   },
   footer: {
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   saveButton: {
     height: 48,
@@ -673,7 +665,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   saveText: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 15,
     fontWeight: '600',
   },
@@ -688,20 +680,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   pickerBackButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   pickerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   pickerConfirmButton: {
     borderRadius: 8,
@@ -724,7 +716,7 @@ const styles = StyleSheet.create({
   searchWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 12,
     paddingHorizontal: 16,
     height: 48,
@@ -732,7 +724,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    color: '#fff',
+    color: TC.text,
     fontSize: 15,
   },
   suggestionsList: {
@@ -744,13 +736,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
     gap: 12,
   },
   suggestionText: {
     flex: 1,
     fontSize: 13,
-    color: '#fff',
+    color: TC.text,
   },
   mapContainer: {
     flex: 1,
@@ -783,7 +775,7 @@ const styles = StyleSheet.create({
   },
   mapHintText: {
     fontSize: 11,
-    color: '#fff',
+    color: TC.text,
   },
   selectedAddressCard: {
     flexDirection: 'row',

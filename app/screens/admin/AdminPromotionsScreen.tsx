@@ -15,11 +15,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import Toast from 'react-native-toast-message';
+import { humanize } from '../../utils/text';
+import { TC } from '../../theme/palette';
 
 interface Promotion {
   id: string;
@@ -191,9 +192,9 @@ const fetchPromotions = async () => {
       case 'rejected':
         return '#ef4444';
       case 'expired':
-        return '#6b7280';
+        return TC.subtle;
       default:
-        return '#666';
+        return TC.muted;
     }
   };
 
@@ -212,7 +213,7 @@ const fetchPromotions = async () => {
 
   const handleApprove = async (promotion: Promotion) => {
     Alert.alert(
-      'Approve Promotion',
+      'Approve promotion',
       `Are you sure you want to approve "${promotion.title}"?`,
       [
         { text: 'Cancel', style: 'cancel' },
@@ -308,9 +309,9 @@ const fetchPromotions = async () => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Feather name="arrow-left" size={24} color="#fff" />
+          <Feather name="arrow-left" size={24} color={TC.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Promotion Approvals</Text>
+        <Text style={styles.headerTitle}>Promotion approvals</Text>
         <View style={styles.placeholder} />
       </View>
 
@@ -369,7 +370,7 @@ const fetchPromotions = async () => {
         {filteredPromotions.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Feather name="check-circle" size={48} color="#10b981" />
-            <Text style={styles.emptyTitle}>All Clear!</Text>
+            <Text style={styles.emptyTitle}>All clear</Text>
             <Text style={styles.emptyText}>
               {selectedTab === 'pending' 
                 ? 'No pending promotions to review' 
@@ -411,7 +412,7 @@ const fetchPromotions = async () => {
       style={styles.viewDetailsButton}
       onPress={() => handleViewDetails(promotion)}
     >
-      <Text style={styles.viewDetailsText}>View Details</Text>
+      <Text style={styles.viewDetailsText}>View details</Text>
       <Feather name="eye" size={14} color="#f97316" />
     </TouchableOpacity>
 
@@ -450,9 +451,9 @@ const fetchPromotions = async () => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Reject Promotion</Text>
+              <Text style={styles.modalTitle}>Reject promotion</Text>
               <TouchableOpacity onPress={() => setShowRejectModal(false)}>
-                <Feather name="x" size={24} color="#fff" />
+                <Feather name="x" size={24} color={TC.text} />
               </TouchableOpacity>
             </View>
 
@@ -462,7 +463,7 @@ const fetchPromotions = async () => {
               value={rejectionReason}
               onChangeText={setRejectionReason}
               placeholder="Enter reason (will be shown to vendor)"
-              placeholderTextColor="#666"
+              placeholderTextColor={TC.muted}
               multiline
               numberOfLines={3}
               textAlignVertical="top"
@@ -483,7 +484,7 @@ const fetchPromotions = async () => {
                 {processing ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <Text style={styles.confirmModalButtonText}>Confirm Reject</Text>
+                  <Text style={styles.confirmModalButtonText}>Confirm reject</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -503,9 +504,9 @@ const fetchPromotions = async () => {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.detailsModalHeader}>
-          <Text style={styles.detailsModalTitle}>Promotion Details</Text>
+          <Text style={styles.detailsModalTitle}>Promotion details</Text>
           <TouchableOpacity onPress={() => setShowDetailsModal(false)}>
-            <Feather name="x" size={24} color="#fff" />
+            <Feather name="x" size={24} color={TC.text} />
           </TouchableOpacity>
         </View>
 
@@ -578,7 +579,7 @@ const fetchPromotions = async () => {
             {/* Combo Details */}
             {selectedPromotion.promotion_type === 'combo' && selectedPromotion.main_product_name && (
               <View style={styles.detailsSection}>
-                <Text style={styles.detailsLabel}>Combo Details</Text>
+                <Text style={styles.detailsLabel}>Combo details</Text>
                 <View style={styles.comboBox}>
                   <Text style={styles.comboText}>
                     Buy {selectedPromotion.buy_quantity} × {selectedPromotion.main_product_name}
@@ -600,7 +601,7 @@ const fetchPromotions = async () => {
             <View style={styles.detailsSection}>
               <Text style={styles.detailsLabel}>Duration</Text>
               <View style={styles.dateRow}>
-                <Feather name="calendar" size={14} color="#666" />
+                <Feather name="calendar" size={14} color={TC.muted} />
                 <Text style={styles.dateText}>
                   {new Date(selectedPromotion.start_date).toLocaleDateString()} - {new Date(selectedPromotion.end_date).toLocaleDateString()}
                 </Text>
@@ -622,7 +623,7 @@ const fetchPromotions = async () => {
               <View style={styles.paymentRow}>
                 <Text style={styles.paymentLabel}>Status:</Text>
                 <Text style={[styles.paymentStatus, { color: selectedPromotion.payment_status === 'paid' ? '#10b981' : '#f59e0b' }]}>
-                  {selectedPromotion.payment_status?.toUpperCase()}
+                  {humanize(selectedPromotion.payment_status)}
                 </Text>
               </View>
             </View>
@@ -656,7 +657,7 @@ const fetchPromotions = async () => {
               <View style={styles.rejectionBox}>
                 <Feather name="alert-triangle" size={16} color="#ef4444" />
                 <View>
-                  <Text style={styles.rejectionTitle}>Rejection Reason</Text>
+                  <Text style={styles.rejectionTitle}>Rejection reason</Text>
                   <Text style={styles.rejectionText}>{selectedPromotion.rejection_reason}</Text>
                 </View>
               </View>
@@ -698,16 +699,16 @@ const fetchPromotions = async () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    color: '#666',
+    color: TC.muted,
     marginTop: 12,
     fontSize: 14,
   },
@@ -718,27 +719,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   placeholder: {
     width: 40,
   },
   statsRow: {
     flexDirection: 'row',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     margin: 16,
     marginBottom: 8,
     padding: 16,
@@ -750,23 +751,23 @@ const styles = StyleSheet.create({
   },
   statNumber: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
   },
   statLabel: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
     marginTop: 4,
   },
   statDivider: {
     width: 1,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: TC.hairline,
   },
   tabContainer: {
     flexDirection: 'row',
     marginHorizontal: 16,
     marginBottom: 16,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 10,
     padding: 4,
   },
@@ -777,11 +778,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   activeTab: {
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
   },
   tabText: {
     fontSize: 14,
-    color: '#666',
+    color: TC.muted,
     fontWeight: '500',
   },
   activeTabText: {
@@ -793,16 +794,16 @@ const styles = StyleSheet.create({
   },
   promotionCard: {
     flexDirection: 'row',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   promotionImage: {
     width: 100,
     height: 100,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
   },
   promotionContent: {
     flex: 1,
@@ -857,7 +858,7 @@ const styles = StyleSheet.create({
   },
   productInfo: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 8,
   },
   promotionFooter: {
@@ -873,7 +874,7 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
   },
   costText: {
     fontSize: 12,
@@ -917,13 +918,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginTop: 16,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
     textAlign: 'center',
   },
   modalOverlay: {
@@ -934,7 +935,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalContent: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 16,
     padding: 20,
     width: '100%',
@@ -948,22 +949,22 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   modalLabel: {
     fontSize: 14,
-    color: '#fff',
+    color: TC.text,
     marginBottom: 8,
   },
   modalInput: {
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     borderRadius: 8,
     padding: 12,
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
     minHeight: 80,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
     marginBottom: 20,
   },
   modalButtons: {
@@ -977,10 +978,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelModalButton: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
   },
   cancelModalButtonText: {
-    color: '#666',
+    color: TC.muted,
     fontSize: 14,
     fontWeight: '500',
   },
@@ -993,7 +994,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   detailsModalContent: {
-  backgroundColor: '#1a1a1a',
+  backgroundColor: TC.surface,
   borderRadius: 20,
   margin: 16,
   maxHeight: '90%',
@@ -1006,12 +1007,12 @@ detailsModalHeader: {
   alignItems: 'center',
   padding: 16,
   borderBottomWidth: 1,
-  borderBottomColor: 'rgba(255,255,255,0.05)',
+  borderBottomColor: TC.hairline,
 },
 detailsModalTitle: {
   fontSize: 18,
   fontWeight: '600',
-  color: '#fff',
+  color: TC.text,
 },
 detailsImage: {
   width: '100%',
@@ -1021,16 +1022,16 @@ detailsImage: {
 detailsSection: {
   padding: 16,
   borderBottomWidth: 1,
-  borderBottomColor: 'rgba(255,255,255,0.05)',
+  borderBottomColor: TC.hairline,
 },
 detailsLabel: {
   fontSize: 12,
-  color: '#666',
+  color: TC.muted,
   marginBottom: 4,
 },
 detailsValue: {
   fontSize: 14,
-  color: '#fff',
+  color: TC.text,
   lineHeight: 20,
 },
 detailsRow: {
@@ -1038,7 +1039,7 @@ detailsRow: {
   padding: 16,
   gap: 12,
   borderBottomWidth: 1,
-  borderBottomColor: 'rgba(255,255,255,0.05)',
+  borderBottomColor: TC.hairline,
 },
 detailsHalf: {
   flex: 1,
@@ -1082,16 +1083,16 @@ priceRow: {
 },
 discountedPrice: {
   fontSize: 18,
-  fontWeight: 'bold',
+  fontWeight: '600',
   color: '#f97316',
 },
 limitText: {
   fontSize: 11,
-  color: '#666',
+  color: TC.muted,
   marginTop: 8,
 },
 comboBox: {
-  backgroundColor: '#0a0a0a',
+  backgroundColor: TC.bg,
   padding: 12,
   borderRadius: 8,
   alignItems: 'center',
@@ -1099,7 +1100,7 @@ comboBox: {
 },
 comboText: {
   fontSize: 14,
-  color: '#fff',
+  color: TC.text,
 },
 comboTextFree: {
   fontSize: 14,
@@ -1115,7 +1116,7 @@ dateRow: {
 
 daysText: {
   fontSize: 12,
-  color: '#666',
+  color: TC.muted,
   marginTop: 4,
 },
 paymentRow: {
@@ -1125,7 +1126,7 @@ paymentRow: {
 },
 paymentLabel: {
   fontSize: 13,
-  color: '#666',
+  color: TC.muted,
 },
 paymentAmount: {
   fontSize: 13,
@@ -1134,7 +1135,7 @@ paymentAmount: {
 },
 paymentRef: {
   fontSize: 11,
-  color: '#666',
+  color: TC.muted,
 },
 paymentStatus: {
   fontSize: 13,
@@ -1143,7 +1144,7 @@ paymentStatus: {
 
 statBox: {
   flex: 1,
-  backgroundColor: '#0a0a0a',
+  backgroundColor: TC.bg,
   padding: 12,
   borderRadius: 8,
   alignItems: 'center',
@@ -1151,12 +1152,12 @@ statBox: {
 },
 statBoxNumber: {
   fontSize: 18,
-  fontWeight: 'bold',
-  color: '#fff',
+  fontWeight: '600',
+  color: TC.text,
 },
 statBoxLabel: {
   fontSize: 10,
-  color: '#666',
+  color: TC.muted,
 },
 rejectionBox: {
   flexDirection: 'row',
@@ -1183,7 +1184,7 @@ modalActionButtons: {
   padding: 16,
   gap: 12,
   borderTopWidth: 1,
-  borderTopColor: 'rgba(255,255,255,0.05)',
+  borderTopColor: TC.hairline,
 },
 modalActionButton: {
   flex: 1,

@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { Image } from 'react-native';
+import { TC } from '../theme/palette';
 
 type SplashScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -25,7 +26,7 @@ export function LoadingSplash() {
         </View>
         <Text style={styles.title}>vesphe</Text>
         <Text style={styles.subtitle}>Your favorite food, delivered fast</Text>
-        <ActivityIndicator size="large" color="#fff" style={styles.loader} />
+        <ActivityIndicator size="large" color={TC.text} style={styles.loader} />
       </View>
     </LinearGradient>
   );
@@ -70,13 +71,13 @@ const styles = StyleSheet.create({
   },
   logoText: {
     fontSize: 50,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
   },
   title: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
     marginBottom: 8,
   },
   subtitle: {

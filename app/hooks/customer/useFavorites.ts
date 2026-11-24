@@ -45,7 +45,7 @@ export function useFavorites() {
 
   const addFavorite = async (vendorId: string) => {
     if (!user) {
-      Alert.alert('Login Required', 'Please login to save favorites');
+      Alert.alert('Login required', 'Please login to save favorites');
       return false;
     }
 

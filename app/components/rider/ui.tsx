@@ -4,15 +4,16 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ViewStyle, Linking } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import type { RiderOrderStatus } from '../../services/riderOrders';
+import { TC } from '../../theme/palette';
 
 export const R = {
-  bg: '#0a0a0a',
-  card: '#141414',
-  cardRaised: '#1c1c1c',
-  border: 'rgba(255,255,255,0.06)',
-  text: '#ffffff',
-  muted: '#8a8a8a',
-  faint: '#5c5c5c',
+  bg: TC.bg,
+  card: TC.surface2,
+  cardRaised: TC.surface,
+  border: TC.hairline2,
+  text: TC.text,
+  muted: TC.subtle,
+  faint: TC.subtle,
   orange: '#f97316',
   rose: '#f43f5e',
   green: '#10b981',
@@ -89,11 +90,11 @@ export function RouteLine({ from, to, compact }: { from: string; to: string; com
       </View>
       <View style={{ flex: 1, gap: compact ? 10 : 14 }}>
         <View>
-          <Text style={styles.routeLabel}>PICKUP</Text>
+          <Text style={styles.routeLabel}>Pickup</Text>
           <Text style={styles.routeText} numberOfLines={1}>{from}</Text>
         </View>
         <View>
-          <Text style={styles.routeLabel}>DROP-OFF</Text>
+          <Text style={styles.routeLabel}>Drop-off</Text>
           <Text style={styles.routeText} numberOfLines={compact ? 1 : 2}>{to}</Text>
         </View>
       </View>
@@ -135,7 +136,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     marginTop: 8,
   },
-  sectionTitle: { color: R.text, fontSize: 16, fontWeight: '700' },
+  sectionTitle: { color: R.text, fontSize: 16, fontWeight: '600' },
   sectionAction: { color: R.orange, fontSize: 13, fontWeight: '600' },
   empty: { alignItems: 'center', paddingVertical: 40, paddingHorizontal: 24 },
   emptyIcon: {
@@ -153,6 +154,6 @@ const styles = StyleSheet.create({
   routeRail: { alignItems: 'center', paddingTop: 16, paddingBottom: 6 },
   routeDot: { width: 10, height: 10, borderRadius: 5, borderWidth: 2 },
   routeBar: { flex: 1, width: 2, backgroundColor: R.border, marginVertical: 3 },
-  routeLabel: { color: R.faint, fontSize: 10, fontWeight: '700', letterSpacing: 0.8 },
+  routeLabel: { color: R.faint, fontSize: 10, fontWeight: '600' },
   routeText: { color: R.text, fontSize: 14, marginTop: 2 },
 });

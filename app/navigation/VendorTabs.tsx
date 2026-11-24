@@ -3,7 +3,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Feather } from '@expo/vector-icons';
 import { VendorTabParamList } from './types';
-import { useTabBarOptions, TAB_ICON_SIZE } from './tabBarOptions';
+import { useTabBarOptions, renderGlassTabBar, TAB_ICON_SIZE } from './tabBarOptions';
 
 // History and Analytics are stack screens linked from the dashboard.
 import { VendorDashboardScreen } from '../screens/vendor/VendorDashboardScreen';
@@ -23,7 +23,7 @@ export function VendorTabs() {
   const screenOptions = useTabBarOptions();
 
   return (
-    <Tab.Navigator screenOptions={screenOptions}>
+    <Tab.Navigator screenOptions={screenOptions} tabBar={renderGlassTabBar}>
       <Tab.Screen name="Dashboard" component={VendorDashboardScreen} options={{ tabBarIcon: icon('grid') }} />
       <Tab.Screen name="Orders" component={VendorOrdersScreen} options={{ tabBarIcon: icon('package') }} />
       <Tab.Screen name="Menu" component={VendorMenuScreen} options={{ tabBarIcon: icon('coffee') }} />

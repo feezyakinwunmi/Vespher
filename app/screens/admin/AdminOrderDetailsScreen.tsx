@@ -14,9 +14,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
+import { humanize } from '../../utils/text';
+import { TC } from '../../theme/palette';
 
 const { width } = Dimensions.get('window');
 
@@ -144,7 +145,7 @@ export function AdminOrderDetailsScreen() {
         <View style={styles.discountSection}>
           <View style={styles.discountHeader}>
             <Feather name="star" size={16} color="#f59e0b" />
-            <Text style={[styles.discountTitle, { color: '#f59e0b' }]}>First Order Discount</Text>
+            <Text style={[styles.discountTitle, { color: '#f59e0b' }]}>First order discount</Text>
           </View>
           <View style={styles.discountCard}>
             <View style={styles.discountRow}>
@@ -166,7 +167,7 @@ export function AdminOrderDetailsScreen() {
             <View style={styles.discountRow}>
               <Text style={styles.discountLabel}>Type:</Text>
               <Text style={[styles.discountTypeBadge, styles.platformTypeBadge]}>
-                Platform Promotion
+                Platform promotion
               </Text>
             </View>
           </View>
@@ -188,7 +189,7 @@ export function AdminOrderDetailsScreen() {
         <View style={styles.discountSection}>
           <View style={styles.discountHeader}>
             <Feather name="tag" size={16} color="#f43f5e" />
-            <Text style={styles.discountTitle}>Promo Code Applied</Text>
+            <Text style={styles.discountTitle}>Promo code applied</Text>
           </View>
           <View style={styles.discountCard}>
             <View style={styles.discountRow}>
@@ -238,7 +239,7 @@ export function AdminOrderDetailsScreen() {
       <View style={styles.discountSection}>
         <View style={styles.discountHeader}>
           <Feather name="tag" size={16} color="#f43f5e" />
-          <Text style={styles.discountTitle}>Discount Applied</Text>
+          <Text style={styles.discountTitle}>Discount applied</Text>
         </View>
         <View style={styles.discountCard}>
           <Text style={styles.discountAmount}>
@@ -291,7 +292,7 @@ export function AdminOrderDetailsScreen() {
       delivered: '#10b981',
       cancelled: '#ef4444',
     };
-    return colors[status] || '#666';
+    return colors[status] || TC.muted;
   };
 
   if (loading) {
@@ -308,7 +309,7 @@ export function AdminOrderDetailsScreen() {
         <Feather name="alert-circle" size={48} color="#ef4444" />
         <Text style={styles.errorTitle}>Order not found</Text>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.errorButton}>
-          <Text style={styles.errorButtonText}>Go Back</Text>
+          <Text style={styles.errorButtonText}>Go back</Text>
         </TouchableOpacity>
       </View>
     );
@@ -325,7 +326,7 @@ export function AdminOrderDetailsScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Feather name="arrow-left" size={24} color="#fff" />
+          <Feather name="arrow-left" size={24} color={TC.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Order #{order.order_number || order.id.slice(0, 8)}</Text>
         <View style={{ width: 40 }} />
@@ -333,26 +334,21 @@ export function AdminOrderDetailsScreen() {
 
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Order Status Banner */}
-        <LinearGradient
-          colors={['#f97316', '#f43f5e']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.statusBanner}
-        >
+        <View style={[styles.statusBanner, { backgroundColor: '#ea580c' }]}>
           <View style={styles.statusBannerContent}>
-            <Text style={styles.statusBannerLabel}>Order Status</Text>
+            <Text style={styles.statusBannerLabel}>Order status</Text>
             <View style={[styles.statusBannerBadge, { backgroundColor: getStatusColor(order.status) }]}>
-              <Text style={styles.statusBannerText}>{order.status.toUpperCase()}</Text>
+              <Text style={styles.statusBannerText}>{humanize(order.status)}</Text>
             </View>
           </View>
           <Text style={styles.statusBannerDate}>
             {new Date(order.created_at).toLocaleString()}
           </Text>
-        </LinearGradient>
+        </View>
 
         {/* Order Items */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Order Items</Text>
+          <Text style={styles.sectionTitle}>Order items</Text>
           {order.items?.map((item: any, index: number) => (
             <View key={index} style={styles.itemCard}>
               <View style={styles.itemImageContainer}>
@@ -363,12 +359,9 @@ export function AdminOrderDetailsScreen() {
                     onError={() => setImageErrors(prev => ({ ...prev, [item.product.id]: true }))}
                   />
                 ) : (
-                  <LinearGradient
-                    colors={['#f97316', '#f43f5e']}
-                    style={styles.itemImagePlaceholder}
-                  >
+                  <View style={[styles.itemImagePlaceholder, { backgroundColor: '#ea580c' }]}>
                     <Feather name="package" size={20} color="#fff" />
-                  </LinearGradient>
+                  </View>
                 )}
               </View>
               <View style={styles.itemDetails}>
@@ -390,7 +383,7 @@ export function AdminOrderDetailsScreen() {
               <Text style={styles.summaryValue}>₦{order.subtotal?.toLocaleString() || 0}</Text>
             </View>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Delivery Fee</Text>
+              <Text style={styles.summaryLabel}>Delivery fee</Text>
               <Text style={styles.summaryValue}>₦{order.delivery_fee?.toLocaleString() || 0}</Text>
             </View>
             
@@ -398,7 +391,7 @@ export function AdminOrderDetailsScreen() {
             {renderDiscountDetails()}
             
             <View style={[styles.summaryRow, styles.totalRow]}>
-              <Text style={styles.totalLabel}>Customer Total</Text>
+              <Text style={styles.totalLabel}>Customer total</Text>
               <Text style={styles.totalValue}>₦{order.total?.toLocaleString() || 0}</Text>
             </View>
           </View>
@@ -410,7 +403,7 @@ export function AdminOrderDetailsScreen() {
             style={styles.accordionHeader}
             onPress={() => setShowFinancialBreakdown(!showFinancialBreakdown)}
           >
-            <Text style={styles.sectionTitle}>Financial Breakdown</Text>
+            <Text style={styles.sectionTitle}>Financial breakdown</Text>
             <Feather 
               name={showFinancialBreakdown ? "chevron-up" : "chevron-down"} 
               size={20} 
@@ -424,7 +417,7 @@ export function AdminOrderDetailsScreen() {
               <View style={styles.financialRow}>
                 <View style={styles.financialLabelContainer}>
                   <Feather name="percent" size={14} color="#f97316" />
-                  <Text style={styles.financialLabel}>Platform Commission</Text>
+                  <Text style={styles.financialLabel}>Platform commission</Text>
                 </View>
                 <Text style={styles.financialValue}>
                   ₦{order.platform_commission?.toLocaleString() || 0}
@@ -439,7 +432,7 @@ export function AdminOrderDetailsScreen() {
                 <View style={styles.financialRow}>
                   <View style={styles.financialLabelContainer}>
                     <Feather name="tag" size={14} color="#f43f5e" />
-                    <Text style={styles.financialLabel}>Discount Applied</Text>
+                    <Text style={styles.financialLabel}>Discount applied</Text>
                   </View>
                   <Text style={[styles.financialValue, styles.deductionText]}>
                     -₦{order.discount.toLocaleString()}
@@ -451,7 +444,7 @@ export function AdminOrderDetailsScreen() {
               <View style={styles.financialRow}>
                 <View style={styles.financialLabelContainer}>
                   <Feather name="credit-card" size={14} color="#ef4444" />
-                  <Text style={styles.financialLabel}>Paystack Fee</Text>
+                  <Text style={styles.financialLabel}>Paystack fee</Text>
                 </View>
                 <Text style={[styles.financialValue, styles.feeText]}>
                   -₦{order.flutterwave_fee?.toLocaleString() || 0}
@@ -465,7 +458,7 @@ export function AdminOrderDetailsScreen() {
               <View style={styles.financialRow}>
                 <View style={styles.financialLabelContainer}>
                   <Feather name="truck" size={14} color="#f97316" />
-                  <Text style={styles.financialLabel}>Platform Delivery Share</Text>
+                  <Text style={styles.financialLabel}>Platform delivery share</Text>
                 </View>
                 <Text style={styles.financialValue}>
                   ₦{platformDeliveryShare.toLocaleString()}
@@ -490,7 +483,7 @@ export function AdminOrderDetailsScreen() {
               <View style={[styles.financialRow, styles.financialTotalRow]}>
                 <View style={styles.financialLabelContainer}>
                   <Feather name="briefcase" size={14} color="#f97316" />
-                  <Text style={styles.financialTotalLabel}>TOTAL PLATFORM INCOME</Text>
+                  <Text style={styles.financialTotalLabel}>Total platform income</Text>
                 </View>
                 <Text style={styles.financialTotalValue}>
                   ₦{(platformDeliveryShare + (order.platform_net_earnings || 0)).toLocaleString()}
@@ -503,7 +496,7 @@ export function AdminOrderDetailsScreen() {
               <View style={styles.financialRow}>
                 <View style={styles.financialLabelContainer}>
                   <Feather name="home" size={14} color="#8b5cf6" />
-                  <Text style={styles.financialLabel}>Vendor Payout</Text>
+                  <Text style={styles.financialLabel}>Vendor payout</Text>
                 </View>
                 <Text style={styles.financialValue}>
                   ₦{order.vendor_payout?.toLocaleString() || (order.subtotal - (order.platform_commission || 0)).toLocaleString()}
@@ -514,7 +507,7 @@ export function AdminOrderDetailsScreen() {
               <View style={styles.financialRow}>
                 <View style={styles.financialLabelContainer}>
                   <Feather name="user" size={14} color="#10b981" />
-                  <Text style={styles.financialLabel}>Rider Payout</Text>
+                  <Text style={styles.financialLabel}>Rider payout</Text>
                 </View>
                 <Text style={styles.financialValue}>
                   ₦{order.rider_earnings?.toLocaleString() || riderShare.toLocaleString()}
@@ -547,13 +540,13 @@ export function AdminOrderDetailsScreen() {
                   style={styles.viewResponseButton}
                   onPress={() => {
                     Alert.alert(
-                      'Gateway Response',
+                      'Gateway response',
                       JSON.stringify(order.payment_gateway_response, null, 2),
                       [{ text: 'OK' }]
                     );
                   }}
                 >
-                  <Text style={styles.viewResponseText}>View Gateway Response</Text>
+                  <Text style={styles.viewResponseText}>View gateway response</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -562,7 +555,7 @@ export function AdminOrderDetailsScreen() {
 
         {/* Customer Info */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Customer Details</Text>
+          <Text style={styles.sectionTitle}>Customer details</Text>
           <View style={styles.infoCard}>
             <View style={styles.infoRow}>
               <Feather name="user" size={16} color="#f97316" />
@@ -588,7 +581,7 @@ export function AdminOrderDetailsScreen() {
 
         {/* Delivery Address */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Delivery Address</Text>
+          <Text style={styles.sectionTitle}>Delivery address</Text>
           <View style={styles.infoCard}>
             <View style={styles.infoRow}>
               <Feather name="map-pin" size={16} color="#f97316" />
@@ -605,7 +598,7 @@ export function AdminOrderDetailsScreen() {
 
         {/* Vendor Info */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Vendor Details</Text>
+          <Text style={styles.sectionTitle}>Vendor details</Text>
           <View style={styles.infoCard}>
             <View style={styles.infoRow}>
               <Feather name="home" size={16} color="#f97316" />
@@ -629,21 +622,18 @@ export function AdminOrderDetailsScreen() {
         {/* Rider Info - Only show if assigned */}
         {rider && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Rider Details</Text>
+            <Text style={styles.sectionTitle}>Rider details</Text>
             <View style={styles.riderCard}>
               <View style={styles.riderInfo}>
                 <View style={styles.riderAvatar}>
                   {rider.avatar_url ? (
                     <Image source={{ uri: rider.avatar_url }} style={styles.riderAvatarImage} />
                   ) : (
-                    <LinearGradient
-                      colors={['#f97316', '#f43f5e']}
-                      style={styles.riderAvatarPlaceholder}
-                    >
+                    <View style={[styles.riderAvatarPlaceholder, { backgroundColor: '#ea580c' }]}>
                       <Text style={styles.riderAvatarText}>
                         {rider.name?.charAt(0) || 'R'}
                       </Text>
-                    </LinearGradient>
+                    </View>
                   )}
                 </View>
                 <View style={styles.riderDetails}>
@@ -670,7 +660,7 @@ export function AdminOrderDetailsScreen() {
 
         {/* Payment Info */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Payment Information</Text>
+          <Text style={styles.sectionTitle}>Payment information</Text>
           <View style={styles.infoCard}>
             <View style={styles.infoRow}>
               <Feather name="credit-card" size={16} color="#f97316" />
@@ -687,13 +677,13 @@ export function AdminOrderDetailsScreen() {
 
         {/* Order Timeline */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Order Timeline</Text>
+          <Text style={styles.sectionTitle}>Order timeline</Text>
           <View style={styles.timelineCard}>
             {order.created_at && (
               <View style={styles.timelineItem}>
-                <View style={[styles.timelineDot, { backgroundColor: '#f97316' }]} />
+                <View style={[styles.timelineDot, { backgroundColor: '#ea580c' }]} />
                 <View style={styles.timelineContent}>
-                  <Text style={styles.timelineTitle}>Order Placed</Text>
+                  <Text style={styles.timelineTitle}>Order placed</Text>
                   <Text style={styles.timelineTime}>{new Date(order.created_at).toLocaleString()}</Text>
                 </View>
               </View>
@@ -702,14 +692,14 @@ export function AdminOrderDetailsScreen() {
               <View style={styles.timelineItem}>
                 <View style={[styles.timelineDot, { backgroundColor: '#3b82f6' }]} />
                 <View style={styles.timelineContent}>
-                  <Text style={styles.timelineTitle}>Order Accepted</Text>
+                  <Text style={styles.timelineTitle}>Order accepted</Text>
                   <Text style={styles.timelineTime}>{new Date(order.accepted_at).toLocaleString()}</Text>
                 </View>
               </View>
             )}
             {order.prepared_at && (
               <View style={styles.timelineItem}>
-                <View style={[styles.timelineDot, { backgroundColor: '#f97316' }]} />
+                <View style={[styles.timelineDot, { backgroundColor: '#ea580c' }]} />
                 <View style={styles.timelineContent}>
                   <Text style={styles.timelineTitle}>Prepared</Text>
                   <Text style={styles.timelineTime}>{new Date(order.prepared_at).toLocaleString()}</Text>
@@ -720,7 +710,7 @@ export function AdminOrderDetailsScreen() {
               <View style={styles.timelineItem}>
                 <View style={[styles.timelineDot, { backgroundColor: '#8b5cf6' }]} />
                 <View style={styles.timelineContent}>
-                  <Text style={styles.timelineTitle}>Picked Up by Rider</Text>
+                  <Text style={styles.timelineTitle}>Picked up by rider</Text>
                   <Text style={styles.timelineTime}>{new Date(order.picked_up_at).toLocaleString()}</Text>
                 </View>
               </View>
@@ -744,18 +734,18 @@ export function AdminOrderDetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     paddingBottom:60,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
   errorContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -763,14 +753,14 @@ const styles = StyleSheet.create({
   errorTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginTop: 16,
     marginBottom: 20,
   },
   errorButton: {
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     borderRadius: 8,
   },
   errorButtonText: {
@@ -785,20 +775,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   statusBanner: {
     margin: 16,
@@ -836,7 +826,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 12,
   },
   accordionHeader: {
@@ -847,7 +837,7 @@ const styles = StyleSheet.create({
   },
   itemCard: {
     flexDirection: 'row',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 8,
     padding: 12,
     marginBottom: 8,
@@ -875,12 +865,12 @@ const styles = StyleSheet.create({
   itemName: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 4,
   },
   itemPrice: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
   },
   itemTotal: {
     fontSize: 13,
@@ -891,7 +881,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   summaryRow: {
     flexDirection: 'row',
@@ -900,26 +890,26 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   summaryValue: {
     fontSize: 12,
-    color: '#fff',
+    color: TC.text,
   },
   totalRow: {
     marginTop: 8,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   totalLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   totalValue: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#f97316',
   },
   // Discount Section Styles
@@ -944,7 +934,7 @@ const styles = StyleSheet.create({
     color: '#f43f5e',
   },
   discountCard: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 8,
     padding: 10,
     gap: 6,
@@ -957,7 +947,7 @@ const styles = StyleSheet.create({
   discountLabel: {
     width: 80,
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
   },
   discountCodeValue: {
     flex: 1,
@@ -975,7 +965,7 @@ const styles = StyleSheet.create({
   discountDesc: {
     flex: 1,
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
   },
   discountTypeBadge: {
     fontSize: 11,
@@ -995,13 +985,13 @@ const styles = StyleSheet.create({
   },
   discountAmount: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#f43f5e',
     textAlign: 'center',
   },
   discountNote: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
     textAlign: 'center',
     marginTop: 4,
   },
@@ -1024,7 +1014,7 @@ const styles = StyleSheet.create({
   },
   // Financial styles
   financialCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
@@ -1043,16 +1033,16 @@ const styles = StyleSheet.create({
   },
   financialLabel: {
     fontSize: 13,
-    color: '#fff',
+    color: TC.text,
   },
   financialValue: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#fff',
+    color: TC.text,
   },
   financialSubtext: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 12,
     marginLeft: 22,
   },
@@ -1066,7 +1056,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   financialTotalLabel: {
     fontSize: 14,
@@ -1075,12 +1065,12 @@ const styles = StyleSheet.create({
   },
   financialTotalValue: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#f97316',
   },
   financialDivider: {
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: TC.hairline,
     marginVertical: 12,
   },
   discountImpactInfo: {
@@ -1105,7 +1095,7 @@ const styles = StyleSheet.create({
   },
   paymentReferenceLabel: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 2,
   },
   paymentReferenceValue: {
@@ -1115,7 +1105,7 @@ const styles = StyleSheet.create({
   viewResponseButton: {
     marginTop: 12,
     padding: 8,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 6,
     alignItems: 'center',
   },
@@ -1124,11 +1114,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   infoCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   infoRow: {
     flexDirection: 'row',
@@ -1139,11 +1129,11 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: 13,
-    color: '#fff',
+    color: TC.text,
   },
   infoSubtext: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
     marginLeft: 28,
     marginBottom: 4,
   },
@@ -1151,11 +1141,11 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   riderCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   riderInfo: {
     flexDirection: 'row',
@@ -1180,7 +1170,7 @@ const styles = StyleSheet.create({
   },
   riderAvatarText: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#fff',
   },
   riderDetails: {
@@ -1189,12 +1179,12 @@ const styles = StyleSheet.create({
   riderName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 2,
   },
   riderPhone: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
   },
   riderActions: {
     flexDirection: 'row',
@@ -1210,18 +1200,18 @@ const styles = StyleSheet.create({
   },
   riderMeta: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   timelineCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   timelineItem: {
     flexDirection: 'row',
@@ -1240,11 +1230,11 @@ const styles = StyleSheet.create({
   timelineTitle: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 2,
   },
   timelineTime: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
   },
 });

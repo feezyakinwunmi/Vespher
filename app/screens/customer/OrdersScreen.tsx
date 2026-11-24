@@ -17,7 +17,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { useOrders } from '../../hooks/customer/useOrders';
 import { useCart } from '../../contexts/CartContext';
@@ -28,6 +27,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { CustomerHeader } from '../../components/customer/CustomerHeader';
 import Toast from 'react-native-toast-message';
+import { TAB_BAR_SPACE } from '../../navigation/tabBarOptions';
+import { TC } from '../../theme/palette';
 
 type OrdersScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -97,7 +98,7 @@ function RatingModal({
 
       if (error) throw error;
 
-      showToast('Thank you for your review!');
+      showToast('Thank you for your review');
       onClose();
     } catch (error) {
       console.error('Error submitting review:', error);
@@ -119,7 +120,7 @@ function RatingModal({
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Rate {vendorName}</Text>
             <TouchableOpacity onPress={onClose} style={styles.modalCloseButton}>
-              <Feather name="x" size={20} color="#fff" />
+              <Feather name="x" size={20} color={TC.text} />
             </TouchableOpacity>
           </View>
 
@@ -137,7 +138,7 @@ function RatingModal({
                   <Feather
                     name="star"
                     size={32}
-                    color={(hover || rating) >= star ? '#fbbf24' : '#666'}
+                    color={(hover || rating) >= star ? '#fbbf24' : TC.muted}
                   />
                 </TouchableOpacity>
               ))}
@@ -151,7 +152,7 @@ function RatingModal({
                 value={comment}
                 onChangeText={setComment}
                 placeholder="Share your experience..."
-                placeholderTextColor="#666"
+                placeholderTextColor={TC.muted}
                 multiline
                 numberOfLines={4}
                 textAlignVertical="top"
@@ -163,18 +164,13 @@ function RatingModal({
               disabled={submitting}
               style={styles.submitButton}
             >
-              <LinearGradient
-                colors={['#f97316', '#f43f5e']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.submitGradient}
-              >
+              <View style={[styles.submitGradient, { backgroundColor: '#ea580c' }]}>
                 {submitting ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text style={styles.submitText}>Submit Review</Text>
+                  <Text style={styles.submitText}>Submit review</Text>
                 )}
-              </LinearGradient>
+              </View>
             </TouchableOpacity>
           </View>
         </View>
@@ -314,7 +310,7 @@ const handleReorder = async (e: any) => {
               />
               {imageError && (
                 <View style={styles.itemImageFallback}>
-                  <Feather name="image" size={20} color="#666" />
+                  <Feather name="image" size={20} color={TC.muted} />
                 </View>
               )}
             </View>
@@ -348,14 +344,14 @@ const handleReorder = async (e: any) => {
         {/* Footer */}
         <View style={styles.orderFooter}>
           <View style={styles.dateContainer}>
-            <Feather name="clock" size={14} color="#666" />
+            <Feather name="clock" size={14} color={TC.muted} />
             <Text style={styles.dateText}>
               {new Date(order.created_at).toLocaleDateString()}
             </Text>
           </View>
           <View style={styles.totalContainer}>
             <Text style={styles.totalText}>₦{order.total.toLocaleString()}</Text>
-            <Feather name="chevron-right" size={16} color="#666" />
+            <Feather name="chevron-right" size={16} color={TC.muted} />
           </View>
         </View>
 
@@ -367,13 +363,13 @@ const handleReorder = async (e: any) => {
               style={styles.actionButtonSecondary}
             >
               <Feather name="phone" size={16} color="#f97316" />
-              <Text style={styles.actionButtonSecondaryText}>Call Rider</Text>
+              <Text style={styles.actionButtonSecondaryText}>Call rider</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               onPress={onPress}
               style={styles.actionButtonPrimary}
             >
-              <Text style={styles.actionButtonPrimaryText}>Track Order</Text>
+              <Text style={styles.actionButtonPrimaryText}>Track order</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -449,12 +445,12 @@ export function OrdersScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Shared tab header (cart, notifications, profile) — same as Home/Explore/Vendors */}
       <CustomerHeader showSearch={false} />
 
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>My Orders</Text>
+        <Text style={styles.headerTitle}>My orders</Text>
       </View>
 
       {/* Tabs */}
@@ -481,7 +477,7 @@ export function OrdersScreen() {
       </View>
 
       {/* Orders List */}
-      <ScrollView 
+      <ScrollView contentContainerStyle={{ paddingBottom: TAB_BAR_SPACE }} 
         style={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -502,7 +498,7 @@ export function OrdersScreen() {
         ) : (
           <View style={styles.emptyContainer}>
             <View style={styles.emptyIconContainer}>
-              <Feather name="package" size={40} color="#666" />
+              <Feather name="package" size={40} color={TC.muted} />
             </View>
             <Text style={styles.emptyTitle}>
               No {activeTab === 'active' ? 'active' : 'past'} orders
@@ -517,14 +513,9 @@ export function OrdersScreen() {
                 onPress={() => navigation.navigate('CustomerTabs', { screen: 'Vendors' })}
                 style={styles.emptyButton}
               >
-                <LinearGradient
-                  colors={['#f97316', '#f43f5e']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.emptyButtonGradient}
-                >
-                  <Text style={styles.emptyButtonText}>Order Now</Text>
-                </LinearGradient>
+                <View style={[styles.emptyButtonGradient, { backgroundColor: '#ea580c' }]}>
+                  <Text style={styles.emptyButtonText}>Order now</Text>
+                </View>
               </TouchableOpacity>
             )}
           </View>
@@ -538,11 +529,11 @@ export function OrdersScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -553,20 +544,20 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginTop: 10,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   headerRight: {
     width: 40,
@@ -575,11 +566,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     padding: 4,
   },
@@ -590,12 +581,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   activeTab: {
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
   },
   tabText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#666',
+    color: TC.muted,
   },
   activeTabText: {
     color: '#fff',
@@ -608,11 +599,11 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   orderCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   orderHeader: {
     flexDirection: 'row',
@@ -630,7 +621,7 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 8,
     overflow: 'hidden',
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
   },
   itemImage: {
     width: '100%',
@@ -644,17 +635,17 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
   },
   vendorName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 2,
   },
   orderNumber: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
   },
   statusBadge: {
     flexDirection: 'row',
@@ -673,12 +664,12 @@ const styles = StyleSheet.create({
   },
   itemText: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 2,
   },
   moreItemsText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
     marginTop: 2,
   },
   orderFooter: {
@@ -687,7 +678,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   dateContainer: {
     flexDirection: 'row',
@@ -696,7 +687,7 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   totalContainer: {
     flexDirection: 'row',
@@ -706,7 +697,7 @@ const styles = StyleSheet.create({
   totalText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   actionButtons: {
     flexDirection: 'row',
@@ -715,7 +706,7 @@ const styles = StyleSheet.create({
   },
   actionButtonPrimary: {
     flex: 1,
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     paddingVertical: 10,
     borderRadius: 8,
     alignItems: 'center',
@@ -731,7 +722,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     paddingVertical: 10,
     borderRadius: 8,
   },
@@ -750,7 +741,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -758,12 +749,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 14,
-    color: '#666',
+    color: TC.muted,
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -794,7 +785,7 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: '90%',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 20,
     overflow: 'hidden',
   },
@@ -804,12 +795,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   modalCloseButton: {
     padding: 4,
@@ -831,13 +822,13 @@ const styles = StyleSheet.create({
   },
   commentLabel: {
     fontSize: 14,
-    color: '#666',
+    color: TC.muted,
   },
   commentInput: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 12,
     padding: 12,
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
     height: 100,
     textAlignVertical: 'top',

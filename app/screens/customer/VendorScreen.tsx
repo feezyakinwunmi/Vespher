@@ -13,7 +13,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { CustomerHeader } from '../../components/customer/CustomerHeader';
 import { VendorCard } from '../../components/customer/VendorCard';
@@ -23,6 +22,8 @@ import { useCategories } from '../../hooks/customer/useCategories';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { EmojiIcon } from '../../components/EmojiIcon';
+import { TAB_BAR_SPACE } from '../../navigation/tabBarOptions';
+import { TC } from '../../theme/palette';
 
 type VendorsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type SortOption = 'rating' | 'delivery' | 'price';
@@ -108,38 +109,33 @@ export function VendorsScreen() {
         <Text style={styles.errorTitle}>Failed to load vendors</Text>
         <Text style={styles.errorText}>{error}</Text>
         <TouchableOpacity onPress={refresh} style={styles.retryButton}>
-          <LinearGradient
-            colors={['#f97316', '#f43f5e']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.retryGradient}
-          >
-            <Text style={styles.retryText}>Try Again</Text>
-          </LinearGradient>
+          <View style={[styles.retryGradient, { backgroundColor: '#ea580c' }]}>
+            <Text style={styles.retryText}>Try again</Text>
+          </View>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <CustomerHeader showSearch={false} />
 
       {/* Search & Filter Bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchWrapper}>
           <View style={styles.searchInputContainer}>
-            <Feather name="search" size={18} color="#666" style={styles.searchIcon} />
+            <Feather name="search" size={18} color={TC.muted} style={styles.searchIcon} />
             <TextInput
               style={styles.searchInput}
               value={searchQuery}
               onChangeText={setSearchQuery}
               placeholder="Search vendors, cuisines..."
-              placeholderTextColor="#666"
+              placeholderTextColor={TC.muted}
             />
             {searchQuery ? (
               <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
-                <Feather name="x" size={16} color="#666" />
+                <Feather name="x" size={16} color={TC.muted} />
               </TouchableOpacity>
             ) : null}
           </View>
@@ -154,7 +150,7 @@ export function VendorsScreen() {
             <Feather 
               name="sliders" 
               size={18} 
-              color={sortBy !== 'rating' ? '#f97316' : '#666'} 
+              color={sortBy !== 'rating' ? '#f97316' : TC.muted} 
             />
           </TouchableOpacity>
         </View>
@@ -187,7 +183,7 @@ export function VendorsScreen() {
       </View>
 
       {/* Vendors List */}
-      <ScrollView
+      <ScrollView contentContainerStyle={{ paddingBottom: TAB_BAR_SPACE }}
         style={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -207,7 +203,7 @@ export function VendorsScreen() {
         ) : (
           <View style={styles.emptyContainer}>
             <View style={styles.emptyIconContainer}>
-              <Feather name="search" size={40} color="#666" />
+              <Feather name="search" size={40} color={TC.muted} />
             </View>
             <Text style={styles.emptyTitle}>No vendors found</Text>
             <Text style={styles.emptyText}>
@@ -220,7 +216,7 @@ export function VendorsScreen() {
               }}
               style={styles.emptyButton}
             >
-              <Text style={styles.emptyButtonText}>Clear Filters</Text>
+              <Text style={styles.emptyButtonText}>Clear filters</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -237,16 +233,16 @@ export function VendorsScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Filter & Sort</Text>
+              <Text style={styles.modalTitle}>Filter & sort</Text>
               <TouchableOpacity onPress={() => setShowFilters(false)} style={styles.modalCloseButton}>
-                <Feather name="x" size={20} color="#fff" />
+                <Feather name="x" size={20} color={TC.text} />
               </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
               {/* Sort By */}
               <View style={styles.modalSection}>
-                <Text style={styles.modalSectionTitle}>Sort By</Text>
+                <Text style={styles.modalSectionTitle}>Sort by</Text>
                 <View style={styles.sortOptions}>
                   {[
                     { value: 'rating', label: 'Highest Rated', icon: '⭐' },
@@ -278,7 +274,7 @@ export function VendorsScreen() {
 
               {/* Price Range */}
               <View style={styles.modalSection}>
-                <Text style={styles.modalSectionTitle}>Price Range</Text>
+                <Text style={styles.modalSectionTitle}>Price range</Text>
                 <View style={styles.priceOptions}>
                   {['₦', '₦₦', '₦₦₦'].map((price, i) => (
                     <TouchableOpacity
@@ -313,14 +309,9 @@ export function VendorsScreen() {
                 onPress={() => setShowFilters(false)}
                 style={styles.applyButton}
               >
-                <LinearGradient
-                  colors={['#f97316', '#f43f5e']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.applyGradient}
-                >
-                  <Text style={styles.applyText}>Apply Filters</Text>
-                </LinearGradient>
+                <View style={[styles.applyGradient, { backgroundColor: '#ea580c' }]}>
+                  <Text style={styles.applyText}>Apply filters</Text>
+                </View>
               </TouchableOpacity>
             </View>
           </View>
@@ -333,24 +324,23 @@ export function VendorsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
-        paddingBottom:60,
+    backgroundColor: TC.bg,
 
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    color: '#666',
+    color: TC.muted,
     marginTop: 12,
     fontSize: 14,
   },
   errorContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
@@ -367,12 +357,12 @@ const styles = StyleSheet.create({
   errorTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 8,
   },
   errorText: {
     fontSize: 14,
-    color: '#666',
+    color: TC.muted,
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -388,7 +378,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   retryText: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 15,
     fontWeight: '600',
   },
@@ -396,7 +386,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
         marginTop:10,
 
   },
@@ -408,7 +398,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     paddingHorizontal: 12,
   },
@@ -418,7 +408,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     height: 44,
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
   },
   clearButton: {
@@ -427,7 +417,7 @@ const styles = StyleSheet.create({
   filterButton: {
     width: 44,
     height: 44,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
@@ -450,7 +440,7 @@ const styles = StyleSheet.create({
   },
   resultsText: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
   },
   clearFiltersText: {
     fontSize: 13,
@@ -474,7 +464,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -482,19 +472,19 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 14,
-    color: '#666',
+    color: TC.muted,
     textAlign: 'center',
     marginBottom: 20,
   },
   emptyButton: {
     paddingHorizontal: 20,
     paddingVertical: 10,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 8,
   },
   emptyButtonText: {
@@ -511,7 +501,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     height: '80%',
@@ -522,12 +512,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   modalCloseButton: {
     padding: 4,
@@ -542,7 +532,7 @@ const styles = StyleSheet.create({
   modalSectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 12,
   },
   sortOptions: {
@@ -553,7 +543,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     padding: 12,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'transparent',
@@ -568,7 +558,7 @@ const styles = StyleSheet.create({
   sortOptionLabel: {
     flex: 1,
     fontSize: 14,
-    color: '#fff',
+    color: TC.text,
   },
   sortOptionLabelSelected: {
     color: '#f97316',
@@ -577,7 +567,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
   },
   priceOptions: {
     flexDirection: 'row',
@@ -586,7 +576,7 @@ const styles = StyleSheet.create({
   priceOption: {
     flex: 1,
     paddingVertical: 10,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 8,
     alignItems: 'center',
     borderWidth: 1,
@@ -594,7 +584,7 @@ const styles = StyleSheet.create({
   },
   priceOptionText: {
     fontSize: 14,
-    color: '#fff',
+    color: TC.text,
   },
   dietaryOptions: {
     flexDirection: 'row',
@@ -604,17 +594,17 @@ const styles = StyleSheet.create({
   dietaryOption: {
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 20,
   },
   dietaryOptionText: {
     fontSize: 13,
-    color: '#fff',
+    color: TC.text,
   },
   modalFooter: {
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   applyButton: {
     height: 48,
@@ -627,7 +617,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   applyText: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 15,
     fontWeight: '600',
   },

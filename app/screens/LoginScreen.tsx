@@ -15,13 +15,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../contexts/AuthContext';
 import { Feather } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { GoogleSignInButton } from '../components/GoogleSignInButton';
 import { AppleSignInButton } from '../components/AppleSignInButton';
+import { TC } from '../theme/palette';
 type ScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export function LoginScreen() {
@@ -77,14 +77,14 @@ const handleSubmit = async () => {
             onPress={() => navigation.goBack()}
             style={styles.backButton}
           >
-            <Feather name="arrow-left" size={24} color="#fff" />
+            <Feather name="arrow-left" size={24} color={TC.text} />
           </TouchableOpacity>
           
          
 
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>Welcome Back!</Text>
+            <Text style={styles.title}>Welcome back</Text>
             <Text style={styles.subtitle}>
               Sign in to continue to veshpe
             </Text>
@@ -114,12 +114,12 @@ const handleSubmit = async () => {
             
             {/* Email Field */}
             <View style={styles.fieldContainer}>
-              <Text style={styles.label}>Email Address</Text>
+              <Text style={styles.label}>Email address</Text>
               <View style={styles.inputWrapper}>
                 <Feather 
                   name="mail" 
                   size={20} 
-                  color="#666" 
+                  color={TC.muted} 
                   style={styles.inputIcon} 
                 />
                 <TextInput
@@ -127,7 +127,7 @@ const handleSubmit = async () => {
                   value={email}
                   onChangeText={(text) => setEmail(text.trim())}
                   placeholder="you@example.com"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={TC.muted}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoFocus={Platform.OS === 'ios' ? false : true}
@@ -142,7 +142,7 @@ const handleSubmit = async () => {
                 <Feather 
                   name="lock" 
                   size={20} 
-                  color="#666" 
+                  color={TC.muted} 
                   style={styles.inputIcon} 
                 />
                 <TextInput
@@ -150,7 +150,7 @@ const handleSubmit = async () => {
                   value={password}
                   onChangeText={setPassword}
                   placeholder="Enter your password"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={TC.muted}
                   secureTextEntry={!showPassword}
                 />
                 <TouchableOpacity
@@ -160,7 +160,7 @@ const handleSubmit = async () => {
                   <Feather 
                     name={showPassword ? 'eye-off' : 'eye'} 
                     size={20} 
-                    color="#666" 
+                    color={TC.muted} 
                   />
                 </TouchableOpacity>
               </View>
@@ -181,12 +181,7 @@ const handleSubmit = async () => {
               disabled={isLoading}
               activeOpacity={0.8}
             >
-              <LinearGradient
-                colors={['#f97316', '#f43f5e']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.gradient}
-              >
+              <View style={[styles.gradient, { backgroundColor: '#ea580c' }]}>
                 {isLoading ? (
                   <View style={styles.buttonContent}>
                     <ActivityIndicator color="#fff" />
@@ -194,11 +189,11 @@ const handleSubmit = async () => {
                   </View>
                 ) : (
                   <View style={styles.buttonContent}>
-                    <Text style={styles.buttonText}>Sign In</Text>
+                    <Text style={styles.buttonText}>Sign in</Text>
                     <Feather name="chevron-right" size={20} color='#fff' />
                   </View>
                 )}
-              </LinearGradient>
+              </View>
             </TouchableOpacity>
 
 
@@ -210,7 +205,7 @@ const handleSubmit = async () => {
           <View style={styles.footer}>
             <Text style={styles.footerText}>Don't have an account? </Text>
             <TouchableOpacity onPress={() => navigation.navigate('RoleSelection' as never)}>
-              <Text style={styles.footerLink}>Sign Up</Text>
+              <Text style={styles.footerLink}>Sign up</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -222,7 +217,7 @@ const handleSubmit = async () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
   },
   keyboardView: {
     flex: 1,
@@ -237,7 +232,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center' as const,
     alignItems: 'center' as const,
     marginBottom: 20,
@@ -247,13 +242,13 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 32,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
+    color: TC.muted,
   },
   errorContainer: {
     backgroundColor: 'rgba(239, 68, 68, 0.1)',
@@ -276,7 +271,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#fff',
+    color: TC.text,
     marginLeft: 4,
   },
   inputWrapper: {
@@ -292,14 +287,14 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     height: 56,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderWidth: 1,
-    borderColor: '#2a2a2a',
+    borderColor: TC.raised,
     borderRadius: 14,
     paddingLeft: 48,
     paddingRight: 48,
     fontSize: 16,
-    color: '#fff',
+    color: TC.text,
   },
   eyeIcon: {
     position: 'absolute' as const,
@@ -350,7 +345,7 @@ forgotPasswordText: {
     marginTop: 32,
   },
   footerText: {
-    color: '#666',
+    color: TC.muted,
     fontSize: 14,
   },
   footerLink: {

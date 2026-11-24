@@ -237,7 +237,7 @@ return {
       if (order.payment_method === 'card' && order.payment_status === 'paid') {
         const refundResult = await processRefund(orderId, 'Order rejected by vendor');
         if (!refundResult.success) {
-          Alert.alert('Refund Failed', `${refundResult.error || 'Refund failed'}. The order was cancelled; please contact support to complete the refund.`);
+          Alert.alert('Refund failed', `${refundResult.error || 'Refund failed'}. The order was cancelled; please contact support to complete the refund.`);
         } else {
           Alert.alert('Success', 'Order rejected and refund initiated');
         }

@@ -212,7 +212,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       setSession(null);
     } catch (err: any) {
-      Alert.alert('Sign Out Failed', err.message || 'Failed to sign out');
+      Alert.alert('Sign out failed', err.message || 'Failed to sign out');
     } finally {
       setIsAuthenticating(false);
     }

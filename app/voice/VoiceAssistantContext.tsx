@@ -17,6 +17,7 @@ import { buildVoiceCheckout, cancelUnpaid, loadSavedCards, placeVoiceOrder, addr
 import type { Product } from '../types';
 import { speechRecognition } from './native';
 import { VOICE_ORDERING_ENABLED } from '../config/features';
+import { TC } from '../theme/palette';
 
 type Phase = 'idle' | 'listening' | 'thinking' | 'speaking' | 'error';
 
@@ -505,8 +506,8 @@ function Orb({ phase, onPress }: { phase: Phase; onPress: () => void }) {
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={styles.orbWrap} accessibilityLabel="Voice button">
       <Animated.View style={[styles.orbGlow, { transform: [{ scale }] }]} />
-      <View style={[styles.orb, phase === 'error' && { backgroundColor: '#444' }]}>
-        <Feather name={icon} size={38} color="#fff" />
+      <View style={[styles.orb, phase === 'error' && { backgroundColor: TC.muted }]}>
+        <Feather name={icon} size={38} color={TC.text} />
       </View>
     </TouchableOpacity>
   );
@@ -516,15 +517,15 @@ const styles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)' },
   sheet: { flex: 1, alignItems: 'center', paddingHorizontal: 24, paddingBottom: 40 },
   topRow: { flexDirection: 'row', alignSelf: 'stretch', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 },
-  brand: { color: ORANGE, fontSize: 16, fontWeight: '700' },
+  brand: { color: ORANGE, fontSize: 16, fontWeight: '600' },
   closeBtn: { padding: 6 },
   trialBadge: { color: '#fff', fontSize: 11, backgroundColor: 'rgba(124,58,237,0.6)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, overflow: 'hidden' },
   transcript: { alignSelf: 'stretch', flex: 1, marginTop: 8 },
-  vespheText: { color: '#fff', fontSize: 20, lineHeight: 28, marginBottom: 14, fontWeight: '500' },
-  youText: { color: '#9ca3af', fontSize: 16, lineHeight: 22, marginBottom: 14 },
+  vespheText: { color: TC.text, fontSize: 20, lineHeight: 28, marginBottom: 14, fontWeight: '500' },
+  youText: { color: TC.subtle, fontSize: 16, lineHeight: 22, marginBottom: 14 },
   orbWrap: { width: 160, height: 160, alignItems: 'center', justifyContent: 'center', marginTop: 10 },
   orbGlow: { position: 'absolute', width: 150, height: 150, borderRadius: 75, backgroundColor: 'rgba(249,115,22,0.25)' },
   orb: { width: 108, height: 108, borderRadius: 54, backgroundColor: ORANGE, alignItems: 'center', justifyContent: 'center' },
-  status: { color: '#fff', fontSize: 15, marginTop: 14, textAlign: 'center' },
-  hint: { color: '#6b7280', fontSize: 12, marginTop: 6, textAlign: 'center' },
+  status: { color: TC.text, fontSize: 15, marginTop: 14, textAlign: 'center' },
+  hint: { color: TC.subtle, fontSize: 12, marginTop: 6, textAlign: 'center' },
 });

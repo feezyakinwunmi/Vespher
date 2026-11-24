@@ -20,6 +20,7 @@ import {
   BarChart,
   PieChart,
 } from 'react-native-chart-kit';
+import { TC } from '../../theme/palette';
 
 const { width } = Dimensions.get('window');
 
@@ -95,11 +96,11 @@ const colors = {
   info: '#8b5cf6',
   orange: '#f97316',
   pink: '#ec489a',
-  background: '#0a0a0a',
-  card: '#1a1a1a',
-  border: '#2a2a2a',
-  text: '#ffffff',
-  textSecondary: '#9ca3af',
+  background: TC.bg,
+  card: TC.surface,
+  border: TC.raised,
+  text: TC.text,
+  textSecondary: TC.subtle,
 };
 
 export function AdminAnalyticsScreen() {
@@ -631,7 +632,7 @@ const processAnalyticsData = (
           <View style={styles.metricCard}>
             <Feather name="shopping-bag" size={20} color={colors.primary} />
             <Text style={styles.metricValue}>{formatNumber(analytics.totalOrders)}</Text>
-            <Text style={styles.metricLabel}>Total Orders</Text>
+            <Text style={styles.metricLabel}>Total orders</Text>
             <View style={styles.metricSubtext}>
               <Text style={styles.metricSubtextText}>Food {analytics.totalFoodOrders}</Text>
               <Text style={styles.metricSubtextText}>Business {analytics.totalBusinessOrders}</Text>
@@ -642,7 +643,7 @@ const processAnalyticsData = (
           <View style={styles.metricCard}>
             <Feather name="dollar-sign" size={20} color={colors.success} />
             <Text style={styles.metricValue}>{formatCurrency(analytics.totalRevenue)}</Text>
-            <Text style={styles.metricLabel}>Total Revenue</Text>
+            <Text style={styles.metricLabel}>Total revenue</Text>
             <View style={styles.metricSubtext}>
               <Text style={styles.metricSubtextText}>Food {formatCurrency(analytics.totalFoodRevenue)}</Text>
               <Text style={styles.metricSubtextText}>Business {formatCurrency(analytics.totalBusinessRevenue)}</Text>
@@ -653,21 +654,21 @@ const processAnalyticsData = (
           <View style={styles.metricCard}>
             <Feather name="home" size={20} color={colors.success} />
             <Text style={styles.metricValue}>{formatCurrency(analytics.totalVendorEarnings)}</Text>
-            <Text style={styles.metricLabel}>Vendor Earnings</Text>
+            <Text style={styles.metricLabel}>Vendor earnings</Text>
           </View>
 
           {/* Rider Earnings */}
           <View style={styles.metricCard}>
             <Feather name="truck" size={20} color={colors.warning} />
             <Text style={styles.metricValue}>{formatCurrency(analytics.totalRiderEarnings)}</Text>
-            <Text style={styles.metricLabel}>Rider Earnings</Text>
+            <Text style={styles.metricLabel}>Rider earnings</Text>
           </View>
 
           {/* Platform Earnings */}
           <View style={[styles.metricCard, styles.metricCardHighlight]}>
             <Feather name="trending-up" size={20} color={colors.primary} />
             <Text style={[styles.metricValue, { color: colors.primary }]}>{formatCurrency(analytics.platformEarnings.total)}</Text>
-            <Text style={styles.metricLabel}>Platform Earnings</Text>
+            <Text style={styles.metricLabel}>Platform earnings</Text>
             <View style={styles.metricSubtext}>
               <Text style={styles.metricSubtextText}>Commission: {formatCurrency(analytics.platformEarnings.fromFoodCommission)}</Text>
               <Text style={styles.metricSubtextText}>Delivery: {formatCurrency(analytics.platformEarnings.fromDeliveryShare)}</Text>
@@ -679,7 +680,7 @@ const processAnalyticsData = (
           <View style={styles.metricCard}>
             <Feather name="credit-card" size={20} color={colors.danger} />
             <Text style={[styles.metricValue, { color: colors.danger }]}>{formatCurrency(analytics.paystackFees.total)}</Text>
-            <Text style={styles.metricLabel}>Paystack Fees</Text>
+            <Text style={styles.metricLabel}>Paystack fees</Text>
             <View style={styles.metricSubtext}>
               <Text style={styles.metricSubtextText}>Food: {formatCurrency(analytics.paystackFees.fromFoodOrders)}</Text>
               <Text style={styles.metricSubtextText}>Business: {formatCurrency(analytics.paystackFees.fromBusinessOrders)}</Text>
@@ -690,13 +691,13 @@ const processAnalyticsData = (
           <View style={styles.metricCard}>
             <Feather name="file-text" size={20} color={colors.warning} />
             <Text style={styles.metricValue}>{formatCurrency(analytics.stampDutyTotal)}</Text>
-            <Text style={styles.metricLabel}>Stamp Duty</Text>
+            <Text style={styles.metricLabel}>Stamp duty</Text>
           </View>
         </View>
 
         {/* ===== ORDERS TREND CHART ===== */}
         <View style={styles.chartCard}>
-          <Text style={styles.chartTitle}>Orders Trend</Text>
+          <Text style={styles.chartTitle}>Orders trend</Text>
           <Text style={styles.chartSubtitle}>Last 7 days</Text>
           {analytics.ordersByDay.length > 0 && (
             <LineChart
@@ -721,7 +722,7 @@ const processAnalyticsData = (
         {/* ===== REVENUE BREAKDOWN PIE CHART ===== */}
         {analytics.revenueBreakdown.length > 0 && (
           <View style={styles.chartCard}>
-            <Text style={styles.chartTitle}>Revenue Distribution</Text>
+            <Text style={styles.chartTitle}>Revenue distribution</Text>
             <PieChart
               data={analytics.revenueBreakdown.map(r => ({
                 name: r.name,
@@ -745,7 +746,7 @@ const processAnalyticsData = (
        {/* Orders by Category */}
 {analytics.ordersByCategory.length > 0 && (
   <View style={styles.chartCard}>
-    <Text style={styles.chartTitle}>Orders by Category</Text>
+    <Text style={styles.chartTitle}>Orders by category</Text>
     <BarChart
       data={{
         labels: analytics.ordersByCategory.map(c => c.category.length > 10 ? c.category.substring(0, 8) + '...' : c.category),
@@ -763,11 +764,11 @@ const processAnalyticsData = (
 )}
 
         {/* ===== TOP VENDORS SECTION ===== */}
-        <Text style={styles.sectionTitle}>Top Vendors</Text>
+        <Text style={styles.sectionTitle}>Top vendors</Text>
 
         {/* By Orders */}
         <View style={styles.topVendorsCard}>
-          <Text style={styles.topVendorsTitle}>Most Orders</Text>
+          <Text style={styles.topVendorsTitle}>Most orders</Text>
           {analytics.topVendorsByOrders.map((vendor, index) => (
             <View key={vendor.id} style={styles.vendorRankItem}>
               <View style={styles.vendorRankLeft}>
@@ -792,7 +793,7 @@ const processAnalyticsData = (
 
         {/* By Revenue */}
         <View style={styles.topVendorsCard}>
-          <Text style={styles.topVendorsTitle}>Highest Revenue</Text>
+          <Text style={styles.topVendorsTitle}>Highest revenue</Text>
           {analytics.topVendorsByRevenue.map((vendor, index) => (
             <View key={vendor.id} style={styles.vendorRankItem}>
               <View style={styles.vendorRankLeft}>
@@ -816,9 +817,9 @@ const processAnalyticsData = (
         </View>
 
         {/* ===== TOP RIDERS SECTION ===== */}
-        <Text style={styles.sectionTitle}>Top Riders</Text>
+        <Text style={styles.sectionTitle}>Top riders</Text>
         <View style={styles.topVendorsCard}>
-          <Text style={styles.topVendorsTitle}>Highest Earnings</Text>
+          <Text style={styles.topVendorsTitle}>Highest earnings</Text>
           {analytics.topRidersByEarnings.map((rider, index) => (
             <View key={index} style={styles.vendorRankItem}>
               <View style={styles.vendorRankLeft}>
@@ -957,7 +958,7 @@ const styles = StyleSheet.create({
   },
   metricValue: {
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.text,
     marginTop: 8,
     marginBottom: 4,
@@ -1085,7 +1086,7 @@ const styles = StyleSheet.create({
   },
   statSummaryValue: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.text,
     marginBottom: 8,
   },

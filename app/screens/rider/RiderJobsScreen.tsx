@@ -9,6 +9,7 @@ import { useRider } from '../../contexts/RiderContext';
 import { JobCard } from '../../components/rider/JobCard';
 import { R, EmptyState } from '../../components/rider/ui';
 import type { RiderStackParamList, RiderTabParamList } from '../../navigation/types';
+import { TC } from '../../theme/palette';
 
 type Nav = NativeStackNavigationProp<RiderStackParamList>;
 type Tab = 'available' | 'active' | 'completed';
@@ -93,7 +94,7 @@ export function RiderJobsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: R.bg },
-  title: { color: R.text, fontSize: 26, fontWeight: '800', paddingHorizontal: 16, paddingTop: 8, marginBottom: 14 },
+  title: { color: R.text, fontSize: 26, fontWeight: '600', paddingHorizontal: 16, paddingTop: 8, marginBottom: 14 },
   segment: {
     flexDirection: 'row',
     marginHorizontal: 16,
@@ -114,9 +115,9 @@ const styles = StyleSheet.create({
   },
   segBtnOn: { backgroundColor: R.orange },
   segText: { color: R.muted, fontSize: 13, fontWeight: '600' },
-  segTextOn: { color: '#fff' },
+  segTextOn: { color: TC.text },
   count: { backgroundColor: 'rgba(249,115,22,0.15)', borderRadius: 999, paddingHorizontal: 6, minWidth: 20, alignItems: 'center' },
   countOn: { backgroundColor: '#fff' },
-  countText: { color: R.orange, fontSize: 11, fontWeight: '700' },
+  countText: { color: R.orange, fontSize: 11, fontWeight: '600' },
   list: { padding: 16, paddingBottom: 110 },
 });

@@ -12,7 +12,6 @@ import {
   Image,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useAdmin } from '../../hooks/admin/useAdmin';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,6 +21,8 @@ import { supabase } from '../../lib/supabase';
 import { useFocusEffect } from '@react-navigation/native';
 import { countPendingApplications } from '../../services/riderApplications';
 import { countVendorsOwedCash } from '../../services/cashPayouts';
+import { TAB_BAR_SPACE } from '../../navigation/tabBarOptions';
+import { TC } from '../../theme/palette';
 
 
 type AdminLogisticsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -322,7 +323,7 @@ useEffect(() => {
       delivered: '#10b981',
       cancelled: '#ef4444',
     };
-    return colors[status] || '#666';
+    return colors[status] || TC.muted;
   };
 
   const formatCurrency = (amount: number) => {
@@ -335,16 +336,16 @@ useEffect(() => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.container}>
       
 <View style={styles.header}>
-  <Text style={styles.headerTitle}> Welcome Admin</Text>
+  <Text style={styles.headerTitle}> Welcome admin</Text>
   <TouchableOpacity
                 onPress={() => navigation.navigate('Notifications' as never)}
                 style={styles.iconButton}
               >
-                <Feather name="bell" size={20} color="#fff" />
+                <Feather name="bell" size={20} color={TC.text} />
                 <View style={styles.notificationDot} />
               </TouchableOpacity>
   <TouchableOpacity 
@@ -362,7 +363,7 @@ useEffect(() => {
   </TouchableOpacity>
 </View>
 
-        <ScrollView
+        <ScrollView contentContainerStyle={{ paddingBottom: TAB_BAR_SPACE }}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#f97316" />
@@ -371,16 +372,13 @@ useEffect(() => {
           {/* Stats Grid - Updated with real data */}
           <View style={styles.statsGrid}>
             {/* Total Users Card */}
-            <LinearGradient
-              colors={['#f97316', '#f43f5e']}
-              style={styles.statCard}
-            >
+            <View style={[styles.statCard, { backgroundColor: '#ea580c' }]}>
               <View style={styles.statIconContainer}>
                 <Feather name="users" size={24} color="#fff" />
               </View>
               <Text style={styles.statNumber}>{stats?.totalUsers || 0}</Text>
-              <Text style={styles.statLabel}>Total Users</Text>
-            </LinearGradient>
+              <Text style={styles.statLabel}>Total users</Text>
+            </View>
 
             {/* Total Orders Card */}
             <View style={styles.statCardSecondary}>
@@ -392,23 +390,20 @@ useEffect(() => {
             </View>
 
             {/* Total Revenue Card - REAL DATA */}
-            <LinearGradient
-              colors={['#10b981', '#059669']}
-              style={[styles.statCard, { width: '100%' }]}
-            >
+            <View style={[[styles.statCard, { width: '100%' }], { backgroundColor: '#10b981' }]}>
               <View style={styles.statIconContainer}>
               </View>
               <Text style={styles.statNumber}>
                 {loadingFinancials ? '...' : formatCurrency(financials.totalRevenue).replace('₦', '')}
               </Text>
-              <Text style={styles.statLabel}>Total Revenue</Text>
+              <Text style={styles.statLabel}>Total revenue</Text>
               {!loadingFinancials && (
                 <View style={styles.metricBreakdown}>
                   <Text style={styles.metricBreakdownText}>Food {formatCurrency(financials.totalFoodRevenue).replace('₦', '')}</Text>
                   <Text style={styles.metricBreakdownText}>Business {formatCurrency(financials.totalBusinessRevenue).replace('₦', '')}</Text>
                 </View>
               )}
-            </LinearGradient>
+            </View>
 
         
           </View>
@@ -418,19 +413,16 @@ useEffect(() => {
             style={styles.menuCard}
             onPress={() => navigation.navigate('AdminAnalytics')}
           >
-            <LinearGradient
-              colors={['#8b5cf6', '#f97316']}
-              style={styles.menuIcon}
-            >
+            <View style={[styles.menuIcon, { backgroundColor: '#8b5cf6' }]}>
               <Feather name="trending-up" size={24} color="#fff" />
-            </LinearGradient>
+            </View>
             <View style={styles.menuInfo}>
-              <Text style={styles.menuTitle}>Analytics Dashboard</Text>
+              <Text style={styles.menuTitle}>Analytics dashboard</Text>
               <Text style={styles.menuDescription}>
                 View charts, top vendors, and performance metrics
               </Text>
             </View>
-            <Feather name="chevron-right" size={20} color="#666" />
+            <Feather name="chevron-right" size={20} color={TC.muted} />
           </TouchableOpacity>
 
           {/* Business Requests Card with Status Dots */}
@@ -438,15 +430,12 @@ useEffect(() => {
             style={styles.menuCard}
             onPress={() => navigation.navigate('AdminBusinessRequests')}
           >
-            <LinearGradient
-              colors={['#f97316', '#f43f5e']}
-              style={styles.menuIcon}
-            >
+            <View style={[styles.menuIcon, { backgroundColor: '#ea580c' }]}>
               <Feather name="package" size={24} color="#fff" />
-            </LinearGradient>
+            </View>
             
             <View style={styles.menuInfo}>
-              <Text style={styles.menuTitle}>Business Requests</Text>
+              <Text style={styles.menuTitle}>Business requests</Text>
               <Text style={styles.menuDescription}>
                 Manage logistics requests from businesses
               </Text>
@@ -484,11 +473,11 @@ useEffect(() => {
               )}
               
               {loadingBusinessStats && (
-                <ActivityIndicator size="small" color="#666" style={styles.statusLoader} />
+                <ActivityIndicator size="small" color={TC.muted} style={styles.statusLoader} />
               )}
             </View>
             
-            <Feather name="chevron-right" size={20} color="#666" />
+            <Feather name="chevron-right" size={20} color={TC.muted} />
           </TouchableOpacity>
 
 
@@ -497,15 +486,12 @@ useEffect(() => {
   style={styles.menuCard}
   onPress={() => navigation.navigate('AdminPromotions')}
 >
-  <LinearGradient
-    colors={['#f97316', '#f43f5e']}
-    style={styles.menuIcon}
-  >
+  <View style={[styles.menuIcon, { backgroundColor: '#ea580c' }]}>
     <Feather name="phone" size={24} color="#fff" />
-  </LinearGradient>
+  </View>
   
   <View style={styles.menuInfo}>
-    <Text style={styles.menuTitle}>Promotion Approvals</Text>
+    <Text style={styles.menuTitle}>Promotion approvals</Text>
     <Text style={styles.menuDescription}>
       Review and approve vendor promotions
     </Text>
@@ -533,15 +519,15 @@ useEffect(() => {
     )}
     
     {loadingPromotionStats && (
-      <ActivityIndicator size="small" color="#666" style={styles.statusLoader} />
+      <ActivityIndicator size="small" color={TC.muted} style={styles.statusLoader} />
     )}
   </View>
   
-  <Feather name="chevron-right" size={20} color="#666" />
+  <Feather name="chevron-right" size={20} color={TC.muted} />
 </TouchableOpacity>
 
           {/* Quick Action Cards */}
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <Text style={styles.sectionTitle}>Quick actions</Text>
           <View style={styles.quickActionsGrid}>
             <TouchableOpacity 
               style={styles.quickActionCard}
@@ -555,7 +541,7 @@ useEffect(() => {
                   </View>
                 )}
               </View>
-              <Text style={styles.quickActionTitle}>Pending Vendors</Text>
+              <Text style={styles.quickActionTitle}>Pending vendors</Text>
               <Text style={styles.quickActionValue}>{pendingCounts.vendors} awaiting approval</Text>
             </TouchableOpacity>
 
@@ -587,7 +573,7 @@ useEffect(() => {
                   </View>
                 )}
               </View>
-              <Text style={styles.quickActionTitle}>Pending Menu</Text>
+              <Text style={styles.quickActionTitle}>Pending menu</Text>
               <Text style={styles.quickActionValue}>{pendingCounts.menu} items to review</Text>
             </TouchableOpacity>
 
@@ -603,7 +589,7 @@ useEffect(() => {
                   </View>
                 )}
               </View>
-              <Text style={styles.quickActionTitle}>Rider Applications</Text>
+              <Text style={styles.quickActionTitle}>Rider applications</Text>
               <Text style={styles.quickActionValue}>{pendingCounts.riders} to review</Text>
             </TouchableOpacity>
 
@@ -619,7 +605,7 @@ useEffect(() => {
                   </View>
                 )}
               </View>
-              <Text style={styles.quickActionTitle}>Cash Payouts</Text>
+              <Text style={styles.quickActionTitle}>Cash payouts</Text>
               <Text style={styles.quickActionValue}>{pendingCounts.cash} vendor{pendingCounts.cash === 1 ? '' : 's'} to pay</Text>
             </TouchableOpacity>
 
@@ -630,7 +616,7 @@ useEffect(() => {
               <View style={styles.quickActionIcon}>
                 <Feather name="user-plus" size={24} color="#f43f5e" />
               </View>
-              <Text style={styles.quickActionTitle}>New Users</Text>
+              <Text style={styles.quickActionTitle}>New users</Text>
               <Text style={styles.quickActionValue}>Manage users</Text>
             </TouchableOpacity>
           </View>
@@ -639,12 +625,12 @@ useEffect(() => {
           {stats?.recentOrders && stats.recentOrders.length > 0 && (
             <>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Recent Orders</Text>
+                <Text style={styles.sectionTitle}>Recent orders</Text>
                 <TouchableOpacity 
                   style={styles.viewAllButton}
                   onPress={() => navigation.navigate('AdminAllOrders')}
                 >
-                  <Text style={styles.viewAllText}>View All</Text>
+                  <Text style={styles.viewAllText}>View all</Text>
                   <Feather name="arrow-right" size={16} color="#f97316" />
                 </TouchableOpacity>
               </View>
@@ -670,7 +656,7 @@ useEffect(() => {
                           />
                         ) : (
                           <View style={styles.recentOrderImagePlaceholder}>
-                            <Feather name="image" size={20} color="#666" />
+                            <Feather name="image" size={20} color={TC.muted} />
                           </View>
                         )}
                       </View>
@@ -709,13 +695,13 @@ useEffect(() => {
                         {/* Customer & Vendor */}
                         <View style={styles.recentOrderDetails}>
                           <View style={styles.recentOrderDetailRow}>
-                            <Feather name="user" size={10} color="#666" />
+                            <Feather name="user" size={10} color={TC.muted} />
                             <Text style={styles.recentOrderCustomer} numberOfLines={1}>
                               {order.customer?.name || 'N/A'}
                             </Text>
                           </View>
                           <View style={styles.recentOrderDetailRow}>
-                            <Feather name="home" size={10} color="#666" />
+                            <Feather name="home" size={10} color={TC.muted} />
                             <Text style={styles.recentOrderVendor} numberOfLines={1}>
                               {order.vendor?.name || 'N/A'}
                             </Text>
@@ -737,7 +723,7 @@ useEffect(() => {
           {/* Recent Vendors */}
           {pendingVendors.length > 0 && (
             <>
-              <Text style={styles.sectionTitle}>Recent Vendor Applications</Text>
+              <Text style={styles.sectionTitle}>Recent vendor applications</Text>
               <View style={styles.recentVendors}>
                 {pendingVendors.slice(0, 2).map((vendor) => (
                   <TouchableOpacity
@@ -771,15 +757,14 @@ const styles = StyleSheet.create({
   // ... keep all your existing styles
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
-        paddingBottom:25,
+    backgroundColor: TC.bg,
 
   },
   messageButton: {
   width: 44,
   height: 44,
   borderRadius: 22,
-  backgroundColor: '#1a1a1a',
+  backgroundColor: TC.surface,
   justifyContent: 'center',
   alignItems: 'center',
   position: 'relative',
@@ -798,14 +783,14 @@ unreadBadge: {
 },
 unreadBadgeText: {
   fontSize: 10,
-  fontWeight: 'bold',
+  fontWeight: '600',
   color: '#fff',
 },
   header: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
     flexDirection:'row',
     justifyContent:'space-between',
   },
@@ -816,21 +801,21 @@ unreadBadgeText: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    color: '#666',
+    color: TC.muted,
     marginTop: 12,
     fontSize: 14,
   },
@@ -838,7 +823,7 @@ unreadBadgeText: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
@@ -858,11 +843,11 @@ unreadBadgeText: {
   },
   statCardSecondary: {
     width: '47%',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     padding: 16,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   statIconContainer: {
     width: 48,
@@ -874,8 +859,8 @@ unreadBadgeText: {
   },
   statNumber: {
     fontSize: 28,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
     marginBottom: 4,
   },
   statLabel: {
@@ -913,11 +898,11 @@ unreadBadgeText: {
   menuCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     padding: 16,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
     marginHorizontal: 16,
     marginBottom: 16,
   },
@@ -935,12 +920,12 @@ unreadBadgeText: {
   menuTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 4,
   },
   menuDescription: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 8,
   },
   statusContainer: {
@@ -961,13 +946,13 @@ unreadBadgeText: {
   },
   statusCount: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
     fontWeight: '500',
   },
   statusDivider: {
     width: 1,
     height: 12,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: TC.hairline3,
     marginHorizontal: 4,
   },
   statusTotal: {
@@ -982,18 +967,18 @@ unreadBadgeText: {
   },
   statNumberSecondary: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
     marginBottom: 4,
   },
   statLabelSecondary: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 12,
     paddingHorizontal: 16,
   },
@@ -1006,11 +991,11 @@ unreadBadgeText: {
   },
   quickActionCard: {
     width: '47%',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     padding: 16,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   quickActionIcon: {
     position: 'relative',
@@ -1036,17 +1021,17 @@ unreadBadgeText: {
   quickActionBadgeText: {
     color: '#fff',
     fontSize: 10,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   quickActionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 4,
   },
   quickActionValue: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
   },
   recentOrders: {
     paddingHorizontal: 16,
@@ -1055,11 +1040,11 @@ unreadBadgeText: {
   },
   recentOrderCard: {
     flexDirection: 'row',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   recentOrderImageContainer: {
     width: 60,
@@ -1075,7 +1060,7 @@ unreadBadgeText: {
   recentOrderImagePlaceholder: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1091,7 +1076,7 @@ unreadBadgeText: {
   recentOrderNumber: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   recentOrderStatusBadge: {
     paddingHorizontal: 6,
@@ -1101,7 +1086,6 @@ unreadBadgeText: {
   recentOrderStatusText: {
     fontSize: 8,
     fontWeight: '600',
-    textTransform: 'uppercase',
   },
   recentOrderItemPreview: {
     flexDirection: 'row',
@@ -1116,8 +1100,8 @@ unreadBadgeText: {
   },
   recentOrderMoreItems: {
     fontSize: 9,
-    color: '#666',
-    backgroundColor: '#2a2a2a',
+    color: TC.muted,
+    backgroundColor: TC.raised,
     paddingHorizontal: 4,
     paddingVertical: 2,
     borderRadius: 4,
@@ -1133,15 +1117,15 @@ unreadBadgeText: {
   },
   recentOrderCustomer: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
   },
   recentOrderVendor: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
   },
   recentOrderTotal: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#f97316',
   },
   recentVendors: {
@@ -1150,11 +1134,11 @@ unreadBadgeText: {
     marginBottom: 24,
   },
   recentVendorCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   recentVendorHeader: {
     flexDirection: 'row',
@@ -1164,11 +1148,11 @@ unreadBadgeText: {
   recentVendorName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   recentVendorEmail: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
     marginTop: 2,
   },
   pendingBadge: {

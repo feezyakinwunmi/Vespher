@@ -18,7 +18,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from './supabase';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -28,6 +27,8 @@ import { riderStatus, RIDER_STATUS_COLOR } from '../utils/riderPresence';
 import { useFocusEffect } from '@react-navigation/native';
 import { countPendingApplications } from '../services/riderApplications';
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
+import { TAB_BAR_SPACE } from '../navigation/tabBarOptions';
+import { TC } from '../theme/palette';
 
 type AdminLogisticsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -487,9 +488,9 @@ export function AdminLogisticsScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Feather name="arrow-left" size={24} color="#fff" />
+          <Feather name="arrow-left" size={24} color={TC.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Logistics Management</Text>
+        <Text style={styles.headerTitle}>Logistics management</Text>
         <View style={styles.headerActions}>
           {/* Riders apply in the app; review their applications here. */}
           <TouchableOpacity 
@@ -523,18 +524,15 @@ export function AdminLogisticsScreen() {
             <Text style={styles.appsBannerCountText}>{pendingApps}</Text>
           </View>
         )}
-        <Feather name="chevron-right" size={18} color="#666" />
+        <Feather name="chevron-right" size={18} color={TC.muted} />
       </TouchableOpacity>
 
       {/* Stats Cards */}
       <View style={styles.statsContainer}>
-        <LinearGradient
-          colors={['#f97316', '#f43f5e']}
-          style={styles.statCard}
-        >
-          <Text style={styles.statLabel}>Total Riders</Text>
+        <View style={[styles.statCard, { backgroundColor: '#ea580c' }]}>
+          <Text style={styles.statLabel}>Total riders</Text>
           <Text style={styles.statValue}>{riders.length}</Text>
-        </LinearGradient>
+        </View>
 
         <View style={styles.statRow}>
           <View style={styles.statCardSecondary}>
@@ -550,7 +548,7 @@ export function AdminLogisticsScreen() {
           </View>
 
           <View style={styles.statCardSecondary}>
-            <Feather name="moon" size={20} color="#6b7280" />
+            <Feather name="moon" size={20} color={TC.subtle} />
             <Text style={styles.statNumber}>{offlineRiders}</Text>
             <Text style={styles.statLabelSmall}>Offline</Text>
           </View>
@@ -565,17 +563,17 @@ export function AdminLogisticsScreen() {
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
-        <Feather name="search" size={18} color="#666" style={styles.searchIcon} />
+        <Feather name="search" size={18} color={TC.muted} style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
           value={searchQuery}
           onChangeText={setSearchQuery}
           placeholder="Search by name, email, phone, vehicle..."
-          placeholderTextColor="#666"
+          placeholderTextColor={TC.muted}
         />
         {searchQuery ? (
           <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <Feather name="x" size={18} color="#666" />
+            <Feather name="x" size={18} color={TC.muted} />
           </TouchableOpacity>
         ) : null}
       </View>
@@ -632,7 +630,7 @@ export function AdminLogisticsScreen() {
               statusFilter === 'offline' && styles.filterChipActive,
             ]}
           >
-            <View style={[styles.statusDot, { backgroundColor: '#6b7280' }]} />
+            <View style={[styles.statusDot, { backgroundColor: TC.subtle }]} />
             <Text style={[
               styles.filterChipText,
               statusFilter === 'offline' && styles.filterChipTextActive,
@@ -668,7 +666,7 @@ export function AdminLogisticsScreen() {
               <Feather 
                 name={type === 'all' ? 'grid' : 'package'} 
                 size={12} 
-                color={vehicleFilter === type ? '#f97316' : '#666'} 
+                color={vehicleFilter === type ? '#f97316' : TC.muted} 
               />
               <Text style={[
                 styles.filterChipText,
@@ -725,7 +723,7 @@ export function AdminLogisticsScreen() {
                     onPress={() => setSelectedRider(rider)}
                   >
                     <View style={[styles.markerContainer, { backgroundColor: markerColor }]}>
-                      <Feather name={getMarkerIcon(rider.vehicle_type)} size={18} color="#fff" />
+                      <Feather name={getMarkerIcon(rider.vehicle_type)} size={18} color={TC.text} />
                     </View>
                   </Marker>
                 );
@@ -760,7 +758,7 @@ export function AdminLogisticsScreen() {
             <View style={styles.noLocationOverlay}>
               <View style={styles.noLocationCard}>
                 <Feather name="map-pin" size={40} color="#f97316" />
-                <Text style={styles.noLocationTitle}>No Rider Locations</Text>
+                <Text style={styles.noLocationTitle}>No rider locations</Text>
                 <Text style={styles.noLocationText}>
                   Riders need to share their location to appear on the map.
                 </Text>
@@ -777,7 +775,7 @@ export function AdminLogisticsScreen() {
         </View>
       ) : (
         /* List View */
-        <ScrollView
+        <ScrollView contentContainerStyle={{ paddingBottom: TAB_BAR_SPACE }}
           style={styles.content}
           showsVerticalScrollIndicator={false}
           refreshControl={
@@ -786,7 +784,7 @@ export function AdminLogisticsScreen() {
         >
           {filteredRiders.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Feather name="truck" size={48} color="#666" />
+              <Feather name="truck" size={48} color={TC.muted} />
               <Text style={styles.emptyTitle}>No riders found</Text>
               <Text style={styles.emptyText}>Try adjusting your filters</Text>
             </View>
@@ -806,14 +804,11 @@ export function AdminLogisticsScreen() {
                       {rider.avatar_url ? (
                         <Image source={{ uri: rider.avatar_url }} style={styles.avatar} />
                       ) : (
-                        <LinearGradient
-                          colors={['#f97316', '#f43f5e']}
-                          style={styles.avatarPlaceholder}
-                        >
+                        <View style={[styles.avatarPlaceholder, { backgroundColor: '#ea580c' }]}>
                           <Text style={styles.avatarText}>
                             {rider.name?.charAt(0).toUpperCase() || '?'}
                           </Text>
-                        </LinearGradient>
+                        </View>
                       )}
                     </View>
                     <View style={styles.userInfoText}>
@@ -835,12 +830,12 @@ export function AdminLogisticsScreen() {
 
                 <View style={styles.riderDetails}>
                   <View style={styles.detailRow}>
-                    <Feather name="phone" size={14} color="#666" />
+                    <Feather name="phone" size={14} color={TC.muted} />
                     <Text style={styles.detailText}>{rider.phone || 'No phone'}</Text>
                   </View>
 
                   <View style={styles.detailRow}>
-                    <Feather name="package" size={14} color="#666" />
+                    <Feather name="package" size={14} color={TC.muted} />
                     <Text style={styles.detailText}>
                       {rider.vehicle_type ? rider.vehicle_type.charAt(0).toUpperCase() + rider.vehicle_type.slice(1) : 'N/A'} • {rider.vehicle_number || 'N/A'}
                     </Text>
@@ -848,7 +843,7 @@ export function AdminLogisticsScreen() {
 
                   {rider.license_number && (
                     <View style={styles.detailRow}>
-                      <Feather name="file-text" size={14} color="#666" />
+                      <Feather name="file-text" size={14} color={TC.muted} />
                       <Text style={styles.detailText}>License: {rider.license_number}</Text>
                     </View>
                   )}
@@ -915,7 +910,7 @@ export function AdminLogisticsScreen() {
                     onPress={() => handleAction(selectedRider, 'suspend')}
                   >
                     <Feather name="pause-circle" size={18} color="#f59e0b" />
-                    <Text style={styles.actionText}>Suspend Rider</Text>
+                    <Text style={styles.actionText}>Suspend rider</Text>
                   </TouchableOpacity>
                 ) : (
                   <TouchableOpacity
@@ -923,7 +918,7 @@ export function AdminLogisticsScreen() {
                     onPress={() => handleAction(selectedRider, 'unsuspend')}
                   >
                     <Feather name="play-circle" size={18} color="#10b981" />
-                    <Text style={styles.actionText}>Unsuspend Rider</Text>
+                    <Text style={styles.actionText}>Unsuspend rider</Text>
                   </TouchableOpacity>
                 )}
 
@@ -932,7 +927,7 @@ export function AdminLogisticsScreen() {
                   onPress={() => handleAction(selectedRider, 'delete')}
                 >
                   <Feather name="trash-2" size={18} color="#ef4444" />
-                  <Text style={[styles.actionText, styles.actionTextDelete]}>Delete Rider</Text>
+                  <Text style={[styles.actionText, styles.actionTextDelete]}>Delete rider</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -953,7 +948,7 @@ export function AdminLogisticsScreen() {
               <Feather name="alert-triangle" size={40} color="#f97316" />
             </View>
             
-            <Text style={styles.confirmTitle}>Confirm Action</Text>
+            <Text style={styles.confirmTitle}>Confirm action</Text>
             <Text style={styles.confirmMessage}>
               {confirmAction?.type === 'suspend' && `Are you sure you want to suspend ${confirmAction.rider.name}?`}
               {confirmAction?.type === 'unsuspend' && `Are you sure you want to unsuspend ${confirmAction.rider.name}?`}
@@ -996,18 +991,17 @@ export function AdminLogisticsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
-        paddingBottom:90,
+    backgroundColor: TC.bg,
 
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    color: '#666',
+    color: TC.muted,
     marginTop: 12,
     fontSize: 14,
   },
@@ -1018,20 +1012,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   headerActions: {
     flexDirection: 'row',
@@ -1041,7 +1035,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1049,7 +1043,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1057,7 +1051,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1069,7 +1063,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     padding: 14,
     borderRadius: 14,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderWidth: 1,
     borderColor: 'rgba(59,130,246,0.3)',
   },
@@ -1081,8 +1075,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  appsBannerTitle: { color: '#fff', fontSize: 15, fontWeight: '700' },
-  appsBannerSub: { color: '#8a8a8a', fontSize: 12.5, marginTop: 2 },
+  appsBannerTitle: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  appsBannerSub: { color: TC.subtle, fontSize: 12.5, marginTop: 2 },
   appsBannerCount: {
     minWidth: 24,
     height: 24,
@@ -1092,7 +1086,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  appsBannerCountText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  appsBannerCountText: { color: '#fff', fontSize: 12, fontWeight: '600' },
   statsContainer: {
     padding: 16,
   },
@@ -1108,12 +1102,12 @@ const styles = StyleSheet.create({
   },
   statCardSecondary: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     padding: 12,
     borderRadius: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   statLabel: {
     fontSize: 12,
@@ -1122,24 +1116,24 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 24,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
   },
   statNumber: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
     marginTop: 4,
     marginBottom: 2,
   },
   statLabelSmall: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     marginHorizontal: 16,
     marginBottom: 12,
     paddingHorizontal: 12,
@@ -1151,7 +1145,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
   },
   filterTabs: {
@@ -1169,7 +1163,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 20,
     gap: 4,
     borderWidth: 1,
@@ -1181,7 +1175,7 @@ const styles = StyleSheet.create({
   },
   filterChipText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   filterChipTextActive: {
     color: '#f97316',
@@ -1189,7 +1183,7 @@ const styles = StyleSheet.create({
   filterDivider: {
     width: 1,
     height: 20,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     marginHorizontal: 4,
   },
   statusDot: {
@@ -1203,7 +1197,7 @@ const styles = StyleSheet.create({
   },
   resultsText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   mapContainer: {
     flex: 1,
@@ -1215,11 +1209,11 @@ const styles = StyleSheet.create({
 
   calloutContainer: {
     width: 240,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: TC.hairline3,
   },
     loadingOverlay: {
     position: 'absolute',
@@ -1267,7 +1261,7 @@ const styles = StyleSheet.create({
   },
   calloutAvatarText: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#fff',
   },
   calloutInfo: {
@@ -1276,7 +1270,7 @@ const styles = StyleSheet.create({
   calloutName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 2,
   },
   calloutVehicle: {
@@ -1294,11 +1288,11 @@ const styles = StyleSheet.create({
   },
   calloutText: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
   },
   calloutFooter: {
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
     paddingTop: 8,
     alignItems: 'center',
   },
@@ -1315,11 +1309,11 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
@@ -1330,12 +1324,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 80,
     right: 16,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     padding: 12,
     borderRadius: 8,
     gap: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
@@ -1354,7 +1348,7 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: 11,
-    color: '#fff',
+    color: TC.text,
   },
   mapStatus: {
     position: 'absolute',
@@ -1366,7 +1360,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   mapStatusText: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 12,
     textAlign: 'center',
   },
@@ -1382,32 +1376,32 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   noLocationCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 16,
     padding: 24,
     alignItems: 'center',
     width: '90%',
     maxWidth: 320,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: TC.hairline3,
   },
   noLocationTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginTop: 12,
     marginBottom: 8,
   },
   noLocationText: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
     textAlign: 'center',
     marginBottom: 16,
   },
   refreshLocationButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
@@ -1416,19 +1410,19 @@ const styles = StyleSheet.create({
   refreshLocationText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#fff',
+    color: TC.text,
   },
   content: {
     flex: 1,
   },
   riderCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     marginHorizontal: 16,
     marginBottom: 12,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -1463,18 +1457,18 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#fff',
   },
   userName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 2,
   },
   userEmail: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
   },
   statusBadge: {
     flexDirection: 'row',
@@ -1499,7 +1493,7 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
   },
   statsRow: {
     flexDirection: 'row',
@@ -1522,7 +1516,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     paddingTop: 4,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   locationText: {
     fontSize: 11,
@@ -1531,16 +1525,16 @@ const styles = StyleSheet.create({
   },
   locationTime: {
     fontSize: 9,
-    color: '#666',
+    color: TC.muted,
   },
   cardFooter: {
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   joinDate: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
   },
   emptyContainer: {
     alignItems: 'center',
@@ -1551,13 +1545,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginTop: 16,
     marginBottom: 4,
   },
   emptyText: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
     textAlign: 'center',
   },
   bottomPadding: {
@@ -1571,7 +1565,7 @@ const styles = StyleSheet.create({
   },
   actionsModal: {
     width: '80%',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     padding: 8,
   },
@@ -1581,21 +1575,21 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   actionItemDelete: {
     borderBottomWidth: 0,
   },
   actionText: {
     fontSize: 14,
-    color: '#fff',
+    color: TC.text,
   },
   actionTextDelete: {
     color: '#ef4444',
   },
   confirmModal: {
     width: '80%',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 16,
     padding: 20,
     alignItems: 'center',
@@ -1617,7 +1611,7 @@ const styles = StyleSheet.create({
   },
   confirmMessage: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -1634,10 +1628,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelButton: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
   },
   cancelButtonText: {
-    color: '#666',
+    color: TC.muted,
     fontSize: 14,
     fontWeight: '500',
   },

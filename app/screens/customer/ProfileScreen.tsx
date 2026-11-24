@@ -18,7 +18,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../contexts/AuthContext';
@@ -33,6 +32,8 @@ import { EmojiIcon } from '../../components/EmojiIcon';
 import { PRO_SUBSCRIPTIONS_ENABLED } from '../../config/features';
 import { MEDICAL_DISCLAIMER } from '../../config/legal';
 import { ensureHealthConsent, recordHealthConsent } from '../../utils/healthConsent';
+import { TC } from '../../theme/palette';
+import { AppearanceSetting } from '../../components/AppearanceSetting';
 
 const formatDate = (date: Date): string => {
   try {
@@ -345,7 +346,7 @@ export function ProfileScreen() {
       
       setShowLockInModal(false);
       if (user?.id) await recordHealthConsent(user.id);
-      showToast('Health Lock-In saved successfully!');
+      showToast('Health Lock-In saved successfully');
     } catch (error) {
       console.error('Error saving lock-in:', error);
       showToast('Failed to save settings. Please try again.', 'error');
@@ -387,7 +388,7 @@ export function ProfileScreen() {
     const conditionMeta = HEALTH_CONDITIONS.find(c => c.id === conditionId);
     
     Alert.alert(
-      'Remove Condition',
+      'Remove condition',
       `Remove "${conditionMeta?.label}" from your active conditions?`,
       [
         { text: 'Cancel', style: 'cancel' },
@@ -508,13 +509,13 @@ const isLifestyleCondition = (id: HealthCondition) => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.notLoggedInContainer}>
-          <View style={styles.notLoggedInIcon}><Feather name="user" size={40} color="#666" /></View>
+          <View style={styles.notLoggedInIcon}><Feather name="user" size={40} color={TC.muted} /></View>
           <Text style={styles.notLoggedInTitle}>Sign in to continue</Text>
           <Text style={styles.notLoggedInText}>Access your orders, saved addresses, and more</Text>
           <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.signInButton}>
-            <LinearGradient colors={['#f97316', '#10b981']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.signInGradient}>
-              <Text style={styles.signInText}>Sign In</Text>
-            </LinearGradient>
+            <View style={[styles.signInGradient, { backgroundColor: '#ea580c' }]}>
+              <Text style={styles.signInText}>Sign in</Text>
+            </View>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -527,7 +528,7 @@ const isLifestyleCondition = (id: HealthCondition) => {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Feather name="arrow-left" size={24} color="#fff" />
+            <Feather name="arrow-left" size={24} color={TC.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Profile</Text>
         </View>
@@ -543,15 +544,15 @@ const isLifestyleCondition = (id: HealthCondition) => {
             {user.avatar_url ? (
               <Image source={{ uri: user.avatar_url }} style={styles.avatar} />
             ) : (
-              <LinearGradient colors={['#f97316', '#10b981']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.avatarPlaceholder}>
+              <View style={[styles.avatarPlaceholder, { backgroundColor: '#ea580c' }]}>
                 <Text style={styles.avatarInitials}>{getUserInitials()}</Text>
-              </LinearGradient>
+              </View>
             )}
           </View>
           <View style={styles.profileInfo}>
             <Text style={styles.profileName}>{user.name}</Text>
-            {user.phone && <View style={styles.profileDetail}><Feather name="phone" size={14} color="#666" /><Text style={styles.profileDetailText}>{user.phone}</Text></View>}
-            {user.email && <View style={styles.profileDetail}><Feather name="mail" size={14} color="#666" /><Text style={styles.profileDetailText} numberOfLines={1}>{user.email}</Text></View>}
+            {user.phone && <View style={styles.profileDetail}><Feather name="phone" size={14} color={TC.muted} /><Text style={styles.profileDetailText}>{user.phone}</Text></View>}
+            {user.email && <View style={styles.profileDetail}><Feather name="mail" size={14} color={TC.muted} /><Text style={styles.profileDetailText} numberOfLines={1}>{user.email}</Text></View>}
           </View>
         </View>
 
@@ -581,7 +582,7 @@ const isLifestyleCondition = (id: HealthCondition) => {
                   <Text style={[styles.setupStepTitle, step.done && styles.setupStepDone]}>{step.title}</Text>
                   {!step.done && <Text style={styles.setupStepText}>{step.description}</Text>}
                 </View>
-                {!step.done && <Feather name="chevron-right" size={18} color="#666" />}
+                {!step.done && <Feather name="chevron-right" size={18} color={TC.muted} />}
               </TouchableOpacity>
             ))}
           </View>
@@ -590,14 +591,14 @@ const isLifestyleCondition = (id: HealthCondition) => {
         {/* Vesphe Pro */}
         {PRO_SUBSCRIPTIONS_ENABLED && !isPro && (
           <TouchableOpacity onPress={() => navigation.navigate('Pro')} style={styles.proCard} activeOpacity={0.85}>
-            <LinearGradient colors={['#f97316', '#f43f5e']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.proCardGradient}>
+            <View style={[styles.proCardGradient, { backgroundColor: '#ea580c' }]}>
               <Feather name="award" size={22} color="#fff" />
               <View style={{ flex: 1 }}>
                 <Text style={styles.proCardTitle}>Try Vesphe Pro</Text>
                 <Text style={styles.proCardText}>Unlimited personalised picks and a weekly meal timetable</Text>
               </View>
-              <Feather name="chevron-right" size={20} color="#fff" />
-            </LinearGradient>
+              <Feather name="chevron-right" size={20} color={TC.text} />
+            </View>
           </TouchableOpacity>
         )}
 
@@ -716,16 +717,16 @@ const isLifestyleCondition = (id: HealthCondition) => {
                 <Switch
                   value={isLocked}
                   onValueChange={handleToggleLockIn}
-                  trackColor={{ false: '#2a2a2a', true: 'rgba(16,185,129,0.4)' }}
-                  thumbColor={isLocked ? '#10b981' : '#666'}
+                  trackColor={{ false: TC.raised, true: 'rgba(16,185,129,0.4)' }}
+                  thumbColor={isLocked ? '#10b981' : TC.muted}
                 />
               </View>
 
               {/* Warnings toggle */}
               {isLocked && (
-                <View style={[styles.lockInToggleRow, { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)', marginTop: 4, paddingTop: 12 }]}>
+                <View style={[styles.lockInToggleRow, { borderTopWidth: 1, borderTopColor: TC.hairline, marginTop: 4, paddingTop: 12 }]}>
                   <View style={styles.lockInToggleInfo}>
-                    <Feather name="bell" size={16} color="#666" />
+                    <Feather name="bell" size={16} color={TC.muted} />
                     <View>
                       <Text style={styles.lockInToggleTitle}>Show modal warnings</Text>
                       <Text style={styles.lockInToggleSubtitle}>Pop-up before adding flagged foods</Text>
@@ -734,8 +735,8 @@ const isLifestyleCondition = (id: HealthCondition) => {
                   <Switch
                     value={enableWarnings}
                     onValueChange={handleToggleWarnings}
-                    trackColor={{ false: '#2a2a2a', true: 'rgba(249,115,22,0.4)' }}
-                    thumbColor={enableWarnings ? '#f97316' : '#666'}
+                    trackColor={{ false: TC.raised, true: 'rgba(249,115,22,0.4)' }}
+                    thumbColor={enableWarnings ? '#f97316' : TC.muted}
                   />
                 </View>
               )}
@@ -743,19 +744,16 @@ const isLifestyleCondition = (id: HealthCondition) => {
               {/* Clear All button */}
               <TouchableOpacity style={styles.clearAllButton} onPress={handleClearAll}>
                 <Feather name="trash-2" size={14} color="#ef4444" />
-                <Text style={styles.clearAllButtonText}>Clear All Conditions</Text>
+                <Text style={styles.clearAllButtonText}>Clear all conditions</Text>
               </TouchableOpacity>
             </View>
           ) : (
             <TouchableOpacity style={styles.lockInEmptyCard} onPress={() => setShowLockInModal(true)} activeOpacity={0.85}>
-              <LinearGradient
-                colors={['rgba(249,115,22,0.1)', 'rgba(249,115,22,0.03)']}
-                style={styles.lockInEmptyGradient}
-              >
+              <View style={[styles.lockInEmptyGradient, { backgroundColor: 'rgba(249,115,22,0.1)' }]}>
                 <View style={styles.lockInEmptyIcon}>
                   <Feather name="lock" size={26} color="#f97316" />
                 </View>
-                <Text style={styles.lockInEmptyTitle}>Set Up Health Lock-In</Text>
+                <Text style={styles.lockInEmptyTitle}>Set up health Lock-In</Text>
                 <Text style={styles.lockInEmptySubtitle}>
                   Tell us about your health goals or conditions. We'll warn you before you order something that doesn't suit you.
                 </Text>
@@ -767,12 +765,12 @@ const isLifestyleCondition = (id: HealthCondition) => {
                   ))}
                 </View>
                 <View style={styles.lockInSetupButton}>
-                  <LinearGradient colors={['#f97316', '#f43f5e']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.lockInSetupGradient}>
+                  <View style={[styles.lockInSetupGradient, { backgroundColor: '#ea580c' }]}>
                     <Feather name="shield" size={16} color="#fff" />
-                    <Text style={styles.lockInSetupButtonText}>Set Up Now</Text>
-                  </LinearGradient>
+                    <Text style={styles.lockInSetupButtonText}>Set up now</Text>
+                  </View>
                 </View>
-              </LinearGradient>
+              </View>
             </TouchableOpacity>
           )}
         </View>
@@ -780,10 +778,10 @@ const isLifestyleCondition = (id: HealthCondition) => {
         {/* Saved Addresses */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Saved Addresses</Text>
+            <Text style={styles.sectionTitle}>Saved addresses</Text>
             <TouchableOpacity onPress={() => navigation.navigate('Addresses' as never)} style={styles.addAddressBtn}>
               <Feather name="plus" size={16} color="#f97316" />
-              <Text style={styles.addAddressBtnText}>Add New</Text>
+              <Text style={styles.addAddressBtnText}>Add new</Text>
             </TouchableOpacity>
           </View>
           {addresses.length > 0 ? (
@@ -804,7 +802,7 @@ const isLifestyleCondition = (id: HealthCondition) => {
             </View>
           ) : (
             <TouchableOpacity onPress={() => navigation.navigate('Addresses' as never)} style={styles.emptyAddresses}>
-              <Feather name="map-pin" size={24} color="#666" />
+              <Feather name="map-pin" size={24} color={TC.muted} />
               <Text style={styles.emptyAddressesText}>No saved addresses</Text>
               <Text style={styles.emptyAddressesSubtext}>Tap to add your first address</Text>
             </TouchableOpacity>
@@ -823,10 +821,12 @@ const isLifestyleCondition = (id: HealthCondition) => {
                 <Feather name={item.icon as any} size={20} color={item.color} />
               </View>
               <Text style={styles.menuLabel}>{item.label}</Text>
-              <Feather name="chevron-right" size={20} color="#666" />
+              <Feather name="chevron-right" size={20} color={TC.muted} />
             </TouchableOpacity>
           ))}
         </View>
+
+        <AppearanceSetting style={{ marginHorizontal: 20, marginBottom: 16 }} />
 
         {/* Logout */}
         <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
@@ -844,15 +844,15 @@ const isLifestyleCondition = (id: HealthCondition) => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Edit Profile</Text>
+              <Text style={styles.modalTitle}>Edit profile</Text>
               <TouchableOpacity onPress={() => setShowEditProfile(false)} style={styles.modalCloseButton}>
-                <Feather name="x" size={20} color="#fff" />
+                <Feather name="x" size={20} color={TC.text} />
               </TouchableOpacity>
             </View>
             <View style={styles.modalBody}>
               <View style={styles.modalField}>
                 <Text style={styles.modalFieldLabel}>Name</Text>
-                <TextInput style={styles.modalInput} value={editedName} onChangeText={setEditedName} placeholder="Your name" placeholderTextColor="#666" />
+                <TextInput style={styles.modalInput} value={editedName} onChangeText={setEditedName} placeholder="Your name" placeholderTextColor={TC.muted} />
               </View>
               <View style={styles.modalField}>
                 <Text style={styles.modalFieldLabel}>Phone</Text>
@@ -861,7 +861,7 @@ const isLifestyleCondition = (id: HealthCondition) => {
                   value={editedPhone}
                   onChangeText={setEditedPhone}
                   placeholder="e.g. 08012345678"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={TC.muted}
                   keyboardType="phone-pad"
                 />
               </View>
@@ -870,9 +870,9 @@ const isLifestyleCondition = (id: HealthCondition) => {
                 <TextInput style={[styles.modalInput, styles.modalInputDisabled]} value={user.email} editable={false} />
               </View>
               <TouchableOpacity onPress={handleSaveProfile} style={styles.modalButton}>
-                <LinearGradient colors={['#f97316', '#10b981']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.modalButtonGradient}>
-                  <Text style={styles.modalButtonText}>Save Changes</Text>
-                </LinearGradient>
+                <View style={[styles.modalButtonGradient, { backgroundColor: '#ea580c' }]}>
+                  <Text style={styles.modalButtonText}>Save changes</Text>
+                </View>
               </TouchableOpacity>
             </View>
           </View>
@@ -888,7 +888,7 @@ const isLifestyleCondition = (id: HealthCondition) => {
               <View style={styles.lockInModalHeaderLeft}>
                 {lockInStep > 1 && (
                   <TouchableOpacity onPress={() => setLockInStep(prev => (prev - 1) as 1 | 2 | 3)} style={styles.backStepBtn}>
-                    <Feather name="arrow-left" size={18} color="#fff" />
+                    <Feather name="arrow-left" size={18} color={TC.text} />
                   </TouchableOpacity>
                 )}
                 <View>
@@ -899,7 +899,7 @@ const isLifestyleCondition = (id: HealthCondition) => {
                 </View>
               </View>
               <TouchableOpacity onPress={() => setShowLockInModal(false)} style={styles.modalCloseButton}>
-                <Feather name="x" size={20} color="#fff" />
+                <Feather name="x" size={20} color={TC.text} />
               </TouchableOpacity>
             </View>
 
@@ -908,7 +908,7 @@ const isLifestyleCondition = (id: HealthCondition) => {
               {[1, 2, 3].map(step => (
                 <View
                   key={step}
-                  style={[styles.stepSegment, { backgroundColor: step <= lockInStep ? '#f97316' : '#2a2a2a' }]}
+                  style={[styles.stepSegment, { backgroundColor: step <= lockInStep ? '#f97316' : TC.raised }]}
                 />
               ))}
             </View>
@@ -928,13 +928,13 @@ const isLifestyleCondition = (id: HealthCondition) => {
                         style={[styles.goalCard, selectedGoal === goal.id && styles.goalCardSelected]}
                         onPress={() => setSelectedGoal(goal.id)}
                       >
-                        <EmojiIcon emoji={goal.icon} size={26} color={selectedGoal === goal.id ? '#f97316' : '#aaa'} />
+                        <EmojiIcon emoji={goal.icon} size={26} color={selectedGoal === goal.id ? '#f97316' : TC.subtle} />
                         <Text style={[styles.goalLabel, selectedGoal === goal.id && styles.goalLabelSelected]}>
                           {goal.label}
                         </Text>
                         {selectedGoal === goal.id && (
                           <View style={styles.goalCheck}>
-                            <Feather name="check" size={12} color="#fff" />
+                            <Feather name="check" size={12} color={TC.text} />
                           </View>
                         )}
                       </TouchableOpacity>
@@ -951,7 +951,7 @@ const isLifestyleCondition = (id: HealthCondition) => {
                   </Text>
 
                   {/* Lifestyle conditions */}
-                  <Text style={styles.conditionGroupLabel}>Lifestyle & Goals</Text>
+                  <Text style={styles.conditionGroupLabel}>Lifestyle & goals</Text>
                   <View style={styles.conditionsGrid}>
                     {HEALTH_CONDITIONS.filter(c => LIFESTYLE_CONDITIONS.includes(c.id)).map(cond => {
                       const isSelected = selectedConditions.includes(cond.id);
@@ -966,7 +966,7 @@ const isLifestyleCondition = (id: HealthCondition) => {
                           <Text style={styles.conditionCardDesc} numberOfLines={2}>{cond.description}</Text>
                           {isSelected && (
                             <View style={[styles.conditionCheckmark, { backgroundColor: cond.color }]}>
-                              <Feather name="check" size={10} color="#fff" />
+                              <Feather name="check" size={10} color={TC.text} />
                             </View>
                           )}
                         </TouchableOpacity>
@@ -975,7 +975,7 @@ const isLifestyleCondition = (id: HealthCondition) => {
                   </View>
 
                   {/* Health conditions */}
-                  <Text style={[styles.conditionGroupLabel, { marginTop: 20 }]}>Health Conditions & Allergies</Text>
+                  <Text style={[styles.conditionGroupLabel, { marginTop: 20 }]}>Health conditions & allergies</Text>
                   <View style={styles.conditionsGrid}>
                     {HEALTH_CONDITIONS.filter(c => !LIFESTYLE_CONDITIONS.includes(c.id)).map(cond => {
                       const isSelected = selectedConditions.includes(cond.id);
@@ -990,7 +990,7 @@ const isLifestyleCondition = (id: HealthCondition) => {
                           <Text style={styles.conditionCardDesc} numberOfLines={2}>{cond.description}</Text>
                           {isSelected && (
                             <View style={[styles.conditionCheckmark, { backgroundColor: cond.color }]}>
-                              <Feather name="check" size={10} color="#fff" />
+                              <Feather name="check" size={10} color={TC.text} />
                             </View>
                           )}
                         </TouchableOpacity>
@@ -1022,7 +1022,7 @@ const isLifestyleCondition = (id: HealthCondition) => {
                             <Feather
                               name={option.days ? 'calendar' : 'bookmark'}
                               size={18}
-                              color={selectedDuration?.label === option.label ? '#f97316' : '#666'}
+                              color={selectedDuration?.label === option.label ? '#f97316' : TC.muted}
                             />
                             <Text style={[styles.durationLabel, selectedDuration?.label === option.label && styles.durationLabelSelected]}>
                               {option.label}
@@ -1037,7 +1037,7 @@ const isLifestyleCondition = (id: HealthCondition) => {
                           )}
                           {selectedDuration?.label === option.label && (
                             <View style={styles.durationCheck}>
-                              <Feather name="check" size={14} color="#fff" />
+                              <Feather name="check" size={14} color={TC.text} />
                             </View>
                           )}
                         </TouchableOpacity>
@@ -1047,7 +1047,7 @@ const isLifestyleCondition = (id: HealthCondition) => {
 
                   {/* Summary of what's being saved */}
                   <View style={styles.summaryCard}>
-                    <Text style={styles.summaryTitle}>Lock-In Summary</Text>
+                    <Text style={styles.summaryTitle}>Lock-In summary</Text>
                     <View style={styles.summaryConditions}>
                       {selectedConditions.map(id => {
                         const meta = HEALTH_CONDITIONS.find(c => c.id === id);
@@ -1081,23 +1081,23 @@ const isLifestyleCondition = (id: HealthCondition) => {
                     setLockInStep(prev => (prev + 1) as 2 | 3);
                   }}
                 >
-                  <LinearGradient colors={['#f97316', '#f43f5e']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.nextStepGradient}>
+                  <View style={[styles.nextStepGradient, { backgroundColor: '#ea580c' }]}>
                     <Text style={styles.nextStepText}>Continue</Text>
                     <Feather name="arrow-right" size={18} color="#fff" />
-                  </LinearGradient>
+                  </View>
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity style={styles.nextStepBtn} onPress={handleSaveLockIn} disabled={isSavingLockIn}>
-                  <LinearGradient colors={isSavingLockIn ? ['#555', '#444'] : ['#10b981', '#059669']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.nextStepGradient}>
+                  <View style={[styles.nextStepGradient, { backgroundColor: isSavingLockIn ? TC.muted : '#10b981' }]}>
                     {isSavingLockIn ? (
                       <ActivityIndicator size="small" color="#fff" />
                     ) : (
                       <>
-                        <Feather name="lock" size={18} color="#fff" />
+                        <Feather name="lock" size={18} color={TC.text} />
                         <Text style={styles.nextStepText}>Activate Lock-In</Text>
                       </>
                     )}
-                  </LinearGradient>
+                  </View>
                 </TouchableOpacity>
               )}
             </View>
@@ -1109,52 +1109,52 @@ const isLifestyleCondition = (id: HealthCondition) => {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0a0a0a', paddingBottom: 60 },
+  container: { flex: 1, backgroundColor: TC.bg, paddingBottom: 60 },
   content: { flex: 1 },
 
   notLoggedInContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 },
-  notLoggedInIcon: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#1a1a1a', justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
-  notLoggedInTitle: { fontSize: 18, fontWeight: '600', color: '#fff', marginBottom: 8 },
-  notLoggedInText: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 24 },
+  notLoggedInIcon: { width: 80, height: 80, borderRadius: 40, backgroundColor: TC.surface, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
+  notLoggedInTitle: { fontSize: 18, fontWeight: '600', color: TC.text, marginBottom: 8 },
+  notLoggedInText: { fontSize: 14, color: TC.muted, textAlign: 'center', marginBottom: 24 },
   signInButton: { width: '100%', height: 48, borderRadius: 12, overflow: 'hidden' },
   signInGradient: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  signInText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  signInText: { color: TC.text, fontSize: 15, fontWeight: '600' },
 
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: TC.hairline },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  backButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#1a1a1a', justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { fontSize: 18, fontWeight: '600', color: '#fff' },
+  backButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: TC.surface, justifyContent: 'center', alignItems: 'center' },
+  headerTitle: { fontSize: 18, fontWeight: '600', color: TC.text },
   editButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(249,115,22,0.1)', justifyContent: 'center', alignItems: 'center' },
 
   profileCard: { flexDirection: 'row', alignItems: 'center', gap: 16, margin: 16, padding: 16, backgroundColor: 'rgba(59,130,246,0.1)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(59,130,246,0.2)' },
-  avatarContainer: { width: 70, height: 70, borderRadius: 35, overflow: 'hidden', borderWidth: 3, borderColor: '#0a0a0a' },
+  avatarContainer: { width: 70, height: 70, borderRadius: 35, overflow: 'hidden', borderWidth: 3, borderColor: TC.bg },
   avatar: { width: '100%', height: '100%' },
   avatarPlaceholder: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' },
-  avatarInitials: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
+  avatarInitials: { fontSize: 24, fontWeight: '600', color: '#fff' },
   profileInfo: { flex: 1 },
-  profileName: { fontSize: 18, fontWeight: 'bold', color: '#fff', marginBottom: 4 },
+  profileName: { fontSize: 18, fontWeight: '600', color: TC.text, marginBottom: 4 },
   profileDetail: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
-  profileDetailText: { fontSize: 13, color: '#666' },
+  profileDetailText: { fontSize: 13, color: TC.muted },
 
-  statsContainer: { flexDirection: 'row', marginHorizontal: 16, marginBottom: 24, padding: 12, backgroundColor: '#1a1a1a', borderRadius: 12 },
+  statsContainer: { flexDirection: 'row', marginHorizontal: 16, marginBottom: 24, padding: 12, backgroundColor: TC.surface, borderRadius: 12 },
   statItem: { flex: 1, alignItems: 'center' },
-  statNumber: { fontSize: 18, fontWeight: '700', color: '#f97316', marginBottom: 2 },
-  statLabel: { fontSize: 11, color: '#666' },
-  statDivider: { width: 1, height: '60%', backgroundColor: 'rgba(255,255,255,0.05)', alignSelf: 'center' },
+  statNumber: { fontSize: 18, fontWeight: '600', color: '#f97316', marginBottom: 2 },
+  statLabel: { fontSize: 11, color: TC.muted },
+  statDivider: { width: 1, height: '60%', backgroundColor: TC.hairline, alignSelf: 'center' },
 
   section: { marginBottom: 24 },
   sectionHeader: { paddingHorizontal: 16, marginBottom: 12 },
   sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  sectionTitle: { fontSize: 16, fontWeight: '600', color: '#fff' },
+  sectionTitle: { fontSize: 16, fontWeight: '600', color: TC.text },
   lockInStatusBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
   statusDot: { width: 6, height: 6, borderRadius: 3 },
-  lockInStatusText: { fontSize: 11, fontWeight: '700' },
+  lockInStatusText: { fontSize: 11, fontWeight: '600' },
 
-  lockInActiveCard: { marginHorizontal: 16, backgroundColor: '#111', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: 'rgba(249,115,22,0.2)', gap: 12 },
+  lockInActiveCard: { marginHorizontal: 16, backgroundColor: TC.surface2, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: 'rgba(249,115,22,0.2)', gap: 12 },
   
-  activeConditionsTitle: { fontSize: 12, fontWeight: '600', color: '#888', marginBottom: 4 },
+  activeConditionsTitle: { fontSize: 12, fontWeight: '600', color: TC.subtle, marginBottom: 4 },
   lockInConditionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  conditionPill: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5, backgroundColor: '#1a1a1a' },
+  conditionPill: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5, backgroundColor: TC.surface },
   conditionPillIcon: { fontSize: 13 },
   conditionPillLabel: { fontSize: 12, fontWeight: '600' },
   conditionDeleteButton: { marginLeft: 2, padding: 2, backgroundColor: 'rgba(239,68,68,0.15)', borderRadius: 10, width: 20, height: 20, alignItems: 'center', justifyContent: 'center' },
@@ -1162,12 +1162,12 @@ const styles = StyleSheet.create({
   addMoreButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: '#f97316', marginTop: 4 },
   addMoreButtonText: { fontSize: 13, color: '#f97316', fontWeight: '600' },
   
-  separator: { height: 1, backgroundColor: 'rgba(255,255,255,0.08)', marginVertical: 8 },
+  separator: { height: 1, backgroundColor: TC.hairline2, marginVertical: 8 },
   
   lockInToggleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   lockInToggleInfo: { flex: 1, flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  lockInToggleTitle: { fontSize: 13, fontWeight: '600', color: '#fff', marginBottom: 2 },
-  lockInToggleSubtitle: { fontSize: 11, color: '#555', lineHeight: 15 },
+  lockInToggleTitle: { fontSize: 13, fontWeight: '600', color: TC.text, marginBottom: 2 },
+  lockInToggleSubtitle: { fontSize: 11, color: TC.muted, lineHeight: 15 },
   
   clearAllButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.06)', marginTop: 4 },
   clearAllButtonText: { fontSize: 13, color: '#ef4444', fontWeight: '600' },
@@ -1181,118 +1181,118 @@ const styles = StyleSheet.create({
   lockInEmptyGradient: { padding: 20, alignItems: 'center', gap: 10 },
   lockInEmptyIcon: { width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(249,115,22,0.1)', justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
   lockInEmptyEmoji: { fontSize: 28 },
-  lockInEmptyTitle: { fontSize: 16, fontWeight: '700', color: '#fff', textAlign: 'center' },
-  lockInEmptySubtitle: { fontSize: 13, color: '#666', textAlign: 'center', lineHeight: 18 },
+  lockInEmptyTitle: { fontSize: 16, fontWeight: '600', color: TC.text, textAlign: 'center' },
+  lockInEmptySubtitle: { fontSize: 13, color: TC.muted, textAlign: 'center', lineHeight: 18 },
   lockInEmptyExamples: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6, marginTop: 4 },
   lockInExampleTag: { paddingHorizontal: 10, paddingVertical: 5, backgroundColor: 'rgba(249,115,22,0.1)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(249,115,22,0.2)' },
   lockInExampleTagText: { fontSize: 11, color: '#f97316' },
   lockInSetupButton: { width: '100%', borderRadius: 12, overflow: 'hidden', marginTop: 8 },
   lockInSetupGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14 },
-  lockInSetupButtonText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  lockInSetupButtonText: { color: '#fff', fontSize: 15, fontWeight: '600' },
 
   addAddressBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   addAddressBtnText: { fontSize: 13, color: '#f97316' },
   addressesList: { paddingHorizontal: 16, gap: 8 },
-  addressCard: { flexDirection: 'row', backgroundColor: '#1a1a1a', borderRadius: 12, padding: 12, gap: 12 },
+  addressCard: { flexDirection: 'row', backgroundColor: TC.surface, borderRadius: 12, padding: 12, gap: 12 },
   addressIcon: { width: 40, height: 40, borderRadius: 8, backgroundColor: 'rgba(249,115,22,0.1)', justifyContent: 'center', alignItems: 'center' },
   addressInfo: { flex: 1 },
   addressHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },
-  addressLabel: { fontSize: 14, fontWeight: '600', color: '#fff' },
+  addressLabel: { fontSize: 14, fontWeight: '600', color: TC.text },
   defaultBadge: { paddingHorizontal: 6, paddingVertical: 2, backgroundColor: 'rgba(249,115,22,0.1)', borderRadius: 4 },
   defaultBadgeText: { fontSize: 9, color: '#f97316', fontWeight: '500' },
-  addressText: { fontSize: 12, color: '#666', marginBottom: 2 },
-  addressDetail: { fontSize: 11, color: '#666' },
-  emptyAddresses: { alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: '#1a1a1a', marginHorizontal: 16, borderRadius: 12, gap: 8 },
-  emptyAddressesText: { fontSize: 14, color: '#666' },
+  addressText: { fontSize: 12, color: TC.muted, marginBottom: 2 },
+  addressDetail: { fontSize: 11, color: TC.muted },
+  emptyAddresses: { alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: TC.surface, marginHorizontal: 16, borderRadius: 12, gap: 8 },
+  emptyAddressesText: { fontSize: 14, color: TC.muted },
   emptyAddressesSubtext: { fontSize: 12, color: '#f97316' },
 
   menuSection: { paddingHorizontal: 16, marginBottom: 24 },
-  medicalNote: { color: '#777', fontSize: 11.5, lineHeight: 17, marginHorizontal: 20, marginBottom: 16 },
+  medicalNote: { color: TC.muted, fontSize: 11.5, lineHeight: 17, marginHorizontal: 20, marginBottom: 16 },
   menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12 },
   menuIcon: { width: 40, height: 40, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
-  menuLabel: { flex: 1, fontSize: 14, color: '#fff' },
+  menuLabel: { flex: 1, fontSize: 14, color: TC.text },
   logoutButton: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 24, padding: 12, backgroundColor: 'rgba(239,68,68,0.1)', borderRadius: 12, gap: 12 },
   logoutIcon: { width: 40, height: 40, borderRadius: 8, backgroundColor: 'rgba(239,68,68,0.1)', justifyContent: 'center', alignItems: 'center' },
   logoutText: { fontSize: 14, color: '#ef4444', fontWeight: '500' },
-  setupCard: { marginHorizontal: 16, marginBottom: 16, padding: 16, borderRadius: 14, backgroundColor: '#1a1a1a', borderWidth: 1, borderColor: 'rgba(249,115,22,0.3)', gap: 10 },
+  setupCard: { marginHorizontal: 16, marginBottom: 16, padding: 16, borderRadius: 14, backgroundColor: TC.surface, borderWidth: 1, borderColor: 'rgba(249,115,22,0.3)', gap: 10 },
   setupHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  setupTitle: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  setupTitle: { color: TC.text, fontSize: 16, fontWeight: '600' },
   setupProgress: { color: '#f97316', fontSize: 13, fontWeight: '600' },
-  setupBar: { height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.08)', overflow: 'hidden' },
-  setupBarFill: { height: '100%', backgroundColor: '#f97316' },
+  setupBar: { height: 6, borderRadius: 3, backgroundColor: TC.hairline2, overflow: 'hidden' },
+  setupBarFill: { height: '100%', backgroundColor: '#ea580c' },
   setupStep: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 6 },
-  setupStepTitle: { color: '#fff', fontSize: 14, fontWeight: '500' },
-  setupStepDone: { color: '#777', textDecorationLine: 'line-through' },
-  setupStepText: { color: '#888', fontSize: 12, marginTop: 2 },
+  setupStepTitle: { color: TC.text, fontSize: 14, fontWeight: '500' },
+  setupStepDone: { color: TC.muted, textDecorationLine: 'line-through' },
+  setupStepText: { color: TC.subtle, fontSize: 12, marginTop: 2 },
   proCard: { marginHorizontal: 16, marginBottom: 16, borderRadius: 14, overflow: 'hidden' },
   proCardGradient: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 },
-  proCardTitle: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  proCardTitle: { color: TC.text, fontSize: 15, fontWeight: '600' },
   proCardText: { color: 'rgba(255,255,255,0.9)', fontSize: 12, marginTop: 2 },
   deleteAccountButton: { alignItems: 'center', paddingVertical: 8, marginHorizontal: 16, marginTop: -12, marginBottom: 16 },
-  deleteAccountText: { fontSize: 13, color: '#888', textDecorationLine: 'underline' },
+  deleteAccountText: { fontSize: 13, color: TC.subtle, textDecorationLine: 'underline' },
   bottomPadding: { height: 20 },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: '#1a1a1a', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '70%' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
-  modalTitle: { fontSize: 18, fontWeight: '600', color: '#fff' },
+  modalContent: { backgroundColor: TC.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '70%' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: TC.hairline },
+  modalTitle: { fontSize: 18, fontWeight: '600', color: TC.text },
   modalCloseButton: { padding: 4 },
   modalBody: { padding: 16, gap: 16 },
   modalField: { gap: 6 },
-  modalFieldLabel: { fontSize: 13, color: '#666', marginLeft: 4 },
-  modalInput: { height: 44, backgroundColor: '#2a2a2a', borderRadius: 8, paddingHorizontal: 12, color: '#fff', fontSize: 14 },
-  modalInputDisabled: { backgroundColor: '#1a1a1a', color: '#666' },
+  modalFieldLabel: { fontSize: 13, color: TC.muted, marginLeft: 4 },
+  modalInput: { height: 44, backgroundColor: TC.raised, borderRadius: 8, paddingHorizontal: 12, color: TC.text, fontSize: 14 },
+  modalInputDisabled: { backgroundColor: TC.surface, color: TC.muted },
   modalButton: { height: 44, borderRadius: 8, overflow: 'hidden', marginTop: 8 },
   modalButtonGradient: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   modalButtonText: { color: '#fff', fontSize: 14, fontWeight: '600' },
 
-  lockInModal: { backgroundColor: '#111', borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '92%' },
+  lockInModal: { backgroundColor: TC.surface2, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '92%' },
   lockInModalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, paddingBottom: 12 },
   lockInModalHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  backStepBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#1a1a1a', justifyContent: 'center', alignItems: 'center' },
-  lockInModalTitle: { fontSize: 17, fontWeight: '700', color: '#fff' },
-  lockInModalSubtitle: { fontSize: 12, color: '#555', marginTop: 1 },
+  backStepBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: TC.surface, justifyContent: 'center', alignItems: 'center' },
+  lockInModalTitle: { fontSize: 17, fontWeight: '600', color: TC.text },
+  lockInModalSubtitle: { fontSize: 12, color: TC.muted, marginTop: 1 },
   stepProgressBar: { flexDirection: 'row', gap: 4, paddingHorizontal: 16, marginBottom: 4 },
   stepSegment: { flex: 1, height: 3, borderRadius: 2 },
   lockInModalBody: { paddingHorizontal: 16 },
   stepContent: { paddingVertical: 16 },
-  stepDescription: { fontSize: 13, color: '#888', lineHeight: 20, marginBottom: 20 },
+  stepDescription: { fontSize: 13, color: TC.subtle, lineHeight: 20, marginBottom: 20 },
 
   goalGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  goalCard: { width: '47%', padding: 14, borderRadius: 14, backgroundColor: '#1a1a1a', borderWidth: 1.5, borderColor: '#2a2a2a', alignItems: 'center', gap: 6, position: 'relative' },
+  goalCard: { width: '47%', padding: 14, borderRadius: 14, backgroundColor: TC.surface, borderWidth: 1.5, borderColor: TC.raised, alignItems: 'center', gap: 6, position: 'relative' },
   goalCardSelected: { borderColor: '#f97316', backgroundColor: 'rgba(249,115,22,0.1)' },
   goalIcon: { fontSize: 26 },
-  goalLabel: { fontSize: 13, fontWeight: '600', color: '#888', textAlign: 'center' },
+  goalLabel: { fontSize: 13, fontWeight: '600', color: TC.subtle, textAlign: 'center' },
   goalLabelSelected: { color: '#f97316' },
-  goalCheck: { position: 'absolute', top: 8, right: 8, width: 20, height: 20, borderRadius: 10, backgroundColor: '#f97316', justifyContent: 'center', alignItems: 'center' },
+  goalCheck: { position: 'absolute', top: 8, right: 8, width: 20, height: 20, borderRadius: 10, backgroundColor: '#ea580c', justifyContent: 'center', alignItems: 'center' },
 
-  conditionGroupLabel: { fontSize: 12, fontWeight: '700', color: '#555', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10 },
+  conditionGroupLabel: { fontSize: 12, fontWeight: '600', color: TC.muted, marginBottom: 10 },
   conditionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  conditionCard: { width: '47%', padding: 12, borderRadius: 12, backgroundColor: '#1a1a1a', borderWidth: 1.5, borderColor: '#2a2a2a', gap: 4, position: 'relative' },
+  conditionCard: { width: '47%', padding: 12, borderRadius: 12, backgroundColor: TC.surface, borderWidth: 1.5, borderColor: TC.raised, gap: 4, position: 'relative' },
   conditionCardIcon: { fontSize: 22 },
-  conditionCardLabel: { fontSize: 13, fontWeight: '600', color: '#fff' },
-  conditionCardDesc: { fontSize: 10, color: '#555', lineHeight: 14 },
+  conditionCardLabel: { fontSize: 13, fontWeight: '600', color: TC.text },
+  conditionCardDesc: { fontSize: 10, color: TC.muted, lineHeight: 14 },
   conditionCheckmark: { position: 'absolute', top: 8, right: 8, width: 18, height: 18, borderRadius: 9, justifyContent: 'center', alignItems: 'center' },
 
   durationList: { gap: 10, marginBottom: 20 },
-  durationOption: { flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 12, backgroundColor: '#1a1a1a', borderWidth: 1.5, borderColor: '#2a2a2a', gap: 12 },
+  durationOption: { flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 12, backgroundColor: TC.surface, borderWidth: 1.5, borderColor: TC.raised, gap: 12 },
   durationOptionSelected: { borderColor: '#f97316', backgroundColor: 'rgba(249,115,22,0.08)' },
   durationOptionLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  durationLabel: { fontSize: 14, fontWeight: '600', color: '#888' },
+  durationLabel: { fontSize: 14, fontWeight: '600', color: TC.subtle },
   durationLabelSelected: { color: '#f97316' },
-  durationDate: { fontSize: 11, color: '#555' },
-  durationCheck: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#f97316', justifyContent: 'center', alignItems: 'center' },
+  durationDate: { fontSize: 11, color: TC.muted },
+  durationCheck: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#ea580c', justifyContent: 'center', alignItems: 'center' },
 
-  summaryCard: { backgroundColor: '#1a1a1a', borderRadius: 14, padding: 14, gap: 10, marginTop: 8 },
-  summaryTitle: { fontSize: 12, fontWeight: '700', color: '#555', textTransform: 'uppercase', letterSpacing: 0.5 },
+  summaryCard: { backgroundColor: TC.surface, borderRadius: 14, padding: 14, gap: 10, marginTop: 8 },
+  summaryTitle: { fontSize: 12, fontWeight: '600', color: TC.muted },
   summaryConditions: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   summaryPill: { borderWidth: 1, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
-  summaryPillText: { fontSize: 12, color: '#ccc' },
+  summaryPillText: { fontSize: 12, color: TC.text2 },
   summaryExpiry: { fontSize: 12, color: '#f97316', marginTop: 2 },
 
-  lockInModalFooter: { padding: 16, paddingBottom: 32, borderTopWidth: 1, borderTopColor: '#1a1a1a' },
+  lockInModalFooter: { padding: 16, paddingBottom: 32, borderTopWidth: 1, borderTopColor: TC.surface },
   nextStepBtn: { borderRadius: 14, overflow: 'hidden' },
   nextStepBtnDisabled: { opacity: 0.5 },
   nextStepGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 16 },
-  nextStepText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  nextStepText: { color: TC.text, fontSize: 16, fontWeight: '600' },
 });

@@ -14,10 +14,11 @@ import {
   Image,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { SafetyVerdict, HealthCheckResult } from '../../hooks/customer/useHealthCheck';
 import { HEALTH_CONDITIONS } from '../../contexts/HealthContext';
 import { MEDICAL_DISCLAIMER } from '../../config/legal';
+import { fill } from '../../theme/colors';
+import { TC } from '../../theme/palette';
 
 const { height, width } = Dimensions.get('window');
 
@@ -155,12 +156,7 @@ export function HealthWarningModal({
       <Animated.View style={[styles.sheet, { transform: [{ translateY: slideAnim }] }]}>
         <View style={styles.handleBar} />
 
-        <LinearGradient
-          colors={config.gradientColors}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.headerGradient}
-        >
+        <View style={[styles.headerGradient, { backgroundColor: fill(config.gradientColors) }]}>
           <View style={styles.headerContent}>
             <View style={styles.iconCircle}>
               <Feather name={config.icon as any} size={32} color="#fff" />
@@ -170,7 +166,7 @@ export function HealthWarningModal({
               <Text style={styles.productNameHeader} numberOfLines={2}>{productName}</Text>
             </View>
           </View>
-        </LinearGradient>
+        </View>
 
         <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
           <View style={[styles.reasonCard, { backgroundColor: config.bgColor, borderColor: config.color }]}>
@@ -233,14 +229,14 @@ export function HealthWarningModal({
         <View style={styles.actions}>
           <TouchableOpacity style={styles.goBackButton} onPress={onGoBack}>
             <Feather name="arrow-left" size={18} color="#fff" />
-            <Text style={styles.goBackText}>Go Back</Text>
+            <Text style={styles.goBackText}>Go back</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.orderAnywayButton, { borderColor: config.color }]}
             onPress={onOrderAnyway}
           >
-            <Text style={[styles.orderAnywayText, { color: config.color }]}>Order Anyway</Text>
+            <Text style={[styles.orderAnywayText, { color: config.color }]}>Order anyway</Text>
             <Feather name="chevron-right" size={16} color={config.color} />
           </TouchableOpacity>
         </View>
@@ -259,7 +255,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#111',
+    backgroundColor: TC.surface2,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     maxHeight: height * 0.85,
@@ -269,7 +265,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#333',
+    backgroundColor: TC.raised,
     alignSelf: 'center',
     marginTop: 12,
     marginBottom: 4,
@@ -299,15 +295,13 @@ const styles = StyleSheet.create({
   },
   verdictLabel: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '600',
     color: 'rgba(255,255,255,0.85)',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
   },
   productNameHeader: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
   },
   body: {
     paddingHorizontal: 16,
@@ -330,9 +324,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#666',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    color: TC.muted,
     marginBottom: 8,
   },
   conditionsList: {
@@ -348,7 +340,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
   },
   conditionIcon: {
     fontSize: 14,
@@ -372,7 +364,7 @@ const styles = StyleSheet.create({
   effectText: {
     flex: 1,
     fontSize: 14,
-    color: '#ccc',
+    color: TC.text2,
     lineHeight: 20,
   },
   suggestionsSection: {
@@ -387,12 +379,12 @@ const styles = StyleSheet.create({
   },
   suggestionsTitle: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#10b981',
   },
   suggestionsSubtitle: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   suggestionsList: {
     paddingRight: 16,
@@ -400,7 +392,7 @@ const styles = StyleSheet.create({
   },
   suggestionProductCard: {
     width: 130,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     marginRight: 12,
     overflow: 'hidden',
@@ -418,17 +410,17 @@ const styles = StyleSheet.create({
   suggestionProductName: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 2,
   },
   suggestionProductVendor: {
     fontSize: 10,
-    color: '#888',
+    color: TC.subtle,
     marginBottom: 4,
   },
   suggestionProductPrice: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#f97316',
   },
   suggestionReasonBadge: {
@@ -448,7 +440,7 @@ const styles = StyleSheet.create({
   },
   disclaimer: {
     fontSize: 11,
-    color: '#444',
+    color: TC.muted,
     textAlign: 'center',
     marginVertical: 12,
     lineHeight: 16,
@@ -459,7 +451,7 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 32,
     borderTopWidth: 1,
-    borderTopColor: '#1a1a1a',
+    borderTopColor: TC.surface,
   },
   goBackButton: {
     flex: 1,
@@ -467,14 +459,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     borderRadius: 14,
     paddingVertical: 14,
   },
   goBackText: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   orderAnywayButton: {
     flex: 1,

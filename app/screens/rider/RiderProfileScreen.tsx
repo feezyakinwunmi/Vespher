@@ -15,6 +15,7 @@ import { R } from '../../components/rider/ui';
 import type { RiderStackParamList } from '../../navigation/types';
 import { AssignedBag, AssignedBike, fetchMyBag, fetchMyBike } from '../../services/riderOrders';
 import { format } from 'date-fns';
+import { AppearanceSetting } from '../../components/AppearanceSetting';
 
 type Nav = NativeStackNavigationProp<RiderStackParamList>;
 type IconName = React.ComponentProps<typeof Feather>['name'];
@@ -166,6 +167,9 @@ export function RiderProfileScreen() {
           <Row icon="shield" label="Privacy & terms" onPress={() => navigation.navigate('Privacy')} />
         </View>
 
+        <Text style={styles.group}>Display</Text>
+        <AppearanceSetting />
+
         <View style={[styles.card, { marginTop: 18 }]}>
           <Row icon="log-out" label="Sign out" danger onPress={handleSignOut} />
           <Row icon="trash-2" label="Delete account" danger onPress={() => confirmDeleteAccount(signOut)} />
@@ -178,7 +182,7 @@ export function RiderProfileScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: R.bg },
   content: { padding: 16, paddingBottom: 110 },
-  title: { color: R.text, fontSize: 26, fontWeight: '800', marginTop: 8, marginBottom: 14 },
+  title: { color: R.text, fontSize: 26, fontWeight: '600', marginTop: 8, marginBottom: 14 },
   profile: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -191,8 +195,8 @@ const styles = StyleSheet.create({
   },
   avatar: { width: 60, height: 60, borderRadius: 30 },
   avatarFallback: { backgroundColor: R.orange, justifyContent: 'center', alignItems: 'center' },
-  avatarText: { color: '#fff', fontSize: 24, fontWeight: '800' },
-  name: { color: R.text, fontSize: 18, fontWeight: '700' },
+  avatarText: { color: '#fff', fontSize: 24, fontWeight: '600' },
+  name: { color: R.text, fontSize: 18, fontWeight: '600' },
   email: { color: R.muted, fontSize: 13, marginTop: 2 },
   rolePill: {
     flexDirection: 'row',
@@ -204,10 +208,10 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     alignSelf: 'flex-start',
   },
-  roleText: { color: R.orange, fontSize: 11, fontWeight: '700' },
+  roleText: { color: R.orange, fontSize: 11, fontWeight: '600' },
   bikeCard: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 },
   bikeIcon: { width: 38, height: 38, borderRadius: 11, backgroundColor: 'rgba(249,115,22,0.1)', justifyContent: 'center', alignItems: 'center' },
-  bikePlate: { color: R.text, fontSize: 17, fontWeight: '800', letterSpacing: 1 },
+  bikePlate: { color: R.text, fontSize: 17, fontWeight: '600', letterSpacing: 1 },
   bikeSub: { color: R.muted, fontSize: 12.5, marginTop: 2, lineHeight: 18 },
   statsRow: {
     flexDirection: 'row',
@@ -219,15 +223,15 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   stat: { flex: 1, alignItems: 'center' },
-  statValue: { color: R.text, fontSize: 18, fontWeight: '800' },
+  statValue: { color: R.text, fontSize: 18, fontWeight: '600' },
   statLabel: { color: R.muted, fontSize: 12, marginTop: 3 },
   statDivider: { width: 1, backgroundColor: R.border },
-  group: { color: R.muted, fontSize: 12, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase', marginTop: 22, marginBottom: 8, marginLeft: 4 },
+  group: { color: R.muted, fontSize: 12, fontWeight: '600', marginTop: 22, marginBottom: 8, marginLeft: 4 },
   card: { backgroundColor: R.card, borderRadius: 18, borderWidth: 1, borderColor: R.border, paddingHorizontal: 14 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 },
   rowIcon: { width: 34, height: 34, borderRadius: 10, backgroundColor: 'rgba(249,115,22,0.1)', justifyContent: 'center', alignItems: 'center' },
   rowLabel: { fontSize: 15, fontWeight: '600' },
   rowSub: { color: R.muted, fontSize: 12, marginTop: 2 },
   badge: { backgroundColor: R.rose, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 2, marginRight: 4 },
-  badgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },
+  badgeText: { color: '#fff', fontSize: 11, fontWeight: '600' },
 });

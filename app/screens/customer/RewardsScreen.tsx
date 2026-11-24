@@ -13,10 +13,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
+import { TC } from '../../theme/palette';
 
 export function RewardsScreen({ navigation }: any) {
   const { user } = useAuth();
@@ -109,7 +109,7 @@ const generateReferralCode = () => {
     try {
       await Share.share({
         message: message,
-        title: 'Invite Friends to Vesphe',
+        title: 'Invite friends to Vesphe',
       });
     } catch (error) {
       console.error('Error sharing:', error);
@@ -139,9 +139,9 @@ const availableReferralBonus = Math.min(referrals.length * 500, 2000);
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Feather name="arrow-left" size={24} color="#fff" />
+          <Feather name="arrow-left" size={24} color={TC.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Rewards</Text>
+        <Text style={styles.headerTitle}>My rewards</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -152,26 +152,23 @@ const availableReferralBonus = Math.min(referrals.length * 500, 2000);
         }
       >
         {/* Total Savings Card - Only from referrals */}
-<LinearGradient
-  colors={['#f97316', '#f43f5e']}
-  style={styles.savingsCard}
->
-  <Text style={styles.savingsLabel}>Available Referral Savings</Text>
+<View style={[styles.savingsCard, { backgroundColor: '#ea580c' }]}>
+  <Text style={styles.savingsLabel}>Available referral savings</Text>
   <Text style={styles.savingsAmount}>₦{totalSavings.toLocaleString()}</Text>
   <Text style={styles.savingsSubtext}>
     From {referrals.length} unclaimed referral{referrals.length !== 1 ? 's' : ''}
   </Text>
-</LinearGradient>
+</View>
 
         {/* Referral Code Section */}
         <View style={styles.referralCodeCard}>
-          <Text style={styles.referralCodeTitle}>Your Referral Code</Text>
+          <Text style={styles.referralCodeTitle}>Your referral code</Text>
           <View style={styles.referralCodeContainer}>
             <Text style={styles.referralCode}>{referralCode}</Text>
             <TouchableOpacity onPress={handleCopyCode} style={styles.copyButton}>
               <Feather name={copied ? 'check' : 'copy'} size={18} color={copied ? '#10b981' : '#f97316'} />
               <Text style={[styles.copyText, copied && styles.copyTextSuccess]}>
-                {copied ? 'Copied!' : 'Copy'}
+                {copied ? 'Copied' : 'Copy'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -182,10 +179,10 @@ const availableReferralBonus = Math.min(referrals.length * 500, 2000);
             style={styles.shareButton}
             onPress={handleShareReferral}
           >
-            <LinearGradient colors={['#f97316', '#f43f5e']} style={styles.shareGradient}>
+            <View style={[styles.shareGradient, { backgroundColor: '#ea580c' }]}>
               <Feather name="share-2" size={16} color="#fff" />
-              <Text style={styles.shareText}>Invite Friends</Text>
-            </LinearGradient>
+              <Text style={styles.shareText}>Invite friends</Text>
+            </View>
           </TouchableOpacity>
         </View>
 
@@ -193,12 +190,12 @@ const availableReferralBonus = Math.min(referrals.length * 500, 2000);
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Feather name="truck" size={20} color="#10b981" />
-            <Text style={styles.sectionTitle}>Free Delivery Rewards</Text>
+            <Text style={styles.sectionTitle}>Free delivery rewards</Text>
           </View>
 
           <View style={styles.rewardCard}>
             <View style={styles.rewardCardHeader}>
-              <Text style={styles.rewardCardTitle}>Available Free Deliveries</Text>
+              <Text style={styles.rewardCardTitle}>Available free deliveries</Text>
               <Text style={styles.rewardCardCount}>{availableFreeDeliveries}</Text>
             </View>
             
@@ -229,12 +226,12 @@ const availableReferralBonus = Math.min(referrals.length * 500, 2000);
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Feather name="users" size={20} color="#f97316" />
-            <Text style={styles.sectionTitle}>Referral Rewards</Text>
+            <Text style={styles.sectionTitle}>Referral rewards</Text>
           </View>
 
           <View style={styles.rewardCard}>
             <View style={styles.rewardCardHeader}>
-              <Text style={styles.rewardCardTitle}>Referral Bonus Available</Text>
+              <Text style={styles.rewardCardTitle}>Referral bonus available</Text>
               <Text style={styles.rewardCardCount}>₦{availableReferralBonus.toLocaleString()}</Text>
             </View>
             
@@ -269,7 +266,7 @@ const availableReferralBonus = Math.min(referrals.length * 500, 2000);
 
         {/* How it works */}
         <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>How Rewards Work</Text>
+          <Text style={styles.infoTitle}>How rewards work</Text>
           <View style={styles.infoItem}>
             <Feather name="gift" size={14} color="#f97316" />
             <Text style={styles.infoText}>Free delivery earned every 5th order</Text>
@@ -295,13 +292,13 @@ const availableReferralBonus = Math.min(referrals.length * 500, 2000);
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
   },
   header: {
     flexDirection: 'row',
@@ -310,20 +307,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   content: {
     flex: 1,
@@ -341,8 +338,8 @@ const styles = StyleSheet.create({
   },
   savingsAmount: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
     marginBottom: 4,
   },
   savingsSubtext: {
@@ -350,30 +347,30 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.7)',
   },
   referralCodeCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 16,
     padding: 20,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   referralCodeTitle: {
     fontSize: 14,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 12,
   },
   referralCodeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
   },
   referralCode: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#f97316',
     letterSpacing: 1,
   },
@@ -395,7 +392,7 @@ const styles = StyleSheet.create({
   },
   referralCodeDescription: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
     lineHeight: 18,
     marginBottom: 16,
   },
@@ -411,7 +408,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   shareText: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -427,14 +424,14 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   rewardCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   rewardCardHeader: {
     flexDirection: 'row',
@@ -444,16 +441,16 @@ const styles = StyleSheet.create({
   },
   rewardCardTitle: {
     fontSize: 14,
-    color: '#666',
+    color: TC.muted,
   },
   rewardCardCount: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#f97316',
   },
   rewardCardDescription: {
     fontSize: 13,
-    color: '#999',
+    color: TC.subtle,
     lineHeight: 18,
     marginBottom: 12,
   },
@@ -467,7 +464,7 @@ const styles = StyleSheet.create({
     color: '#f59e0b',
   },
   usedCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     padding: 12,
     marginTop: 8,
@@ -477,7 +474,7 @@ const styles = StyleSheet.create({
   },
   usedTitle: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   usedCount: {
     fontSize: 12,
@@ -488,14 +485,14 @@ const styles = StyleSheet.create({
   },
   referralListTitle: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 8,
   },
   referralItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     padding: 12,
     borderRadius: 10,
     marginBottom: 8,
@@ -505,11 +502,11 @@ const styles = StyleSheet.create({
   },
   referralItemText: {
     fontSize: 13,
-    color: '#fff',
+    color: TC.text,
   },
   referralItemDate: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
     marginTop: 2,
   },
   referralItemBonus: {
@@ -518,7 +515,7 @@ const styles = StyleSheet.create({
     color: '#10b981',
   },
   infoCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
@@ -526,7 +523,7 @@ const styles = StyleSheet.create({
   infoTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 12,
   },
   infoItem: {
@@ -537,6 +534,6 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 12,
-    color: '#999',
+    color: TC.subtle,
   },
 });

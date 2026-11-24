@@ -18,7 +18,7 @@ async function appleAuthorizationCode(): Promise<string | null> {
 // Confirms with the user, deletes the account server-side, then signs out locally.
 export function confirmDeleteAccount(signOut: () => Promise<void>) {
   Alert.alert(
-    'Delete Account',
+    'Delete account',
     'This permanently deletes your account and personal data. Past orders are kept anonymously for our records. This cannot be undone.',
     [
       { text: 'Cancel', style: 'cancel' },
@@ -30,7 +30,7 @@ export function confirmDeleteAccount(signOut: () => Promise<void>) {
           try {
             appleCode = await appleAuthorizationCode();
           } catch {
-            Alert.alert('Delete Account', 'Please confirm with Apple to delete your account.');
+            Alert.alert('Delete account', 'Please confirm with Apple to delete your account.');
             return;
           }
           const { data, error } = await supabase.functions.invoke('delete-account', {
@@ -40,11 +40,11 @@ export function confirmDeleteAccount(signOut: () => Promise<void>) {
             const message = error
               ? await functionErrorMessage(error, 'Could not delete account')
               : data?.message || 'Could not delete account';
-            Alert.alert('Delete Account', message);
+            Alert.alert('Delete account', message);
             return;
           }
           await signOut();
-          Alert.alert('Account Deleted', 'Your account has been deleted.');
+          Alert.alert('Account deleted', 'Your account has been deleted.');
         },
       },
     ]

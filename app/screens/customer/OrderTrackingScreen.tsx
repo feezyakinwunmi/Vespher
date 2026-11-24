@@ -17,7 +17,6 @@ import {
 
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { WebView } from "react-native-webview";
@@ -32,6 +31,7 @@ import GoogleTrackingMap from '../../components/GoogleTrackingMap';
 
 
 import Toast from "react-native-toast-message";
+import { TC } from '../../theme/palette';
 
 const { width } = Dimensions.get("window");
 
@@ -264,7 +264,7 @@ if (loading) {
           onPress={() => navigation.navigate('CustomerTabs', { screen: 'Orders' })}
           style={styles.errorButton}
         >
-          <Text style={styles.errorButtonText}>Back to Orders</Text>
+          <Text style={styles.errorButtonText}>Back to orders</Text>
         </TouchableOpacity>
       </View>
     );
@@ -298,11 +298,11 @@ if (loading) {
           onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
-          <Feather name="arrow-left" size={24} color="#fff" />
+          <Feather name="arrow-left" size={24} color={TC.text} />
         </TouchableOpacity>
 
         <View>
-          <Text style={styles.headerTitle}>Track Order</Text>
+          <Text style={styles.headerTitle}>Track order</Text>
 
           <Text style={styles.headerSubtitle}>
             {order.order_number || order.id.slice(0, 8)}
@@ -331,7 +331,7 @@ if (loading) {
   <View style={styles.verificationCard}>
     <View style={styles.verificationHeader}>
       <Feather name="shield" size={20} color="#f97316" />
-      <Text style={styles.verificationTitle}>Delivery Code</Text>
+      <Text style={styles.verificationTitle}>Delivery code</Text>
     </View>
     
     <View style={styles.codeContainer}>
@@ -340,7 +340,7 @@ if (loading) {
     </View>
     
     <View style={styles.verificationFooter}>
-      <Feather name="info" size={12} color="#666" />
+      <Feather name="info" size={12} color={TC.muted} />
       <Text style={styles.verificationFooterText}>
         Never share this code before receiving your order
       </Text>
@@ -367,7 +367,7 @@ if (loading) {
       {cancelling ? (
         <ActivityIndicator color="#ef4444" />
       ) : (
-        <Text style={styles.cancelButtonText}>Cancel Order</Text>
+        <Text style={styles.cancelButtonText}>Cancel order</Text>
       )}
     </TouchableOpacity>
   </View>
@@ -416,7 +416,7 @@ if (loading) {
       <View style={styles.expiredContainer}>
         <Feather name="alert-circle" size={20} color="#ef4444" />
         <View style={styles.expiredContent}>
-          <Text style={styles.expiredTitle}>Order Cancelled</Text>
+          <Text style={styles.expiredTitle}>Order cancelled</Text>
           <Text style={styles.expiredMessage}>
             Vendor didn't accept your order within 30 minutes.
           </Text>
@@ -445,7 +445,7 @@ if (loading) {
   {order.status === 'cancelled' && (
     <View style={styles.cancelledCard}>
       <Feather name="alert-circle" size={24} color="#ef4444" />
-      <Text style={styles.cancelledTitle}>Order Cancelled</Text>
+      <Text style={styles.cancelledTitle}>Order cancelled</Text>
       <Text style={styles.cancelledReason}>{order.rejection_reason}</Text>
       
       {order.payment_method === 'card' && order.payment_status === 'refunded' && (
@@ -505,7 +505,7 @@ if (loading) {
                     <Feather
                       name={step.icon}
                       size={20}
-                      color={isCompleted ? "#fff" : "#666"}
+                      color={isCompleted ? TC.text : TC.muted}
                     />
                   </View>
                   {index < trackingSteps.length - 1 && (
@@ -547,7 +547,7 @@ if (loading) {
         {/* Order Details */}
 
         <View style={styles.detailsCard}>
-          <Text style={styles.detailsTitle}>Order Details</Text>
+          <Text style={styles.detailsTitle}>Order details</Text>
 
           {order.items.map((item: any, i: number) => (
             <View key={i} style={styles.itemRow}>
@@ -581,14 +581,11 @@ if (loading) {
                   style={styles.riderAvatarImage}
                 />
               ) : (
-                <LinearGradient
-                  colors={["#f97316", "#f43f5e"]}
-                  style={styles.riderAvatarPlaceholder}
-                >
+                <View style={[styles.riderAvatarPlaceholder, { backgroundColor: '#ea580c' }]}>
                   <Text style={styles.riderAvatarText}>
                     {order.rider.name?.charAt(0) || "R"}
                   </Text>
-                </LinearGradient>
+                </View>
               )}
             </View>
 
@@ -621,7 +618,7 @@ if (loading) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0a0a0a", paddingBottom: 60 },
+  container: { flex: 1, backgroundColor: TC.bg, paddingBottom: 60 },
 
   loadingContainer: {
     flex: 1,
@@ -635,7 +632,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  errorTitle: { color: "#fff", marginTop: 10 },
+  errorTitle: { color: TC.text, marginTop: 10 },
 
   errorButton: {
     backgroundColor: "#f97316",
@@ -644,7 +641,7 @@ const styles = StyleSheet.create({
   },
   // Add to styles
 verificationCard: {
-  backgroundColor: '#1a1a1a',
+  backgroundColor: TC.surface,
   marginHorizontal: 16,
   marginTop: 8,
   marginBottom: 16,
@@ -666,7 +663,7 @@ verificationTitle: {
 },
 codeContainer: {
   alignItems: 'center',
-  backgroundColor: '#0a0a0a',
+  backgroundColor: TC.bg,
   borderRadius: 12,
   paddingVertical: 16,
   marginBottom: 12,
@@ -675,7 +672,7 @@ refundStatusContainer: {
   marginTop: 8,
   paddingTop: 8,
   borderTopWidth: 1,
-  borderTopColor: 'rgba(255,255,255,0.05)',
+  borderTopColor: TC.hairline,
 },
 refundStatusText: {
   fontSize: 12,
@@ -691,7 +688,7 @@ refundStatusFailed: {
 },
 codeValue: {
   fontSize: 32,
-  fontWeight: 'bold',
+  fontWeight: '600',
   color: '#f97316',
   fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   letterSpacing: 4,
@@ -699,7 +696,7 @@ codeValue: {
 },
 codeLabel: {
   fontSize: 12,
-  color: '#666',
+  color: TC.muted,
 },
 verificationFooter: {
   flexDirection: 'row',
@@ -707,12 +704,12 @@ verificationFooter: {
   gap: 6,
   paddingTop: 8,
   borderTopWidth: 1,
-  borderTopColor: 'rgba(255,255,255,0.05)',
+  borderTopColor: TC.hairline,
 },
 verificationFooterText: {
   flex: 1,
   fontSize: 11,
-  color: '#666',
+  color: TC.muted,
 },
 
 verifiedCard: {
@@ -745,20 +742,20 @@ verifiedText: {
   backButton: {
     width: 40,
     height: 40,
-    backgroundColor: "#1a1a1a",
+    backgroundColor: TC.surface,
     borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
   },
 
   headerTitle: {
-    color: "#fff",
+    color: TC.text,
     fontSize: 18,
     fontWeight: "600",
   },
 
   headerSubtitle: {
-    color: "#666",
+    color: TC.muted,
     fontSize: 12,
   },
 
@@ -780,7 +777,7 @@ verifiedText: {
   },
 
   mapStatusText: {
-    color: "#fff",
+    color: TC.text,
     textAlign: "center",
   },
 
@@ -803,7 +800,7 @@ verifiedText: {
 
   progressBar: {
     height: 4,
-    backgroundColor: "#1a1a1a",
+    backgroundColor: TC.surface,
     borderRadius: 2,
   },
 
@@ -812,7 +809,7 @@ verifiedText: {
     backgroundColor: "#f97316",
   },
   vendorTimerCard: {
-  backgroundColor: '#1a1a1a',
+  backgroundColor: TC.surface,
   padding: 16,
   borderRadius: 12,
   marginBottom: 16,
@@ -826,7 +823,7 @@ vendorTimerHeader: {
 vendorTimerTitle: {
   fontSize: 16,
   fontWeight: '600',
-  color: '#fff',
+  color: TC.text,
 },
 vendorTimerSubtitle: {
   fontSize: 13,
@@ -834,7 +831,7 @@ vendorTimerSubtitle: {
   marginBottom: 12,
 },
 cancelledCard: {
-  backgroundColor: '#1a1a1a',
+  backgroundColor: TC.surface,
   margin: 16,
   marginTop: 0,
   padding: 20,
@@ -845,14 +842,14 @@ cancelledCard: {
 },
 cancelledTitle: {
   fontSize: 18,
-  fontWeight: '700',
+  fontWeight: '600',
   color: '#ef4444',
   marginTop: 8,
   marginBottom: 4,
 },
 cancelledReason: {
   fontSize: 14,
-  color: '#666',
+  color: TC.muted,
   textAlign: 'center',
   marginBottom: 16,
 },
@@ -956,7 +953,7 @@ manualCancelButton: {
   marginTop: 12,
 },
 manualCancelText: {
-  color: '#fff',
+  color: TC.text,
   fontSize: 14,
   fontWeight: '600',
 },
@@ -965,7 +962,7 @@ manualCancelText: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#1a1a1a",
+    backgroundColor: TC.surface,
     justifyContent: "center",
     alignItems: "center",
     zIndex: 2,
@@ -977,7 +974,7 @@ manualCancelText: {
   stepLine: {
     width: 2,
     flex: 1,
-    backgroundColor: "#1a1a1a",
+    backgroundColor: TC.surface,
     marginVertical: 4,
   },
 
@@ -993,12 +990,12 @@ manualCancelText: {
   stepLabel: {
     fontSize: 15,
     fontWeight: "500",
-    color: "#666",
+    color: TC.muted,
     marginBottom: 4,
   },
 
   stepLabelCompleted: {
-    color: "#fff",
+    color: TC.text,
   },
 
   stepStatus: {
@@ -1007,18 +1004,18 @@ manualCancelText: {
   },
   stepCompleted: {
     fontSize: 12,
-    color: "#666",
+    color: TC.muted,
   },
   mapLegend: {
     position: "absolute",
     bottom: 60,
     right: 16,
-    backgroundColor: "#1a1a1a",
+    backgroundColor: TC.surface,
     padding: 8,
     borderRadius: 8,
     gap: 4,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.05)",
+    borderColor: TC.hairline,
   },
   legendItem: {
     flexDirection: "row",
@@ -1032,18 +1029,18 @@ manualCancelText: {
   },
   legendText: {
     fontSize: 10,
-    color: "#fff",
+    color: TC.text,
   },
 
   detailsCard: {
-    backgroundColor: "#1a1a1a",
+    backgroundColor: TC.surface,
     margin: 16,
     padding: 16,
     borderRadius: 12,
   },
 
   detailsTitle: {
-    color: "#fff",
+    color: TC.text,
     marginBottom: 12,
     fontWeight: "600",
   },
@@ -1054,9 +1051,9 @@ manualCancelText: {
     marginBottom: 6,
   },
 
-  itemName: { color: "#ccc" },
+  itemName: { color: TC.text2 },
 
-  itemPrice: { color: "#fff" },
+  itemPrice: { color: TC.text },
 
   totalRow: {
     flexDirection: "row",
@@ -1065,20 +1062,20 @@ manualCancelText: {
   },
 
   totalLabel: {
-    color: "#fff",
+    color: TC.text,
     fontWeight: "600",
   },
 
   totalValue: {
     color: "#f97316",
-    fontWeight: "700",
+    fontWeight: '600',
   },
 
   riderContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     padding: 16,
-    backgroundColor: "#1a1a1a",
+    backgroundColor: TC.surface,
   },
 
   riderInfo: {
@@ -1107,13 +1104,13 @@ manualCancelText: {
 
   riderAvatarText: {
     color: "#fff",
-    fontWeight: "bold",
+    fontWeight: '600',
   },
 
-  riderName: { color: "#fff" },
+  riderName: { color: TC.text },
 
   riderType: {
-    color: "#777",
+    color: TC.muted,
     fontSize: 12,
   },
 

@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { MealTime, SuggestedProduct, getMealTimeLabel } from '../../hooks/customer/useAIFoodSuggestions';
+import { TC } from '../../theme/palette';
 
 type Suggestion = SuggestedProduct & { reasons?: string[]; hasWarning?: boolean };
 
@@ -61,7 +62,7 @@ export function TimedFoodSuggestions({
           </View>
         </View>
         <TouchableOpacity style={styles.viewAllButton} onPress={onViewAll}>
-          <Text style={styles.viewAllText}>View All</Text>
+          <Text style={styles.viewAllText}>View all</Text>
           <Feather name="arrow-right" size={14} color="#f97316" />
         </TouchableOpacity>
       </View>
@@ -110,7 +111,7 @@ export function TimedFoodSuggestions({
                   />
                 ) : (
                   <View style={styles.imageFallback}>
-                    <Feather name="image" size={24} color="#333" />
+                    <Feather name="image" size={24} color={TC.raised} />
                   </View>
                 )}
                 {/* Price badge */}
@@ -168,12 +169,12 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
   },
   sectionSubtitle: {
     fontSize: 11,
-    color: '#555',
+    color: TC.muted,
     marginTop: 1,
   },
   viewAllButton: {
@@ -215,17 +216,17 @@ const styles = StyleSheet.create({
     width: 82,
     height: 82,
     borderRadius: 41,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2.5,
-    borderColor: '#2a2a2a',
+    borderColor: TC.raised,
   },
   priceBadge: {
     position: 'absolute',
     bottom: 0,
     alignSelf: 'center',
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 10,
@@ -234,13 +235,13 @@ const styles = StyleSheet.create({
   },
   priceText: {
     fontSize: 10,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
   },
   foodName: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     textAlign: 'center',
     lineHeight: 16,
   },
@@ -272,7 +273,7 @@ const styles = StyleSheet.create({
   },
   vendorName: {
     fontSize: 10,
-    color: '#555',
+    color: TC.muted,
     textAlign: 'center',
   },
   // Skeleton loader
@@ -289,12 +290,12 @@ const styles = StyleSheet.create({
     width: 82,
     height: 82,
     borderRadius: 41,
-    backgroundColor: '#1e1e1e',
+    backgroundColor: TC.surface,
   },
   skeletonText: {
     width: 60,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#1e1e1e',
+    backgroundColor: TC.surface,
   },
 });

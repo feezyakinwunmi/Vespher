@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../contexts/AuthContext';
@@ -23,6 +22,7 @@ import { useLocation } from '../../contexts/LocationContext';
 import { RootStackParamList } from '../../navigation/types';
 import Toast from 'react-native-toast-message';
 import MapAddressPicker from '../../components/MapAddressPicker'; // Already imported
+import { TC } from '../../theme/palette';
 
 
 type VendorAddressesScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -186,7 +186,7 @@ const handleSaveAddress = async (addressData: any) => {
 
   const handleDelete = (id: string) => {
     Alert.alert(
-      'Delete Address',
+      'Delete address',
       'Are you sure you want to delete this address?',
       [
         { text: 'Cancel', style: 'cancel' },
@@ -275,9 +275,9 @@ const handleSetDefault = async (id: string) => {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Feather name="arrow-left" size={24} color="#fff" />
+            <Feather name="arrow-left" size={24} color={TC.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Business Addresses</Text>
+          <Text style={styles.headerTitle}>Business addresses</Text>
         </View>
         <TouchableOpacity
           onPress={() => {
@@ -313,7 +313,7 @@ const handleSetDefault = async (id: string) => {
                 <Feather name="navigation" size={20} color="#f97316" />
               </View>
               <View style={styles.addressInfo}>
-                <Text style={styles.addressLabel}>Use Current Location</Text>
+                <Text style={styles.addressLabel}>Use current location</Text>
                 {locationLoading ? (
                   <View style={styles.locationLoadingContainer}>
                     <ActivityIndicator size="small" color="#f97316" />
@@ -342,7 +342,7 @@ const handleSetDefault = async (id: string) => {
                 <Feather name="navigation" size={20} color="#f97316" />
               </View>
               <View style={styles.addressInfo}>
-                <Text style={styles.addressLabel}>Save Current Location</Text>
+                <Text style={styles.addressLabel}>Save current location</Text>
                 {locationLoading ? (
                   <View style={styles.locationLoadingContainer}>
                     <ActivityIndicator size="small" color="#f97316" />
@@ -367,7 +367,7 @@ const handleSetDefault = async (id: string) => {
         {/* Saved Addresses */}
         {addresses.length > 0 && (
           <View style={styles.addressList}>
-            <Text style={styles.sectionTitle}>Saved Addresses</Text>
+            <Text style={styles.sectionTitle}>Saved addresses</Text>
             {addresses.map(address => (
               <View key={address.id} style={styles.addressCard}>
                 <View style={styles.addressHeader}>
@@ -404,7 +404,7 @@ const handleSetDefault = async (id: string) => {
                       onPress={() => handleSetDefault(address.id)}
                       style={styles.actionButton}
                     >
-                      <Feather name="star" size={18} color="#666" />
+                      <Feather name="star" size={18} color={TC.muted} />
                     </TouchableOpacity>
                   )}
                   <TouchableOpacity
@@ -414,7 +414,7 @@ const handleSetDefault = async (id: string) => {
                     }}
                     style={styles.actionButton}
                   >
-                    <Feather name="edit-2" size={18} color="#666" />
+                    <Feather name="edit-2" size={18} color={TC.muted} />
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => handleDelete(address.id)}
@@ -432,7 +432,7 @@ const handleSetDefault = async (id: string) => {
         {addresses.length === 0 && (
           <View style={styles.emptyContainer}>
             <View style={styles.emptyIconContainer}>
-              <Feather name="map-pin" size={40} color="#666" />
+              <Feather name="map-pin" size={40} color={TC.muted} />
             </View>
             <Text style={styles.emptyTitle}>No addresses yet</Text>
             <Text style={styles.emptyText}>
@@ -442,14 +442,9 @@ const handleSetDefault = async (id: string) => {
               onPress={() => setShowModal(true)}
               style={styles.emptyButton}
             >
-              <LinearGradient
-                colors={['#f97316', '#f43f5e']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.emptyButtonGradient}
-              >
-                <Text style={styles.emptyButtonText}>Add Address</Text>
-              </LinearGradient>
+              <View style={[styles.emptyButtonGradient, { backgroundColor: '#ea580c' }]}>
+                <Text style={styles.emptyButtonText}>Add address</Text>
+              </View>
             </TouchableOpacity>
           </View>
         )}
@@ -473,13 +468,13 @@ const handleSetDefault = async (id: string) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
         paddingBottom:60,
 
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -490,7 +485,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -501,14 +496,14 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   addButton: {
     width: 40,
@@ -524,7 +519,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 12,
     paddingHorizontal: 16,
   },
@@ -553,11 +548,11 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   addressCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
     marginBottom: 8,
   },
   addressHeader: {
@@ -584,7 +579,7 @@ const styles = StyleSheet.create({
   addressLabel: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   defaultBadge: {
     flexDirection: 'row',
@@ -602,12 +597,12 @@ const styles = StyleSheet.create({
   },
   addressText: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 2,
   },
   addressDetail: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
     marginTop: 2,
   },
   addressActions: {
@@ -617,7 +612,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     marginTop: 12,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   actionButton: {
     padding: 4,
@@ -646,7 +641,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -654,12 +649,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 14,
-    color: '#666',
+    color: TC.muted,
     textAlign: 'center',
     marginBottom: 20,
   },

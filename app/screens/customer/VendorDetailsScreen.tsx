@@ -31,6 +31,7 @@ import { HealthWarningModal } from '../../components/customer/HealthWarningModal
 import { ProductDetailsModal } from '../../components/customer/ProductDetailsModal';
 import { HealthCheckResult } from '../../hooks/customer/useHealthCheck';
 import Toast from 'react-native-toast-message';
+import { TC } from '../../theme/palette';
 const { width } = Dimensions.get('window');
 
 type VendorDetailsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -86,12 +87,12 @@ const [detailsProduct, setDetailsProduct] = useState<any>(null);
     return (
       <SafeAreaView style={[styles.loadingContainer, { paddingHorizontal: 32 }]}>
         <Feather name="moon" size={40} color="#f97316" />
-        <Text style={[styles.loadingText, { color: '#fff', fontSize: 18, fontWeight: '700', marginTop: 16 }]}>{vendor.name} is closed</Text>
+        <Text style={[styles.loadingText, { color: TC.text, fontSize: 18, fontWeight: '600', marginTop: 16 }]}>{vendor.name} is closed</Text>
         <Text style={[styles.loadingText, { textAlign: 'center', marginTop: 6 }]}>
           They aren't taking orders right now. Check back later or order from another shop.
         </Text>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginTop: 20, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, backgroundColor: '#f97316' }}>
-          <Text style={{ color: '#fff', fontWeight: '700' }}>Browse other shops</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginTop: 20, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, backgroundColor: '#ea580c' }}>
+          <Text style={{ color: '#fff', fontWeight: '600' }}>Browse other shops</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
@@ -185,7 +186,7 @@ const logoImage = vendor.logo || vendor.image_url || vendor.image || vendor.busi
     setCoverImageError(true);
   }}            />
             <LinearGradient
-              colors={['transparent', '#0a0a0a']}
+              colors={['transparent', TC.bg]}
               style={styles.coverGradient}
             />
             
@@ -240,7 +241,7 @@ const logoImage = vendor.logo || vendor.image_url || vendor.image || vendor.busi
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Feather name="clock" size={16} color="#666" />
+              <Feather name="clock" size={16} color={TC.muted} />
               <Text style={styles.statText}>{vendor.deliveryTime || '30-45 min'}</Text>
             </View>
             <TouchableOpacity 
@@ -248,20 +249,20 @@ const logoImage = vendor.logo || vendor.image_url || vendor.image || vendor.busi
               style={styles.infoButton}
             >
               <Feather name="info" size={16} color="#f97316" />
-              <Text style={styles.infoButtonText}>More Info</Text>
+              <Text style={styles.infoButtonText}>More info</Text>
             </TouchableOpacity>
           </View>
 
           {/* Search & Categories */}
           <View style={styles.searchSection}>
             <View style={styles.searchContainer}>
-              <Feather name="search" size={18} color="#666" style={styles.searchIcon} />
+              <Feather name="search" size={18} color={TC.muted} style={styles.searchIcon} />
               <TextInput
                 style={styles.searchInput}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 placeholder="Search menu..."
-                placeholderTextColor="#666"
+                placeholderTextColor={TC.muted}
               />
             </View>
             
@@ -312,7 +313,7 @@ const logoImage = vendor.logo || vendor.image_url || vendor.image || vendor.busi
 
             {filteredProducts.length === 0 && (
               <View style={styles.emptyContainer}>
-                <Feather name="search" size={48} color="#666" />
+                <Feather name="search" size={48} color={TC.muted} />
                 <Text style={styles.emptyTitle}>No items found</Text>
                 <Text style={styles.emptyText}>
                   Try a different search term or category
@@ -329,23 +330,18 @@ const logoImage = vendor.logo || vendor.image_url || vendor.image || vendor.busi
             onPress={() => navigation.navigate('Cart')}
             style={styles.cartButton}
           >
-            <LinearGradient
-              colors={['#f97316', '#10b981']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.cartGradient}
-            >
+            <View style={[styles.cartGradient, { backgroundColor: '#ea580c' }]}>
               <View style={styles.cartLeft}>
                 <View style={styles.cartCount}>
                   <Text style={styles.cartCountText}>{cartItemCount}</Text>
                 </View>
-                <Text style={styles.cartText}>View Cart</Text>
+                <Text style={styles.cartText}>View cart</Text>
               </View>
               <View style={styles.cartRight}>
                 <Text style={styles.cartTotal}>₦{cartSubtotal.toLocaleString()}</Text>
-                <Feather name="chevron-up" size={20} color="#fff" />
+                <Feather name="chevron-up" size={20} color={TC.text} />
               </View>
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
         )}
 
@@ -361,7 +357,7 @@ const logoImage = vendor.logo || vendor.image_url || vendor.image || vendor.busi
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>About {vendor.name}</Text>
                 <TouchableOpacity onPress={() => setShowInfo(false)} style={styles.modalCloseButton}>
-                  <Feather name="x" size={20} color="#fff" />
+                  <Feather name="x" size={20} color={TC.text} />
                 </TouchableOpacity>
               </View>
 
@@ -394,23 +390,23 @@ const logoImage = vendor.logo || vendor.image_url || vendor.image || vendor.busi
                 </View>
 
                 <View style={styles.modalSection}>
-                  <Text style={styles.modalSectionTitle}>Delivery Information</Text>
+                  <Text style={styles.modalSectionTitle}>Delivery information</Text>
                   <View style={styles.modalInfoRow}>
-                    <Text style={styles.modalInfoLabel}>Delivery Time</Text>
+                    <Text style={styles.modalInfoLabel}>Delivery time</Text>
                     <Text style={styles.modalInfoValue}>{vendor.deliveryTime}</Text>
                   </View>
                   <View style={styles.modalInfoRow}>
-                    <Text style={styles.modalInfoLabel}>Delivery Fee</Text>
+                    <Text style={styles.modalInfoLabel}>Delivery fee</Text>
                     <Text style={styles.modalInfoValue}>₦{vendor.deliveryFee}</Text>
                   </View>
                   <View style={styles.modalInfoRow}>
-                    <Text style={styles.modalInfoLabel}>Minimum Order</Text>
+                    <Text style={styles.modalInfoLabel}>Minimum order</Text>
                     <Text style={styles.modalInfoValue}>₦{vendor.minOrder}</Text>
                   </View>
                 </View>
 
                 <View style={styles.modalSection}>
-                  <Text style={styles.modalSectionTitle}>Opening Hours</Text>
+                  <Text style={styles.modalSectionTitle}>Opening hours</Text>
                   <View style={styles.modalInfoRow}>
                     <Text style={styles.modalInfoLabel}>Monday - Friday</Text>
                     <Text style={styles.modalInfoValue}>8:00 AM - 10:00 PM</Text>
@@ -446,16 +442,16 @@ const logoImage = vendor.logo || vendor.image_url || vendor.image || vendor.busi
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    color: '#666',
+    color: TC.muted,
     marginTop: 12,
     fontSize: 14,
   },
@@ -501,10 +497,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   favoriteButton: {
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
   },
   favoriteIcon: {
-    color: '#fff',
+    color: TC.text,
   },
   vendorOverlay: {
     position: 'absolute',
@@ -520,9 +516,9 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 12,
     borderWidth: 3,
-    borderColor: '#0a0a0a',
+    borderColor: TC.bg,
     overflow: 'hidden',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
   },
   vendorLogo: {
     width: '100%',
@@ -533,13 +529,13 @@ const styles = StyleSheet.create({
   },
   vendorName: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
     marginBottom: 2,
   },
   vendorCategory: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
   },
   statsBar: {
     flexDirection: 'row',
@@ -547,7 +543,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   statItem: {
     flexDirection: 'row',
@@ -556,17 +552,17 @@ const styles = StyleSheet.create({
   },
   statText: {
     fontSize: 13,
-    color: '#fff',
+    color: TC.text,
     fontWeight: '500',
   },
   statSubtext: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   statDivider: {
     width: 1,
     height: 16,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: TC.hairline3,
     marginHorizontal: 8,
   },
   infoButton: {
@@ -583,12 +579,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 8,
     paddingHorizontal: 12,
     marginBottom: 12,
@@ -599,7 +595,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     height: 40,
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
   },
   categoriesList: {
@@ -608,16 +604,16 @@ const styles = StyleSheet.create({
   categoryTab: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 20,
     marginRight: 8,
   },
   categoryTabActive: {
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
   },
   categoryTabText: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
   },
   categoryTabTextActive: {
     color: '#fff',
@@ -631,7 +627,7 @@ const styles = StyleSheet.create({
   categoryTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 12,
   },
   productsGrid: {
@@ -645,13 +641,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginTop: 12,
     marginBottom: 4,
   },
   emptyText: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
   },
   bottomPadding: {
     height: 80,
@@ -686,12 +682,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cartCountText: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   cartText: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 15,
     fontWeight: '500',
   },
@@ -701,9 +697,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   cartTotal: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 15,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   modalOverlay: {
     flex: 1,
@@ -711,7 +707,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     height: '80%',
@@ -722,12 +718,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   modalCloseButton: {
     padding: 4,
@@ -742,12 +738,12 @@ const styles = StyleSheet.create({
   modalSectionTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 8,
   },
   modalText: {
     fontSize: 14,
-    color: '#666',
+    color: TC.muted,
     lineHeight: 20,
   },
   modalAddress: {
@@ -770,11 +766,11 @@ const styles = StyleSheet.create({
   },
   modalInfoLabel: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
   },
   modalInfoValue: {
     fontSize: 13,
-    color: '#fff',
+    color: TC.text,
   },
 });
 

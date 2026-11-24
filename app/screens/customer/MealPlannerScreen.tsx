@@ -17,7 +17,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../contexts/AuthContext';
@@ -32,6 +31,7 @@ import { assessFood } from '../../services/foodSafety';
 import { planWeek } from '../../services/recommendations';
 import { getCurrentMealTime } from '../../hooks/customer/useAIFoodSuggestions';
 import { EmojiIcon } from '../../components/EmojiIcon';
+import { TC } from '../../theme/palette';
 
 const { width } = Dimensions.get('window');
 
@@ -258,7 +258,7 @@ const loadSavedPlan = async () => {
     } else {
       Toast.show({
         type: 'success',
-        text1: 'Meal plan saved!',
+        text1: 'Meal plan saved',
         position: 'bottom',
         visibilityTime: 2000,
       });
@@ -343,7 +343,7 @@ const loadSavedPlan = async () => {
     
     if (hasHealthWarning(product)) {
       Alert.alert(
-        'Health Warning',
+        'Health warning',
         `This item may not be suitable for your health conditions. Are you sure you want to add it?`,
         [
           { text: 'Cancel', style: 'cancel' },
@@ -382,7 +382,7 @@ const loadSavedPlan = async () => {
     if (!weeklyPlan) return;
     
     Alert.alert(
-      'Remove Meal',
+      'Remove meal',
       `Remove this meal from your plan?`,
       [
         { text: 'Cancel', style: 'cancel' },
@@ -428,9 +428,9 @@ const loadSavedPlan = async () => {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Feather name="arrow-left" size={24} color="#fff" />
+            <Feather name="arrow-left" size={24} color={TC.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Weekly Meal Planner</Text>
+          <Text style={styles.headerTitle}>Weekly meal planner</Text>
           <View style={styles.headerRight} />
         </View>
         <View style={styles.gate}>
@@ -442,10 +442,10 @@ const loadSavedPlan = async () => {
             Vesphe Pro builds a full weekly timetable – the right dishes for breakfast, lunch, dinner and snacks, matched to your health profile, with variety across vendors.
           </Text>
           <TouchableOpacity onPress={() => navigation.navigate('Pro')} style={styles.gateButton}>
-            <LinearGradient colors={['#f97316', '#f43f5e']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.gateButtonGradient}>
+            <View style={[styles.gateButtonGradient, { backgroundColor: '#ea580c' }]}>
               <Feather name="award" size={18} color="#fff" />
               <Text style={styles.gateButtonText}>Unlock with Vesphe Pro</Text>
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -467,9 +467,9 @@ const loadSavedPlan = async () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Feather name="arrow-left" size={24} color="#fff" />
+          <Feather name="arrow-left" size={24} color={TC.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Weekly Meal Planner</Text>
+        <Text style={styles.headerTitle}>Weekly meal planner</Text>
         <View style={styles.headerRight}>
           <TouchableOpacity onPress={autoSuggestWeek} style={styles.autoButton} disabled={isResuggesting}>
             {isResuggesting ? (
@@ -489,10 +489,7 @@ const loadSavedPlan = async () => {
       </View>
 
       {/* Plan check */}
-      <LinearGradient
-        colors={['rgba(249,115,22,0.15)', 'rgba(16,185,129,0.05)']}
-        style={styles.nutritionCard}
-      >
+      <View style={[styles.nutritionCard, { backgroundColor: 'rgba(249,115,22,0.15)' }]}>
         <Text style={styles.nutritionTitle}>This week's plan</Text>
         <View style={styles.summaryRow}>
           <View style={styles.summaryItem}>
@@ -504,7 +501,7 @@ const loadSavedPlan = async () => {
             <Text style={styles.summaryLabel}>Fit your profile</Text>
           </View>
           <View style={styles.summaryItem}>
-            <Text style={[styles.summaryValue, { color: planSummary.needsAttention ? '#f59e0b' : '#fff' }]}>{planSummary.needsAttention}</Text>
+            <Text style={[styles.summaryValue, { color: planSummary.needsAttention ? '#f59e0b' : TC.text }]}>{planSummary.needsAttention}</Text>
             <Text style={styles.summaryLabel}>Need attention</Text>
           </View>
           <View style={styles.summaryItem}>
@@ -512,7 +509,7 @@ const loadSavedPlan = async () => {
             <Text style={styles.summaryLabel}>Vendors</Text>
           </View>
         </View>
-      </LinearGradient>
+      </View>
 
       {/* Health Info Banner */}
       <View style={styles.healthBanner}>
@@ -632,18 +629,18 @@ const loadSavedPlan = async () => {
                 Select for {selectedMealTime} - {selectedDay}
               </Text>
               <TouchableOpacity onPress={() => setShowProductPicker(false)}>
-                <Feather name="x" size={24} color="#fff" />
+                <Feather name="x" size={24} color={TC.text} />
               </TouchableOpacity>
             </View>
             
             <View style={styles.searchContainer}>
-              <Feather name="search" size={18} color="#666" style={styles.searchIcon} />
+              <Feather name="search" size={18} color={TC.muted} style={styles.searchIcon} />
               <TextInput
                 style={styles.searchInput}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 placeholder="Search all products..."
-                placeholderTextColor="#666"
+                placeholderTextColor={TC.muted}
               />
             </View>
             
@@ -691,16 +688,16 @@ const loadSavedPlan = async () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    color: '#666',
+    color: TC.muted,
     marginTop: 12,
     fontSize: 14,
   },
@@ -711,20 +708,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   headerRight: {
     flexDirection: 'row',
@@ -761,12 +758,12 @@ const styles = StyleSheet.create({
   nutritionTitle: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 2,
   },
   caloriesText: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#f97316',
     marginBottom: 8,
   },
@@ -775,7 +772,7 @@ const styles = StyleSheet.create({
   },
   macroItem: {
     height: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 10,
     overflow: 'hidden',
   },
@@ -788,7 +785,7 @@ const styles = StyleSheet.create({
     left: 8,
     top: 3,
     fontSize: 10,
-    color: '#fff',
+    color: TC.text,
     fontWeight: '500',
   },
   summaryRow: {
@@ -801,12 +798,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   summaryValue: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   summaryLabel: {
-    color: '#999',
+    color: TC.subtle,
     fontSize: 10,
     marginTop: 2,
     textAlign: 'center',
@@ -818,8 +815,7 @@ const styles = StyleSheet.create({
   },
   nowLabel: {
     fontSize: 9,
-    fontWeight: '700',
-    textTransform: 'uppercase',
+    fontWeight: '600',
   },
   gate: {
     flex: 1,
@@ -837,13 +833,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   gateTitle: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '600',
     textAlign: 'center',
   },
   gateText: {
-    color: '#aaa',
+    color: TC.subtle,
     fontSize: 14,
     lineHeight: 20,
     textAlign: 'center',
@@ -864,7 +860,7 @@ const styles = StyleSheet.create({
   gateButtonText: {
     color: '#fff',
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   healthBanner: {
     marginHorizontal: 16,
@@ -882,7 +878,7 @@ const styles = StyleSheet.create({
   },
   healthBannerText: {
     fontSize: 11,
-    color: '#888',
+    color: TC.subtle,
     flex: 1,
   },
   healthConditionsRow: {
@@ -902,15 +898,15 @@ const styles = StyleSheet.create({
   },
   healthMore: {
     fontSize: 9,
-    color: '#666',
+    color: TC.muted,
   },
   tableHeader: {
     flexDirection: 'row',
     paddingHorizontal: 8,
     paddingVertical: 10,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   dayColumnHeader: {
     width: 60,
@@ -924,7 +920,7 @@ const styles = StyleSheet.create({
   },
   tableHeaderText: {
     fontSize: 10,
-    color: '#888',
+    color: TC.subtle,
     fontWeight: '500',
   },
   mealIcon: {
@@ -936,30 +932,30 @@ const styles = StyleSheet.create({
   tableRow: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
     minHeight: 100,
   },
   dayColumn: {
     width: 60,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#111',
+    backgroundColor: TC.surface2,
   },
   dayText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   dayFull: {
     fontSize: 8,
-    color: '#666',
+    color: TC.muted,
     marginTop: 2,
   },
   mealCell: {
     flex: 1,
     padding: 5,
     borderLeftWidth: 1,
-    borderLeftColor: 'rgba(255,255,255,0.05)',
+    borderLeftColor: TC.hairline,
     minHeight: 100,
   },
   mealCellFilled: {
@@ -977,7 +973,7 @@ const styles = StyleSheet.create({
   },
   mealCellName: {
     fontSize: 8,
-    color: '#fff',
+    color: TC.text,
     textAlign: 'center',
   },
   mealCellPrice: {
@@ -1022,7 +1018,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     height: '80%',
@@ -1033,17 +1029,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   modalTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     margin: 16,
     borderRadius: 8,
     paddingHorizontal: 12,
@@ -1054,7 +1050,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     height: 44,
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
   },
   productList: {
@@ -1066,7 +1062,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     padding: 12,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 12,
   },
   productImage: {
@@ -1080,12 +1076,12 @@ const styles = StyleSheet.create({
   productName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 2,
   },
   productVendor: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 2,
   },
   productPrice: {
@@ -1115,13 +1111,13 @@ const styles = StyleSheet.create({
   },
   emptyPickerText: {
     fontSize: 14,
-    color: '#666',
+    color: TC.muted,
     textAlign: 'center',
     marginBottom: 8,
   },
   emptyPickerSubtext: {
     fontSize: 12,
-    color: '#555',
+    color: TC.muted,
     textAlign: 'center',
   },
 });

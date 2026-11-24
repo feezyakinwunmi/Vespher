@@ -8,10 +8,9 @@ import {
   StyleSheet,
   Linking,
 } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../contexts/AuthContext';
 import { RootStackParamList } from './types';
 import { MessagingScreen } from '../screens/MessagingScreen';
@@ -86,6 +85,7 @@ import { AllVendorsMapScreen } from '../screens/customer/AllVendorsMapScreen';
 import { navigationRef, onNavigationReady } from './RootNavigation';
 import { AdminAnnouncementsScreen } from '../screens/admin/AdminAnnouncementsScreen';
 import { supportLinks } from '../config/support';
+import { TC } from '../theme/palette';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 // Warning Modal for business accounts (they use the separate logistics app)
@@ -121,12 +121,9 @@ function WrongAppWarningModal({
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <View style={styles.warningIconContainer}>
-            <LinearGradient
-              colors={['#f97316', '#f43f5e']}
-              style={styles.warningIconGradient}
-            >
+            <View style={[styles.warningIconGradient, { backgroundColor: '#ea580c' }]}>
               <Feather name="alert-triangle" size={40} color="#fff" />
-            </LinearGradient>
+            </View>
           </View>
 
           <Text style={styles.warningTitle}>Business account</Text>
@@ -146,15 +143,10 @@ function WrongAppWarningModal({
             style={styles.downloadButton}
             onPress={handleDownloadApp}
           >
-            <LinearGradient
-              colors={['#f97316', '#f43f5e']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.downloadButtonGradient}
-            >
+            <View style={[styles.downloadButtonGradient, { backgroundColor: '#ea580c' }]}>
               <Feather name="message-circle" size={18} color="#fff" />
               <Text style={styles.downloadButtonText}>Contact support</Text>
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -162,7 +154,7 @@ function WrongAppWarningModal({
             onPress={handleSignOut}
           >
             <Feather name="log-out" size={16} color="#ef4444" />
-            <Text style={styles.signOutText}>Sign Out</Text>
+            <Text style={styles.signOutText}>Sign out</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -287,12 +279,25 @@ function AppContent() {
   return user?.role === 'rider' ? <RiderProvider>{navigator}</RiderProvider> : navigator;
 }
 
+const navTheme = {
+  ...(TC.name === 'dark' ? DarkTheme : DefaultTheme),
+  colors: {
+    ...(TC.name === 'dark' ? DarkTheme : DefaultTheme).colors,
+    primary: '#f97316',
+    background: TC.bg,
+    card: TC.surface,
+    text: TC.text,
+    border: TC.raised,
+  },
+};
+
 export function AppNavigator() {
   const { isReady } = useAuth();
 
   return (
     <NavigationContainer 
       ref={navigationRef}
+      theme={navTheme}
       onReady={onNavigationReady}
     >
       {isReady ? <AppContent /> : <LoadingSplash />}
@@ -309,7 +314,7 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: '85%',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 20,
     padding: 24,
     alignItems: 'center',
@@ -328,13 +333,13 @@ const styles = StyleSheet.create({
   },
   warningTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#f97316',
     marginBottom: 12,
   },
   warningMessage: {
     fontSize: 16,
-    color: '#fff',
+    color: TC.text,
     textAlign: 'center',
     marginBottom: 8,
   },
@@ -344,7 +349,7 @@ const styles = StyleSheet.create({
   },
   warningDescription: {
     fontSize: 14,
-    color: '#999',
+    color: TC.subtle,
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 20,

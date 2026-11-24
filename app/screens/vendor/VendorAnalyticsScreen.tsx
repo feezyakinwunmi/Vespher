@@ -10,12 +10,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useVendorEarnings } from '../../hooks/vendor/useVendorEarnings';
 import { SimpleLineChart, SimpleBarChart } from '../../components/SimpleChart';
+import { TC } from '../../theme/palette';
 
 export function VendorAnalyticsScreen() {
   const navigation = useNavigation();
@@ -220,7 +220,7 @@ export function VendorAnalyticsScreen() {
         <Feather name="alert-circle" size={48} color="#ef4444" />
         <Text style={styles.errorText}>Failed to load analytics</Text>
         <TouchableOpacity onPress={() => vendorId && fetchAnalyticsData(vendorId)} style={styles.retryButton}>
-          <Text style={styles.retryText}>Try Again</Text>
+          <Text style={styles.retryText}>Try again</Text>
         </TouchableOpacity>
       </View>
     );
@@ -231,7 +231,7 @@ export function VendorAnalyticsScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Feather name="arrow-left" size={24} color="#fff" />
+          <Feather name="arrow-left" size={24} color={TC.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Analytics</Text>
         <TouchableOpacity onPress={() => vendorId && fetchAnalyticsData(vendorId)} style={styles.refreshButton}>
@@ -268,30 +268,20 @@ export function VendorAnalyticsScreen() {
         {/* Summary Cards - Using wallet data for totals */}
         <View style={styles.summaryGrid}>
           {/* Total Earnings Card */}
-          <LinearGradient
-            colors={['#f97316', '#f43f5e']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.summaryCard}
-          >
+          <View style={[styles.summaryCard, { backgroundColor: '#ea580c' }]}>
             <Text style={styles.summaryLabel}>Total Earnings (All Time)</Text>
             <Text style={styles.summaryValue}>{formatCurrency(totalEarned)}</Text>
-          </LinearGradient>
+          </View>
 
           {/* Available Balance Card */}
-          <LinearGradient
-            colors={['#10b981', '#059669']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.summaryCard}
-          >
-            <Text style={styles.summaryLabel}>Sent to Your Bank</Text>
+          <View style={[styles.summaryCard, { backgroundColor: '#10b981' }]}>
+            <Text style={styles.summaryLabel}>Sent to your bank</Text>
             <Text style={styles.summaryValue}>{formatCurrency(paidToBank)}</Text>
-          </LinearGradient>
+          </View>
 
           {/* Pending Payout Card */}
           <View style={styles.summaryCardSecondary}>
-            <Text style={styles.summaryLabelSecondary}>Arriving Soon</Text>
+            <Text style={styles.summaryLabelSecondary}>Arriving soon</Text>
             <Text style={styles.summaryValueSecondary}>{formatCurrency(settling)}</Text>
           </View>
 
@@ -320,7 +310,7 @@ export function VendorAnalyticsScreen() {
         {/* Top Products */}
         <View style={styles.row}>
           <View style={[styles.card, styles.halfCard]}>
-            <Text style={styles.cardTitle}>Top Products</Text>
+            <Text style={styles.cardTitle}>Top products</Text>
             {analyticsData.topProducts.map((product: any, idx: number) => (
               <View key={idx} style={styles.listItem}>
                 <View style={styles.listItemLeft}>
@@ -337,7 +327,7 @@ export function VendorAnalyticsScreen() {
 
           {/* Top Locations */}
           <View style={[styles.card, styles.halfCard]}>
-            <Text style={styles.cardTitle}>Top Areas</Text>
+            <Text style={styles.cardTitle}>Top areas</Text>
             {analyticsData.topLocations.map((location: any, idx: number) => (
               <View key={idx} style={styles.listItem}>
                 <View style={styles.listItemLeft}>
@@ -353,7 +343,7 @@ export function VendorAnalyticsScreen() {
         {/* Peak Hours */}
         {analyticsData.peakHours.length > 0 && (
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Peak Hours</Text>
+            <Text style={styles.cardTitle}>Peak hours</Text>
             <SimpleBarChart
               data={analyticsData.peakHours.map((h: any) => ({ 
                 label: `${h.hour}:00`, 
@@ -366,7 +356,7 @@ export function VendorAnalyticsScreen() {
 
         {/* Recent Reviews */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Recent Reviews</Text>
+          <Text style={styles.cardTitle}>Recent reviews</Text>
           {analyticsData.recentReviews.length > 0 ? (
             analyticsData.recentReviews.map((review: any) => (
               <View key={review.id} style={styles.reviewItem}>
@@ -381,7 +371,7 @@ export function VendorAnalyticsScreen() {
                           key={star}
                           name="star"
                           size={12}
-                          color={star <= review.rating ? '#fbbf24' : '#666'}
+                          color={star <= review.rating ? '#fbbf24' : TC.muted}
                         />
                       ))}
                     </View>
@@ -409,18 +399,18 @@ export function VendorAnalyticsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     paddingBottom: 60,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
   errorContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -434,11 +424,11 @@ const styles = StyleSheet.create({
   retryButton: {
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     borderRadius: 8,
   },
   retryText: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -449,26 +439,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   refreshButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -478,7 +468,7 @@ const styles = StyleSheet.create({
   },
   periodSelector: {
     flexDirection: 'row',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 8,
     padding: 4,
     marginBottom: 16,
@@ -490,11 +480,11 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   periodButtonActive: {
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
   },
   periodButtonText: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
   },
   periodButtonTextActive: {
     color: '#fff',
@@ -512,11 +502,11 @@ const styles = StyleSheet.create({
   },
   summaryCardSecondary: {
     width: '48%',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   summaryLabel: {
     fontSize: 12,
@@ -525,21 +515,21 @@ const styles = StyleSheet.create({
   },
   summaryValue: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
   },
   summaryLabelSecondary: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 4,
   },
   summaryValueSecondary: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
   },
   card: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,
@@ -547,7 +537,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 12,
   },
   row: {
@@ -564,7 +554,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   listItemLeft: {
     flexDirection: 'row',
@@ -583,12 +573,12 @@ const styles = StyleSheet.create({
   },
   listItemName: {
     fontSize: 13,
-    color: '#fff',
+    color: TC.text,
     marginBottom: 2,
   },
   listItemSubtext: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
   },
   listItemValue: {
     fontSize: 12,
@@ -603,7 +593,7 @@ const styles = StyleSheet.create({
   reviewItem: {
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   reviewHeader: {
     flexDirection: 'row',
@@ -619,7 +609,7 @@ const styles = StyleSheet.create({
   reviewerName: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#fff',
+    color: TC.text,
   },
   stars: {
     flexDirection: 'row',
@@ -627,16 +617,16 @@ const styles = StyleSheet.create({
   },
   reviewDate: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
   },
   reviewComment: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
     fontStyle: 'italic',
   },
   emptyText: {
     textAlign: 'center',
-    color: '#666',
+    color: TC.muted,
     padding: 20,
   },
 });

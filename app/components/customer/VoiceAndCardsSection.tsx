@@ -16,6 +16,7 @@ import { getWakeWordEnabled, setWakeWordEnabled } from '../../voice/wakeWordSett
 import { loadSavedCards, type SavedCard } from '../../services/voiceOrder';
 import type { RootStackParamList } from '../../navigation/types';
 import { VOICE_ORDERING_ENABLED } from '../../config/features';
+import { TC } from '../../theme/palette';
 
 const ORANGE = '#f97316';
 const PURPLE = '#a78bfa';
@@ -75,7 +76,7 @@ export function VoiceAndCardsSection() {
           <Text style={styles.title}>Voice ordering</Text>
           <View style={styles.maxBadge}>
             <Feather name="mic" size={11} color="#fff" />
-            <Text style={styles.maxBadgeText}>PRO MAX</Text>
+            <Text style={styles.maxBadgeText}>Pro Max</Text>
           </View>
         </View>
 
@@ -86,7 +87,7 @@ export function VoiceAndCardsSection() {
               <Text style={styles.label}>Order by voice</Text>
               <Text style={styles.sub}>{voice.available ? planLine : 'Needs the Vesphe app from the store (not Expo Go)'}</Text>
             </View>
-            <Feather name="chevron-right" size={18} color="#666" />
+            <Feather name="chevron-right" size={18} color={TC.muted} />
           </TouchableOpacity>
 
           {!isProMax && (
@@ -98,7 +99,7 @@ export function VoiceAndCardsSection() {
                   <Text style={styles.label}>Get Pro Max</Text>
                   <Text style={styles.sub}>Unlimited voice ordering + everything in Pro</Text>
                 </View>
-                <Feather name="chevron-right" size={18} color="#666" />
+                <Feather name="chevron-right" size={18} color={TC.muted} />
               </TouchableOpacity>
             </>
           )}
@@ -114,8 +115,8 @@ export function VoiceAndCardsSection() {
               value={wakeOn && wakeReady}
               onValueChange={toggleWake}
               disabled={!wakeReady}
-              trackColor={{ false: '#333', true: 'rgba(249,115,22,0.5)' }}
-              thumbColor={wakeOn && wakeReady ? ORANGE : '#888'}
+              trackColor={{ false: TC.raised, true: 'rgba(249,115,22,0.5)' }}
+              thumbColor={wakeOn && wakeReady ? ORANGE : TC.subtle}
             />
           </View>
 
@@ -126,7 +127,7 @@ export function VoiceAndCardsSection() {
               <Text style={styles.label}>Use with {Platform.OS === 'ios' ? 'Siri' : 'Google Assistant'}</Text>
               <Text style={styles.sub}>Start Vesphe voice from anywhere</Text>
             </View>
-            <Feather name={showHelp ? 'chevron-up' : 'chevron-down'} size={18} color="#666" />
+            <Feather name={showHelp ? 'chevron-up' : 'chevron-down'} size={18} color={TC.muted} />
           </TouchableOpacity>
           {showHelp && (
             <Text style={styles.help}>
@@ -145,7 +146,7 @@ export function VoiceAndCardsSection() {
         </View>
         {cards.length === 0 ? (
           <View style={[styles.card, styles.emptyCard]}>
-            <Feather name="credit-card" size={22} color="#666" />
+            <Feather name="credit-card" size={22} color={TC.muted} />
             <Text style={styles.emptyText}>No saved cards yet</Text>
             <Text style={styles.sub}>Pay by card once and tick "Save this card" for one-tap checkout.</Text>
           </View>
@@ -176,19 +177,19 @@ export function VoiceAndCardsSection() {
 const styles = StyleSheet.create({
   section: { paddingHorizontal: 16, marginBottom: 24 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
-  title: { fontSize: 16, fontWeight: '600', color: '#fff' },
+  title: { fontSize: 16, fontWeight: '600', color: TC.text },
   maxBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#7c3aed', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999 },
-  maxBadgeText: { color: '#fff', fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
-  card: { backgroundColor: '#1a1a1a', borderRadius: 12, paddingHorizontal: 12 },
+  maxBadgeText: { color: '#fff', fontSize: 10, fontWeight: '600' },
+  card: { backgroundColor: TC.surface, borderRadius: 12, paddingHorizontal: 12 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
   rowText: { flex: 1, minWidth: 0 },
-  divider: { height: 1, backgroundColor: '#262626', marginLeft: 52 },
+  divider: { height: 1, backgroundColor: TC.raised, marginLeft: 52 },
   icon: { width: 40, height: 40, borderRadius: 8, backgroundColor: 'rgba(249,115,22,0.12)', alignItems: 'center', justifyContent: 'center' },
   iconPurple: { backgroundColor: 'rgba(124,58,237,0.15)' },
-  label: { color: '#fff', fontSize: 14, fontWeight: '500' },
-  sub: { color: '#888', fontSize: 12, marginTop: 2, lineHeight: 17 },
-  help: { color: '#bbb', fontSize: 13, lineHeight: 20, paddingBottom: 14, paddingLeft: 52, paddingRight: 4 },
+  label: { color: TC.text, fontSize: 14, fontWeight: '500' },
+  sub: { color: TC.subtle, fontSize: 12, marginTop: 2, lineHeight: 17 },
+  help: { color: TC.text2, fontSize: 13, lineHeight: 20, paddingBottom: 14, paddingLeft: 52, paddingRight: 4 },
   emptyCard: { alignItems: 'center', paddingVertical: 20, paddingHorizontal: 20, gap: 4 },
-  emptyText: { color: '#fff', fontSize: 14, fontWeight: '500', marginTop: 6 },
+  emptyText: { color: TC.text, fontSize: 14, fontWeight: '500', marginTop: 6 },
   removeBtn: { padding: 8 },
 });

@@ -13,11 +13,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { useVendorMenu } from '../../hooks/vendor/useVendorMenu';
 import { MenuItemCard } from '../../components/vendor/MenuItemCard';
 import { MenuItemForm } from '../../components/vendor/MenuItemForm';
+import { TAB_BAR_SPACE } from '../../navigation/tabBarOptions';
+import { TC } from '../../theme/palette';
 
 export function VendorMenuScreen() {
   const navigation = useNavigation();
@@ -62,7 +63,7 @@ export function VendorMenuScreen() {
 
   const handleDeleteItem = (id: string) => {
     Alert.alert(
-      'Delete Item',
+      'Delete item',
       'Are you sure you want to delete this menu item?',
       [
         { text: 'Cancel', style: 'cancel' },
@@ -118,13 +119,13 @@ export function VendorMenuScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Feather name="arrow-left" size={24} color="#fff" />
+          <Feather name="arrow-left" size={24} color={TC.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Menu Management</Text>
+        <Text style={styles.headerTitle}>Menu management</Text>
         <TouchableOpacity onPress={handleAddItem} style={styles.addButton}>
           <Feather name="plus" size={24} color="#f97316" />
         </TouchableOpacity>
@@ -134,17 +135,17 @@ export function VendorMenuScreen() {
       <View style={styles.statsContainer}>
         <View style={styles.statCard}>
           <Text style={styles.statNumber}>{items.length}</Text>
-          <Text style={styles.statLabel}>Total Items</Text>
+          <Text style={styles.statLabel}>Total items</Text>
         </View>
         <View style={styles.statCard}>
           <Text style={[styles.statNumber, { color: '#f59e0b' }]}>{pendingCount}</Text>
           <Text style={styles.statLabel}>Pending</Text>
         </View>
         <View style={[styles.statCard, outOfStockCount > 0 && { backgroundColor: '#ef444420' }]}>
-          <Text style={[styles.statNumber, { color: outOfStockCount > 0 ? '#ef4444' : '#666' }]}>
+          <Text style={[styles.statNumber, { color: outOfStockCount > 0 ? '#ef4444' : TC.muted }]}>
             {outOfStockCount}
           </Text>
-          <Text style={styles.statLabel}>Out of Stock</Text>
+          <Text style={styles.statLabel}>Out of stock</Text>
         </View>
       </View>
 
@@ -191,7 +192,7 @@ export function VendorMenuScreen() {
               <Feather 
                 name="alert-triangle" 
                 size={12} 
-                color={filter === 'out_of_stock' ? '#fff' : outOfStockCount > 0 ? '#ef4444' : '#666'} 
+                color={filter === 'out_of_stock' ? '#fff' : outOfStockCount > 0 ? '#ef4444' : TC.muted} 
               />
               <Text style={[
                 styles.filterText, 
@@ -206,7 +207,7 @@ export function VendorMenuScreen() {
       </View>
 
       {/* Menu Items List */}
-      <ScrollView
+      <ScrollView contentContainerStyle={{ paddingBottom: TAB_BAR_SPACE }}
         style={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -216,7 +217,7 @@ export function VendorMenuScreen() {
         {filteredItems.length === 0 ? (
           <View style={styles.emptyContainer}>
             <View style={styles.emptyIconContainer}>
-              <Feather name="coffee" size={40} color="#666" />
+              <Feather name="coffee" size={40} color={TC.muted} />
             </View>
             <Text style={styles.emptyTitle}>No menu items</Text>
             <Text style={styles.emptyText}>
@@ -229,12 +230,9 @@ export function VendorMenuScreen() {
                 : 'Add your first menu item to get started'}
             </Text>
             <TouchableOpacity onPress={handleAddItem} style={styles.emptyButton}>
-              <LinearGradient
-                colors={['#f97316', '#f43f5e']}
-                style={styles.emptyButtonGradient}
-              >
-                <Text style={styles.emptyButtonText}>Add Menu Item</Text>
-              </LinearGradient>
+              <View style={[styles.emptyButtonGradient, { backgroundColor: '#ea580c' }]}>
+                <Text style={styles.emptyButtonText}>Add menu item</Text>
+              </View>
             </TouchableOpacity>
           </View>
         ) : (
@@ -278,12 +276,11 @@ export function VendorMenuScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
-    paddingBottom: 60,
+    backgroundColor: TC.bg,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -294,26 +291,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   addButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -324,20 +321,20 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
   },
   statNumber: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '600',
+    color: TC.text,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
   },
   filterContainer: {
     paddingHorizontal: 16,
@@ -352,13 +349,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 20,
     marginRight: 8,
     gap: 6,
   },
   activeFilterTab: {
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
   },
   outOfStockTab: {
     borderWidth: 1,
@@ -366,7 +363,7 @@ const styles = StyleSheet.create({
   },
   filterText: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
   },
   activeFilterText: {
     color: '#fff',
@@ -388,7 +385,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -396,12 +393,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 14,
-    color: '#666',
+    color: TC.muted,
     textAlign: 'center',
     marginBottom: 20,
   },

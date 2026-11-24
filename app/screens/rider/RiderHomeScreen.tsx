@@ -3,7 +3,6 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Switch, ActivityIndicator, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Toast from 'react-native-toast-message';
@@ -13,6 +12,8 @@ import { useNotifications } from '../../hooks/useNotifications';
 import { JobCard } from '../../components/rider/JobCard';
 import { R, naira, SectionTitle, EmptyState, StatusPill, RouteLine } from '../../components/rider/ui';
 import type { RiderStackParamList } from '../../navigation/types';
+import { fill } from '../../theme/colors';
+import { TC } from '../../theme/palette';
 
 type Nav = NativeStackNavigationProp<RiderStackParamList>;
 
@@ -112,15 +113,10 @@ export function RiderHomeScreen() {
         )}
 
         {/* Online switch */}
-        <LinearGradient
-          colors={isOnline ? ['#f97316', '#f43f5e'] : ['#1c1c1c', '#161616']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.statusCard}
-        >
+        <View style={[styles.statusCard, { backgroundColor: isOnline ? '#ea580c' : TC.surface }]}>
           <View style={styles.statusRow}>
             <View style={[styles.statusIcon, { backgroundColor: isOnline ? 'rgba(255,255,255,0.2)' : 'rgba(249,115,22,0.12)' }]}>
-              <Feather name={isOnline ? 'radio' : 'moon'} size={22} color={isOnline ? '#fff' : R.orange} />
+              <Feather name={isOnline ? 'radio' : 'moon'} size={22} color={isOnline ? TC.text : R.orange} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.statusTitle}>{isOnline ? "You're online" : "You're offline"}</Text>
@@ -129,18 +125,18 @@ export function RiderHomeScreen() {
               </Text>
             </View>
             {togglingOnline ? (
-              <ActivityIndicator color={isOnline ? '#fff' : R.orange} />
+              <ActivityIndicator color={isOnline ? TC.text : R.orange} />
             ) : (
               <Switch
                 value={isOnline}
                 onValueChange={handleToggle}
                 disabled={!!missingGear && !isOnline}
-                trackColor={{ false: '#333', true: 'rgba(255,255,255,0.35)' }}
-                thumbColor={isOnline ? '#fff' : '#888'}
+                trackColor={{ false: TC.raised, true: 'rgba(255,255,255,0.35)' }}
+                thumbColor={isOnline ? TC.text : TC.subtle}
               />
             )}
           </View>
-        </LinearGradient>
+        </View>
 
         {locationDenied && (
           <TouchableOpacity style={styles.warn} onPress={() => Linking.openSettings()}>
@@ -176,10 +172,10 @@ export function RiderHomeScreen() {
                 <StatusPill status={current.status} />
               </View>
               <RouteLine from={current.vendor.address} to={current.dropoff.address} compact />
-              <LinearGradient colors={R.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.nextBtn}>
+              <View style={[styles.nextBtn, { backgroundColor: fill(R.gradient) }]}>
                 <Text style={styles.nextText}>{NEXT_STEP[current.status] || 'Open delivery'}</Text>
                 <Feather name="arrow-right" size={16} color="#fff" />
-              </LinearGradient>
+              </View>
             </TouchableOpacity>
           </>
         )}
@@ -215,7 +211,7 @@ const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 110 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 18 },
   greet: { color: R.muted, fontSize: 14 },
-  name: { color: R.text, fontSize: 24, fontWeight: '800', marginTop: 2 },
+  name: { color: R.text, fontSize: 24, fontWeight: '600', marginTop: 2 },
   iconBtn: {
     width: 42,
     height: 42,
@@ -230,7 +226,7 @@ const styles = StyleSheet.create({
   statusCard: { borderRadius: 20, padding: 18, borderWidth: 1, borderColor: R.border },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   statusIcon: { width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center' },
-  statusTitle: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  statusTitle: { color: TC.text, fontSize: 17, fontWeight: '600' },
   statusSub: { color: R.muted, fontSize: 13, marginTop: 2 },
   noBike: {
     flexDirection: 'row',
@@ -242,8 +238,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(245,158,11,0.3)',
   },
-  noBikeTitle: { color: R.amber, fontSize: 15, fontWeight: '700' },
-  noBikeText: { color: '#d4d4d4', fontSize: 12.5, marginTop: 3, lineHeight: 18 },
+  noBikeTitle: { color: R.amber, fontSize: 15, fontWeight: '600' },
+  noBikeText: { color: TC.text2, fontSize: 12.5, marginTop: 3, lineHeight: 18 },
   warn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -259,7 +255,7 @@ const styles = StyleSheet.create({
   statsRow: { flexDirection: 'row', gap: 12, marginTop: 14, marginBottom: 10 },
   stat: { flex: 1, backgroundColor: R.card, borderRadius: 18, borderWidth: 1, borderColor: R.border, padding: 16 },
   statLabel: { color: R.muted, fontSize: 12 },
-  statValue: { color: R.text, fontSize: 22, fontWeight: '800', marginTop: 6 },
+  statValue: { color: R.text, fontSize: 22, fontWeight: '600', marginTop: 6 },
   statSub: { color: R.faint, fontSize: 12, marginTop: 2 },
   current: {
     backgroundColor: R.card,
@@ -271,7 +267,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   currentTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  currentVendor: { color: R.text, fontSize: 16, fontWeight: '700' },
+  currentVendor: { color: R.text, fontSize: 16, fontWeight: '600' },
   currentMeta: { color: R.muted, fontSize: 12, marginTop: 2 },
   nextBtn: {
     height: 46,
@@ -281,5 +277,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
-  nextText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  nextText: { color: TC.text, fontSize: 15, fontWeight: '600' },
 });

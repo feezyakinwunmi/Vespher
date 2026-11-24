@@ -17,7 +17,6 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -36,6 +35,8 @@ import {
 } from '../../services/riderOrders';
 import { R, naira, StatusPill, callPhone, openDirections } from '../../components/rider/ui';
 import type { RiderStackParamList } from '../../navigation/types';
+import { fill } from '../../theme/colors';
+import { TC } from '../../theme/palette';
 
 type Nav = NativeStackNavigationProp<RiderStackParamList>;
 
@@ -151,7 +152,7 @@ export function RiderDeliveryScreen() {
     }
     setCodeOpen(false);
     setCode('');
-    Toast.show({ type: 'success', text1: 'Delivered!', text2: `${naira(order?.rider_earnings || 0)} added to your earnings` });
+    Toast.show({ type: 'success', text1: 'Delivered', text2: `${naira(order?.rider_earnings || 0)} added to your earnings` });
     await load();
     refreshJobs();
   };
@@ -244,7 +245,7 @@ export function RiderDeliveryScreen() {
                     <React.Fragment key={s.key}>
                       <View style={styles.step}>
                         <View style={[styles.stepDot, done && styles.stepDotOn]}>
-                          {done && <Feather name="check" size={12} color="#fff" />}
+                          {done && <Feather name="check" size={12} color={TC.text} />}
                         </View>
                         <Text style={[styles.stepLabel, done && { color: R.text }]}>{s.label}</Text>
                       </View>
@@ -320,7 +321,7 @@ export function RiderDeliveryScreen() {
           {order.status === 'delivered' && (
             <View style={[styles.notice, { backgroundColor: 'rgba(16,185,129,0.1)', borderColor: 'rgba(16,185,129,0.3)' }]}>
               <Feather name="check-circle" size={16} color={R.green} />
-              <Text style={[styles.noticeText, { color: R.green }]}>Delivered. Nice work!</Text>
+              <Text style={[styles.noticeText, { color: R.green }]}>Delivered. Nice work</Text>
             </View>
           )}
         </View>
@@ -330,21 +331,16 @@ export function RiderDeliveryScreen() {
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
           {action.hint ? <Text style={styles.hint}>{action.hint}</Text> : null}
           <TouchableOpacity disabled={action.disabled || busy} onPress={action.onPress} activeOpacity={0.85}>
-            <LinearGradient
-              colors={action.disabled ? ['#2a2a2a', '#2a2a2a'] : R.gradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.actionBtn}
-            >
+            <View style={[styles.actionBtn, { backgroundColor: action.disabled ? TC.raised : fill(R.gradient) }]}>
               {busy ? (
                 <ActivityIndicator color="#fff" />
               ) : (
                 <>
-                  <Feather name={action.icon} size={18} color={action.disabled ? R.muted : '#fff'} />
+                  <Feather name={action.icon} size={18} color={action.disabled ? R.muted : TC.text} />
                   <Text style={[styles.actionText, action.disabled && { color: R.muted }]}>{action.label}</Text>
                 </>
               )}
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
         </View>
       )}
@@ -379,9 +375,9 @@ export function RiderDeliveryScreen() {
             />
             {codeError ? <Text style={styles.codeError}>{codeError}</Text> : null}
             <TouchableOpacity onPress={submitCode} disabled={busy} activeOpacity={0.85}>
-              <LinearGradient colors={R.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.actionBtn}>
+              <View style={[styles.actionBtn, { backgroundColor: fill(R.gradient) }]}>
                 {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.actionText}>Confirm delivery</Text>}
-              </LinearGradient>
+              </View>
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
@@ -417,7 +413,7 @@ function StopCard({
           <Feather name={kind === 'pickup' ? 'shopping-bag' : 'map-pin'} size={16} color={color} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.stopKind, { color }]}>{kind === 'pickup' ? 'PICKUP' : 'DROP-OFF'}</Text>
+          <Text style={[styles.stopKind, { color }]}>{kind === 'pickup' ? 'Pickup' : 'Drop-off'}</Text>
           <Text style={styles.stopTitle}>{title}</Text>
         </View>
       </View>
@@ -452,7 +448,7 @@ const styles = StyleSheet.create({
   headerWrap: { backgroundColor: R.bg, borderBottomWidth: 1, borderBottomColor: R.border },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 10 },
   back: { width: 40, height: 40, borderRadius: 20, backgroundColor: R.card, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { color: R.text, fontSize: 16, fontWeight: '700' },
+  headerTitle: { color: R.text, fontSize: 16, fontWeight: '600' },
   headerSub: { color: R.muted, fontSize: 12, marginTop: 1 },
   map: { height: 230, backgroundColor: R.card, overflow: 'hidden' },
   body: { padding: 16, gap: 12 },
@@ -468,7 +464,7 @@ const styles = StyleSheet.create({
   },
   noticeText: { color: R.muted, fontSize: 13, flex: 1 },
   card: { backgroundColor: R.card, borderRadius: 18, borderWidth: 1, borderColor: R.border, padding: 16 },
-  cardTitle: { color: R.text, fontSize: 15, fontWeight: '700', marginBottom: 6 },
+  cardTitle: { color: R.text, fontSize: 15, fontWeight: '600', marginBottom: 6 },
   steps: { flexDirection: 'row', alignItems: 'flex-start' },
   step: { alignItems: 'center', width: 64 },
   stepDot: {
@@ -476,23 +472,23 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#333',
+    borderColor: TC.raised,
     justifyContent: 'center',
     alignItems: 'center',
   },
   stepDotOn: { backgroundColor: R.orange, borderColor: R.orange },
   stepLabel: { color: R.faint, fontSize: 11, marginTop: 6, textAlign: 'center' },
-  stepBar: { flex: 1, height: 2, backgroundColor: '#333', marginTop: 11 },
+  stepBar: { flex: 1, height: 2, backgroundColor: TC.raised, marginTop: 11 },
   stepBarOn: { backgroundColor: R.orange },
   moneyRow: { flexDirection: 'row', gap: 12 },
   moneyBox: { flex: 1, backgroundColor: R.card, borderRadius: 18, borderWidth: 1, borderColor: R.border, padding: 14 },
   moneyLabel: { color: R.muted, fontSize: 12 },
-  moneyValue: { fontSize: 20, fontWeight: '800', marginTop: 4 },
+  moneyValue: { fontSize: 20, fontWeight: '600', marginTop: 4 },
   stopHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   stopIcon: { width: 36, height: 36, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  stopKind: { fontSize: 10, fontWeight: '700', letterSpacing: 0.8 },
-  stopTitle: { color: R.text, fontSize: 15, fontWeight: '700', marginTop: 1 },
-  stopAddress: { color: '#d4d4d4', fontSize: 14, marginTop: 12, lineHeight: 20 },
+  stopKind: { fontSize: 10, fontWeight: '600' },
+  stopTitle: { color: R.text, fontSize: 15, fontWeight: '600', marginTop: 1 },
+  stopAddress: { color: TC.text2, fontSize: 14, marginTop: 12, lineHeight: 20 },
   stopNote: { color: R.muted, fontSize: 13, marginTop: 4, fontStyle: 'italic' },
   stopActions: { flexDirection: 'row', gap: 8, marginTop: 14 },
   stopBtn: {
@@ -515,7 +511,7 @@ const styles = StyleSheet.create({
   itemImg: { width: 40, height: 40, borderRadius: 10 },
   itemImgFallback: { backgroundColor: 'rgba(249,115,22,0.1)', justifyContent: 'center', alignItems: 'center' },
   itemName: { color: R.text, fontSize: 14, flex: 1 },
-  itemQty: { color: R.orange, fontSize: 14, fontWeight: '700' },
+  itemQty: { color: R.orange, fontSize: 14, fontWeight: '600' },
   noteBox: {
     flexDirection: 'row',
     gap: 8,
@@ -524,7 +520,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: 'rgba(245,158,11,0.08)',
   },
-  noteText: { color: '#e5e5e5', fontSize: 13, flex: 1, lineHeight: 19 },
+  noteText: { color: TC.text2, fontSize: 13, flex: 1, lineHeight: 19 },
   footer: {
     position: 'absolute',
     left: 0,
@@ -545,7 +541,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 10,
   },
-  actionText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  actionText: { color: TC.text, fontSize: 16, fontWeight: '600' },
   modalWrap: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.6)' },
   sheet: {
     backgroundColor: '#151515',
@@ -555,7 +551,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: R.border,
   },
-  grabber: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: '#333', marginBottom: 18 },
+  grabber: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: TC.raised, marginBottom: 18 },
   sheetIcon: {
     alignSelf: 'center',
     width: 52,
@@ -565,18 +561,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  sheetTitle: { color: R.text, fontSize: 19, fontWeight: '800', textAlign: 'center', marginTop: 12 },
+  sheetTitle: { color: R.text, fontSize: 19, fontWeight: '600', textAlign: 'center', marginTop: 12 },
   sheetBody: { color: R.muted, fontSize: 13.5, textAlign: 'center', marginTop: 6, lineHeight: 20 },
   codeInput: {
     marginTop: 20,
     height: 64,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: '#333',
+    borderColor: TC.raised,
     backgroundColor: R.bg,
     color: R.text,
     fontSize: 30,
-    fontWeight: '800',
+    fontWeight: '600',
     letterSpacing: 12,
     textAlign: 'center',
     marginBottom: 16,

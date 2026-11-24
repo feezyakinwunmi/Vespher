@@ -16,12 +16,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../lib/supabase';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Platform } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
+import { TC } from '../../theme/palette';
 
 interface Announcement {
   id: string;
@@ -325,7 +325,7 @@ const handleSubmit = async () => {
 };
   const handleDelete = (announcement: Announcement) => {
     Alert.alert(
-      'Delete Announcement',
+      'Delete announcement',
       `Are you sure you want to delete "${announcement.title}"?`,
       [
         { text: 'Cancel', style: 'cancel' },
@@ -385,7 +385,7 @@ const handleSubmit = async () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Feather name="arrow-left" size={24} color="#fff" />
+          <Feather name="arrow-left" size={24} color={TC.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Announcements</Text>
         <TouchableOpacity onPress={openCreateModal} style={styles.addButton}>
@@ -402,14 +402,14 @@ const handleSubmit = async () => {
         {announcements.length === 0 ? (
           <View style={styles.emptyContainer}>
             <View style={styles.emptyIconContainer}>
-              <Feather name="phone" size={40} color="#666" />
+              <Feather name="phone" size={40} color={TC.muted} />
             </View>
             <Text style={styles.emptyTitle}>No announcements</Text>
             <Text style={styles.emptyText}>Create your first announcement to notify users</Text>
             <TouchableOpacity onPress={openCreateModal} style={styles.emptyButton}>
-              <LinearGradient colors={['#f97316', '#f43f5e']} style={styles.emptyButtonGradient}>
-                <Text style={styles.emptyButtonText}>Create Announcement</Text>
-              </LinearGradient>
+              <View style={[styles.emptyButtonGradient, { backgroundColor: '#ea580c' }]}>
+                <Text style={styles.emptyButtonText}>Create announcement</Text>
+              </View>
             </TouchableOpacity>
           </View>
         ) : (
@@ -442,7 +442,7 @@ const handleSubmit = async () => {
                       <Feather name="trash-2" size={18} color="#ef4444" />
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => handleToggleStatus(announcement)} style={styles.actionIcon}>
-                      <Feather name={announcement.is_active ? 'eye-off' : 'eye'} size={18} color="#666" />
+                      <Feather name={announcement.is_active ? 'eye-off' : 'eye'} size={18} color={TC.muted} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -453,7 +453,7 @@ const handleSubmit = async () => {
 
                 <View style={styles.cardFooter}>
                   <View style={styles.rolesContainer}>
-                    <Feather name="users" size={12} color="#666" />
+                    <Feather name="users" size={12} color={TC.muted} />
                     <Text style={styles.rolesText}>{getRoleBadges(announcement.target_roles)}</Text>
                   </View>
                   <Text style={styles.dateText}>
@@ -480,7 +480,7 @@ const handleSubmit = async () => {
                 {editingAnnouncement ? 'Edit Announcement' : 'New Announcement'}
               </Text>
               <TouchableOpacity onPress={() => setShowModal(false)} style={styles.modalClose}>
-                <Feather name="x" size={24} color="#fff" />
+                <Feather name="x" size={24} color={TC.text} />
               </TouchableOpacity>
             </View>
 
@@ -502,7 +502,7 @@ const handleSubmit = async () => {
                     </View>
                   ) : (
                     <View style={styles.imagePlaceholder}>
-                      <Feather name="image" size={32} color="#666" />
+                      <Feather name="image" size={32} color={TC.muted} />
                       <Text style={styles.imagePlaceholderText}>Tap to upload image</Text>
                       <Text style={styles.imagePlaceholderSubtext}>PNG, JPG up to 2MB</Text>
                     </View>
@@ -524,7 +524,7 @@ const handleSubmit = async () => {
                   value={title}
                   onChangeText={setTitle}
                   placeholder="Enter announcement title"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={TC.muted}
                 />
               </View>
 
@@ -536,7 +536,7 @@ const handleSubmit = async () => {
                   value={message}
                   onChangeText={setMessage}
                   placeholder="Enter announcement message"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={TC.muted}
                   multiline
                   numberOfLines={4}
                   textAlignVertical="top"
@@ -604,7 +604,7 @@ const handleSubmit = async () => {
                     value={actionLabel}
                     onChangeText={setActionLabel}
                     placeholder="Custom button text (optional)"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                   />
                 )}
               </View>
@@ -616,15 +616,15 @@ const handleSubmit = async () => {
                   <Switch
                     value={isActive}
                     onValueChange={setIsActive}
-                    trackColor={{ false: '#2a2a2a', true: '#f97316' }}
-                    thumbColor="#fff"
+                    trackColor={{ false: TC.raised, true: '#f97316' }}
+                    thumbColor={TC.text}
                   />
                 </View>
               </View>
 
               {/* Dates */}
               <View style={styles.formGroup}>
-                <Text style={styles.label}>Start Date</Text>
+                <Text style={styles.label}>Start date</Text>
                 <TouchableOpacity
                   style={styles.dateButton}
                   onPress={() => {
@@ -666,7 +666,7 @@ const handleSubmit = async () => {
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleSubmit} disabled={isSubmitting} style={styles.submitButton}>
-                <LinearGradient colors={['#f97316', '#f43f5e']} style={styles.submitGradient}>
+                <View style={[styles.submitGradient, { backgroundColor: '#ea580c' }]}>
                   {isSubmitting ? (
                     <ActivityIndicator color="#fff" />
                   ) : (
@@ -674,7 +674,7 @@ const handleSubmit = async () => {
                       {editingAnnouncement ? 'Update' : 'Create'}
                     </Text>
                   )}
-                </LinearGradient>
+                </View>
               </TouchableOpacity>
             </View>
           </View>
@@ -705,14 +705,14 @@ const handleSubmit = async () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     paddingBottom: 60,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
   },
   header: {
     flexDirection: 'row',
@@ -721,26 +721,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   addButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -752,11 +752,11 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   announcementCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   cardImage: {
     width: '100%',
@@ -779,7 +779,7 @@ const styles = StyleSheet.create({
   announcementTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     flex: 1,
   },
   statusBadge: {
@@ -796,7 +796,7 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 10,
     fontWeight: '500',
-    color: '#fff',
+    color: TC.text,
   },
   cardActions: {
     flexDirection: 'row',
@@ -807,7 +807,7 @@ const styles = StyleSheet.create({
   },
   announcementMessage: {
     fontSize: 13,
-    color: '#999',
+    color: TC.subtle,
     lineHeight: 18,
     marginBottom: 12,
   },
@@ -823,11 +823,11 @@ const styles = StyleSheet.create({
   },
   rolesText: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
   },
   dateText: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
   },
   emptyContainer: {
     alignItems: 'center',
@@ -838,7 +838,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -846,12 +846,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 14,
-    color: '#666',
+    color: TC.muted,
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -880,7 +880,7 @@ const styles = StyleSheet.create({
   modalContent: {
     width: '90%',
     maxHeight: '90%',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderRadius: 20,
     overflow: 'hidden',
   },
@@ -890,12 +890,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   modalClose: {
     padding: 4,
@@ -909,7 +909,7 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   formGroup: {
     marginBottom: 16,
@@ -917,14 +917,14 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 6,
   },
   input: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 8,
     padding: 12,
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
   },
   textArea: {
@@ -958,20 +958,20 @@ const styles = StyleSheet.create({
   imagePlaceholder: {
     width: '100%',
     height: 150,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: TC.hairline3,
     borderStyle: 'dashed',
   },
   imagePlaceholderText: {
-    color: '#666',
+    color: TC.muted,
     marginTop: 8,
   },
   imagePlaceholderSubtext: {
-    color: '#666',
+    color: TC.muted,
     fontSize: 10,
     marginTop: 4,
   },
@@ -994,15 +994,15 @@ const styles = StyleSheet.create({
   roleChip: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 20,
   },
   roleChipSelected: {
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
   },
   roleChipText: {
     fontSize: 12,
-    color: '#fff',
+    color: TC.text,
   },
   roleChipTextSelected: {
     color: '#fff',
@@ -1015,15 +1015,15 @@ const styles = StyleSheet.create({
   linkChip: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     borderRadius: 20,
   },
   linkChipSelected: {
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
   },
   linkChipText: {
     fontSize: 12,
-    color: '#fff',
+    color: TC.text,
   },
   linkChipTextSelected: {
     color: '#fff',
@@ -1037,12 +1037,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     padding: 12,
     borderRadius: 8,
   },
   dateButtonText: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
   },
   clearDateButton: {
@@ -1055,13 +1055,13 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     flex: 1,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
   },
   cancelButtonText: {
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
     fontWeight: '500',
   },

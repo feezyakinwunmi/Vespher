@@ -2,6 +2,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions,ScrollView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { TC } from '../theme/palette';
 
 const { width } = Dimensions.get('window');
 
@@ -82,7 +83,7 @@ export function SimpleLineChart({ data, height = 200 }: SimpleLineChartProps) {
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, styles.earningsBar]} />
-          <Text style={styles.legendText}>Your Earnings</Text>
+          <Text style={styles.legendText}>Your earnings</Text>
         </View>
       </View>
     </View>
@@ -164,7 +165,7 @@ const styles = StyleSheet.create({
     left: 40,
     right: 0,
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: TC.hairline3,
     flexDirection: 'row',
     justifyContent: 'flex-end',
   },
@@ -173,7 +174,7 @@ const styles = StyleSheet.create({
     left: -35,
     top: -6,
     fontSize: 9,
-    color: '#666',
+    color: TC.muted,
     width: 30,
     textAlign: 'right',
   },
@@ -209,15 +210,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#3b82f6',
   },
   earningsBar: {
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
   },
   primaryBar: {
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     width: 20,
   },
   barLabel: {
     fontSize: 9,
-    color: '#666',
+    color: TC.muted,
     marginTop: 4,
     textAlign: 'center',
     width: 50,
@@ -229,7 +230,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   legendItem: {
     flexDirection: 'row',
@@ -243,11 +244,11 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: 11,
-    color: '#666',
+    color: TC.muted,
   },
   emptyText: {
     textAlign: 'center',
-    color: '#666',
+    color: TC.muted,
     marginTop: 40,
   },
 });

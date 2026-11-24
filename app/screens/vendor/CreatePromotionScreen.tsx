@@ -15,13 +15,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import Toast from 'react-native-toast-message';
 import { usePaystackCheckout } from '../../contexts/PaystackCheckoutContext';
+import { TC } from '../../theme/palette';
 interface Product {
   id: string;
   name: string;
@@ -389,7 +389,7 @@ const handleProceedToPayment = async () => {
       navigation.goBack();
     } else if (result.status === 'pending') {
       Alert.alert(
-        'Payment Pending',
+        'Payment pending',
         `We could not confirm your payment yet (ref: ${result.reference}). It will update once confirmed; contact support if it does not.`
       );
       navigation.goBack();
@@ -479,7 +479,7 @@ const handleProceedToPayment = async () => {
     return (
       <View style={styles.errorContainer}>
         <Feather name="alert-circle" size={48} color="#ef4444" />
-        <Text style={styles.errorTitle}>Vendor Not Found</Text>
+        <Text style={styles.errorTitle}>Vendor not found</Text>
         <Text style={styles.errorText}>
           Please complete your vendor profile first.
         </Text>
@@ -487,7 +487,7 @@ const handleProceedToPayment = async () => {
           style={styles.errorButton}
           onPress={() => navigation.goBack()}
         >
-          <Text style={styles.errorButtonText}>Go Back</Text>
+          <Text style={styles.errorButtonText}>Go back</Text>
         </TouchableOpacity>
       </View>
     );
@@ -497,7 +497,7 @@ const handleProceedToPayment = async () => {
     if (products.length === 0) {
       return (
         <View style={styles.emptyProductsContainer}>
-          <Feather name="shopping-bag" size={32} color="#666" />
+          <Feather name="shopping-bag" size={32} color={TC.muted} />
           <Text style={styles.emptyProductsText}>No products found</Text>
           <Text style={styles.emptyProductsSubtext}>
             Add products to your menu first before creating promotions
@@ -521,7 +521,7 @@ const handleProceedToPayment = async () => {
               <Image source={{ uri: product.image_url }} style={styles.productImage} />
             ) : (
               <View style={styles.productImagePlaceholder}>
-                <Feather name="shopping-bag" size={20} color="#666" />
+                <Feather name="shopping-bag" size={20} color={TC.muted} />
               </View>
             )}
             <Text style={styles.productName} numberOfLines={1}>{product.name}</Text>
@@ -546,9 +546,9 @@ const handleProceedToPayment = async () => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Feather name="arrow-left" size={24} color="#fff" />
+          <Feather name="arrow-left" size={24} color={TC.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Create Promotion</Text>
+        <Text style={styles.headerTitle}>Create promotion</Text>
         <View style={styles.placeholder} />
       </View>
 
@@ -565,13 +565,13 @@ const handleProceedToPayment = async () => {
 
           {/* Promotion Type */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Promotion Type</Text>
+            <Text style={styles.sectionTitle}>Promotion type</Text>
             <View style={styles.typeContainer}>
               <TouchableOpacity
                 onPress={() => setPromotionType('flyer')}
                 style={[styles.typeButton, promotionType === 'flyer' && styles.typeButtonActive]}
               >
-                <Feather name="image" size={20} color={promotionType === 'flyer' ? '#f97316' : '#666'} />
+                <Feather name="image" size={20} color={promotionType === 'flyer' ? '#f97316' : TC.muted} />
                 <Text style={[styles.typeText, promotionType === 'flyer' && styles.typeTextActive]}>Flyer</Text>
                 <Text style={styles.typeDesc}>Just an image banner</Text>
               </TouchableOpacity>
@@ -580,8 +580,8 @@ const handleProceedToPayment = async () => {
                 onPress={() => setPromotionType('product_offer')}
                 style={[styles.typeButton, promotionType === 'product_offer' && styles.typeButtonActive]}
               >
-                <Feather name="tag" size={20} color={promotionType === 'product_offer' ? '#f97316' : '#666'} />
-                <Text style={[styles.typeText, promotionType === 'product_offer' && styles.typeTextActive]}>Product Offer</Text>
+                <Feather name="tag" size={20} color={promotionType === 'product_offer' ? '#f97316' : TC.muted} />
+                <Text style={[styles.typeText, promotionType === 'product_offer' && styles.typeTextActive]}>Product offer</Text>
                 <Text style={styles.typeDesc}>Discounted single product</Text>
               </TouchableOpacity>
               
@@ -589,16 +589,16 @@ const handleProceedToPayment = async () => {
                 onPress={() => setPromotionType('combo')}
                 style={[styles.typeButton, promotionType === 'combo' && styles.typeButtonActive]}
               >
-                <Feather name="gift" size={20} color={promotionType === 'combo' ? '#f97316' : '#666'} />
+                <Feather name="gift" size={20} color={promotionType === 'combo' ? '#f97316' : TC.muted} />
                 <Text style={[styles.typeText, promotionType === 'combo' && styles.typeTextActive]}>Combo</Text>
-                <Text style={styles.typeDesc}>Buy X Get Y Free</Text>
+                <Text style={styles.typeDesc}>Buy X get Y free</Text>
               </TouchableOpacity>
             </View>
           </View>
 
           {/* Basic Info */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Basic Information</Text>
+            <Text style={styles.sectionTitle}>Basic information</Text>
             
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Title *</Text>
@@ -607,7 +607,7 @@ const handleProceedToPayment = async () => {
                 value={title}
                 onChangeText={setTitle}
                 placeholder="e.g., Weekend Special Pizza Deal"
-                placeholderTextColor="#666"
+                placeholderTextColor={TC.muted}
               />
             </View>
             
@@ -618,7 +618,7 @@ const handleProceedToPayment = async () => {
                 value={description}
                 onChangeText={setDescription}
                 placeholder="Describe your offer..."
-                placeholderTextColor="#666"
+                placeholderTextColor={TC.muted}
                 multiline
                 numberOfLines={3}
                 textAlignVertical="top"
@@ -632,7 +632,7 @@ const handleProceedToPayment = async () => {
                   <Image source={{ uri: imageUri }} style={styles.previewImage} />
                 ) : (
                   <View style={styles.imagePlaceholder}>
-                    <Feather name="image" size={32} color="#666" />
+                    <Feather name="image" size={32} color={TC.muted} />
                     <Text style={styles.imagePlaceholderText}>Tap to upload image</Text>
                     <Text style={styles.imageHint}>16:9 ratio recommended</Text>
                   </View>
@@ -650,7 +650,7 @@ const handleProceedToPayment = async () => {
           {/* Product Offer Fields */}
           {promotionType === 'product_offer' && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Product Details</Text>
+              <Text style={styles.sectionTitle}>Product details</Text>
               
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Select Product *</Text>
@@ -664,7 +664,7 @@ const handleProceedToPayment = async () => {
                   value={discountedPrice}
                   onChangeText={setDiscountedPrice}
                   placeholder="e.g., 9000"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={TC.muted}
                   keyboardType="number-pad"
                 />
               </View>
@@ -676,7 +676,7 @@ const handleProceedToPayment = async () => {
                   value={maxPerCustomer}
                   onChangeText={setMaxPerCustomer}
                   placeholder="0"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={TC.muted}
                   keyboardType="number-pad"
                 />
               </View>
@@ -686,7 +686,7 @@ const handleProceedToPayment = async () => {
           {/* Combo Fields */}
           {promotionType === 'combo' && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Combo Details</Text>
+              <Text style={styles.sectionTitle}>Combo details</Text>
               
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Main Product *</Text>
@@ -706,7 +706,7 @@ const handleProceedToPayment = async () => {
                     value={buyQuantity}
                     onChangeText={setBuyQuantity}
                     placeholder="1"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                     keyboardType="number-pad"
                   />
                 </View>
@@ -718,7 +718,7 @@ const handleProceedToPayment = async () => {
                     value={getQuantity}
                     onChangeText={setGetQuantity}
                     placeholder="1"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                     keyboardType="number-pad"
                   />
                 </View>
@@ -731,7 +731,7 @@ const handleProceedToPayment = async () => {
                   value={maxPerCustomer}
                   onChangeText={setMaxPerCustomer}
                   placeholder="0"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={TC.muted}
                   keyboardType="number-pad"
                 />
               </View>
@@ -740,7 +740,7 @@ const handleProceedToPayment = async () => {
 
           {/* Duration & Pricing */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Duration & Pricing</Text>
+            <Text style={styles.sectionTitle}>Duration & pricing</Text>
             
             <View style={styles.row}>
               <View style={[styles.inputGroup, { flex: 1 }]}>
@@ -750,13 +750,13 @@ const handleProceedToPayment = async () => {
                   value={daysCount}
                   onChangeText={setDaysCount}
                   placeholder="7"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={TC.muted}
                   keyboardType="number-pad"
                 />
               </View>
               
               <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={styles.label}>Cost per Day</Text>
+                <Text style={styles.label}>Cost per day</Text>
                 <View style={styles.costDisplay}>
                   <Text style={styles.costValue}>₦{costPerDay.toLocaleString()}</Text>
                 </View>
@@ -764,22 +764,17 @@ const handleProceedToPayment = async () => {
             </View>
             
             <View style={styles.totalCard}>
-              <Text style={styles.totalLabel}>Total Cost</Text>
+              <Text style={styles.totalLabel}>Total cost</Text>
               <Text style={styles.totalValue}>₦{totalCost.toLocaleString()}</Text>
             </View>
           </View>
 
           {/* Submit Button */}
           <TouchableOpacity onPress={handleProceedToPayment} style={styles.submitButton}>
-            <LinearGradient
-              colors={['#f97316', '#f43f5e']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.submitGradient}
-            >
-              <Text style={styles.submitText}>Proceed to Payment</Text>
+            <View style={[styles.submitGradient, { backgroundColor: '#ea580c' }]}>
+              <Text style={styles.submitText}>Proceed to payment</Text>
               <Feather name="arrow-right" size={20} color="#fff" />
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -793,22 +788,22 @@ const handleProceedToPayment = async () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    color: '#666',
+    color: TC.muted,
     marginTop: 12,
     fontSize: 14,
   },
   errorContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -816,18 +811,18 @@ const styles = StyleSheet.create({
   errorTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginTop: 16,
     marginBottom: 8,
   },
   errorText: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
     textAlign: 'center',
     marginBottom: 20,
   },
   errorButton: {
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
@@ -844,20 +839,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   placeholder: {
     width: 40,
@@ -870,7 +865,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     marginHorizontal: 16,
     marginTop: 16,
     marginBottom: 8,
@@ -883,18 +878,18 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   section: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     margin: 16,
     marginBottom: 12,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginBottom: 16,
   },
   typeContainer: {
@@ -903,13 +898,13 @@ const styles = StyleSheet.create({
   },
   typeButton: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
     gap: 6,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   typeButtonActive: {
     borderColor: '#f97316',
@@ -918,40 +913,40 @@ const styles = StyleSheet.create({
   typeText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#666',
+    color: TC.muted,
   },
   typeTextActive: {
     color: '#f97316',
   },
   typeDesc: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
   },
   inputGroup: {
     marginBottom: 16,
   },
   label: {
     fontSize: 13,
-    color: '#fff',
+    color: TC.text,
     marginBottom: 6,
   },
   input: {
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     borderRadius: 8,
     padding: 12,
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   textArea: {
     minHeight: 80,
   },
   imagePicker: {
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
     overflow: 'hidden',
     minHeight: 160,
   },
@@ -967,11 +962,11 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   imagePlaceholderText: {
-    color: '#666',
+    color: TC.muted,
     fontSize: 14,
   },
   imageHint: {
-    color: '#666',
+    color: TC.muted,
     fontSize: 11,
   },
   uploadingOverlay: {
@@ -986,7 +981,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   uploadingText: {
-    color: '#fff',
+    color: TC.text,
     marginTop: 8,
     fontSize: 12,
   },
@@ -995,13 +990,13 @@ const styles = StyleSheet.create({
   },
   productCard: {
     width: 120,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     borderRadius: 8,
     padding: 8,
     marginRight: 8,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   productCardSelected: {
     borderColor: '#f97316',
@@ -1017,14 +1012,14 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 8,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 6,
   },
   productName: {
     fontSize: 12,
-    color: '#fff',
+    color: TC.text,
     textAlign: 'center',
     marginBottom: 2,
   },
@@ -1038,12 +1033,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   emptyProductsText: {
-    color: '#666',
+    color: TC.muted,
     fontSize: 14,
     marginTop: 8,
   },
   emptyProductsSubtext: {
-    color: '#666',
+    color: TC.muted,
     fontSize: 12,
     textAlign: 'center',
   },
@@ -1051,7 +1046,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     borderRadius: 8,
   },
   addProductButtonText: {
@@ -1064,11 +1059,11 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   costDisplay: {
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     borderRadius: 8,
     padding: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   costValue: {
     color: '#f97316',
@@ -1076,7 +1071,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   totalCard: {
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     borderRadius: 8,
     padding: 12,
     marginTop: 8,
@@ -1086,12 +1081,12 @@ const styles = StyleSheet.create({
   },
   totalLabel: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
     marginBottom: 4,
   },
   totalValue: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#f97316',
   },
   submitButton: {

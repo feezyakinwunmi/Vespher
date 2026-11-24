@@ -10,8 +10,8 @@ import {
   StatusBar,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
+import { TC } from '../../theme/palette';
 
 export type VendorTab = 
   | 'overview' 
@@ -45,9 +45,9 @@ export function VendorLayout({
   const navigation = useNavigation();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={TC.name === 'dark' ? 'light-content' : 'dark-content'} />
       
       {/* Header */}
       {/* {showHeader && (
@@ -67,7 +67,7 @@ export function VendorLayout({
       }} 
       style={styles.backButton}
     >
-      <Feather name="arrow-left" size={24} color="#fff" />
+      <Feather name="arrow-left" size={24} color={TC.text} />
     </TouchableOpacity>
     <Text style={styles.headerTitle}>{title || activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</Text>
   </View>
@@ -97,7 +97,7 @@ export function VendorLayout({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
   },
   header: {
     flexDirection: 'row',
@@ -105,9 +105,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
     zIndex: 10,
   },
   headerLeft: {
@@ -119,14 +119,14 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: TC.raised,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   headerRight: {
     flexDirection: 'row',
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
   navGradient: {
     flex: 1,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   navContainer: {
     flexDirection: 'row',
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
   },
   navLabel: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
     marginTop: 4,
   },
   navLabelActive: {

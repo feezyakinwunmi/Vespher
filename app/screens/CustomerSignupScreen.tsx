@@ -17,13 +17,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../lib/supabase';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import ReuseLocationPicker from '../components/ReuseLocationPicker';
 import { GoogleSignInButton } from '../components/GoogleSignInButton';
 import { AppleSignInButton } from '../components/AppleSignInButton';
+import { TC } from '../theme/palette';
 
 type RegistrationStep = 'auth' | 'details' | 'success';
 
@@ -441,7 +441,7 @@ const generateReferralCode = () => {
         return (
           <View style={styles.stepContainer}>
             <View style={styles.headerContainer}>
-              <Text style={styles.title}>Create Your Account</Text>
+              <Text style={styles.title}>Create your account</Text>
               <Text style={styles.subtitle}>
                 Sign up to start ordering from your favorite vendors
               </Text>
@@ -458,13 +458,13 @@ const generateReferralCode = () => {
               <View style={styles.fieldContainer}>
                 <Text style={styles.label}>Full Name *</Text>
                 <View style={styles.inputWrapper}>
-                  <Feather name="user" size={20} color="#666" style={styles.inputIcon} />
+                  <Feather name="user" size={20} color={TC.muted} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={formData.fullName}
                     onChangeText={(text) => updateField('fullName', text)}
                     placeholder="John Doe"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                   />
                 </View>
               </View>
@@ -472,13 +472,13 @@ const generateReferralCode = () => {
               <View style={styles.fieldContainer}>
                 <Text style={styles.label}>Email Address *</Text>
                 <View style={styles.inputWrapper}>
-                  <Feather name="mail" size={20} color="#666" style={styles.inputIcon} />
+                  <Feather name="mail" size={20} color={TC.muted} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={formData.email}
                     onChangeText={(text) => updateField('email', text)}
                     placeholder="you@example.com"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                     keyboardType="email-address"
                     autoCapitalize="none"
                   />
@@ -488,13 +488,13 @@ const generateReferralCode = () => {
               <View style={styles.fieldContainer}>
                 <Text style={styles.label}>Phone Number *</Text>
                 <View style={styles.inputWrapper}>
-                  <Feather name="phone" size={20} color="#666" style={styles.inputIcon} />
+                  <Feather name="phone" size={20} color={TC.muted} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={formData.phone}
                     onChangeText={(text) => updateField('phone', text)}
                     placeholder="+234 801 234 5678"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                     keyboardType="phone-pad"
                   />
                 </View>
@@ -503,17 +503,17 @@ const generateReferralCode = () => {
               <View style={styles.fieldContainer}>
                 <Text style={styles.label}>Password *</Text>
                 <View style={styles.inputWrapper}>
-                  <Feather name="lock" size={20} color="#666" style={styles.inputIcon} />
+                  <Feather name="lock" size={20} color={TC.muted} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={formData.password}
                     onChangeText={(text) => updateField('password', text)}
                     placeholder="Create a password"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                     secureTextEntry={!showPassword}
                   />
                   <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-                    <Feather name={showPassword ? 'eye-off' : 'eye'} size={20} color="#666" />
+                    <Feather name={showPassword ? 'eye-off' : 'eye'} size={20} color={TC.muted} />
                   </TouchableOpacity>
                 </View>
                 <Text style={styles.hint}>Must be at least 6 characters</Text>
@@ -522,17 +522,17 @@ const generateReferralCode = () => {
               <View style={styles.fieldContainer}>
                 <Text style={styles.label}>Confirm Password *</Text>
                 <View style={styles.inputWrapper}>
-                  <Feather name="lock" size={20} color="#666" style={styles.inputIcon} />
+                  <Feather name="lock" size={20} color={TC.muted} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={formData.confirmPassword}
                     onChangeText={(text) => updateField('confirmPassword', text)}
                     placeholder="Confirm your password"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                     secureTextEntry={!showConfirmPassword}
                   />
                   <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon}>
-                    <Feather name={showConfirmPassword ? 'eye-off' : 'eye'} size={20} color="#666" />
+                    <Feather name={showConfirmPassword ? 'eye-off' : 'eye'} size={20} color={TC.muted} />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -544,7 +544,7 @@ const generateReferralCode = () => {
         return (
           <View style={styles.stepContainer}>
             <View style={styles.headerContainer}>
-              <Text style={styles.title}>Delivery Details</Text>
+              <Text style={styles.title}>Delivery details</Text>
               <Text style={styles.subtitle}>
                 Add your delivery address for accurate delivery estimates
               </Text>
@@ -561,7 +561,7 @@ const generateReferralCode = () => {
 <View style={styles.fieldContainer}>
   <Text style={styles.label}>Referral Code (Optional)</Text>
   <View style={styles.inputWrapper}>
-    <Feather name="gift" size={20} color="#666" style={styles.inputIcon} />
+    <Feather name="gift" size={20} color={TC.muted} style={styles.inputIcon} />
     <TextInput
       style={styles.input}
       value={formData.referralCode}
@@ -570,7 +570,7 @@ const generateReferralCode = () => {
         verifyReferralCode(text); // Verify in real-time
       }}
       placeholder="Enter referral code (if you have one)"
-      placeholderTextColor="#666"
+      placeholderTextColor={TC.muted}
       autoCapitalize="characters"
     />
     {checkingReferral && (
@@ -589,7 +589,7 @@ const generateReferralCode = () => {
   {referralValid === false && formData.referralCode.length > 3 && (
     <Text style={styles.invalidText}>✗ Invalid referral code. Please check and try again.</Text>
   )}
-  <Text style={styles.hint}>Enter a friend's referral code to get 10% off your first order!</Text>
+  <Text style={styles.hint}>Enter a friend's referral code to get 10% off your first order</Text>
 </View>
 
             <View style={styles.form}>
@@ -605,7 +605,7 @@ const generateReferralCode = () => {
                       ? `Location selected: ${formData.latitude.toFixed(6)}, ${formData.longitude.toFixed(6)}`
                       : 'Tap to set your delivery location on map'}
                   </Text>
-                  <Feather name="chevron-right" size={20} color="#666" />
+                  <Feather name="chevron-right" size={20} color={TC.muted} />
                 </TouchableOpacity>
                 {formData.latitude !== null && formData.longitude !== null && (
                   <Text style={styles.locationCoordsText}>
@@ -615,15 +615,15 @@ const generateReferralCode = () => {
               </View>
 
               <View style={styles.fieldContainer}>
-                <Text style={styles.label}>Street Address</Text>
+                <Text style={styles.label}>Street address</Text>
                 <View style={styles.inputWrapper}>
-                  <Feather name="map-pin" size={20} color="#666" style={styles.inputIcon} />
+                  <Feather name="map-pin" size={20} color={TC.muted} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={formData.address}
                     onChangeText={(text) => updateField('address', text)}
                     placeholder="e.g., 123 Main Street"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                   />
                 </View>
               </View>
@@ -631,13 +631,13 @@ const generateReferralCode = () => {
               <View style={styles.fieldContainer}>
                 <Text style={styles.label}>Apartment/Suite (Optional)</Text>
                 <View style={styles.inputWrapper}>
-                  <Feather name="home" size={20} color="#666" style={styles.inputIcon} />
+                  <Feather name="home" size={20} color={TC.muted} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={formData.apartment}
                     onChangeText={(text) => updateField('apartment', text)}
                     placeholder="e.g., Apartment 4B"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={TC.muted}
                   />
                 </View>
               </View>
@@ -655,7 +655,7 @@ const generateReferralCode = () => {
               <View style={styles.infoBox}>
                 <Feather name="mail" size={20} color="#f97316" />
                 <View style={styles.infoTextContainer}>
-                  <Text style={styles.infoTitle}>Email Verification Required</Text>
+                  <Text style={styles.infoTitle}>Email verification required</Text>
                   <Text style={styles.infoText}>
                     After creating your account, we'll send a 6-digit verification code to your email. You'll need to enter it to complete registration.
                   </Text>
@@ -689,7 +689,7 @@ const generateReferralCode = () => {
             <View style={styles.successIcon}>
               <Feather name="check-circle" size={64} color="#10b981" />
             </View>
-            <Text style={styles.successTitle}>Account Created!</Text>
+            <Text style={styles.successTitle}>Account created</Text>
             <Text style={styles.successText}>
               Your account is now ready. Start exploring great food and vendors!
             </Text>
@@ -706,7 +706,7 @@ const generateReferralCode = () => {
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-              <Feather name="arrow-left" size={24} color="#fff" />
+              <Feather name="arrow-left" size={24} color={TC.text} />
             </TouchableOpacity>
             <View style={styles.headerText}>
               <Text style={styles.headerTitle}>
@@ -733,7 +733,7 @@ const generateReferralCode = () => {
           {step !== 'success' && (
             <View style={styles.footer}>
               <TouchableOpacity onPress={handleNext} disabled={isSubmitting} activeOpacity={0.8}>
-                <LinearGradient colors={['#f97316', '#f43f5e']} style={styles.footerButton}>
+                <View style={[styles.footerButton, { backgroundColor: '#ea580c' }]}>
                   {isSubmitting ? (
                     <View style={styles.buttonContent}>
                       <ActivityIndicator color="#fff" />
@@ -747,7 +747,7 @@ const generateReferralCode = () => {
                       <Feather name="chevron-right" size={20} color="#fff" />
                     </View>
                   )}
-                </LinearGradient>
+                </View>
               </TouchableOpacity>
 
               {step === 'auth' && (
@@ -761,7 +761,7 @@ const generateReferralCode = () => {
                 <View style={styles.loginContainer}>
                   <Text style={styles.loginText}>Already have an account? </Text>
                   <TouchableOpacity onPress={() => navigation.navigate('Login' as never)}>
-                    <Text style={styles.loginLink}>Sign In</Text>
+                    <Text style={styles.loginLink}>Sign in</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -774,9 +774,9 @@ const generateReferralCode = () => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Verify Your Email</Text>
+              <Text style={styles.modalTitle}>Verify your email</Text>
               <TouchableOpacity onPress={() => setShowOTPModal(false)}>
-                <Feather name="x" size={20} color="#fff" />
+                <Feather name="x" size={20} color={TC.text} />
               </TouchableOpacity>
             </View>
             <View style={styles.modalBody}>
@@ -808,9 +808,9 @@ const generateReferralCode = () => {
                 </TouchableOpacity>
               </View>
               <TouchableOpacity onPress={handleVerifyOTP} disabled={isVerifyingOTP || otpCode.some(d => d === '')} style={styles.modalButton}>
-                <LinearGradient colors={['#f97316', '#f43f5e']} style={styles.submitGradient}>
-                  {isVerifyingOTP ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Verify Email</Text>}
-                </LinearGradient>
+                <View style={[styles.submitGradient, { backgroundColor: '#ea580c' }]}>
+                  {isVerifyingOTP ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Verify email</Text>}
+                </View>
               </TouchableOpacity>
             </View>
           </View>
@@ -823,18 +823,18 @@ const generateReferralCode = () => {
 // Keep all your existing styles - they remain the same
 const styles = StyleSheet.create({
   // ... your existing styles (same as before)
-  container: { flex: 1, backgroundColor: '#0a0a0a' },
+  container: { flex: 1, backgroundColor: TC.bg },
   keyboardView: { flex: 1 },
   scrollContent: { flexGrow: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', padding: 20, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
-  backButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#1a1a1a', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+  header: { flexDirection: 'row', alignItems: 'center', padding: 20, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: TC.hairline },
+  backButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: TC.surface, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
   headerText: { flex: 1 },
-  headerTitle: { fontSize: 18, fontWeight: '600', color: '#fff' },
-  headerStep: { fontSize: 12, color: '#666', marginTop: 2 },
+  headerTitle: { fontSize: 18, fontWeight: '600', color: TC.text },
+  headerStep: { fontSize: 12, color: TC.muted, marginTop: 2 },
   progressContainer: { flexDirection: 'row', gap: 8, paddingHorizontal: 20, paddingTop: 12 },
   progressBar: { height: 4, flex: 1, borderRadius: 2 },
-  progressActive: { backgroundColor: '#f97316' },
-  progressInactive: { backgroundColor: '#1a1a1a' },
+  progressActive: { backgroundColor: '#ea580c' },
+  progressInactive: { backgroundColor: TC.surface },
   content: { flex: 1, padding: 20 },
   stepContainer: { flex: 1 },
   headerContainer: { marginBottom: 24 },
@@ -854,52 +854,52 @@ invalidText: {
   marginTop: 4,
   marginLeft: 4,
 },
-  title: { fontSize: 24, fontWeight: '700', color: '#fff', marginBottom: 8 },
-  subtitle: { fontSize: 14, color: '#666' },
+  title: { fontSize: 24, fontWeight: '600', color: TC.text, marginBottom: 8 },
+  subtitle: { fontSize: 14, color: TC.muted },
   errorContainer: { backgroundColor: 'rgba(239,68,68,0.1)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.2)', borderRadius: 12, padding: 16, marginBottom: 24, flexDirection: 'row', alignItems: 'center', gap: 12 },
   errorText: { color: '#ef4444', fontSize: 14, flex: 1 },
   form: { gap: 20 },
   fieldContainer: { gap: 8 },
-  label: { fontSize: 14, fontWeight: '500', color: '#fff', marginLeft: 4 },
+  label: { fontSize: 14, fontWeight: '500', color: TC.text, marginLeft: 4 },
   inputWrapper: { position: 'relative', flexDirection: 'row', alignItems: 'center' },
   inputIcon: { position: 'absolute', left: 16, zIndex: 1 },
-  input: { flex: 1, height: 56, backgroundColor: '#1a1a1a', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 14, paddingLeft: 48, paddingRight: 48, fontSize: 16, color: '#fff' },
+  input: { flex: 1, height: 56, backgroundColor: TC.surface, borderWidth: 1, borderColor: TC.raised, borderRadius: 14, paddingLeft: 48, paddingRight: 48, fontSize: 16, color: TC.text },
   eyeIcon: { position: 'absolute', right: 16, zIndex: 1, padding: 4 },
-  hint: { fontSize: 12, color: '#666', marginTop: 4, marginLeft: 4 },
-  locationPickerButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1a1a1a', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 16, gap: 12, borderWidth: 1, borderColor: '#2a2a2a' },
-  locationPickerText: { flex: 1, color: '#fff', fontSize: 14 },
-  locationCoordsText: { fontSize: 11, color: '#666', marginTop: 6, marginLeft: 4 },
-  infoBox: { backgroundColor: '#1a1a1a', borderRadius: 14, padding: 16, flexDirection: 'row', gap: 12, marginTop: 8, borderWidth: 1, borderColor: 'rgba(249,115,22,0.2)' },
+  hint: { fontSize: 12, color: TC.muted, marginTop: 4, marginLeft: 4 },
+  locationPickerButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: TC.surface, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 16, gap: 12, borderWidth: 1, borderColor: TC.raised },
+  locationPickerText: { flex: 1, color: TC.text, fontSize: 14 },
+  locationCoordsText: { fontSize: 11, color: TC.muted, marginTop: 6, marginLeft: 4 },
+  infoBox: { backgroundColor: TC.surface, borderRadius: 14, padding: 16, flexDirection: 'row', gap: 12, marginTop: 8, borderWidth: 1, borderColor: 'rgba(249,115,22,0.2)' },
   infoTextContainer: { flex: 1 },
-  infoTitle: { fontSize: 14, fontWeight: '600', color: '#fff', marginBottom: 4 },
-  infoText: { fontSize: 12, color: '#666', lineHeight: 18 },
+  infoTitle: { fontSize: 14, fontWeight: '600', color: TC.text, marginBottom: 4 },
+  infoText: { fontSize: 12, color: TC.muted, lineHeight: 18 },
   successContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 },
   successIcon: { width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(16,185,129,0.2)', justifyContent: 'center', alignItems: 'center', marginBottom: 24 },
-  successTitle: { fontSize: 24, fontWeight: '700', color: '#fff', textAlign: 'center', marginBottom: 12 },
-  successText: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 8 },
-  successSubText: { fontSize: 12, color: '#666', textAlign: 'center', marginBottom: 32 },
+  successTitle: { fontSize: 24, fontWeight: '600', color: TC.text, textAlign: 'center', marginBottom: 12 },
+  successText: { fontSize: 14, color: TC.muted, textAlign: 'center', marginBottom: 8 },
+  successSubText: { fontSize: 12, color: TC.muted, textAlign: 'center', marginBottom: 32 },
   footer: { padding: 20, paddingTop: 0 },
   footerButton: { height: 56, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
   buttonContent: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   loginContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 16 },
-  loginText: { color: '#666', fontSize: 14 },
+  loginText: { color: TC.muted, fontSize: 14 },
   loginLink: { color: '#f97316', fontSize: 14, fontWeight: '600' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center' },
-  modalContent: { width: '90%', backgroundColor: '#1a1a1a', borderRadius: 20, overflow: 'hidden' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
-  modalTitle: { fontSize: 18, fontWeight: '600', color: '#fff' },
+  modalContent: { width: '90%', backgroundColor: TC.surface, borderRadius: 20, overflow: 'hidden' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: TC.hairline },
+  modalTitle: { fontSize: 18, fontWeight: '600', color: TC.text },
   modalBody: { padding: 16 },
-  otpDescription: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 8 },
+  otpDescription: { fontSize: 14, color: TC.muted, textAlign: 'center', marginBottom: 8 },
   maskedEmail: { fontSize: 16, fontWeight: '600', color: '#f97316', textAlign: 'center', marginBottom: 24 },
   otpContainer: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 10, marginBottom: 16 },
-  otpInput: { width: 45, height: 45, backgroundColor: '#2a2a2a', borderRadius: 8, textAlign: 'center', color: '#fff', fontSize: 18, fontWeight: '600', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+  otpInput: { width: 45, height: 45, backgroundColor: TC.raised, borderRadius: 8, textAlign: 'center', color: TC.text, fontSize: 18, fontWeight: '600', borderWidth: 1, borderColor: TC.hairline3 },
   otpInputError: { borderColor: '#ef4444' },
   otpErrorText: { color: '#ef4444', fontSize: 12, textAlign: 'center', marginBottom: 16 },
   resendContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 8, marginBottom: 20 },
-  resendInfo: { color: '#666', fontSize: 14 },
+  resendInfo: { color: TC.muted, fontSize: 14 },
   resendLink: { color: '#f97316', fontSize: 14, fontWeight: '500' },
-  resendLinkDisabled: { color: '#666' },
+  resendLinkDisabled: { color: TC.muted },
   modalButton: { height: 48, borderRadius: 8, overflow: 'hidden' },
   submitGradient: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   submitText: { color: '#fff', fontSize: 16, fontWeight: '600' },

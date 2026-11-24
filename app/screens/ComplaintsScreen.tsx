@@ -13,12 +13,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import Toast from 'react-native-toast-message';
 import { ComplaintChat, type ComplaintSummary } from '../components/ComplaintChat';
+import { TC } from '../theme/palette';
 
 interface Complaint {
   id: string;
@@ -188,7 +188,7 @@ export function ComplaintsScreen() {
       case 'rejected':
         return '#ef4444';
       default:
-        return '#666';
+        return TC.muted;
     }
   };
 
@@ -219,9 +219,9 @@ export function ComplaintsScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Feather name="arrow-left" size={24} color="#fff" />
+          <Feather name="arrow-left" size={24} color={TC.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Support & Complaints</Text>
+        <Text style={styles.headerTitle}>Support & complaints</Text>
         <TouchableOpacity onPress={() => setShowForm(true)} style={styles.newButton}>
           <Feather name="plus" size={24} color="#f97316" />
         </TouchableOpacity>
@@ -238,8 +238,8 @@ export function ComplaintsScreen() {
       {/* Complaints List */}
       {complaints.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Feather name="message-circle" size={48} color="#666" />
-          <Text style={styles.emptyTitle}>No Complaints Yet</Text>
+          <Feather name="message-circle" size={48} color={TC.muted} />
+          <Text style={styles.emptyTitle}>No complaints yet</Text>
           <Text style={styles.emptyText}>
             Have an issue? Tap the + button to submit a complaint.
           </Text>
@@ -301,9 +301,9 @@ export function ComplaintsScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Submit Complaint</Text>
+              <Text style={styles.modalTitle}>Submit complaint</Text>
               <TouchableOpacity onPress={() => setShowForm(false)}>
-                <Feather name="x" size={24} color="#fff" />
+                <Feather name="x" size={24} color={TC.text} />
               </TouchableOpacity>
             </View>
             
@@ -315,7 +315,7 @@ export function ComplaintsScreen() {
                   value={title}
                   onChangeText={setTitle}
                   placeholder="Brief summary of your issue"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={TC.muted}
                 />
               </View>
               
@@ -353,7 +353,7 @@ export function ComplaintsScreen() {
                   value={description}
                   onChangeText={setDescription}
                   placeholder="Please provide details about your issue..."
-                  placeholderTextColor="#666"
+                  placeholderTextColor={TC.muted}
                   multiline
                   numberOfLines={5}
                   textAlignVertical="top"
@@ -367,16 +367,13 @@ export function ComplaintsScreen() {
                 disabled={submitting}
                 style={styles.submitButton}
               >
-                <LinearGradient
-                  colors={['#f97316', '#f43f5e']}
-                  style={styles.submitGradient}
-                >
+                <View style={[styles.submitGradient, { backgroundColor: '#ea580c' }]}>
                   {submitting ? (
                     <ActivityIndicator color="#fff" />
                   ) : (
-                    <Text style={styles.submitText}>Submit Complaint</Text>
+                    <Text style={styles.submitText}>Submit complaint</Text>
                   )}
-                </LinearGradient>
+                </View>
               </TouchableOpacity>
             </View>
           </View>
@@ -391,16 +388,16 @@ const styles = StyleSheet.create({
   chatLinkText: { color: '#f97316', fontSize: 13, fontWeight: '600' },
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
   },
   loadingText: {
-    color: '#666',
+    color: TC.muted,
     marginTop: 12,
     fontSize: 14,
   },
@@ -411,26 +408,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   newButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -457,23 +454,23 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     marginTop: 16,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
     textAlign: 'center',
   },
   complaintCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     marginHorizontal: 16,
     marginBottom: 12,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   complaintHeader: {
     flexDirection: 'row',
@@ -484,7 +481,7 @@ const styles = StyleSheet.create({
   complaintTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
     flex: 1,
   },
   statusBadge: {
@@ -498,7 +495,7 @@ const styles = StyleSheet.create({
   },
   complaintDescription: {
     fontSize: 13,
-    color: '#666',
+    color: TC.muted,
     lineHeight: 18,
     marginBottom: 8,
   },
@@ -509,7 +506,7 @@ const styles = StyleSheet.create({
   },
   complaintDate: {
     fontSize: 10,
-    color: '#666',
+    color: TC.muted,
   },
   responseBox: {
     marginTop: 12,
@@ -525,7 +522,7 @@ const styles = StyleSheet.create({
   },
   responseText: {
     fontSize: 12,
-    color: '#fff',
+    color: TC.text,
   },
   modalOverlay: {
     flex: 1,
@@ -533,7 +530,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: TC.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     height: '80%',
@@ -544,12 +541,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: TC.hairline,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: TC.text,
   },
   modalBody: {
     flex: 1,
@@ -560,17 +557,17 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 13,
-    color: '#fff',
+    color: TC.text,
     marginBottom: 6,
   },
   input: {
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     borderRadius: 8,
     padding: 12,
-    color: '#fff',
+    color: TC.text,
     fontSize: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   textArea: {
     minHeight: 100,
@@ -583,18 +580,18 @@ const styles = StyleSheet.create({
   orderChip: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: TC.bg,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: TC.hairline,
   },
   orderChipSelected: {
-    backgroundColor: '#f97316',
+    backgroundColor: '#ea580c',
     borderColor: '#f97316',
   },
   orderChipText: {
     fontSize: 12,
-    color: '#666',
+    color: TC.muted,
   },
   orderChipTextSelected: {
     color: '#fff',
@@ -602,7 +599,7 @@ const styles = StyleSheet.create({
   modalFooter: {
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: TC.hairline,
   },
   submitButton: {
     height: 48,
